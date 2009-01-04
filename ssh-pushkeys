@@ -1,0 +1,27 @@
+#!/bin/sh
+# ssh-pushkeys: Install sshkeys on remote server
+# Usage: ssh-pushkeys host
+HOST=$1
+
+# TODO: When I grow up, I really want to be a Capistrano task. That's why this file isn't very well documented.
+
+echo "pushd ~/.ssh..."
+pushd ~/.ssh
+
+echo "ssh $HOST mkdir .ssh..."
+ssh $HOST mkdir .ssh
+
+echo "scp id_*.pub $HOST:.ssh/..."
+scp id_*.pub $HOST:.ssh/ 
+
+echo "for key in id_*.pub; do..."
+for key in id_*.pub; do
+    echo "    ssh $HOST \"cat .ssh/$key >> .ssh/authorized_keys\"..."
+    ssh $HOST "cat .ssh/$key >> .ssh/authorized_keys"
+done
+echo "ssh $HOST \"chmod 600 .ssh/authorized_keys\"..."
+ssh $HOST "chmod 600 .ssh/authorized_keys"
+
+echo "popd..."
+popd
+

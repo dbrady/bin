@@ -1,0 +1,16 @@
+#!/bin/sh
+# ssh-pushkey: Add an sshkey to a remote server. It should already be set up with .ssh and authorized hosts. See ssh-pushkeys.
+# Usage: ssh-pushkey host key
+HOST=$1
+KEYSRC=$2
+KEY=$(basename $2)
+
+# TODO: When I grow up, I really want to be a Capistrano task. That's why this file isn't very well documented.
+
+
+echo "scp $KEY $HOST:.ssh/..."
+scp $KEYSRC $HOST:.ssh/
+
+echo "ssh $HOST \"cat .ssh/$KEY >> .ssh/authorized_keys\"..."
+ssh $HOST "cat .ssh/$KEY >> .ssh/authorized_keys"
+

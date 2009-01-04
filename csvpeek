@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# Script to "peek" into a CSV file. Reads the header row, then dumps
+# the csv file as blocks. Slice and dice the csv file beforehand using
+# head and tail if needed. Usefel when trying to debug data imports
+# from big csv's.
+# 
+# TODO: If you tail a csv file, you lose the header rows. Fix this?
+require 'csv'
+
+# csvpeek filename.csv [file2.csv] [file3.csv] [...]
+
+@headers = nil
+@h2c = nil
+
+@filename = nil
+
+CSV::Reader.parse($<) do |row|
+  if @headers && @filename == $<.filename
+    @headers.each do |col|
+      puts "#{col}: #{row[@h2c[col]]}"
+    end
+  else
+    @filename = $<.filename
+    @headers = row.dup
+    @h2c = {}
+    row.each_with_index do |item, i|
+      @h2c[item] = i
+    end
+  end
+  puts '-' * 80
+end

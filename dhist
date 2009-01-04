@@ -1,0 +1,15 @@
+#!/bin/bash
+# dhist <database> <table> <column> - Show a histogram of a column in a table
+# 
+# E.g.
+# dhist corpsales_production sales_statuses status
+# +-----------------+----------+
+# | status          | COUNT(*) |
+# +-----------------+----------+
+# | pending         |     2665 | 
+# | discounted      |    14874 | 
+# | appointment     |    69393 | 
+# | rejected        |   157212 | 
+# +-----------------+----------+
+
+mysql -D $1 -e "SELECT DISTINCT($3), COUNT(*) FROM $2 GROUP BY 1 ORDER BY 2"

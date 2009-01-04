@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# fhist - file histogram.
+#
+# greps files recursively and displays the frequency of occurrence in each
+# This is just a compound bash statement find -> grep -c -> awk -> sort; all
+# arguments are passed to grep.
+# 
+# myproject/app$ fhist -i program | tail -n 3
+# 54 ./controllers/distribution_controller.rb
+# 68 ./models/category.rb
+# 70 ./institutions/yale.rb
+
+find . -print0 | xargs -0 grep -c $* | awk -F ':' '{ print $2 " " $1 }' | sort -n | grep -vE '^0'

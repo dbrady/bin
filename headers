@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+# 
+# headers - program to read and output email headers. Point it at an
+# email file (such as in vpopmail's domains/user/cur folder) to see
+# the headers for that message.
+
+if ARGV[0] == '-m'
+  opts[:multiline] = true
+  ARGV.pop
+end
+
+ARGV.each do |file|
+  File.open(file).each("") do |chunk|
+    if opts[:multiline]
+      puts chunk.rstrip
+    else
+      chunk.each_line {|line| puts line unless line =~ /^\s/}
+    end
+    break
+  end
+end

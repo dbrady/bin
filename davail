@@ -1,0 +1,4 @@
+#!/bin/sh
+# davail - Domain available?
+# davail <domain.com>
+whois $1 | grep -E '^No match for ' > /dev/null && echo "$1 is available" || echo "$1 is taken"

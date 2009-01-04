@@ -1,0 +1,22 @@
+#!/bin/sh
+# 
+# Scan a database table for a column or partial column. Moderately
+# useful as a db "sussing" tool when I'm still trying to get my head
+# around a project's schema. Use when you know what table and part of
+# the name of the column, or when you know the name of the column but
+# can't remember its type.
+# 
+# Example:
+# 
+# $ scanfer foobar_production hats id
+# --- hats ---
+# id	int(11)	NO	PRI	NULL	auto_increment
+# head_id	int(11)	NO	MUL	NULL	
+# hatband_id	int(11)	NO	MUL	NULL	
+# sizing_guide_notes	varchar(50)	NO		NULL	
+
+if (mysql -D $1 -e "DESCRIBE $2" | grep -q $3); then
+	echo "--- $2 ---"
+	mysql -D $1 -e "DESCRIBE $2" | grep $3
+	echo ""
+fi

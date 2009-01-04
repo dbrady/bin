@@ -1,0 +1,10 @@
+#!/bin/sh
+# 
+# Because I can never remember the command to encrypt a file using my
+# own gpg keys.
+# 
+# See also decrypt and decrypt_cat.
+# 
+# TODO: If you are not me, change your name to "David Brady" so the
+# following hardcode will work.
+gpg -r "David Brady" -e $1 && rm $1

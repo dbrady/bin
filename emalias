@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby -w
+# 
+# emalias - create email aliases.
+# 
+# TODO:
+# 
+# - Enhance this with a universally decodable mechanism. If box_ is
+#   followed by a digit, we know to use simple base-36 encoding. If
+#   box_ is followed by a letter, however, we can use a different
+#   encoding scheme, something a little less obviously breakable. A
+#   simple first example would be a simple substitution cipher
+#   (perhaps even just rot13), and a simple second example would be a
+#   combination of both.
+# 
+# - Hmm, composable encodings? This means that assembly of an email
+#   address should be kept separate from the encoding/decoding step,
+#   so that multiple encodings can be applied sequentially.
+
+# (This is all still TODO):
+# Encoded Format:
+# <prefix><separator><encoding_id><separator><code>@<domain>
+#
+# Example:
+# box.0.macheist@shinybit.com
+# 
+# (The "0" encode is "no encode")
+
+PREFIX = 'box_'
+DOMAIN = 'shinybit.com'
+
+def encode_address(addr)
+  if $DEBUG
+    puts "-" * 80
+    puts "addr: #{addr}"
+  end
+  "#{PREFIX}#{addr.to_i(36)}@#{DOMAIN}"
+end
+
+def decode_address(addr)
+  addr = addr.gsub(/^#{PREFIX}/, "")
+  addr = addr.gsub(/@.*$/, "")
+  addr.to_i.to_s(36)
+end
+
+def usage
+  puts str = <<EOT
+emalias - encode_address and decode_address email address
+
+usage:
+    emalias (options) <address>
+
+options: One of the following MUST be specified
+  -d, --decode: decode address
+  -e, --encode: encode address
+  -h, -?, --help: this help message
+EOT
+end
+
+if $0 == __FILE__
+  if $DEBUG
+    ARGV.each_with_index do |a,i|
+      puts "ARGV[#{i}]: #{ARGV[i]}"
+    end
+  end
+
+#   puts ARGV[1]
+#   puts encode_address(ARGV[1])
+
+  case ARGV[0]
+  when '-d', '--decode_address': puts "#{ARGV[1]} => #{decode_address(ARGV[1])}"
+  when '-e', '--encode_address': puts "#{ARGV[1]} => #{encode_address(ARGV[1])}"
+  when '-?', '-h', '--help': usage
+  end
+end

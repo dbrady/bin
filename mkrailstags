@@ -1,0 +1,12 @@
+#!/bin/sh
+# 
+# Cheesy script to generate a TAGS file for a rails project. Currently
+# just a bash one-liner. Must be run from the root of the project.
+# 
+# TODO:
+# - Make a rake rtag:* task
+# - Speciate between rake rtag:ruby and rake rtag:rails
+# - Give it rtag.opts or somesuch
+# - Make it a plugin, woo
+
+rtags `find . -name '*.rb' -type f | grep -vE '\.git' | grep -vE '^\./vendor' | grep -vE '^\./tmp' | grep -vE '^\./doc'` 

@@ -1,0 +1,9 @@
+#!/bin/sh
+# 
+# decrypt_cat -- decrypt file and cat it to screen. Mainly because I
+# can't be bothered to remember gpg's options. (I know, this one looks
+# really simple, but it's the only one that's simple and I can't be
+# bothered to remember that THIS one is simple either. So nyeah.)
+# 
+# See also encrypt, decrypt
+gpg -d $1

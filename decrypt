@@ -1,0 +1,10 @@
+#!/bin/sh
+# 
+# Decrypt a file with gpg, deleting the encrypted file. See also
+# encrypt: I can never remember the correct syntax to encrypt a file
+# using gpg. The command to decrypt a file is actually quite easy:
+# "gpg -d file.txt.gpg $file.txt". This script exists only for
+# completeness--if you've got encrypt, you gotta have decrypt.
+# 
+# See also encrypt, decrypt_cat.
+gpg -d $1 > $(basename $1 .gpg) && rm $1

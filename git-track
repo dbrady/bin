@@ -1,0 +1,13 @@
+#!/bin/sh
+# 
+# I stole this one off the internet when somebody tweeted about it.
+# It's pretty brilliant. Can't remember the author. Contact me if you
+# recognize this code, and I'll give credit where it is due.
+
+branch=$(git branch 2>/dev/null | grep ^\*)
+[ x$1 != x ] && tracking=$1 || tracking=${branch/* /}
+ 
+git config branch.$tracking.remote origin
+git config branch.$tracking.merge refs/heads/$tracking
+ 
+echo "tracking origin/$tracking"

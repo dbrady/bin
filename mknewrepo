@@ -1,0 +1,27 @@
+#!/bin/sh
+# 
+# Create a new git repository on monkey, turn the current folder into
+# a git repo, and push it to monkey.
+# 
+# Usage:
+# ~/foobar $ mknewrepo foobar.git
+
+echo ssh git@monkey mkdir repos/$1
+ssh git@monkey mkdir repos/$1
+
+echo ssh git@monkey "cd repos/$1 && git --bare init"
+ssh git@monkey "cd repos/$1 && git --bare init"
+
+echo git add remote monkey git@monkey:repos/$1
+git remote add monkey git@monkey:repos/$1
+
+echo git add .
+git add .
+
+echo git commit -m "Initial commit"
+git commit -m "Initial commit"
+
+echo git push monkey master
+git push monkey master
+
+

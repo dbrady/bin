@@ -1,0 +1,3 @@
+#!/bin/sh
+# deke_pass -- decrypt file $1 and dump the info for topic $2
+gpg -d $1 | grep -iEA 20 "^$2" | ruby -ne '$<.each_line {|line| puts line; break if line.strip == "" }'

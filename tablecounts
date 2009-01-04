@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# 
+# tablecounts.rb - List the tables from a database and the number of
+# records in each table. Moderately useful when trying to size up a
+# new database.
+require 'rubygems'
+require 'mysql'
+
+database=ARGV[0] || 'leadgen_development'
+
+def max(a,b)
+  a>b ? a : b
+end
+
+begin
+  # connect to the MySQL server
+  dbh = Mysql.real_connect("localhost", "root", "", database)
+  
+  # get tables
+  tables = []
+  rows = []
+  res = dbh.query("SHOW TABLES")
+  while row = res.fetch_row do
+    tables << row[0]
+  end
+  res.free
+  $stderr.puts "#{database} has #{tables.size} tables. Querying table sizes..."
+  $stderr.puts "[" + ("_" * tables.size) + "]"
+
+  $stderr.print "["
+  columns = 0
+  tables.each do |table|
+    res2 = dbh.query("SELECT COUNT(*)  FROM #{table}")
+    while row2 = res2.fetch_row do
+      rows << [table, row2[0]]
+      columns = max(columns, (1+Math.log(row2[0].to_i+1)/Math.log(10)).to_i)
+    end
+    res2.free
+    $stderr.print "^"
+    $stderr.flush
+  end
+  $stderr.puts "]"
+
+  # foreach table, get count
+  rows.each do |table, count|
+    printf "%#{columns}d %s\n", count, table
+  end
+rescue Mysql::Error => e
+  puts "Error code: #{e.errno}"
+  puts "Error message: #{e.error}"
+  puts "Error SQLSTATE: #{e.sqlstate}" if e.respond_to?("sqlstate")
+ensure
+  # disconnect from server
+  dbh.close if dbh
+end
+
