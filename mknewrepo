@@ -6,14 +6,14 @@
 # Usage:
 # ~/foobar $ mknewrepo foobar.git
 
-echo ssh git@monkey mkdir repos/$1
-ssh git@monkey mkdir repos/$1
+echo ssh git@monkey mkdir $1
+ssh git@monkey mkdir $1
 
-echo ssh git@monkey "cd repos/$1 && git --bare init"
-ssh git@monkey "cd repos/$1 && git --bare init"
+echo ssh git@monkey "cd $1 && git --bare init"
+ssh git@monkey "cd $1 && git --bare init"
 
-echo git add remote monkey git@monkey:repos/$1
-git remote add monkey git@monkey:repos/$1
+echo git add remote monkey git@monkey:$1
+git remote add monkey git@monkey:$1
 
 echo git add .
 git add .
