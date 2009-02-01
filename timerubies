@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# Run a script and time its output under various ruby implementations
+
+rubies = %w(ruby ruby1.9 jruby)
+longest_label = rubies.map {|n| n.size }.max
+
+times = { }
+
+rubies.each do |ruby|
+  puts "timerubies: Timing script under #{ruby}..."
+  start = Time.now.to_f
+  system("#{ruby} #{ARGV * ' '}")
+  stop = Time.now.to_f
+  times[ruby] = stop - start
+end
+
+sec_digits = times.map {|k,v| (Math.log(v)/Math.log(10)).ceil}.max
+
+puts '-' * 80
+rubies.each do |ruby|
+  puts "%-#{longest_label}s: %#{sec_digits+3}.3fs" % [ruby, times[ruby]]
+end
+
