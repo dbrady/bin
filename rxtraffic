@@ -1,0 +1,5 @@
+#!/bin/sh
+[ x$1 != x ] && NIC=$1 || NIC=eth1
+echo $NIC
+/sbin/ifconfig $NIC | grep 'RX bytes:' | awk '{ print $2 }' | cut -d ':' -f 2
+

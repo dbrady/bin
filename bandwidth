@@ -1,0 +1,2 @@
+#!/bin/sh
+ruby -e 'puts "%5.1fkb/s" % (IO.readlines("traffic.log")[-2..-1].map{|l|l.split(/ /)[-1].to_i}.inject{|a,b| b-a}/(1024.0*60))'

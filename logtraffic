@@ -1,0 +1,3 @@
+#!/bin/sh
+echo $(date +"%F %H:%M:%S ") $(/home/dbrady/rxtraffic) >> /home/dbrady/traffic.log
+
