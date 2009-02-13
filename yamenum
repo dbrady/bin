@@ -1,0 +1,8 @@
+#!/bin/sh
+# 
+# Scan yaml files for given key, showing population of values. Useful
+# for determining the population of values that act like enums.
+echo "Scanning yaml files for values of keys matching '$1:'...."
+
+ack --yaml "$1:" | awk '{ print $3 }' | sort | uniq -c
+
