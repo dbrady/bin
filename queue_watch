@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+
+mode = 'bar'
+if ARGV.include?('-r') || ARGV.include?('--roman')
+  mode = 'roman'
+end
+if ARGV.include?('-l') || ARGV.include?('--log')
+  mode = 'log'
+end
+
+while true
+  num = `mysql -D degreesearch_production -e "select count(*) from market_queue_items"`.split(/\n/).last.to_i
+  now = Time.now
+  org = num
+  
+  if mode == 'roman'
+    puts "\e[H\e[2J"
+    puts org
+    th = num - (num % 1000)
+    num -= th
+    th /= 1000
+
+    hu = num - (num % 100)
+    num -= hu
+    hu /= 100
+    
+    te = num - (num % 10)
+    num -= te
+    te /= 10
+  
+    puts 'M' * th
+    puts 'C' * hu
+    puts 'X' * te
+    puts 'I' * num
+    puts
+  elsif mode == 'log'
+    filename = Time.now.strftime("market-queue-%F.log")
+    File.open(filename, "a") do |file|
+      file.puts "#{now.to_i}: %6d | #{now.strftime('%F %H:%M:%S')}: #{'#' * org}" % org
+      puts "#{now.to_i}: %6d | #{now.strftime('%F %H:%M:%S')}: #{'#' * org}" % org
+    end
+  else
+    puts "\e[H\e[2J"
+    puts org
+    puts '#' * org
+  end
+  
+  sleep 1
+end
