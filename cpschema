@@ -1,0 +1,5 @@
+#!/bin/sh
+# cpschema src dst [mysql options]
+mysql -e "DROP DATABASE IF EXISTS $2"
+mysqladmin create $2
+mysqldump --no-data $1 | mysql -D $2
