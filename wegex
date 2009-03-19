@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# wegex - web regex. Read contents of a uri and display matches.
+
+require 'open-uri'
+
+args = ARGV.dup
+
+case_insensitive = args.include? "-i"
+args.delete "-i"
+
+r = Regexp.new args[1], case_insensitive
+
+count = 0
+open(args[0]) do |f|
+  f.each_line do |line|
+    if line =~ r
+      puts line
+      count += 1
+    end
+  end
+end
+
+exit_code = count.zero? ? 1 : 0
+
+exit exit_code
