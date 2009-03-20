@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# urlsha - web hash. Read contents of a uri and display SHA hash. For monitoring sites for changes.
+
+require 'open-uri'
+require 'digest/md5'
+
+args = ARGV.dup
+
+content = ''
+open(args[0]) do |f|
+  f.each_line do |line|
+    content += line
+  end
+end
+
+puts "#{Digest::SHA1.hexdigest(content)}"
