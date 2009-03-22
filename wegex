@@ -13,8 +13,9 @@ r = Regexp.new args[1], case_insensitive
 count = 0
 open(args[0]) do |f|
   f.each_line do |line|
-    if line =~ r
-      puts line
+    m = r.match(line)
+    if m
+      puts "#{m.pre_match}\033[30m\033[43m#{m}\033[0m#{m.post_match}"
       count += 1
     end
   end
