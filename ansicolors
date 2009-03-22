@@ -15,7 +15,7 @@
 
 T='gYw'   # The test text
 
-echo -e "\n                 40m     41m     42m     43m\
+echo -e "\nvFG \ BG >       40m     41m     42m     43m\
      44m     45m     46m     47m";
 
 for FGs in '    m' '   1m' '  30m' '1;30m' '  31m' '1;31m' '  32m' \
@@ -29,3 +29,9 @@ for FGs in '    m' '   1m' '  30m' '1;30m' '  31m' '1;31m' '  32m' \
   echo;
 done
 echo
+echo 'Example: print "(color)" in bold green on red background:'
+echo 'bold green FG is 1;32m, red background is 41m, so...'
+echo
+echo -n Example: echo -e "\\033[1;32m\\033[41m(color)\\033[0m" 
+echo -e " -> \033[1;32m\033[41m(color)\033[0m"
+
