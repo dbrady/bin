@@ -4,17 +4,14 @@
 # Usage:
 #   sha <file> [<file>]
 #   echo "foo" | sha
-# 
-# NOTE: Not terribly memory efficient. Holds all text in memory before
-# creating the digest.
 
 require 'digest/md5'
 
-content = ''
+digest = Digest::SHA1.new
 ARGF.each do |file_contents|
   file_contents.each_line do |line|
-    content += line
+    digest << line
   end
 end
 
-puts "#{Digest::SHA1.hexdigest(content)}"
+puts digest.hexdigest
