@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# sha - dump a SHA hash of given text/files.
+# 
+# Usage:
+#   sha <file> [<file>]
+#   echo "foo" | sha
+
+require 'digest/md5'
+
+digest = Digest::SHA2.new
+ARGF.each do |file_contents|
+  file_contents.each_line do |line|
+    digest << line
+  end
+end
+
+puts digest.hexdigest
