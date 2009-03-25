@@ -5,6 +5,12 @@
 # month as a 2-character space-padded field without a leading zero,
 # e.g. "Thu Dec 04 10:28:39 MST 2008". This format can't be
 # constructed out of existing ruby date codes.
+# 
+# Note that on linux, you can do this directly with:
+# 
+# date -d yesterday %c
+# 
+# ...but not on OSX. Meh.
 fmt = ARGV[0] || "%c"
 puts (Time.now - 86400).strftime(fmt)
 
