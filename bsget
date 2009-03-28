@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# bsget - get message from beanstalk queue
+# Usage:
+# bsput [-p port] [-h host] <message>
+
+require 'beanstalk-client'
+require 'trollop'
+
+opts = Trollop.options do
+  opt :port, "port", :type => :integer, :default => 11300
+  opt :host, "host", :default => "localhost"
+  opt :tube, "tube to get message from", :default => "default"
+  opt :wait, "seconds to wait", :type => :integer, :default => nil
+  opt :peek, "do not delete message", :default => false
+end
+
+bs = Beanstalk::Pool.new ["#{opts[:host]}:#{opts[:port]}"]
+jobs = bs.stats_tube(opts[:tube])["current-jobs-ready"]
+if jobs == 0
+  puts "No messages ready in tube '#{opts[:tube]}'"
+  exit 1
+end 
+
+bs.watch(opts[:tube])
+msg = bs.reserve(opts[:wait])
+puts msg.body
+msg.delete unless opts[:peek]
+
+

@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# bsput - put message on beanstalk queue
+# Usage:
+# bsput [-p port] [-h host] <message>
+
+require 'beanstalk-client'
+require 'trollop'
+
+opts = Trollop.options do
+  opt :port, "port", :type => :integer, :default => 11300
+  opt :host, "host", :default => "localhost"
+  opt :tube, "tube to send message in", :default => "default"
+end
+bs = Beanstalk::Pool.new ["#{opts[:host]}:#{opts[:port]}"]
+bs.use(opts[:tube])
+msg = ARGV * ' '
+puts "msg: #{msg}"
+bs.put msg
+
