@@ -26,6 +26,12 @@ tubes.each do |tube|
   table << h
 end
 
+h = { "tube" => "TOTAL" }
+%w[delayed ready reserved buried].each do |col|
+  h[col] = table.sum(col)
+end
+table << h
+
 puts table
 
 
