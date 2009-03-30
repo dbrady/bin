@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+require 'appscript'
+include Appscript
+iterm = app('iTerm')
+iterm.current_terminal.current_session.background_color.set ARGV.map{|arg| arg.to_i}
+
+
