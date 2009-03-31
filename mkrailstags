@@ -9,4 +9,8 @@
 # - Give it rtag.opts or somesuch
 # - Make it a plugin, woo
 
-rtags `find . -name '*.rb' -type f | grep -vE '\.git' | grep -vE '^\./vendor' | grep -vE '^\./tmp' | grep -vE '^\./doc'` 
+# Skip plugins
+# rtags `find . -name '*.rb' -type f | grep -vE '\.git' | grep -vE '^\./vendor' | grep -vE '^\./tmp' | grep -vE '^\./doc'` 
+
+# Include plugins
+rtags `find . -name '*.rb' -type f | grep -vE '\.git' | grep -vE '^\./tmp' | grep -vE '^\./doc'` 
