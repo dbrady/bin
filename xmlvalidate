@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# xmlvalidate - validate an xml file with an xsd file (local files only)
+# 
+# xmlvalidate <xmldoc> <schemadoc>
+# 
+# TODO: Validate against a public (http)
+
+require 'libxml'
+
+errors = []
+document = LibXML::XML::Document.file(ARGV[0])
+schema = LibXML::XML::Schema.new(ARGV[1])
+result = document.validate_schema(schema) do |message,flag|
+  errors << message
+end
+
+if errors.length > 0
+  puts "#{ARGV[0]} contains errors:"
+  puts errors.map {|e| "ERROR: #{e}"}
+else
+  puts "#{ARGV[0]} validates ok according to its schema."
+end
+
+exit errors.length
+
