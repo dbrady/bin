@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Choose a pom- word at random from dictionary (for Pomodoro worksheet
+# titles)
+grep -Ei '^pom' /usr/share/dict/words | pickone
+

@@ -7,10 +7,12 @@
 require 'appscript'
 require 'libxml'
 require 'ruby-debug'
+require 'sparky'
 include Appscript
 
 class XmlValidateWatcher
   attr_reader :xml, :xsd, :errors, :xmlstat, :xsdstat
+  @@use_sparky = 0
   
   def initialize(xml, xsd)
     @xml, @xsd = xml, xsd
@@ -19,8 +21,21 @@ class XmlValidateWatcher
 
     iterm = Appscript::app('iTerm')
     @term = iterm.current_terminal.sessions.get.find {|sess| sess.get == iterm.current_terminal.current_session.get }
-  end
 
+    @sparky = Sparky.new if use_sparky?
+  end
+  
+  def self.use_sparky!
+    @@use_sparky = true
+  end
+  
+  def self.no_sparky!
+    @@use_sparky = false
+  end
+  
+  def use_sparky?
+    @@use_sparky
+  end
 
   def header
     puts "\033[2J\033[H"
@@ -31,13 +46,16 @@ class XmlValidateWatcher
 
   def red
     @term.background_color.set [32768, 0, 0]
+    @sparky.reset && @sparky.failed if use_sparky?
   end
 
   def green
     @term.background_color.set [0, 32768, 0]
+    @sparky.reset && @sparky.pass if use_sparky?
   end
 
   def validate
+    @sparky.reset && @sparky.run if use_sparky?
     header
     result = false
     begin
@@ -66,7 +84,15 @@ class XmlValidateWatcher
 end
 
 if $0 == __FILE__
-  watcher = XmlValidateWatcher.new(ARGV[0], ARGV[1])
+  args = ARGV.dup
+  if args.include?("--sparky")
+    XmlValidateWatcher.use_sparky!
+    args.delete("--sparky")
+  else
+    XmlValidateWatcher.no_sparky!
+  end
+
+  watcher = XmlValidateWatcher.new(args[0], args[1])
   watcher.run
 end
 
