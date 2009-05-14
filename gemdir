@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# 
+# gemdir - find a folder or file in a gem
+# 
+# usage:
+#    gemdir <gem> [<sub_path>] [-v<version>]
+#
+# # find gem base path
+# gemdir api
+# => /usr/lib/ruby/gems/1.8/gems/api-0.1.1
+# 
+# # find subfolder
+# gemdir api lib
+# => /usr/lib/ruby/gems/1.8/gems/api-0.1.1/lib
+# 
+# # it even searches
+# gemdir api pants.rb
+# => /usr/lib/ruby/gems/1.8/gems/api-0.1.1/lib/modules/pants.rb
+# 
+# # subfile/folder must exist
+# gemdir api argle.bz2
+# => NOT FOUND: path or file argle.bz2 anywhere in /usr/lib/ruby/gems/1.8/gems/api-0.1.1
+
+# TODO: Implement version
+
+require 'rubygems'
+
+the_gem = ARGV[0]
+path = ARGV[1]
+
+gps = Gem::GemPathSearcher.new
+
+spec = gps.find(the_gem)
+
+if path.nil?
+  puts spec.full_gem_path
+else
+  puts Dir.glob( File.join(spec.full_gem_path, '**', path) )
+end
