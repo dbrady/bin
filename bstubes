@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # bstubes - examine Beanstalk Queue Tube status
 
+require 'rubygems'
 require 'ruport'
 require 'trollop'
 require 'beanstalk-client'
