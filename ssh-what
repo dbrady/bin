@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# ssh-what - Show the ssh config for a given host alias
+# there's a clever way to do this with range operators, but I can't remember it.
+
+found = false
+
+IO.readlines(File.expand_path("~/.ssh/config")).map do |line|
+  if !found
+    if line =~ /^\s*host\s+.*#{ARGV[0]}/i
+      found = true
+    end
+  else
+    if line =~ /^\s*host\s+/i
+      found = false
+    end
+  end
+  print line if found
+end
+
+

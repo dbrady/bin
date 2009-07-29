@@ -7,4 +7,4 @@
 # completeness--if you've got encrypt, you gotta have decrypt.
 # 
 # See also encrypt, decrypt_cat.
-gpg -d $1 > $(basename $1 .gpg) && rm $1
+gpg -d $1 > $(basename $1 .gpg)
