@@ -5,15 +5,7 @@
 found = false
 
 IO.readlines(File.expand_path("~/.ssh/config")).map do |line|
-  if !found
-    if line =~ /^\s*host\s+.*#{ARGV[0]}/i
-      found = true
-    end
-  else
-    if line =~ /^\s*host\s+/i
-      found = false
-    end
-  end
+  found = found ? !(line =~ /^\s*host\s+/i) : line =~ /^\s*host\s+.*#{ARGV[0]}/i
   print line if found
 end
 
