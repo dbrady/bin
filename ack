@@ -2263,3 +2263,5 @@ sub set_up_pager {
 
 
 1; # End of App::Ack
+
+
