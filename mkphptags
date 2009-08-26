@@ -1,0 +1,7 @@
+#!/bin/sh
+# 
+# Cheesy script to generate a TAGS file for a PHP project. Currently
+# just a bash one-liner. Must be run from the root of the project.
+
+etags `find . -name '*.php' -type f | grep -vE '\.svn' | grep -vE '\.git' | grep -vE '^\./tmp' | grep -vE '^\./doc'` 
+
