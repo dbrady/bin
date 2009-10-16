@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# recursive ri--searches up the ri tree until it finds the first class
+# that has documentation for the method.
+
+# rri <class>#<method>
+# rri <class>.<method>
+
+klass, method_type, method = Regexp.new("^(.+?)([#\.])(.*)$").match(ARGV[0])[1..3]
+
+klass = Kernel.const_get(klass)
+puts "Class is #{klass}"
+ancestors = klass.ancestors
+
+puts "Class #{klass} has these ancestors: #{ancestors * ', '}"
+
+ancestors.each do |a|
+  cmd = "ri #{a}#{method_type}#{method}"
+  exit if system(cmd)
+end
+
+
+
+
+
+
