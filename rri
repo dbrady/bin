@@ -18,8 +18,19 @@ ancestors.each do |a|
   exit if system(cmd)
 end
 
+# still here? You're probably search for a method in Module, or
+# possibly Kernel/Object/Class that isn't explicitly in your
+# inheritance chain.
 
+extra_klasses = [Kernel, Class, Object, Module] - ancestors
+puts "Can't find #{method} in the hierarchy. It might be in one of the
+implicit classes. Checking: #{extra_klasses * ', '}"
+(extra_klasses).each do |a|
+  cmd = "ri #{a}#{method_type}#{method}"
+  exit if system(cmd)
+end
 
+puts "Sorry, I can't find that method anywhere in the inheritance hierarchy. Are you sure you didn't just imagine that it was there in the first place?"
 
 
 
