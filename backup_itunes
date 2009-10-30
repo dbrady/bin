@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "rsync -av --delete --ignore-existing /Users/dbrady/Music/iTunes/ /Volumes/THINGONE/iTunes"
+rsync -av --delete --ignore-existing /Users/dbrady/Music/iTunes/ /Volumes/THINGONE/iTunes

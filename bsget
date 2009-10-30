@@ -3,6 +3,7 @@
 # Usage:
 # bsput [-p port] [-h host] <message>
 
+require 'rubygems'
 require 'beanstalk-client'
 require 'trollop'
 

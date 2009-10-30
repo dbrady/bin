@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+srand(Time.now.to_i)
+
+choice = nil
+num = 0
+$stdin.each_line do |line|
+  num += 1
+  choice = line if rand(num) == 0
+end
+puts choice

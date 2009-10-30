@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+
+# sshforget - forget a known ssh host (by removing it from your known_hosts file)
+#
+# Here's a sample ssh error message:
+# 
+# ----------
+# Add correct host key in /Users/dbrady/.ssh/known_hosts to get rid of this message.
+# Offending key in /Users/dbrady/.ssh/known_hosts:29
+# RSA host key for fe1.lmpcloud.com has changed and you have requested strict checking.
+# Host key verification failed.
+# ----------
+# 
+# sshforget can fix this one of two ways:
+# 
+# sshforget 29
+# sshforget fe1.lmpcloud.com
+# 
+# And the offending line will be removed.
+# 
+# Note: the second example actually takes a regex, and removes all ssh
+# hosts that match that regex starting at the beginning of the line.
+
+# Just a convenience class to turn:
+# 
+#   if (@match_by_line && i+1==@line) || (!@match_by_line && line =~ @pattern)
+# 
+# into:
+# 
+#   if @target.match?(line, i)
+# 
+class Target
+  attr_reader :value
+  def initialize(value)
+    if value.to_i.zero?
+      @match_by_line = false
+      @value = /^#{value}/
+    else
+      @match_by_line = true
+      @value = value.to_i
+    end
+  end
+  
+  def match?(line, index)
+    if @match_by_line
+      index + 1 == @value
+    else
+      line =~ @value
+    end
+  end
+end
+
+@target = Target.new(ARGV[0])
+
+puts "Removing #{@match_by_line ? 'line' : 'hosts matching'} from known_hosts..."
+
+new_file = []
+lines = 0
+IO.readlines(File.expand_path("~/.ssh/known_hosts")).each_with_index do |line, i|
+  lines += 1
+  if @target.match?(line, i)
+    puts "Removing line #{i+1} (#{line.split(/,/)[0]})..."
+  else
+    new_file << line unless @target.match?(line, i)
+  end
+end
+
+# write out known_hosts
+File.open(File.expand_path("~/.ssh/known_hosts"), "w") {|out| out.puts new_file }
+
+puts "All done. #{lines - new_file.size} matches were found and removed."

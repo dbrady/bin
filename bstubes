@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # bstubes - examine Beanstalk Queue Tube status
 
+require 'rubygems'
 require 'ruport'
 require 'trollop'
 require 'beanstalk-client'
@@ -16,9 +17,7 @@ hostport = "#{opts[:host]}:#{opts[:port]}"
 
 bs = Beanstalk::Pool.new([hostport])
 
-tubes = bs.list_tubes[hostport]
-
-tubes.each do |tube|
+bs.list_tubes[hostport].each do |tube|
   h = {"tube" => tube}
   %w[delayed ready reserved buried].each do |state|
     h[state] = bs.stats_tube(tube)["current-jobs-#{state}"]

@@ -5,6 +5,7 @@
 # new database.
 require 'rubygems'
 require 'mysql'
+require 'ruport'
 
 database=ARGV[0] || 'leadgen_development'
 
@@ -15,6 +16,7 @@ end
 begin
   # connect to the MySQL server
   dbh = Mysql.real_connect("localhost", "root", "", database)
+  report = Ruport::Data::Table(%w[table rows])
   
   # get tables
   tables = []
@@ -32,8 +34,7 @@ begin
   tables.each do |table|
     res2 = dbh.query("SELECT COUNT(*)  FROM #{table}")
     while row2 = res2.fetch_row do
-      rows << [table, row2[0]]
-      columns = max(columns, (1+Math.log(row2[0].to_i+1)/Math.log(10)).to_i)
+      report << { "table" => table, "rows" => row2[0] }
     end
     res2.free
     $stderr.print "^"
@@ -41,10 +42,7 @@ begin
   end
   $stderr.puts "]"
 
-  # foreach table, get count
-  rows.each do |table, count|
-    printf "%#{columns}d %s\n", count, table
-  end
+  puts report
 rescue Mysql::Error => e
   puts "Error code: #{e.errno}"
   puts "Error message: #{e.error}"

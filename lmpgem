@@ -1,0 +1,13 @@
+#!/bin/bash
+# Publishes a gem to the LMP repository
+# TODO: take multiple gems as an argument to batch publish
+
+if [[ -e $1 ]]; then
+  echo "Copying gem to LMP gem server: /var/www/gems.lmphq.com/gems..."
+  scp $1 lmp@mk-www1:/var/www/gems.lmphq.com/gems
+
+  echo 'Calling generate_index on lmp gem server...'
+  ssh lmp@mk-www1 "cd /var/www/gems.lmphq.com && gem generate_index"
+else
+  echo "ERROR: filename of gem was not given, or file does not exist"
+fi

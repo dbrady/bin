@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# llp - list directory contents with full path.
+# 
+# Example:
+# $ cd /var/log
+# $ ls m*
+# 
+# 
+# llp messages
+# =>
+#   /var/log/mail.out
+#   /var/log/mb.log
+#   /var/log/messages
+#   /var/log/monthly.out
+
+# Note: doesn't mix well with ls options that change the output
+# format. Works fine with sorting options, though, so while "llp -rs"
+# is a good idea, "llp -h" and "llp -l" are less so.
+
+dir=`pwd`
+ls $* | while read file; do echo $dir/$file; done

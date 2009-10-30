@@ -1,27 +1,40 @@
-#!/bin/sh
+#!/usr/bin/env ruby
 # 
 # Create a new git repository on monkey, turn the current folder into
 # a git repo, and push it to monkey.
 # 
 # Usage:
+# 
+# # creates repo in ./, commits it, creates copy on monkey, pushes it
 # ~/foobar $ mknewrepo foobar.git
+# 
+# 
+# # creates copy on monkey, pushes it
+# ~/foobar $ mknewrepo --remote-only
 
-echo ssh git@monkey mkdir $1
-ssh git@monkey mkdir $1
+require 'trollop'
 
-echo ssh git@monkey "cd $1 && git --bare init"
-ssh git@monkey "cd $1 && git --bare init"
+# opts = Trollop.options do
+#   # TODO: This should autodetect!
+#   opt :remote-only, "remote only; local repository is already created", :type => :boolean, :default => false
+# end
 
-echo git add remote monkey git@monkey:$1
-git remote add monkey git@monkey:$1
+repo = dir = ARGV[0] || File.basename(File.expand_path("."))
 
-echo git add .
-git add .
+repo += ".git" unless repo =~ /\.git$/i
 
-echo git commit -m "Initial commit"
-git commit -m "Initial commit"
+unless File.directory?(File.expand_path("./.git"))
+  puts "Local repository does not exist; Creating local..."
+  system "git init"
+  system "git add ."
+  system "git commit -m 'Initial commit'"
+end
 
-echo git push monkey master
-git push monkey master
+puts "Adding git@monkey.githero.com as remote..."
+system "git remote add monkey git@monkey.githero.com:#{repo}"
 
+puts "Creating remote repository..."
+system "ssh git@monkey.githero.com 'mkdir #{repo} && cd #{repo} && git --bare init'"
 
+puts "Pushing local to monkey..."
+system "git push monkey master"

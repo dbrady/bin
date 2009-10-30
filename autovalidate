@@ -1,0 +1,98 @@
+#!/usr/bin/env ruby
+# 
+# xmlvwatch - stoopid program to "watch" an xml document and its xsd,
+# changing screen color as the document is validated/invalidated.
+# Basically, this is a poor man's autospec.
+
+require 'appscript'
+require 'libxml'
+require 'ruby-debug'
+require 'sparky'
+include Appscript
+
+class XmlValidateWatcher
+  attr_reader :xml, :xsd, :errors, :xmlstat, :xsdstat
+  @@use_sparky = 0
+  
+  def initialize(xml, xsd)
+    @xml, @xsd = xml, xsd
+    raise "Could not open XML file" unless File.exist?(xml)
+    raise "Could not open XSD file" unless File.exist?(xsd)
+
+    iterm = Appscript::app('iTerm')
+    @term = iterm.current_terminal.sessions.get.find {|sess| sess.get == iterm.current_terminal.current_session.get }
+
+    @sparky = Sparky.new if use_sparky?
+  end
+  
+  def self.use_sparky!
+    @@use_sparky = true
+  end
+  
+  def self.no_sparky!
+    @@use_sparky = false
+  end
+  
+  def use_sparky?
+    @@use_sparky
+  end
+
+  def header
+    puts "\033[2J\033[H"
+    puts "autovalidate #{@xml} #{@xsd}"
+    puts "Last validated: #{Time.now.strftime('%Y-%m-%d %H:%M:%S')}"
+    puts
+  end
+
+  def red
+    @term.background_color.set [32768, 0, 0]
+    @sparky.reset && @sparky.failed if use_sparky?
+  end
+
+  def green
+    @term.background_color.set [0, 32768, 0]
+    @sparky.reset && @sparky.pass if use_sparky?
+  end
+
+  def validate
+    @sparky.reset && @sparky.run if use_sparky?
+    header
+    result = false
+    begin
+      document = LibXML::XML::Document.file(@xml)
+      schema = LibXML::XML::Schema.new(@xsd)
+      result = document.validate_schema(schema)
+    rescue 
+      nil
+    end 
+    result ? green : red
+  end
+  
+  def changed?
+    @newxmlstat, @newxsdstat = File.mtime(@xml), File.mtime(@xsd)
+    c = @xmlstat != @newxmlstat || @xsdstat != @newxsdstat
+    @xmlstat, @xsdstat = @newxmlstat, @newxsdstat
+    c
+  end
+  
+  def run
+    while true
+      validate if changed?
+      sleep 0.1
+    end
+  end
+end
+
+if $0 == __FILE__
+  args = ARGV.dup
+  if args.include?("--sparky")
+    XmlValidateWatcher.use_sparky!
+    args.delete("--sparky")
+  else
+    XmlValidateWatcher.no_sparky!
+  end
+
+  watcher = XmlValidateWatcher.new(args[0], args[1])
+  watcher.run
+end
+
