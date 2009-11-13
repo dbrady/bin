@@ -33,7 +33,6 @@
 # 
 # TODO: Validate against a public (http) schema?
 # TODO: If the xml doc has public schema info in it, validate against that?
-require 'rubygems'
 require 'xml'
 
 errors = []
