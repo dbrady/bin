@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+files = Dir.glob('*.html') + Dir.glob('*.swf')
+
+list = Hash.new {|h,k| h[k] = {}}
+
+files.each do |file|
+  next if File.basename(file) == "index.html"
+  list[File.basename(file, File.extname(file))][File.extname(file)] = file
+end
+
+File.open("index.html", "w") do |file|
+
+  file.puts "list has #{list.size} items"
+
+  file.puts "<HTML><HEAD><TITLE>Index for folder</TITLE></HEAD><BODY>"
+  file.puts '<table border="0">'
+  list.keys.sort.each do |key|
+    item = "  <tr><td><b>#{key}:</b></td>"
+
+    item += "<td>";
+    item += if list[key].has_key?(".html")
+              "<a href=\"#{list[key]['.html']}\">html</a>"
+            else
+              "html"
+            end
+    item += "</td>";
+
+    item += "<td>";
+    item += if list[key].has_key?(".swf")
+              "<a href=\"#{list[key]['.swf']}\">swf</a>"
+            else
+              "swf"
+            end
+    item += "</td>";
+
+    item += "</tr>"
+
+    file.puts item
+  end
+
+  file.puts "</table></BODY></HTML>"
+
+end
+
+
+
+
