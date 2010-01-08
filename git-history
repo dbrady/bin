@@ -1,0 +1,2 @@
+#!/bin/sh
+git rev-list HEAD -- $1 | while read commit; do clear; git diff $commit^..$commit $1; done
