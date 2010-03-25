@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Script to run cd, but given a custom name. Bind this
 # particular command to search the folders in the rubygems folder in
 # .bash_completions.

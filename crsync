@@ -1,2 +1,3 @@
 #!/bin/sh
-rsync -av --exclude tests/Crimereports/AllTests.php --exclude tests/TestConfiguration.php /Users/davidbrady/pe/workspace/crimereports/ /Volumes/projects/dave/trunk
+#rsync -av --exclude tests/Crimereports/AllTests.php --exclude tests/TestConfiguration.php /Users/dbrady/pe/crimereports/trunk/ /Volumes/projects/dave/trunk
+rsync -av --exclude=tests/TestConfiguration.php /Users/dbrady/pe/crimereports/ /Volumes/projects/dave/trunk

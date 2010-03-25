@@ -1,0 +1,4 @@
+#!/bin/sh
+ARGS=$*
+GLOB="db/migrate/*$ARGS*"
+aquamacs $GLOB

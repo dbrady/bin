@@ -31,10 +31,13 @@ unless File.directory?(File.expand_path("./.git"))
 end
 
 puts "Adding git@monkey.githero.com as remote..."
-system "git remote add monkey git@monkey.githero.com:#{repo}"
+system "git remote add origin git@monkey.githero.com:#{repo}"
 
 puts "Creating remote repository..."
 system "ssh git@monkey.githero.com 'mkdir #{repo} && cd #{repo} && git --bare init'"
 
-puts "Pushing local to monkey..."
-system "git push monkey master"
+puts "Pushing local to origin..."
+system "git push origin master"
+
+puts "Tracking master..."
+system "git track"
