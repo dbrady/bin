@@ -1,0 +1,16 @@
+#!/bin/sh
+# Where Are They Now? 
+
+# get $FILE and $HOST params from rc file
+source .wattrc
+date +'%F %T' > $FILE
+
+# me
+ifconfig | grep -E '(^\w+:|inet)' >> $FILE
+
+# team
+# TODO: Team machines go into sleep mode; don't bother.
+
+# upload
+scp $FILE $HOST:
+
