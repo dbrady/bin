@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# coderay - run text through coderay parser.
+require 'rubygems'
+require 'coderay'
+
+code = $stdin.readlines * ''
+puts CodeRay.scan(code, :ruby).div(:class => :css)
+
+
+
