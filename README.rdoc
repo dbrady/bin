@@ -1,0 +1,12 @@
+= bin
+
+This is a collection of scripts I keep around. Be forewarned: Some of
+them are cryptic. Many of them are undocumented. Several of them are
+very nearly pointless.
+
+But some of them are insanely useful. I will try to make sure these
+are documented, so that sharing them on github isn't as dumb as some
+of these files would lead you to believe....
+
+
+

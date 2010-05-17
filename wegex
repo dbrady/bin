@@ -1,12 +1,23 @@
 #!/usr/bin/env ruby
 # wegex - web regex. Read contents of a uri and display matches.
-
+# 
+# Interactive mode:
+#   wegex http://google.com '<script>'
+#
+# Case-insensitive:
+#   wegex -i http://google.com '<SCRIPT>'
+# 
+# Quiet mode:
+#   wegex -q http://google.com '<script>' && echo 'String was found!' || echo 'String was NOT found.'
 require 'open-uri'
 
 args = ARGV.dup
 
 case_insensitive = args.include? "-i"
 args.delete "-i"
+
+quiet_mode = args.include? "-q"
+args.delete "-q"
 
 r = Regexp.new args[1], case_insensitive
 
@@ -15,7 +26,7 @@ open(args[0]) do |f|
   f.each_line do |line|
     m = r.match(line)
     if m
-      puts "#{m.pre_match}\033[30m\033[43m#{m}\033[0m#{m.post_match}"
+      puts "#{m.pre_match}\033[30m\033[43m#{m}\033[0m#{m.post_match}" unless quiet_mode
       count += 1
     end
   end

@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# whichall - Locate file everywhere in user's path.
+# 
+# whichall <filename>
+# 
+# Like which, except that it shows every path the file is found in,
+# not just the first one. Useful for discovering where else in the
+# path a file is, especially when resolving path conflicts.
+# 
+# NOTE: Depending on your bash flavor, it appears that type -ap <name>
+# does the same thing. Hooray for builtins!
+# 
+# NOTE: Ah, looks like which -a ALSO does the same thing. Hooray for
+# /usr/bin!
+
+ENV["PATH"].split(/:/).each do |path|
+  path2 = File.join(path, ARGV[0])
+  puts path2 if File.executable?(path2)
+end
+

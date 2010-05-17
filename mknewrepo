@@ -11,6 +11,8 @@
 # 
 # # creates copy on monkey, pushes it
 # ~/foobar $ mknewrepo --remote-only
+# 
+# TODO: Make interactive with -i. Detect each stage and prompt.
 
 require 'trollop'
 
