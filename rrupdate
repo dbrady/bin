@@ -1,0 +1,10 @@
+#!/bin/sh
+echo Bringing your project up to date...
+echo bundle install --relock &&
+bundle install --relock &&
+echo rake db:migrate &&
+rake db:migrate &&
+echo rake db:test:prepare &&
+rake db:test:prepare &&
+echo rake spec &&
+rake spec
