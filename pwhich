@@ -1,0 +1,125 @@
+#!/usr/bin/env ruby
+# 
+# pwhich - Do a which using POSIX. E.g. lets you say "which git-*"
+# and it will show you all of the files matching git-* in the path,
+# and in which folders. If you pass -a, it will show you all paths for
+# each glob matched, not just the first path for each glob matched.
+# 
+# 
+# Examples:
+# 
+# 
+# Which lisp or scheme intepreters do I have in my path?
+# $ pwhich *lisp* *scheme guile
+# /opt/local/bin/clisp
+# /opt/local/bin/clisp-link
+# /opt/local/bin/bchscheme
+# /opt/local/bin/mit-scheme
+# /opt/local/bin/scheme
+# 
+# 
+# Do I have any mysql executables?
+# $ pwhich -s mysql && echo "Yes, you have a toy database available."
+# 
+# 
+# What all git scripts do I have and where are they?
+# $ pwhich -a git-*
+# /Users/dbrady/bin/git-co
+# /Users/dbrady/bin/git-currentbranch
+# /Users/dbrady/bin/git-ff
+# /Users/dbrady/bin/git-history
+# /Users/dbrady/bin/git-pooll
+# /Users/dbrady/bin/git-poosh
+# /Users/dbrady/bin/git-pull-all
+# /Users/dbrady/bin/git-rmbranch
+# /Users/dbrady/bin/git-track
+# /Users/dbrady/bin/git-wtf
+# /Users/dbrady/bin/git-zapdel
+# /usr/bin/git-cvsserver
+# /usr/bin/git-receive-pack
+# /usr/bin/git-shell
+# /usr/bin/git-track
+# /usr/bin/git-upload-archive
+# /usr/bin/git-upload-pack
+
+require 'getoptlong'
+
+def usage
+  <<USAGE
+NAME
+    pwhich -- locate a program file in the user\'s path using POSIX globbing
+
+SYNOPSIS
+    pwhich [-as] spec ...
+
+DESCRIPTION
+    The pwhich utility takes a list of file globs and searches the path for each executable file that matches those globs.
+
+    The following options are available:
+
+    -h, --help    Show this message.
+
+    -a, --all     List all instances of executables found (not just the first one of each).
+
+    -s, --silent  No output, just return 0 if any of the executables are found, 1 if none are found.
+
+AUTHORS
+    The pwhich utility was written in Ruby by David Brady
+    <github@shinybit.com>.
+
+LICENSE
+    This file is released under the MIT License.
+USAGE
+end
+
+opts = GetoptLong.new(
+                      [ '--help', '-h', GetoptLong::NO_ARGUMENT ],
+                      [ '--all', '-a', GetoptLong::NO_ARGUMENT ],
+                      [ '--silent', '-s', GetoptLong::NO_ARGUMENT ]
+                      )
+show_help = nil
+show_all = nil
+silent_mode = nil
+opts.each do |opt, arg|
+  case opt
+    when '--help'
+      show_help = true
+    when '--all'
+      show_all = true
+    when '--silent'
+      silent_mode = true
+  end
+end
+
+if show_help
+  puts usage
+  exit 0
+end
+
+# seen records whether or not this file has been seen before in any
+# path.
+seen = { }
+
+paths = ENV['PATH'].split(/:/)
+globs = ARGV
+
+paths.each do |path|
+  files_in_this_path = []
+  globs.each do |glob|
+    pathspec = File.join(path,glob)
+    files = Dir.glob(pathspec).select {|file| File.executable?(file)}
+    if files.size > 0
+      exit 0 if silent_mode
+      unless show_all
+        files.reject! { |file| seen[File.basename(file)] }
+        files.each do |file|
+          seen[File.basename(file)] = 1
+        end
+      end
+      files_in_this_path += files
+    end
+  end
+  puts files_in_this_path
+end
+
+exit 1 if silent_mode
