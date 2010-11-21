@@ -1,10 +1,11 @@
-!#!/bin/sh
-# mksparseimage - Because I can never remember the syntax to do it. This creates a 100m sparseimage.
+#!/usr/bin/env ruby
+require 'trollop'
 
-# IMGNAME will have .sparseimage appended to it and will be the filename containing the volume.
-IMGNAME=$1
+opts = Trollop.options do
+  opt :size, "Maximum size", :type => :string, :default => '100m'
+  opt :name, "Sparseimage name", :type => :string
+  opt :volname, "Volume name", :type => :string
+end
 
-# VOLNAME will be the name of the mounted volume.
-VOLNAME=$2
+puts `hdiutil create -size #{opts[:size]} -volname #{opts[:volname]} -encryption -type SPARSE -fs HFS+ #{opts[:name]}`
 
-hdiutil create -size 100m -volname $VOLUME -encryption -type SPARSE -fs HFS+ $IMGNAME
