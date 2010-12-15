@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+
+# Temp convenience hack for SW/CM
+def sectime(time)
+  m = time / 60.0
+  s = time - (m.floor*60)
+  "%f (%d:%09.6f)" % [time, m, s]
+end
+
+def bars2time(bpm, bars)
+  (60.0 / bpm) * bars * 4
+end
+
+def time2bars(bpm, time)
+  bpm * time / 240.0
+end
+
+def usage
+  return <<-EOS
+bars2time - calculate mixpoint time from bpm and bars
+  
+Outputs seconds_per_bar * bars, plus a static offset if given.
+
+Complete formula: offset + 4 * 60.0 / bpm    
+    
+Usage:
+    bars2time <bpm> <bars> [<offset>]
+  EOS
+end
+
+if __FILE__ == $0
+  offset = ARGV[2].to_f || 0.0
+  bpm = ARGV[0].to_f
+  bars = ARGV[1].to_i
+  
+  unless ARGV[1] && bpm > 0 && bars > 0
+    puts usage
+    exit 1
+  end
+  
+  puts sectime(offset + bars2time(bpm, bars))
+end
+
