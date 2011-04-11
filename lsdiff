@@ -1,0 +1,13 @@
+#!/bin/bash
+# 
+# lsdiff - diff other directory with this one
+# 
+# Usage:
+#     lsdiff <command> <thatdir> [<thisdir=.>]
+# 
+# Commands:
+#     theirs - Show files in that dir not in this dir
+#     ours - Show files in this dir not in that dir
+#     shared - Show files in both this dir and that dir
+#     diff - Show files in either dir but not in both
+
