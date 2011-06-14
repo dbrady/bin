@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+lines = `gem list`.split("\n").map {|line| line.strip }.reject {|line| line =~ /\*\*\*/ || line.size.zero? }
+
+lines.each do |line|
+  name, version = line.split(" (")
+  version = version.gsub(/\)/, '')
+
+  puts "gem '%s', '%s'" % [name, version]
+
+end
+
+
