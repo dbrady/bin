@@ -1,0 +1,2 @@
+#!/bin/bash
+whichall ruby | while read f; do ls -l $f; done

@@ -1035,6 +1035,8 @@ BEGIN {
         'cover_db'          => 'Devel::Cover',
         _build              => 'Module::Build',
         'coverage'          => 'RCov',
+        'vendor'            => 'Rails',
+        'log'               => 'Rails',
     );
 
     %mappings = (
@@ -1068,6 +1070,7 @@ BEGIN {
         php         => [qw( php phpt php3 php4 php5 )],
         plone       => [qw( pt cpt metadata cpy py )],
         python      => [qw( py )],
+        rails       => [qw( rb rhtml rjs rxml erb yml html js txt sh md rdoc)],
         ruby        => [qw( rb rhtml rjs rxml erb )],
         scheme      => [qw( scm )],
         shell       => [qw( sh bash csh tcsh ksh zsh )],

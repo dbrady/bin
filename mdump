@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "mysqldump $* > $1.$(date +"%F.%H%M%S").sql"
+mysqldump $* > ~/sqldumps/$1.$(date +"%F.%H%M%S").sql
