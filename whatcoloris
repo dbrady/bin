@@ -1,0 +1,2 @@
+#!/bin/sh
+open "http://www.shinybit.com/whatcoloristhis.html?color=$1"

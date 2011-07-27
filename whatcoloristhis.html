@@ -1,0 +1,21 @@
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+<html> <head>
+<title></title>
+</head>
+
+<body id="body" bgcolor="#00ff00">
+<h1><font id="whitefont" color="#FFFFFF">#00ff00</fontr></h1>
+<h1><font id="blackfont" color="#000000">#00ff00</fontr></h1>
+
+
+
+<hr>
+<address></address>
+<!-- hhmts start --> Last modified: Wed May 11 16:02:08 MDT 2011 <!-- hhmts end -->
+<script type="text/javascript">
+var desiredColor = document.location.search.match(/color=(.{6,7})/)[1].replace(/^#/, '');
+document.getElementById("body").setAttribute("bgcolor", desiredColor);
+document.getElementById("whitefont").childNodes[0].nodeValue = desiredColor;
+document.getElementById("blackfont").childNodes[0].nodeValue = desiredColor;
+</script>
+</body> </html>
