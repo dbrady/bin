@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # bsget - get message from beanstalk queue
 # Usage:
-# bsput [-p port] [-h host] <message>
+# bsput [-p port] [-h host] [-t tube] [-w wait_timeout] [-e] <message>
 
 require 'rubygems'
 require 'beanstalk-client'
@@ -20,7 +20,7 @@ jobs = bs.stats_tube(opts[:tube])["current-jobs-ready"]
 if jobs == 0
   puts "No messages ready in tube '#{opts[:tube]}'"
   exit 1
-end 
+end
 
 bs.watch(opts[:tube])
 msg = bs.reserve(opts[:wait])
