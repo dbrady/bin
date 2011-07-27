@@ -16,11 +16,16 @@ opts = Trollop.options do
 end
 
 bs = Beanstalk::Pool.new ["#{opts[:host]}:#{opts[:port]}"]
-jobs = bs.stats_tube(opts[:tube])["current-jobs-ready"]
-if jobs == 0
-  puts "No messages ready in tube '#{opts[:tube]}'"
-  exit 1
-end
+# Beanstalk weirdage:
+#   Given that you try to reserve on a tube that doesn't exist
+#   And a job arrives in tube "default"
+#   That job will be returned instead
+
+# jobs = bs.stats_tube(opts[:tube])["current-jobs-ready"]
+# if jobs == 0
+#   puts "No messages ready in tube '#{opts[:tube]}'"
+#   exit 1
+# end
 
 bs.watch(opts[:tube])
 msg = bs.reserve(opts[:wait])
