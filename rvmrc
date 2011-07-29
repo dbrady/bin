@@ -1,15 +1,28 @@
 #!/usr/bin/env bash
+#
+# rvmrc - create .rvmrc file
+#
+# Usage: rvmrc ruby@gemset
+
+echo Number of arguments: $#
+if [ $# -lt 1 ]; then
+  echo "rvmrc - create .rvmrc file"
+  echo "Usage: rvmrc <environment>"
+  echo "Examples:"
+  echo "  rvmrc ruby-1.9.2"
+  echo "  rvmrc ruby-1.9.2@some_gemset"
+fi
 
 if [ -e .rvmrc ]; then
     echo .rvmrc file exists -- cowardly refusing to overwrite.
     exit -1
 fi
 
-[ x$1 != x ] && GEMSET=@$1 || GEMSET=
-[ x$2 != x ] && RUBY_VERSION=$2 || RUBY_VERSION=ruby-1.9
+# [ x$1 != x ] && RUBY_VERSION=$1 || RUBY_VERSION=ruby-1.9.2
 
-echo GEMSET: $GEMSET
-echo RUBY_VERSION: $RUBY_VERSION
+RUBY_VERSION=$1
+
+echo Creating .rvmrc for evironment $RUBY_VERSION
 
 cat > .rvmrc <<EOF
 #!/usr/bin/env bash
@@ -18,7 +31,7 @@ cat > .rvmrc <<EOF
 # development environment upon cd'ing into the directory
 
 # First we specify our desired <ruby>[@<gemset>], the @gemset name is optional.
-environment_id="$RUBY_VERSION$GEMSET"
+environment_id="$RUBY_VERSION"
 
 #
 # First we attempt to load the desired environment directly from the environment
