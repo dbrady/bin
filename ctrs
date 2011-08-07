@@ -1,0 +1,10 @@
+#!/bin/sh
+if [ $# -lt 1 ]; then
+  TARGET=spec
+else
+  TARGET=$1
+fi
+
+echo "COVERAGE=true time rspec $TARGET"
+COVERAGE=true time rspec $TARGET
+
