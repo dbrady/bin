@@ -1,0 +1,20 @@
+#!/bin/sh
+# say_over_itunes - works like say but mutes iTunes first
+#
+# Known Issues:
+# 
+# * If you already have iTunes muted, this will leave iTunes in an UN-muted
+#   state when it finishes.
+# * Does not do anything about the general system sound level. If you have
+#   your Mac muted, you won't hear anything.
+#   
+# Note: This would be SO much nicer as a proper script that read the system
+# and iTunes sound levels and adjusted them accordingly, and also checked
+# iTunes for weird states like recording, etc., before monkeying with the
+# sound. Then again, maybe you just shouldn't RUN this script when you're
+# recording something, eh?
+
+osascript -e 'tell application "iTunes" to set mute to true'
+say $*
+osascript -e 'tell application "iTunes" to set mute to false'
+
