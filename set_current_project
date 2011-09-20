@@ -1,12 +1,18 @@
 #!/bin/sh
-# Set the current project. 
+# Set the current project, so you can auto cd to that folder when you
+# open a new terminal.
+#
+# set_current_project [<path>]
+#
+# If path is omitted, uses current folder.
 # 
 # Idea originally taken from @gilesgoatboy on Twitter:
-# http://twitter.com/#!/gilesgoatboy/status/115842631468187648
-# 
-# "protip: during intense projects, auto cd in to project dir via .profile - just more relaxing, that way"
 #
-# So this will set a ./current_project file in your home folder and
+# "protip: during intense projects, auto cd in to project dir via
+# .profile - just more relaxing, that way"
+# (http://twitter.com/#!/gilesgoatboy/status/115842631468187648)
+#
+# This will set a ./current_project file in your home folder and
 # export CURRENT_PROJECT into your environment. With the appropriate
 # code in your profile, this will automatically cd you into the
 # project folder as soon as you login.
@@ -19,7 +25,7 @@
 # fi
 #
 # You can clear the current project by deleting the file, or running
-# unset_current_project (which also deletes the file)
+# unset_current_project (which just deletes the file)
 if [ $# -lt 1 ]; then
   TARGET=`pwd`
 else
@@ -28,4 +34,4 @@ fi
 
 echo export CURRENT_PROJECT=\"$TARGET\" > ~/.current_project
 echo cd \"$TARGET\" >> ~/.current_project
-echo Current project has been set to $TARGET
+echo Current project has been set to ${TARGET}. You will automatically cd to this folder on login.
