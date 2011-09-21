@@ -1,0 +1,10 @@
+#!/bin/sh
+if [ $# -lt 1 ]; then
+  TARGET=features
+else
+  TARGET=$1
+fi
+
+echo "time cucumber $TARGET"
+time cucumber $TARGET
+
