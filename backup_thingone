@@ -1,3 +1,0 @@
-#!/bin/sh
-echo "rsync -av --delete --ignore-existing /Volumes/THINGONE/ /Volumes/THINGTWO/THINGONE/"
-rsync -av --delete --ignore-existing /Volumes/THINGONE/ /Volumes/THINGTWO/THINGONE/
