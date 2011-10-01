@@ -2,7 +2,7 @@
 if [ $# -lt 1 ]; then
   TARGET=spec
 else
-  TARGET=$1
+  TARGET=$*
 fi
 
 echo "time rspec $TARGET"
