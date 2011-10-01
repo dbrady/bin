@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+# pegword <number>
+#
+# Searches /usr/share/dict/words for words that have the precise
+# consonants needed for a given word. NOTE this goes by spelling when
+# it should really go by SOUNDEX codes or other pronunciation guide.
+# For example, pegword 538 will return "lamb" even though "lamb"
+# reduces to "lm" which 53, not 538. Also beware that 6 and 7 will
+# find g-words but these only count if the g is a j-sound or a
+# guh-sound respectively; ditto for
+#
+# Uses the phonetic number system, which is the peg-word system that I
+# favor. It's harder to learn but it is infinitely extensible because
+# you can build phrase chains for any amount of numbers. Each number
+# has a primary sound, which may be vocalized or unvocalized (e.g. 1
+# is t or d). Vowels are free. Here is the phonetic map:
+#
+# 0 s,z
+# 1 t,d
+# 2 n
+# 3 m
+# 4 r
+# 5 l
+# 6 sh,j,ch
+# 7 k
+# 8 f,v
+# 9 b,p
+#
+# It's up to you to find the right peg word(s) for a given number.
+# This program only finds words that are exact matches (Todo: add
+# recursive breakdowns to return word chains). For example, I remember
+# 379 with the word 'amekebe', which is a disease of cattle in Uganda.
+# The word was so striking when I found it that I remembered it. I
+# don't have a good peg word for 378 (mkf) but 379 is so good that I
+# remember 378 as "one less than amekebe". Memory is a fickle thing.
+# The discovery of this word chain is why it works for me; having told
+# you of it probably robs you of much of the ease in remembering it.
+
+sounds = %w[
+s,z
+t,d
+n
+m
+r
+l
+sh,j,ch
+k
+f,v
+b,p
+]
+
+tokens = %w[
+    (s+|z+|c+|sc)
+    (t+|d+)
+    n+
+    m+
+    r+
+    l+
+    (j|sh|ch|g+|cc)
+    (k+|g+|ck|c+|ch)
+    [fv]+
+    [bp]+
+]
+
+vowels = '[aeiouy]*'
+digits = ARGV[0].split(//).map(&:to_i)
+puts "Search for possible pegwords matching #{digits * ''}..."
+sound_pattern = digits.map {|digit| sounds[digit] } * ' '
+  puts "Remember, matches don't count unless they match the sound pattern '#{sound_pattern}'."
+regex = "^#{vowels}" + (digits.map {|digit| tokens[digit]  } * "#{vowels}") + "#{vowels}$"
+cmd = "grep -E '#{regex}' /usr/share/dict/words"
+puts cmd
+puts `#{cmd}`
+
