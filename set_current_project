@@ -1,11 +1,16 @@
-#!/bin/sh
+#!/usr/bin/env ruby
+#
 # Set the current project, so you can auto cd to that folder when you
-# open a new terminal.
+# open a new terminal. Also sets up some handy aliases to jump into
+# the current project's databases: if the project folder has a
+# config/database.yml file in it, then for each environment defined
+# inside, a db* alias (e.g. db_development, db_test) will be created.
+# (Currently only supports mysql and psql.)
 #
 # set_current_project [<path>]
 #
 # If path is omitted, uses current folder.
-# 
+#
 # Idea originally taken from @gilesgoatboy on Twitter:
 #
 # "protip: during intense projects, auto cd in to project dir via
@@ -16,22 +21,59 @@
 # export CURRENT_PROJECT into your environment. With the appropriate
 # code in your profile, this will automatically cd you into the
 # project folder as soon as you login.
-# 
+#
 # Add this to the end of your .profile or
 # .bashrc:
-# 
+#
 # if [[ -s ~/.current_project ]] ; then
 #     source ~/.current_project
 # fi
 #
-# You can clear the current project by deleting the file, or running
-# unset_current_project (which just deletes the file)
-if [ $# -lt 1 ]; then
-  TARGET=`pwd`
-else
-  TARGET=$*
-fi
+# Notes:
+#
+# * You can clear the current project by deleting the file, or running
+#   unset_current_project (which just deletes the file)
+#
+# * I think aliases like db_development are cleaner and easier to read
+#   than aliases like dbdevelopment, but dbd<TAB> is a LOT easier to
+#   type, so that's why.
+#
+# * The config reader should probably read the username and password
+#   from tho config/database.yml file. Yeah. It should totally do
+#   that. It doesn't, though.
+target = ARGV[0] || Dir.pwd
 
-echo export CURRENT_PROJECT=\"$TARGET\" > ~/.current_project
-echo cd \"$TARGET\" >> ~/.current_project
-echo Current project has been set to ${TARGET}. You will automatically cd to this folder on login.
+# if [ $# -lt 1 ]; then
+#   TARGET=`pwd`
+# else
+#   TARGET=$*
+# fi
+
+aliases = []
+config_file = File.join(target, 'config/database.yml')
+if File.exists? config_file
+  require 'yaml'
+  config = YAML.load_file(config_file)
+  config.each do |name, env|
+    aliases << case env["adapter"].strip
+               when "mysql", "mysql2"
+                 "alias 'db#{name}'='mysql -D \"#{env['database'].strip}\"'"
+               when "postgresql"
+                 "alias 'db#{name}'='psql \"#{env['database'].strip}\"'"
+               end
+  end
+end
+
+File.open(File.expand_path("~/.current_project"), "w") do |file|
+  file.puts "CURRENT_PROJECT=\"#{target}\""
+  file.puts 'cd "$CURRENT_PROJECT"'
+  file.puts
+  file.puts "# Aliases:"
+  file.puts aliases
+end
+
+puts "Current project has been set to #{target}. You will automatically cd to this folder on login."
+
+# echo export CURRENT_PROJECT=\"$TARGET\" > ~/.current_project
+# echo cd \"$TARGET\" >> ~/.current_project
+# echo Current project has been set to ${TARGET}. You will automatically cd to this folder on login.
