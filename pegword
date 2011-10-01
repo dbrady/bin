@@ -27,14 +27,22 @@
 # 9 b,p
 #
 # It's up to you to find the right peg word(s) for a given number.
-# This program only finds words that are exact matches (Todo: add
-# recursive breakdowns to return word chains). For example, I remember
-# 379 with the word 'amekebe', which is a disease of cattle in Uganda.
-# The word was so striking when I found it that I remembered it. I
-# don't have a good peg word for 378 (mkf) but 379 is so good that I
-# remember 378 as "one less than amekebe". Memory is a fickle thing.
-# The discovery of this word chain is why it works for me; having told
-# you of it probably robs you of much of the ease in remembering it.
+# This program only finds words that are exact matches
+#
+# TODO: add recursive breakdowns to return word chains.
+#
+# TODO: accept multiple numbers and show results in parallel tables
+# e.g.
+#
+# pegword 379 373
+# amakebe  | magma
+# maccaboy | mokum
+# maccoboy | myocomma
+# magpie   |
+#
+# (The recursive scheme could do this do, showing 379 as ma | cow |
+# ivy, etc.)
+#
 
 sounds = %w[
 s,z
@@ -47,6 +55,19 @@ sh,j,ch
 k
 f,v
 b,p
+]
+
+base_words = %w[
+    sea
+    tie
+    Noah
+    ma
+    rye
+    law
+    shoe
+    cow
+    ivy
+    bee
 ]
 
 tokens = %w[
@@ -64,9 +85,11 @@ tokens = %w[
 
 vowels = '[aeiouy]*'
 digits = ARGV[0].split(//).map(&:to_i)
+base_words = digits.map {|digit| base_words[digit] } * ' '
+puts "Single-word breakdown: '#{base_words}'"
 puts "Search for possible pegwords matching #{digits * ''}..."
 sound_pattern = digits.map {|digit| sounds[digit] } * ' '
-  puts "Remember, matches don't count unless they match the sound pattern '#{sound_pattern}'."
+puts "Remember, matches don't count unless they match the sound pattern '#{sound_pattern}'."
 regex = "^#{vowels}" + (digits.map {|digit| tokens[digit]  } * "#{vowels}") + "#{vowels}$"
 cmd = "grep -E '#{regex}' /usr/share/dict/words"
 puts cmd
