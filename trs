@@ -5,6 +5,12 @@ else
   TARGET=$*
 fi
 
-echo "time rspec $TARGET"
-time rspec $TARGET
+if [ -e 'Gemfile' ]; then
+    RSPEC="bundle exec rspec"
+else
+    RSPEC="rspec"
+fi
+
+echo "time $RSPEC $TARGET"
+time $RSPEC $TARGET
 
