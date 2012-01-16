@@ -71,6 +71,7 @@ File.open(File.expand_path("~/.current_project"), "w") do |file|
   file.puts 'cd "$CURRENT_PROJECT"'
   file.puts
   file.puts "# Aliases:"
+  file.puts %{alias 'cdp'="cd \\"$CURRENT_PROJECT\\""}
   file.puts aliases
 end
 
