@@ -43,6 +43,7 @@
 #   that. It doesn't, though.
 target = ARGV[0] || Dir.pwd
 
+
 # if [ $# -lt 1 ]; then
 #   TARGET=`pwd`
 # else
@@ -53,7 +54,8 @@ aliases = []
 config_file = File.join(target, 'config/database.yml')
 if File.exists? config_file
   require 'yaml'
-  config = YAML.load_file(config_file)
+  # Don't use load_file, Syck barfs when the yaml file lacks \n at EOF
+  config = YAML.load(File.read(config_file) + "\n")
   config.each do |name, env|
     aliases << case env["adapter"].strip
                when "mysql", "mysql2"
