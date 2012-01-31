@@ -43,7 +43,6 @@
 #   that. It doesn't, though.
 target = ARGV[0] || Dir.pwd
 
-
 # if [ $# -lt 1 ]; then
 #   TARGET=`pwd`
 # else
@@ -77,6 +76,3 @@ end
 
 puts "Current project has been set to #{target}. You will automatically cd to this folder on login."
 
-# echo export CURRENT_PROJECT=\"$TARGET\" > ~/.current_project
-# echo cd \"$TARGET\" >> ~/.current_project
-# echo Current project has been set to ${TARGET}. You will automatically cd to this folder on login.
