@@ -6,8 +6,8 @@
 # Revisions
 # 1.0 - first version to be included with Aquamacs [2007-03-17 David Reitter] 
 # 1.1 - delayed deletion of new files [2008-11-12 David Reitter]
-
-$app_path = '/Applications/Aquamacs\ Emacs.app';
+$app_name='Aquamacs';
+$app_path = "/Applications/$app_name.app";
 #$app_path = '<AQUAMACS-PATH>';
 # $pid = qx"ps auxc | awk '/^$ENV{'USER'} .* Aquamacs Emacs\$/ {print \$2}'";
 
@@ -34,7 +34,7 @@ system("touch $args") if ($tmpfiles);
     system("open -a $app_path $args");
      
   } else {
-    system("$app_path/Contents/MacOS/Aquamacs\\ Emacs $args 2>/dev/null &");
+    system("'$app_path/Contents/MacOS/$app_name' $args 2>/dev/null &");
   }
 
 # delay deletion because Emacs can't open non-existing documents
