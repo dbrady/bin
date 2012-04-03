@@ -41,6 +41,15 @@
 # * The config reader should probably read the username and password
 #   from tho config/database.yml file. Yeah. It should totally do
 #   that. It doesn't, though.
+#
+
+# TODO: This sets an alias named "cdp" to cd into the current project
+# folder. I keep a .nav file full of aliases, however; and ideally I'd
+# like to specify something like "set_current_project --nav cdxyz" and
+# have this script add "alias 'cdxyz'='cd this/project/folder'" to the
+# .nav file. It should also check the file for collisions and abort,
+# and/or allow a -f option to force overwriting the nav.
+
 target = ARGV[0] || Dir.pwd
 
 # if [ $# -lt 1 ]; then
@@ -75,4 +84,3 @@ File.open(File.expand_path("~/.current_project"), "w") do |file|
 end
 
 puts "Current project has been set to #{target}. You will automatically cd to this folder on login."
-
