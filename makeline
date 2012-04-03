@@ -1,0 +1,17 @@
+#!/bin/sh
+# makeline - draw a line on the terminal
+# credit due to @climagic on twitter
+#
+# Examples: (|'s indicate width of your terminal)
+#
+# |$ makeline                              |
+# |########################################|
+#
+# |$ makeline -                            |
+# |----------------------------------------|
+#
+# |$ makeline = 20                         |
+# |====================                    |
+
+makeline(){ printf "%${2:-$COLUMNS}s\n" ""|tr " " ${1:-#}; }
+ # 'makeline =' to make terminal width line. Or give 2nd arg count.

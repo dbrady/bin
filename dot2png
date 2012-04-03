@@ -1,0 +1,3 @@
+#!/bin/sh
+echo dot -T png -o $(basename $1 .dot).png $1
+dot -T png -o $(basename $1 .dot).png $1
