@@ -49,7 +49,6 @@
 # have this script add "alias 'cdxyz'='cd this/project/folder'" to the
 # .nav file. It should also check the file for collisions and abort,
 # and/or allow a -f option to force overwriting the nav.
-
 target = ARGV[0] || Dir.pwd
 
 # if [ $# -lt 1 ]; then
@@ -57,6 +56,7 @@ target = ARGV[0] || Dir.pwd
 # else
 #   TARGET=$*
 # fi
+require 'pp'
 
 aliases = []
 config_file = File.join(target, 'config/database.yml')
@@ -65,6 +65,7 @@ if File.exists? config_file
   # Don't use load_file, Syck barfs when the yaml file lacks \n at EOF
   config = YAML.load(File.read(config_file) + "\n")
   config.each do |name, env|
+    next unless env.key?("database")
     aliases << case env["adapter"].strip
                when "mysql", "mysql2"
                  "alias 'db#{name}'='mysql -D \"#{env['database'].strip}\"'"
