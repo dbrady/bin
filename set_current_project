@@ -37,18 +37,7 @@
 # * I think aliases like db_development are cleaner and easier to read
 #   than aliases like dbdevelopment, but dbd<TAB> is a LOT easier to
 #   type, so that's why.
-#
-# * The config reader should probably read the username and password
-#   from tho config/database.yml file. Yeah. It should totally do
-#   that. It doesn't, though.
-#
 
-# TODO: This sets an alias named "cdp" to cd into the current project
-# folder. I keep a .nav file full of aliases, however; and ideally I'd
-# like to specify something like "set_current_project --nav cdxyz" and
-# have this script add "alias 'cdxyz'='cd this/project/folder'" to the
-# .nav file. It should also check the file for collisions and abort,
-# and/or allow a -f option to force overwriting the nav.
 target = ARGV[0] || Dir.pwd
 
 # if [ $# -lt 1 ]; then
@@ -57,6 +46,23 @@ target = ARGV[0] || Dir.pwd
 #   TARGET=$*
 # fi
 require 'pp'
+
+def command_builder(command, switches, env)
+  switches.each do |option, switch|
+    command += " -#{switch} #{env[option]}" if env[option]
+  end
+  command
+end
+
+def psql_command(env)
+  command_builder "psql", { "database" => "d", "username" => "U", "host" => "h", "port" => "p" }, env
+end
+
+def mysql_command(env)
+  command = command_builder "mysql", { "database" => "D", "username" => "u", "host" => "h", "port" => "P" }, env
+  command += " -p#{env['password']}" if env['password']
+  command
+end
 
 aliases = []
 config_file = File.join(target, 'config/database.yml')
@@ -68,9 +74,9 @@ if File.exists? config_file
     next unless env.key?("database")
     aliases << case env["adapter"].strip
                when "mysql", "mysql2"
-                 "alias 'db#{name}'='mysql -D \"#{env['database'].strip}\"'"
+                 "alias 'db#{name}'='#{mysql_command(env)}'"
                when "postgresql"
-                 "alias 'db#{name}'='psql \"#{env['database'].strip}\"'"
+                 "alias 'db#{name}'='#{psql_command(env)}'"
                end
   end
 end
