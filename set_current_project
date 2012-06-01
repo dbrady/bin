@@ -11,12 +11,6 @@
 #
 # If path is omitted, uses current folder.
 #
-# Idea originally taken from @gilesgoatboy on Twitter:
-#
-# "protip: during intense projects, auto cd in to project dir via
-# .profile - just more relaxing, that way"
-# (http://twitter.com/#!/gilesgoatboy/status/115842631468187648)
-#
 # This will set a ./current_project file in your home folder and
 # export CURRENT_PROJECT into your environment. With the appropriate
 # code in your profile, this will automatically cd you into the
@@ -38,47 +32,72 @@
 #   than aliases like dbdevelopment, but dbd<TAB> is a LOT easier to
 #   type, so that's why.
 
+$known_databases = {
+  "psql" => {
+    "adapter" => /postgresql/,
+    "command" => "psql",
+    # psql does not accept password at command line. Sorry.
+    "short_switches" => { "username" => "U", "host" => "h", "port" => "p" },
+    "long_switches" => { },
+    "args" => ["database"]
+  },
+  "mysql" => {
+    "adapter" => /mysql(2)?/,
+    "command" => "mysql",
+    "short_switches" => { "username" => "u", "host" => "h", "port" => "P" },
+    "long_switches" => { "password" => "password" },
+    "args" => ["database"]
+  },
+  "sqlite3" => {
+    "adapter" => /sqlite3/,
+    "command" => "sqlite3",
+    "short_switches" => {},
+    "long_switches" => {},
+    "args" => ["database"]
+  }
+
+}
+
 target = ARGV[0] || Dir.pwd
 
-# if [ $# -lt 1 ]; then
-#   TARGET=`pwd`
-# else
-#   TARGET=$*
-# fi
-require 'pp'
+def fetch_adapter(adapter)
+  adapter = $known_databases.detect {|name, data| adapter =~ data["adapter"]}
+  adapter = adapter.last if adapter
+end
 
-def command_builder(command, switches, env)
-  switches.each do |option, switch|
-    command += " -#{switch} #{env[option]}" if env[option]
+def recognized_adapter?(env)
+  fetch_adapter env["adapter"]
+end
+
+def build_command_aliases(config)
+  aliases = []
+  config.each do |name, env|
+    next unless env.key?("database") && env.key?("adapter")
+    next unless recognized_adapter? env
+    adapter = fetch_adapter env["adapter"]
+    command = "%s %s %s %s" % [adapter["command"],
+                               adapter["short_switches"].map {|env_key, switch| '-%s "%s"' % [switch, env[env_key]] if env[env_key]}.compact.join(' '),
+                               adapter["long_switches"].map {|env_key, switch| '--%s="%s"' % [switch, env[env_key]] if env[env_key]}.compact.join(' '),
+                               adapter["args"].map {|env_key| env[env_key]}.compact.join(' ')]
+    command = command.gsub(/\s+/, ' ').strip
+    aliases << "alias 'db%s'='%s'" % [name, command]
   end
-  command
+  aliases
 end
 
-def psql_command(env)
-  command_builder "psql", { "database" => "d", "username" => "U", "host" => "h", "port" => "p" }, env
-end
-
-def mysql_command(env)
-  command = command_builder "mysql", { "database" => "D", "username" => "u", "host" => "h", "port" => "P" }, env
-  command += " -p#{env['password']}" if env['password']
-  command
-end
 
 aliases = []
 config_file = File.join(target, 'config/database.yml')
 if File.exists? config_file
   require 'yaml'
-  # Don't use load_file, Syck barfs when the yaml file lacks \n at EOF
+  # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
   config = YAML.load(File.read(config_file) + "\n")
-  config.each do |name, env|
-    next unless env.key?("database")
-    aliases << case env["adapter"].strip
-               when "mysql", "mysql2"
-                 "alias 'db#{name}'='#{mysql_command(env)}'"
-               when "postgresql"
-                 "alias 'db#{name}'='#{psql_command(env)}'"
-               end
-  end
+  aliases = build_command_aliases config
+
+  puts '-' * 80
+  puts "Command aliases:"
+  puts aliases
+  puts '-' * 80
 end
 
 File.open(File.expand_path("~/.current_project"), "w") do |file|
