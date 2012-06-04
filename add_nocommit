@@ -1,14 +1,39 @@
 #!/usr/bin/env ruby
-# Add "nocommit" hook to pre-commit. Just add a comment like
+# This script creates pre-commit git hook that detects the text
+# "NOCOMMIT" in the text. If found, git will abort the commit with a
+# big warning message telling you that you have marked a file as being
+# not committable.
+#
+# Installation:
+#     With this script in your path, cd to the root of your project
+# and run "add_nocommit". This will create the magical pre-commit
+# file.
+#
+# Usage:
+#     Just add a comment like:
+#
 # NOCOMMIT: this file has sensitive data / is bogus / etc!
-# and git commit will fail in the pre-commit, showing you the file and
-# line number and the NOCOMMIT message.
-
-precommit_file = "./.git/hooks/pre-commit"
-if File.exists? precommit_file
-  puts "*** Cowardly refusing to overwrite existing pre-commit hook!"
+#
+# and if you forget and accidentally git add the file, the commit will
+# fail, showing you the file and line containing the NOCOMMIT message.
+#
+# TODO: I don't like making this be the "pre-commit" file. I'd much
+# rather see pre-commit shell out to run detect-nocommit or somesuch.
+# Currently git hooks are not very robust, nor do they play well with
+# each other. (I'd also much rather see this be either a global git
+# hook or some kind of hook that could be committed to the repo to be
+# shared with the team. Both of these are still things git doesn't yet
+# do.)
+def barf!(msg=nil)
+  puts "*** add_nocommit: %s " % msg if msg
   exit -1
 end
+
+precommit_folder = "./.git/hooks"
+precommit_file = "%s/pre-commit" % precommit_folder
+
+barf! "Pardon me, but I'm lost. Is this a git repo? I don't see .git/hooks/ here!" unless File.directory? precommit_folder
+barf! "Cowardly refusing to overwrite existing pre-commit hook!" if File.exists? precommit_file
 
 File.open(precommit_file, 'w') do |file|
   file.puts DATA.read
