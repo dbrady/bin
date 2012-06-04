@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+# mymd5 - dump a MD5 hash of given text/files.
+#
+# Usage:
+#   mymd5 <file> [<file>]
+#   echo "foo" | mymd5
+#
+# NOTE: Calculating an MD5 checksum is faster on OSX with the md5
+# command and on linux with the md5sum command. This file is included
+# for example purposes only, and perhaps for parity with the (actually
+# useful) sha and sha256 files in my bin folder.
+
+require 'digest/md5'
+
+digest = Digest::MD5.new
+ARGF.each do |file_contents|
+  file_contents.each_line do |line|
+    digest << line
+  end
+end
+
+puts digest.hexdigest
