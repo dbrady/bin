@@ -1,0 +1,14 @@
+#!/bin/sh
+#
+# voxpopu - Use Mac speech synth to speak using four voices at once.
+#
+# Some fun examples to try:
+#
+# voxpopu We are legion
+# voxpopu I will devour your soul
+# voxpopu Resistance is futile. You will be adapted to enjoy a future space exploration fantasy show
+
+say -v Alex $* &
+say -v Victoria $* &
+say -v Agnes $* &
+say -v Bruce $* &
