@@ -1,0 +1,25 @@
+#!/bin/sh
+
+# To create the broker:
+#     /usr/local/Cellar/apollo/1.3/bin/apollo create /usr/local/var/apollo
+#
+# If this is your first install, automatically load on login with:
+#     mkdir -p ~/Library/LaunchAgents
+#     cp /usr/local/Cellar/apollo/1.3/homebrew.mxcl.apollo.plist ~/Library/LaunchAgents/
+#     launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.apollo.plist
+#
+# If this is an upgrade and you already have the homebrew.mxcl.apollo.plist loaded:
+#     launchctl unload -w ~/Library/LaunchAgents/homebrew.mxcl.apollo.plist
+#     cp /usr/local/Cellar/apollo/1.3/homebrew.mxcl.apollo.plist ~/Library/LaunchAgents/
+#     launchctl load -w ~/Library/LaunchAgents/homebrew.mxcl.apollo.plist
+#
+# Or to start the broker in the foreground run:
+#     /usr/local/var/apollo/bin/apollo-broker run
+
+if [ ! -e /usr/local/var/apollo ]; then
+  echo "Apollo broker does not exist; creating it..."
+  /usr/local/Cellar/apollo/1.3/bin/apollo create /usr/local/var/apollo
+fi
+
+echo "Starting Apollo broker..."
+/usr/local/var/apollo/bin/apollo-broker run
