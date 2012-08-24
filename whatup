@@ -1,2 +1,35 @@
 #!/bin/sh
-tail -n 1000 -f /var/log/system.log
+# whatup - what (common) services are currently running on localhost?
+
+
+checkup () {
+  lsof -i :$1 > /dev/null
+  if [[ $? == 0 ]]; then
+    echo $2 is running on port $1
+  fi
+}
+
+# Web services
+checkup 4567 "Sinatra"
+checkup 80 "HTTP/Common"
+checkup 8080 "HTTP/PHP"
+checkup 3000 "Rails/Webrick"
+
+checkup 3306 "MySQL"
+checkup 5432 "PostGreSQL"
+
+# Caches/KV stores/search tools
+checkup 6379 "Redis"
+checkup 11211 "Memcached"
+checkup 8091 "Riak"
+checkup 8098 "Solr"
+checkup 8099 "Solr"
+
+# Queus
+checkup 61613 "Apollo broker (TCP)"
+checkup 61614 "Apollo broker (TLS)"
+checkup 61623 "Apollo broker (WS)"
+checkup 61624 "Apollo broker (WSS)"
+checkup 61681 "Apollo admin interface broker"
+checkup 61680 "Apollo admin interface broker"
+
