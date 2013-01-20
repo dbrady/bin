@@ -1,0 +1,13 @@
+#!/bin/sh
+if [ -n "$2" ]; then
+  DSTFILE=$2
+else
+  DSTFILE=`basename "$1"`
+fi
+
+
+echo scp "$1" "monkey:shinybit.com/public/images/$DSTFILE"
+scp "$1" "monkey:shinybit.com/public/images/$DSTFILE"
+
+echo ssh monkey chmod 644 "shinybit.com/public/images/$DSTFILE"
+ssh monkey chmod 644 "shinybit.com/public/images/$DSTFILE"

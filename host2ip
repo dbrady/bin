@@ -1,0 +1,2 @@
+#!/bin/sh
+dig $1 | grep -A 1 'ANSWER SECTION' | tail -n 1 | awk '{print $5}'
