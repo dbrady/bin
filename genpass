@@ -3,13 +3,13 @@
 # genpass - generate a password by taking 2 dictionary words and
 # mixing in random digits. E.g. "fash5ionb9oat1"
 
-password = IO.readlines("/usr/share/dict/words").
-  map(&:strip).
-  select {|w| (4..8) === w.size}.
-  select {|w| w =~ /^\w+$/ }.
-  map(&:downcase).
-  sample(2).
-  join('')
+password = IO.readlines("/usr/share/dict/words")
+  .map(&:strip)
+  .select {|w| (4..8) === w.size}
+  .select {|w| w =~ /^\w+$/ }
+  .map(&:downcase)
+  .sample(2)
+  .join('')
 
 (rand(2)+2).times do
   location = rand(password.size+1)
