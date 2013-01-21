@@ -1,0 +1,2 @@
+#!/bin/sh
+git status | grep -E '^#[[:space:]]+deleted:[[:space:]]+' | awk '{print $3}' | while read f; do echo "Restoring deleted file $f..."; git checkout $f; done
