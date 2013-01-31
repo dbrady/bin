@@ -1,0 +1,4 @@
+#!/bin/sh
+# My favorite #roguesgolf submission:
+# https://twitter.com/moonbeamlabs/status/203482835175215104
+ruby -e'(f=proc{|x,y|sleep 1;system "clear";puts x;f[x .gsub(/\/\\./,"~\/\\").gsub(/.o./,y ? "\\o\/":"|o|"),!y]})["~/\\"+"~"*12+"o~~"] '

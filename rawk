@@ -1,0 +1,4 @@
+#!/bin/sh
+# rawk
+ruby -e 'frames = ["\\(>.<\\) ", " (/>.<)/"].cycle; loop do;  system "clear"; puts frames.next; sleep 0.4; end'
+
