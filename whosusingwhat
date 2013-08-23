@@ -1,0 +1,2 @@
+#!/bin/bash
+netstat -ltn | tail -n +3 | head -n -4 | awk {'print $4'} | cut -d : -f 2 | while read port; do echo Port $port:; lsof -i:$port; done
