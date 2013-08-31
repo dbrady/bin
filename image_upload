@@ -1,4 +1,20 @@
 #!/bin/sh
+
+usage_then_die() {
+  echo "Usage:"
+  echo "image_upload <image_file> [<remote_filename>]"
+  exit 1
+}
+
+if [ $# -eq 0 ]; then
+  usage_then_die
+fi
+
+if [ ! -e $1 ]; then
+  echo "Could not find image file: $1"
+  usage_then_die
+fi
+
 if [ -n "$2" ]; then
   DSTFILE=$2
 else
