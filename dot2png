@@ -1,3 +1,33 @@
 #!/bin/sh
-echo dot -T png -o $(basename $1 .dot).png $1
-dot -T png -o $(basename $1 .dot).png $1
+SCRIPT=dot
+
+while getopts ":f" opt; do
+  case $opt in
+    f)
+      case $OPTARG in
+        dot|neato|twopi|circo|fdp|sfdp)
+          SCRIPT=$OPTARG
+          ;;
+        *)
+          echo "Invalid formatter '$OPTARG'. Must be one of: dot, neato, twopi, circo, fdp, sfdp"
+          exit 1
+          ;;
+      esac
+      SCRIPT=$OPTARG
+      # todo: $OPTARG should be one of: dot, neato, twopi, circo, fdp, sfdp
+
+      ;;
+    \?)
+      echo "Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "Option -$OPTARG requires an argument." >&2
+      exit 1
+      ;;
+  esac
+done
+
+echo "Using formatter '$SCRIPT'"
+echo $SCRIPT -T png -o $(basename $1 .dot).png $1
+$SCRIPT -T png -o $(basename $1 .dot).png $1
