@@ -82,6 +82,9 @@ def build_command_aliases(config)
     command = command.gsub(/\s+/, ' ').strip
     aliases << "alias 'db%s'='%s'" % [name, command]
   end
+  aliases << "alias 'ras'='run_all_specs'"
+  aliases << "alias 'rss'='run_slow_specs'"
+  aliases << "alias 'rfs'='run_fast_specs'"
   aliases
 end
 
@@ -101,12 +104,18 @@ if File.exists? config_file
 end
 
 File.open(File.expand_path("~/.current_project"), "w") do |file|
-  file.puts "CURRENT_PROJECT=\"#{target}\""
-  file.puts 'cd "$CURRENT_PROJECT"'
-  file.puts
-  file.puts "# Aliases:"
-  file.puts %{alias 'cdp'="cd \\"$CURRENT_PROJECT\\""}
-  file.puts aliases
+  file.puts <<EOF
+CURRENT_PROJECT="#{target}"
+cd "$CURRENT_PROJECT"
+
+# Path
+if [[ -e "$CURRENT_PROJECT/script" ]] ; then
+  export PATH=$PATH:"$CURRENT_PROJECT/script"
+fi
+
+# Aliases:
+#{aliases * "\n"}
+EOF
 end
 
 puts "Current project has been set to #{target}. You will automatically cd to this folder on login."
