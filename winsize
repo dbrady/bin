@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require 'io/console'
+
+puts "%dx%d" % IO.console.winsize.reverse
