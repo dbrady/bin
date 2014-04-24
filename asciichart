@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+decimal = ARGV[0] && ARGV[0] == "-d"
+hex = !decimal
+label_format = hex ? "%02x  " : "%2d  "
+xlabels = (0...16).map {|c| label_format % c } * ''
+ylabels = (0...16).map {|c| label_format % (c*16) }
+
+puts "    " + xlabels
+(1...16).each do |base|
+  print ylabels[base]
+  16.times do |offset|
+    print "%-4c" % (base*16+offset)
+  end
+  puts
+end
