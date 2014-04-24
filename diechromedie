@@ -1,4 +1,7 @@
 #!/bin/bash
 # For use when Chrome goes permanently out to lunch on my Asus linux laptop.
 # I'm not sad. I AM ANGRY. DIE, CHROME, DIE.
-ps auwx | grep /opt/google/chrome | awk '{ print $2 }' | while read pid; do kill -9 $pid 2>&1 > /dev/null; done
+
+# GOOGLE_PROCESS_NAME_THIS_WEEK=/opt/google/chrome
+GOOGLE_PROCESS_NAME_THIS_WEEK=chromium-browser
+ps auwx | grep $GOOGLE_PROCESS_NAME_THIS_WEEK | awk '{ print $2 }' | while read pid; do kill -9 $pid 2>&1 > /dev/null; done
