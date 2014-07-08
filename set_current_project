@@ -69,7 +69,7 @@ def recognized_adapter?(env)
   fetch_adapter env["adapter"]
 end
 
-def build_command_aliases(config)
+def build_config_aliases(config)
   aliases = []
   config.each do |name, env|
     next unless env.key?("database") && env.key?("adapter")
@@ -82,6 +82,12 @@ def build_command_aliases(config)
     command = command.gsub(/\s+/, ' ').strip
     aliases << "alias 'db%s'='%s'" % [name, command]
   end
+  aliases
+end
+
+def build_command_aliases
+  aliases = []
+  aliases << %{alias 'cdp'="cd \\"$CURRENT_PROJECT\\""}
   aliases << "alias 'ras'='run_all_specs'"
   aliases << "alias 'rss'='run_slow_specs'"
   aliases << "alias 'rfs'='run_fast_specs'"
@@ -95,13 +101,15 @@ if File.exists? config_file
   require 'yaml'
   # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
   config = YAML.load(File.read(config_file) + "\n")
-  aliases = build_command_aliases config
-
-  puts '-' * 80
-  puts "Command aliases:"
-  puts aliases
-  puts '-' * 80
+  aliases = build_config_aliases config
 end
+
+aliases += build_command_aliases
+
+puts '-' * 80
+puts "Command aliases:"
+puts aliases
+puts '-' * 80
 
 File.open(File.expand_path("~/.current_project"), "w") do |file|
   file.puts <<EOF
