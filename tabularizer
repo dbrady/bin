@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+require_relative 'tabularizer'
+puts Tabularizer.new($stdin.read.split(/\n/))
