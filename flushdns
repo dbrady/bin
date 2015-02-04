@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# OSX 10.10 Yosemite
+echo flushing DNS for OSX 10.10 Yosemite:
+echo sudo discoveryutil udnsflushcaches
+sudo discoveryutil udnsflushcaches
+
+# echo "flushing DNS for OSX 10.9 Mavericks"
+# echo "dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
+# dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+
+# echo "flushing DNS for OSX 10.7-10.8 Leopard / Snow Leopard"
+# echo sudo killall -HUP mDNSResponder
+# sudo killall -HUP mDNSResponder
+
+# echo "flushing DNS for OSX 10.5 - 10.6 Tiger / Puma"
+# The point is all y'all are doin' this and this crap hasn't worked
+# since 2007
+# echo sudo dscacheutil -flushcache
+# sudo dscacheutil -flushcache
+
+# Windows
+# ipconfig /flushdns
+
+# Linux (depends on distro...)
+# /etc/init.d/named restart
+# or 
+# /etc/init.d/ncsd restart
