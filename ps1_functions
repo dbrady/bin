@@ -88,15 +88,32 @@ ps1_git()
   esac
 
   [[ $color -gt 0 ]] &&
-    printf "\[\033[${attr}${color}m\](git:${branch}$(ps1_git_status):$sha1)\[\033[0m\] $(ps1_git_identity) "
+    printf "\[\033[${attr}${color}m\](git:${branch}$(ps1_git_status):$sha1)\[\033[0m\] $(ps1_git_email) "
 }
 
-ps1_git_identity()
+ps1_git_email()
 {
-    local git_identity="$(git config --get user.email)"
-    # TODO: colorize email based on where I am
-    # TODO: do so without including my email addresses directly in this file... :-)
-    printf "%s" $git_identity
+    local hash_program="" attr="" fgcolor=0 bgcolor=0 color="" git_email="" hash=""
+    
+    git_email="$(git config --get user.email)"
+
+    # Hash emails here only because this file is publicly visible ;-)
+    hash_program="md5"
+    command -v $hash_program >/dev/null 2>&1 || $hash_program="md5sum"
+    hash=`echo ${git_email} | ${hash_program} | cut -f 1 -d ' '`
+
+    case $hash in
+        "1d0e58ecbd97780bb36f6db90a2b57ac") bgcolor=""; fgcolor="32"   ;; # shinybit - green
+        "563e2af36b14b3c954f77e938469606b") bgcolor=43; fgcolor="1;37" ;; # CMM - white on orange
+        "d268ff92541f1220b7cfa5d605c69ada") bgcolor=43; fgcolor="1;30" ;; # boyan-dave black on orange
+        *)                                  bgcolor=41; fgcolor="1;37" ;; # white on red
+    esac
+
+    if [[ -n "${bgcolor}" ]] ; then
+        printf "\[\033[${fgcolor}m\[\033[${bgcolor}m%s\[\033[0m" $git_email
+    else
+        printf "\[\033[${fgcolor}m%s\[\033[0m" $git_email
+    fi
 }
 
 ps1_git_status()
