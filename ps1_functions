@@ -94,7 +94,7 @@ ps1_git()
 ps1_git_email()
 {
     local hash_program="" attr="" fgcolor=0 bgcolor=0 color="" git_email="" hash=""
-    
+
     git_email="$(git config --get user.email)"
 
     # Hash emails here only because this file is publicly visible ;-)
@@ -103,10 +103,11 @@ ps1_git_email()
     hash=`echo ${git_email} | ${hash_program} | cut -f 1 -d ' '`
 
     case $hash in
-        "1d0e58ecbd97780bb36f6db90a2b57ac") bgcolor=""; fgcolor="32"   ;; # shinybit - green
-        "563e2af36b14b3c954f77e938469606b") bgcolor=43; fgcolor="1;37" ;; # CMM - white on orange
-        "d268ff92541f1220b7cfa5d605c69ada") bgcolor=43; fgcolor="1;30" ;; # boyan-dave black on orange
-        *)                                  bgcolor=41; fgcolor="1;37" ;; # white on red
+        "0015b22f7438ff6a57cdafdf5fae43e1") bgcolor="47" ; fgcolor="34"  ;; # kelli - blue on gray
+        "1d0e58ecbd97780bb36f6db90a2b57ac") bgcolor=""   ; fgcolor="32"   ;; # shinybit - green
+        "563e2af36b14b3c954f77e938469606b") bgcolor=43   ; fgcolor="1;37" ;; # CMM - white on orange
+        "d268ff92541f1220b7cfa5d605c69ada") bgcolor=43   ; fgcolor="1;30" ;; # boyan-dave black on orange
+        *)                                  bgcolor=41   ; fgcolor="1;37" ;; # white on red
     esac
 
     if [[ -n "${bgcolor}" ]] ; then
@@ -200,4 +201,3 @@ ps1_set()
 {
   PROMPT_COMMAND="ps1_update $@"
 }
-
