@@ -31,6 +31,7 @@
 # * I think aliases like db_development are cleaner and easier to read
 #   than aliases like dbdevelopment, but dbd<TAB> is a LOT easier to
 #   type, so that's why.
+require 'yaml'
 
 $known_databases = {
   "psql" => {
@@ -69,7 +70,7 @@ def recognized_adapter?(env)
   fetch_adapter env["adapter"]
 end
 
-def build_config_aliases(config)
+def build_config_aliases(config, prefix='')
   aliases = []
   config.each do |name, env|
     next unless env.key?("database") && env.key?("adapter")
@@ -80,7 +81,7 @@ def build_config_aliases(config)
                                adapter["long_switches"].map {|env_key, switch| '--%s="%s"' % [switch, env[env_key]] if env[env_key]}.compact.join(' '),
                                adapter["args"].map {|env_key| env[env_key]}.compact.join(' ')]
     command = command.gsub(/\s+/, ' ').strip
-    aliases << "alias 'db%s'='%s'" % [name, command]
+    aliases << "alias 'db%s%s'='%s'" % [prefix, name, command]
   end
   aliases
 end
@@ -94,14 +95,24 @@ def build_command_aliases
   aliases
 end
 
+# some projects have multiple databases, configured with files like
+# database_history.yml; capture these with a prefix so e.g. dbh<TAB>t<TAB> will
+# expand to alias dbhistorytest, etc.
+def config_filename_prefix(config_filename)
+  regex = %r|database_?([^/]*).yml|
+  prefix = config_filename.match(regex)[1]
+  puts "#{config_filename.inspect} => #{prefix.inspect}"
+  prefix
+end
 
 aliases = []
-config_file = File.join(target, 'config/database.yml')
-if File.exists? config_file
-  require 'yaml'
-  # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
-  config = YAML.load(File.read(config_file) + "\n")
-  aliases = build_config_aliases config
+Dir.glob(File.join(target, 'config/database*.yml')).each do |config_file|
+  if File.exists? config_file
+    # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
+    config = YAML.load(File.read(config_file) + "\n")
+    prefix = config_filename_prefix(config_file)
+    aliases += build_config_aliases config, prefix
+  end
 end
 
 aliases += build_command_aliases
