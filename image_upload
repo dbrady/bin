@@ -27,3 +27,5 @@ scp "$1" "monkey:shinybit.com/public/images/$DSTFILE"
 
 echo ssh monkey chmod 644 "shinybit.com/public/images/$DSTFILE"
 ssh monkey chmod 644 "shinybit.com/public/images/$DSTFILE"
+
+echo "You can now access the image at: http://shinybit.com/images/$DSTFILE"

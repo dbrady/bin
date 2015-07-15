@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+# git id <name> - set local user identity options
+
+# TODO: This program does not have a git manual page because I don't
+# know how to create one. If it did, you could type git help identity
+# or even git id --help and git would bring up these instructions for
+# you. If you know how to do this, please contact me.
+
+# KNOWN LIMITATIONS: This program does not do anything with your
+# ~/.gitconfig-identities.yml file except read it. To list identities
+# or manage them, please use your favorite text editor. ;-)
+
+require 'yaml'
+
+def help
+  puts <<HELP
+git id - change local git user settings
+
+Usage: git id <name>  # configure this repo with named settings
+       git id -h      # get this help screen
+       
+Notes:
+
+Store your names and identities in ~/.gitconfig-identities.yml, with
+names as top level keys and user settings inside. E.g. to create an
+identity named 'home' with name 'Joseph Smith' and email
+'jsmith@example.com', your ~/.gitconfig-identities.yml file should
+look like this:
+
+home:
+  name: Joseph Smith
+  email: jsmith@example.com
+
+Now if you invoke git id home it will set these name and email
+settings in your project's local .git/config file.
+
+These settings are not pushed to the server. I wrote this because I
+have an active open-source identity, an individual work identity, and
+a unique identity at work for every coworker I pair program with. If
+this helps you manage a similarly insane situation, you have my
+deepest sympathies. ;-)
+
+See source code for TODOs and lamentations. ;-)
+----------------------------------------------------------------------
+HELP
+
+end
+
+def barf(msg="Unknown error")
+  puts msg
+  puts "Type git id -h for instructions"
+  exit -1
+end
+
+if "--help" == ARGV[0] || "-h" == ARGV[0]
+  help
+  exit 0
+end
+
+barf "identity name required" unless ARGV[0]
+
+identities_file = File.expand_path("~/.gitconfig-identities.yml")
+config_file = '.git/config'
+
+barf "could not find config file '#{identities_file}'. Have you created one?" unless File.exist?(identities_file)
+
+name = ARGV[0]
+identities = YAML::load_file(File.expand_path(identities_file))
+
+barf "could not find identity named '#{name}' in #{identities_file}" unless identities.key?(name)
+identity = identities[name]
+
+barf "could not find local .git/config file; are we in a repo?" unless File.exist?(config_file)
+
+# Okay, let 'er rip
+identity.each do |key, value|
+  system "git config --local --unset-all 'user.#{key}'"
+  system "git config --local user.#{key} '#{value}'"
+end
+
+puts "Identity now set to:"
+identity.keys.each do |key|
+  puts "#{key} = #{`git config --local --get user.#{key}`}"
+end
+

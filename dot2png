@@ -1,7 +1,7 @@
 #!/bin/sh
 SCRIPT=dot
 
-while getopts ":f" opt; do
+while getopts ":f:" opt; do
   case $opt in
     f)
       case $OPTARG in
@@ -13,9 +13,6 @@ while getopts ":f" opt; do
           exit 1
           ;;
       esac
-      SCRIPT=$OPTARG
-      # todo: $OPTARG should be one of: dot, neato, twopi, circo, fdp, sfdp
-
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
