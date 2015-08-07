@@ -1,2 +1,8 @@
 #!/usr/bin/env bash
+echo Obtaining IP address...
+IP=`myip | tail -n 1`
+echo "Murmur is at $IP" | pbcopy
+echo "(This has been copied to your OSX clipboard)"
+echo "============================================"
+echo Murmur is at $IP
 murmurd -v -fg
