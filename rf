@@ -1,0 +1,23 @@
+#!/bin/bash
+# rf - "rspec focus" - focus specs on a specific subset, to be run with rg ("rspec go")
+#
+# focused args are stored in ~/.spec_focus.
+#
+# usage:
+#
+# Focus rspec on a single folder, file, or line, and/or force arguments
+# rf spec/models
+# rf spec/models/some_model.rb
+# rf spec/models/some_model.rb:23
+#
+# rf -f d spec/models
+# rf -f d spec/models/some_model.rb
+# rf -f d spec/models/some_model.rb:23
+
+if [ $1 = '-h' ]; then
+    rh
+    exit 1
+fi
+
+echo "Focusing specs on $@..."
+echo -n $@ > ~/.spec_focus
