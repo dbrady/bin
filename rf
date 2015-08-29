@@ -5,16 +5,23 @@
 #
 # usage:
 #
-# Focus rspec on a single folder, file, or line, and/or force arguments
+# Focus rspec on a single folder, file, or line:
 # rf spec/models
 # rf spec/models/some_model.rb
 # rf spec/models/some_model.rb:23
 #
+# and/or force arguments:
 # rf -f d spec/models
 # rf -f d spec/models/some_model.rb
 # rf -f d spec/models/some_model.rb:23
+#
+# Because rspec takes groups of files, you can focus on a set of files, e.g. for a feature:
+# rf spec/models/cache_spec.rb spec/interfaces/cache_inteface_spec.rb spec/controllers/cache_controller_spec.rb
+#
+# Or to just run model specs (e.g. if they are well-factored into unit-test style specs):
+# rf spec/models
 
-if [ $1 = '-h' ]; then
+if [ "$1" = "-h" ]; then
     rh
     exit 1
 fi

@@ -5,7 +5,7 @@
 #
 # rg [additional args or focus--will not change focus]
 
-if [ $1 = '-h' ]; then
+if [ "$1" = "-h" ]; then
     rh
     exit 1
 fi
