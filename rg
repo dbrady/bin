@@ -11,6 +11,6 @@ if [ "$1" = "-h" ]; then
 fi
 
 echo "Running focused specs"
-echo bundle exec rspec $@ $(cat ~/.spec_focus)
+echo time bundle exec rspec $@ $(cat ~/.spec_focus)
 
-bundle exec rspec $@ $(cat ~/.spec_focus)
+time bundle exec rspec $@ $(cat ~/.spec_focus)
