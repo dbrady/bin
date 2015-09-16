@@ -21,10 +21,13 @@
 # Or to just run model specs (e.g. if they are well-factored into unit-test style specs):
 # rf spec/models
 
+
+# TODO: Provide a way to split out environment prefixes, e.g. `rf COVERAGE=true : -f d`
 if [ "$1" = "-h" ]; then
     rh
     exit 1
 fi
 
+echo 'Rspec Focus: Focus!'
 echo "Focusing specs on $@..."
 echo -n $@ > ~/.spec_focus

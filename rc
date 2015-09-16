@@ -10,6 +10,7 @@ if [ "$1" = "-h" ]; then
     exit 1
 fi
 
+echo 'Rspec Focus: Clear!'
 echo "Clearing spec focus..."
 
 rm -f ~/.spec_focus
