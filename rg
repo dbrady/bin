@@ -10,7 +10,7 @@ if [ "$1" = "-h" ]; then
     exit 1
 fi
 
-echo 'Rspec Focus: Go!'
+echo 'Rspec Focus: Go! (rf - Focus; rg - Go; rc - Clear; rh - Help)'
 echo "Running focused specs"
 echo time bundle exec rspec $@ $(cat ~/.spec_focus)
 
