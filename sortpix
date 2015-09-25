@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# Sort pix (any files, really) of the format YYYY-MM-(whatever) into YYYY/MM/ subdirs
+#
+# This started life as this ruby -e '' one-liner. Sorry for excess line noise:
+# Dir["*"].each {|file| next if File.directory?(file); def run(cmd); puts cmd; system(cmd); end;puts "#{file}"; dir="%d/%02d" % file.split(/-/,3).map(&:to_i); run("mkdir -p \"#{dir}\""); run("mv \"#{file}\" \"#{dir}\""); }
+
+def run(cmd)
+  puts cmd
+  system cmd
+end
+
+Dir["*"].each do |file|
+  next if File.directory? file
+
+  puts "#{file}"
+  dir="%d/%02d" % file.split(/-/,3).map(&:to_i)
+  run "mkdir -p \"#{dir}\""
+  run "mv \"#{file}\" \"#{dir}\""
+end
