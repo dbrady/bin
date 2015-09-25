@@ -1,9 +1,16 @@
 #!/bin/sh
 
-# OSX 10.10 Yosemite
-echo flushing DNS for OSX 10.10 Yosemite:
-echo sudo discoveryutil udnsflushcaches
-sudo discoveryutil udnsflushcaches
+
+# echo flushing DNS for OSX mid-Yosemite (10.10.4):
+echo "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
+sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder
+
+
+# OSX 10.10.1-10.10.3 early Yosemite
+# 2015-09-16 discoveryutil was removed from 10.10.4
+# echo flushing DNS for OSX early-Yosemite (10.10.1-10.10.3):
+# echo sudo discoveryutil udnsflushcaches
+# sudo discoveryutil udnsflushcaches
 
 # echo "flushing DNS for OSX 10.9 Mavericks"
 # echo "dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
@@ -24,5 +31,5 @@ sudo discoveryutil udnsflushcaches
 
 # Linux (depends on distro...)
 # /etc/init.d/named restart
-# or 
+# or
 # /etc/init.d/ncsd restart
