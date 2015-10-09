@@ -89,9 +89,6 @@ end
 def build_command_aliases
   aliases = []
   aliases << %{alias 'cdp'="cd \\"$CURRENT_PROJECT\\""}
-  aliases << "alias 'ras'='run_all_specs'"
-  aliases << "alias 'rss'='run_slow_specs'"
-  aliases << "alias 'rfs'='run_fast_specs'"
   aliases
 end
 
