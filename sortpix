@@ -11,6 +11,7 @@ end
 
 Dir["*"].each do |file|
   next if File.directory? file
+  next unless file =~ /^\d{4}-\d\d-\d\d\s\d\d\.\d\d\.\d\d/
 
   puts "#{file}"
   dir="%d/%02d" % file.split(/-/,3).map(&:to_i)
