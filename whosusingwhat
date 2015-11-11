@@ -1,2 +1,7 @@
 #!/bin/bash
+if uname -a | grep Darwin; then
+    echo "Sorry, this is a linux-only command. Please write my OSX version!"
+    exit 1
+fi
+
 netstat -ltn | tail -n +3 | head -n -4 | awk {'print $4'} | cut -d : -f 2 | while read port; do echo Port $port:; lsof -i:$port; done
