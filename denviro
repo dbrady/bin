@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+unless defined? Rails
+  puts "Run me with rails runner!"
+  exit 1
+end
+
+puts Erubis::Eruby.new(File.read("./config/database.yml")).result binding
