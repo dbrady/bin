@@ -4,4 +4,10 @@ unless defined? Rails
   exit 1
 end
 
-puts Erubis::Eruby.new(File.read("./config/database.yml")).result binding
+if ARGV.count > 0
+  file = ARGV.pop
+else
+  file = "./config/database.yml"
+end
+
+puts Erubis::Eruby.new(File.read(file)).result binding
