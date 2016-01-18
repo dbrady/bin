@@ -1,0 +1,2 @@
+#!/bin/bash
+$TCMD -S /tmp/work -2 attach -t work

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+TCMD=tmate tshare-start

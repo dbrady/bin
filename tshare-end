@@ -1,0 +1,2 @@
+#!/bin/sh
+$TCMD -S /tmp/work kill-server

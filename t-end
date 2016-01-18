@@ -1,0 +1,2 @@
+#!/bin/sh
+TCMD=tmux tshare-end

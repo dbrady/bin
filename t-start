@@ -1,0 +1,3 @@
+#!/bin/bash
+
+TCMD=tmux tshare-start

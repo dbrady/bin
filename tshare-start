@@ -1,0 +1,33 @@
+#!/bin/bash
+
+$TCMD -S /tmp/work new-session -s work -n emacs -d
+
+for name in spec bash console vagrant watch; do
+    $TCMD -S /tmp/work new-window -n $name -t work
+done
+
+for window in 1 2 3 4 5 6; do
+    # cd to current directory to jostle rvm's fragile mind
+    $TCMD -S /tmp/work send-keys -t work:$window 'cd .' C-m
+    # clear screens of profile startup trash
+    $TCMD -S /tmp/work send-keys -t work:$window 'clear' C-m
+done
+
+# get this party started
+$TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
+$TCMD -S /tmp/work send-keys -t work:2 'time bundle exec rspec' C-m
+$TCMD -S /tmp/work send-keys -t work:4 'bundle exec rails console' C-m
+
+$TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant' C-m
+$TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh' C-m
+
+$TCMD -S /tmp/work send-keys -t work:6 'cd ~/cmm/vagrant/code' C-m
+
+# Select window 1 and attach to it
+$TCMD -S /tmp/work select-window -t work:1
+$TCMD -S /tmp/work -2 attach -t work
+
+# NOTES
+
+# How to rename a window after you've created it
+# $TCMD -S /tmp/work rename-window -t work:1 newname
