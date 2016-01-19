@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# Pick a line at random from stdin or file
+#
+# Usage:
+#     randline <file>
+#     <something to stdout> | randline
+
+winner = nil
+odds = 0
+
+# favor `while gets` over `$<.each_line` because reasons
+while line = gets
+  winner = line if rand(odds += 1).zero?
+end
+
+puts winner
