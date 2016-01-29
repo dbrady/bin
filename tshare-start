@@ -1,8 +1,17 @@
 #!/bin/bash
 
+# TODO - I keep changing the list of windows and such. Maybe find a way to
+# separate these? E.g. read in a list of window names & initial commands from an
+# .rc file? Then the "for name in..." thing would be like "cat .twindowrc |
+# while read name; do $TCMD -S /tmp/work new-window -n $name -t work; done"
+#
+# Or, more likely, change this to a ruby file and have a yaml file listing
+# windows and the commands to be sent to them
+
 $TCMD -S /tmp/work new-session -s work -n emacs -d
 
-for name in spec bash console vagrant watch; do
+# window    2    3    4       5       6            7
+for name in spec bash console vagrant vagrant_bash watch; do
     $TCMD -S /tmp/work new-window -n $name -t work
 done
 
@@ -14,14 +23,21 @@ for window in 1 2 3 4 5 6; do
 done
 
 # get this party started
-$TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
+$TCMD -S /tmp/work send-keys -t work:1 'echo emacs' C-m
 $TCMD -S /tmp/work send-keys -t work:2 'time bundle exec rspec' C-m
+
+# leave window 3 (bash) alone
+
+$TCMD -S /tmp/work send-keys -t work:4 'vagrant ssh' C-m
 $TCMD -S /tmp/work send-keys -t work:4 'bundle exec rails console' C-m
 
 $TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant' C-m
 $TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh' C-m
 
-$TCMD -S /tmp/work send-keys -t work:6 'cd ~/cmm/vagrant/code' C-m
+$TCMD -S /tmp/work send-keys -t work:6 'cd ~/cmm/vagrant' C-m
+$TCMD -S /tmp/work send-keys -t work:6 'vagrant ssh' C-m
+
+$TCMD -S /tmp/work send-keys -t work:7 'cd ~/cmm/vagrant/code' C-m
 
 # Select window 1 and attach to it
 $TCMD -S /tmp/work select-window -t work:1
