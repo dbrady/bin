@@ -1,10 +1,10 @@
 #!/bin/bash
 #
-#   This file echoes a bunch of color codes to the 
-#   terminal to demonstrate what's available.  Each 
+#   This file echoes a bunch of color codes to the
+#   terminal to demonstrate what's available.  Each
 #   line is the color code of one forground color,
-#   out of 17 (default + 16 escapes), followed by a 
-#   test use of that color on all nine background 
+#   out of 17 (default + 16 escapes), followed by a
+#   test use of that color on all nine background
 #   colors (default + 8 escapes).
 #
 #   Author: Giles Orr
@@ -13,9 +13,9 @@
 #            http://gilesorr.com/bashprompt/howto/a1004.html
 
 
-T='gYw'   # The test text
+T='dBm'   # The test text
 
-echo -e "\nvFG \ BG >       40m     41m     42m     43m\
+echo -e "\nv FG \ BG >      40m     41m     42m     43m\
      44m     45m     46m     47m";
 
 for FGs in '    m' '   1m' '  30m' '1;30m' '  31m' '1;31m' '  32m' \
@@ -32,6 +32,5 @@ echo
 echo 'Example: print "(color)" in bold green on red background:'
 echo 'bold green FG is 1;32m, red background is 41m, so...'
 echo
-echo -n Example: echo -e "\\033[1;32m\\033[41m(color)\\033[0m" 
+echo -n Example: echo -e "\\033[1;32m\\033[41m(color)\\033[0m"
 echo -e " -> \033[1;32m\033[41m(color)\033[0m"
-
