@@ -1,0 +1,3 @@
+#!/bin/bash
+while true; do say $*; sleep 10; done
+
