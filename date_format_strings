@@ -1,0 +1,4 @@
+#!/bin/sh
+# because I can never remember them NOR how to GET them w/o Googling
+man strftime
+# The point being that yes, some C functions have man pages
