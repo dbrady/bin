@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+require "colorize"
+
+base_colors = %i[black red green yellow blue magenta cyan white]
+colors = base_colors.map {|c| [c, :"light_#{c}"] }.flatten
+
+
+format = "%14s | %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s"
+separator = ('-' * 14) + "-+-" + "-" * 8 * 8 * 2
+
+puts format % ([""] + ["", "light"] * 8)
+puts format % ([""] + base_colors.map {|c| [c, c]}.flatten)
+puts separator
+
+base_colors.each do |color|
+  fg_color = color
+  str = "rubyist".send(fg_color)
+  puts format % ([fg_color] + colors.map {|c| str.send(:"on_#{c}")})
+
+  fg_color = "light_#{color}"
+  str = "rubyist".send(fg_color)
+  puts format % ([fg_color] + colors.map {|c| str.send(:"on_#{c}")})
+end
+
+puts separator
+
+base_colors.each do |color|
+  fg_color = color
+  str = "rubyist".send(fg_color).bold
+  puts format % (["bold #{fg_color}"] + colors.map {|c| str.send(:"on_#{c}")})
+end
+
+puts separator
+puts "# require the colorize gem".green
+puts "require".light_white.bold + " 'colorize'".red
+puts
+puts "puts ".light_white.bold + "'Here is a string'.white.bold.on_red".light_red
+puts "=> ".light_white + "Here is a string".white.bold.on_red
+
+puts
+puts "# or, for a less-civilized color sample table:".green
+puts "$ ruby -rcolorize -e 'puts String.color_samples'"
+puts separator.gsub(/\+/, '-')
