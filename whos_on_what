@@ -1,0 +1,109 @@
+#!/usr/bin/env ruby
+
+# whos_on_what - print a pretty chart of all the repos, what branch and commit
+# they are on, and if there are changes locally that might interfere with a git
+# pull on master.
+
+# Dumb cwd dependency: Run this from any repo, it will go up a folder and then
+# check all child folders--i.e. run this from a repo and it will check all peer
+# repos.
+
+require 'colorize'
+
+class File
+  def self.git_repo?(dir)
+    directory?(dir) && exists?(join(dir, '.git'))
+  end
+end
+
+class FormattedBranchPrinter
+  # scan a list of projects, then print them with first column left-justified to
+  # that size
+  attr_accessor :longest
+
+  def initialize
+    @longest = 0
+  end
+
+  def scan(project)
+    self.longest = [longest, project.size].max
+  end
+
+  def print_title_row
+    print_project "PROJECT", ' '
+    print_branch "BRANCH"
+    puts
+  end
+
+  def print_row(project, sha, branch, clean=true)
+    print_project project
+    print_sha colorize_branch(sha, branch) if sha
+    print_branch colorize_branch(branch, branch)
+    print_status clean
+  end
+
+  def print_separator
+    puts '-' * (3 + longest + 20)
+  end
+
+  private
+
+  def colorize_branch(text, branch)
+    color = case branch
+            when 'Not a git repo' then :light_black
+            when 'master' then :green
+            else
+              :yellow
+            end
+    text.send color
+  end
+
+  def print_project(project, pad = '.')
+    print "%s%s" % [project, pad * project_columns(project)]
+  end
+
+  def print_branch branch
+    print branch
+  end
+
+  def print_sha sha
+    print "(%s) " % sha
+  end
+
+  def print_status clean
+    status = " (%s)" % [clean ? 'CLEAN' : '*** CHANGES DETECTED ***']
+    status = status.send(clean ? :green : :red)
+    puts status
+  end
+
+  def project_columns(project)
+    3 + longest - project.size
+  end
+end
+
+table = FormattedBranchPrinter.new
+table.scan "PROJECT"
+
+Dir.glob(File.expand_path(File.join(File.dirname(__FILE__), '../*'))).each do |dir|
+  next unless File.git_repo? dir
+  name = dir.split("/").last
+  table.scan name
+end
+table.print_title_row
+table.print_separator
+
+Dir.glob(File.expand_path(File.join(File.dirname(__FILE__), '../*'))).each do |dir|
+  next unless File.git_repo? dir
+  name = dir.split("/").last
+  cmd = %Q[(cd #{dir} && (git branch | grep \\* | awk '{ print $2 }' ) || echo 'Not a git repo')]
+  branch = `#{cmd}`.strip
+
+
+  cmd = %Q[(cd #{dir} && git rev-parse --short --quiet HEAD)]
+  sha = `#{cmd}`.strip
+
+  cmd = %Q[(cd #{dir} && git status | grep 'working directory clean' > /dev/null && echo 'CLEAN')]
+  clean = `#{cmd}`.strip == 'CLEAN'
+
+  table.print_row name, sha, branch, clean
+end
