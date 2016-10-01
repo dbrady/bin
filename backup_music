@@ -1,0 +1,2 @@
+!#/bin/sh
+rsync -raP /home/dbrady/Music/ /media/dbrady/Seagate\ Backup\ Plus\ Drive/Music
