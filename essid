@@ -1,7 +1,0 @@
-#!/usr/bin/ruby
-# Prints the name of the ESSID to which the AirPort is currently connected.
-require 'yaml'
-
-airport_stats = YAML.load(`/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I`.gsub(/^\s*/, ''))
-
-puts airport_stats['SSID']
