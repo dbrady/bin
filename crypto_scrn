@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+require 'io/console'
+
+# fill text screen with randomly-cycling digit garbage
+class CryptoScreensaver
+  attr_reader :positions
+
+  def initialize
+    @positions = (0...lines).to_a.product((0...columns).to_a).shuffle.cycle
+  end
+
+  def esc
+    27.chr
+  end
+
+  def clear_screen
+    print "%c[2J" % esc
+  end
+
+  def save_cursor_position
+    print "%c[s" % esc
+  end
+
+  def return_cursor_to_position
+    print "%c[u" % esc
+  end
+
+  def move_cursor_to_position(x, y)
+    print "%c[%d;%dH" % [esc, x, y]
+  end
+
+  def random_position
+    positions.next
+  end
+
+  def columns
+    IO.console.winsize.last
+  end
+
+  def lines
+    IO.console.winsize.first
+  end
+
+  def random_hex_digit
+    rand(16).to_s(16)
+  end
+
+  def random_decimal_digit
+    rand(10)
+  end
+
+  def run
+    puts "Starting crypto screensaver at resolution #{columns}x#{lines}"
+    sleep 1
+    done = false
+    trap("INT") { done = true }
+    save_cursor_position
+    until done
+      move_cursor_to_position *random_position
+      print random_hex_digit
+    end
+    return_cursor_to_position
+    clear_screen
+  end
+end
+
+if __FILE__==$0
+  CryptoScreensaver.new.run
+end
