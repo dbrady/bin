@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Stupid (like a fox!) script to help me write. Point this at the file
+# I'm working on, ramp the font size up to maximum, shrink the
+# terminal window down to just big enough to show the word count
+# number, and let 'er rip. Surprisingly motivating for such a stupid
+# script, this actually helps me stay focused on writing when I'm
+# supposed to be, without all the mess and hassle of installing a
+# custom editor or doing my writing in a browser app or whatnot.
+
+# TODO: Make text turn red or green base on whether wordcount has
+# changed
+FILE=$1
+
+wordcount () {
+  echo "$FILE"
+  echo $(date +"%F %T"): $(wc "$FILE" | awk '{ print $2 }')
+}
+
+while /bin/true; do
+  clear
+  wordcount
+  sleep 2
+done
