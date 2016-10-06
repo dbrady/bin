@@ -1,0 +1,4 @@
+#!/bin/bash
+# cistop - kill ~/.ciblink so the ci stops blinking -- see ciblink script
+
+rm ~/.ciblink

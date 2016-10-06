@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/5/state" -d '{"on":true, "bri":254,"sat":254,"hue":12750, "transitiontime":0}' 2>/dev/null > /dev/null

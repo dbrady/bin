@@ -1,0 +1,12 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+curl -X PUT http://192.168.0.66/api/0zLUHY6YNwVGJ46tL-OUbeNclPbvU6SjS8-OhtFu/lights/1/state -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}'
+curl -X PUT http://192.168.0.66/api/0zLUHY6YNwVGJ46tL-OUbeNclPbvU6SjS8-OhtFu/lights/2/state -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}'
+curl -X PUT http://192.168.0.66/api/0zLUHY6YNwVGJ46tL-OUbeNclPbvU6SjS8-OhtFu/lights/3/state -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}'

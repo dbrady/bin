@@ -1,0 +1,16 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+for i in 1 2 3 4 5; do
+    cion
+    sleep 0.25
+    cioff
+    sleep 0.25
+done
+cion

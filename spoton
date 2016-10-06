@@ -1,0 +1,14 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+# NOCOMMIT - This has my HUE key in it
+# Curl pukes on this with "Bad URL in request"
+# url="http://192.168.0.66/api/$HUE/lights/5/state"
+# curl -X PUT "$url" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}'
+curl -X PUT http://192.168.0.66/api/0zLUHY6YNwVGJ46tL-OUbeNclPbvU6SjS8-OhtFu/lights/6/state -d '{"on":true, "bri":254,"sat":0,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
