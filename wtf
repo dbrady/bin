@@ -1,0 +1,2 @@
+#!/bin/sh
+ruby -e 'puts "2nnjo47vml9czg8b4".to_i(36).to_s(2).split(//).each_slice(17).map{|s| (s*"").tr("01"," #") }'

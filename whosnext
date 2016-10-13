@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require 'figlet'
+
+srand((Time.now.to_f * 1000).to_i)
+next_up = %w(chris.meadows david.brady chris.mcnabb shaun.eutsey kevin.plotner graham.mcintire).sample
+
+font = Figlet::Font.new(File.join(File.dirname(__FILE__), 'gothic.flf'))
+figlet = Figlet::Typesetter.new(font)
+puts figlet[next_up]

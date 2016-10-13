@@ -1,0 +1,6 @@
+#!/bin/sh
+# xcalib is a monitor dimming/manipulating program for Ubuntu Linux.
+# This script runs it in invert color mode, similar to hitting C+M+A+8
+# on OS X. You can do a lot more with xcalib, check out
+# http://xcalib.sourceforge.net/ for deets.
+xcalib -i -a
