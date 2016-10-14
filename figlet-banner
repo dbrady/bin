@@ -11,6 +11,7 @@
 #           /  \
 #          '----`
 require 'figlet'
+require 'io/console'
 
 def show_usage
   puts <<USAGE
@@ -23,9 +24,10 @@ Usage:
     figlet-banner <options> [message]
 
 Options:
-    --help        - show this message
-    --list        - list installed fonts
-    --font <name> - use this font
+    --help            - show this message
+    --list            - list installed fonts
+    --font <name>     - use this font
+    -i, --interactive - interactively choose font
 USAGE
 end
 
@@ -33,13 +35,115 @@ def font_dir
   File.join(File.dirname(__FILE__), 'figlet-fonts')
 end
 
-def list_fonts
+def font_list
   font_folder = File.join(font_dir, '*.flf')
-  puts Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }
+  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }
 end
 
-# If we did not receive a --font=<file> option, write our
-# __DATA__segment out to /tmp/gothic.flf and set that to our font file
+def screen_width
+  $stdin.winsize[1]
+end
+
+ESC = 27.chr
+
+class Banner
+  BACK = 2.chr
+  FORWARD = 6.chr
+  PREVIOUS = 16.chr
+  NEXT = 14.chr
+  ENTER = "\r"
+
+  attr_reader :message, :fonts, :font_index
+  def initialize(message, fonts, font='gothic')
+    @message, @fonts, @font = message, fonts, font
+    @font_index = fonts.index font
+  end
+
+  def interactive_choose_font
+    done = false
+    until done
+      clear_screen
+      render_list
+      render_message
+      key = $stdin.getc
+      case key
+      when BACK, "h"
+        @font_index = (font_index - column_height) % fonts.size
+      when FORWARD, "l"
+        @font_index = (font_index + column_height) % fonts.size
+      when PREVIOUS, "k"
+        @font_index = (font_index - 1) % fonts.size
+      when NEXT, "j"
+        @font_index = (font_index + 1) % fonts.size
+      when ENTER
+        done = true
+        clear_screen
+        render_message
+      end
+    end
+  end
+
+  def clear_screen
+    print "#{ESC}[2J#{ESC}[0;0H"
+  end
+
+  def font_dir
+    File.join(File.dirname(__FILE__), 'figlet-fonts')
+  end
+
+  def font_file
+    File.join(font_dir, fonts[font_index] + '.flf')
+  end
+
+  def font_name
+    fonts[font_index]
+  end
+
+  def longest_font
+    fonts.map(&:size).max + 3
+  end
+
+  def columns
+    screen_width / longest_font
+  end
+
+  def column_height
+    (fonts.size.to_f / columns).ceil
+  end
+
+  def render_list
+    format = "%-#{longest_font}s"
+    fonts2 = fonts.map {|f| '  ' + f }
+    fonts2[font_index][0] = '>'
+    font_columns = fonts2.each_slice(column_height).to_a
+
+    font_columns.first.size.times do |i|
+      puts font_columns.map {|column| format % column[i]} * ''
+    end
+  end
+
+  def render_message
+    begin
+      font_file = File.join(font_dir, font_name + '.flf')
+      font = Figlet::Font.new(font_file)
+      figlet = Figlet::Typesetter.new(font)
+      puts figlet[message]
+    rescue NoMethodError
+      puts "<Font does not have characters necessary to render message>"
+    end
+  end
+
+  def render
+    # clear_screen
+    render_list
+    puts
+    render_message
+  end
+end
+
+# ======================================================================
+# MAIN SCRIPT
+# ======================================================================
 argv = ARGV.dup
 
 if argv.include? '--help'
@@ -48,9 +152,12 @@ if argv.include? '--help'
 end
 
 if argv.include? '--list'
-  list_fonts
+  puts font_list
   exit
 end
+
+interactive = argv.index('-i') || argv.index('--interactive')
+argv.slice!(interactive) if interactive
 
 font_name = if index = argv.index('--font')
               argv.slice!(index, 2).last
@@ -58,943 +165,16 @@ font_name = if index = argv.index('--font')
               'gothic'
             end
 
-font_file = File.join(font_dir, font_name + '.flf')
-font = Figlet::Font.new(font_file)
-figlet = Figlet::Typesetter.new(font)
-puts figlet[argv * ' ']
-__END__
-flf2a$ 9 8 14 -1 16
-Gothic.flf - Taken from a banner program called "gothic" by Howard Chu
-Figletization suggested bu Bob Bright (bright@cc.umanitoba.ca)
-Figletized by Wendell Hicken 11/19/93 (whicken@parasoft.com)
-Version 1.1 - updated on 11/23/93
-Version 1.11 - updated on 11/28/93 by Brian Tao (taob@io.org)
-             - adjusted baseline and fixed some spacing problems
-Explanation of first line:
-flf2 - "magic number" for file identification
-a    - should always be `a', for now
-$    - the "hardblank" -- prints as a blank, but can't be smushed
-9    - height of a character
-8    - height of a character, not including descenders
-14   - max line length (excluding comment lines) + a fudge factor
--1   - default smushmode for this font (like "-m 15" on command line)
-16   - number of comment lines
 
-      @
-      @
-      @
-      @
-      @
-      @
-      @
-      @
-      @@
-   @
-/\ @
-\/ @
-}{ @
-\/ @
-   @
-<> @
-   @
-   @@
-<> <> @
- )  ) @
-      @
-      @
-      @
-      @
-      @
-      @
-      @@
-  <> <>   @
-  }{ }{   @
-<>++=++<> @
-  }{ }{   @
-<>++=++<> @
-  }{ }{   @
-  <> <>   @
-          @
-          @@
- _++_, @
-||||   @
-||--.  @
- ~|||| @
-  |||| @
-,-__-  @
-  ||   @
-       @
-       @@
-      @
-    , @
-<>  / @
-   /  @
-  /   @
- /    @
-/  <> @
-`     @
-      @@
-      @
- /\   @
- \/   @
- /\ , @
-/'\\, @
-|  \\ @
-\\-/\ @
-      @
-      @@
-<>@
- )@
-  @
-  @
-  @
-  @
-  @
-  @
-  @@
- / @
-// @
-|| @
-|| @
-|| @
-\\ @
- \ @
-   @
-   @@
-\  @
-\\ @
-|| @
-|| @
-|| @
-// @
-/  @
-   @
-   @@
-        @
- <> <>  @
-  \ /   @
-<>-*-<> @
-  / \   @
- <> <>  @
-        @
-        @
-        @@
-       @
-       @
-  <>   @
-  }{   @
-<>--<> @
-  }{   @
-  <>   @
-       @
-       @@
-   @
-   @
-   @
-   @
-   @
-   @
-<> @
- ) @
-   @@
-      @
-      @
-      @
-      @
-<>-<> @
-      @
-      @
-      @
-      @@
-   @
-   @
-   @
-   @
-   @
-   @
-<> @
-   @
-   @@
-      @
-    / @
-   /  @
-  //  @
-  /   @
- //   @
- /    @
-/     @
-      @@
-      @
- /\\  @
-|| || @
-|| || @
-|| || @
-|| || @
- \\/  @
-      @
-      @@
-     @
- /|  @
-/||  @
- ||  @
- ||  @
- ||  @
-,/-' @
-     @
-     @@
-     @
- /\  @
-(  ) @
-  // @
- //  @
-/(   @
-{___ @
-     @
-     @@
-____ @
-` // @
- //  @
- \\  @
-  )) @
- //  @
-/'   @
-     @
-     @@
-  ,  @
- /|  @
-/ |  @
-__|_ @
----- @
-  |  @
- ,_, @
-     @
-     @@
-____  @
-||  ` @
-||_   @
-|/ \  @
-   )) @
-  //  @
- /'   @
-      @
-      @@
-      @
-  ,/  @
- //   @
-((_-  @
-|| )) @
-(( || @
- \//  @
-      @
-      @@
-____  @
-`  || @
-   /, @
-  //  @
- ((   @
- ||   @
- |'   @
-      @
-      @@
-      @
- /\\  @
-|| || @
- \ /  @
- /\\  @
-// \\ @
-|| || @
- \\/  @
-      @@
-      @
- /\\  @
-|| || @
-|| || @
- \/|| @
-   || @
- \_/  @
-      @
-      @@
-   @
-   @
-   @
-<> @
-   @
-   @
-<> @
-   @
-   @@
-   @
-   @
-   @
-<> @
-   @
-   @
-<> @
- ) @
-   @@
-      @
-    / @
-   /  @
- //   @
-<<    @
- \\   @
-   \  @
-    \ @
-      @@
-      @
-      @
-      @
-<>-<> @
-      @
-<>-<> @
-      @
-      @
-      @@
-      @
-\     @
- \    @
-  \\  @
-   >> @
-  //  @
- /    @
-/     @
-      @@
- -_  @
-/ \\ @
-` || @
-  |, @
- ((  @
-     @
- <>  @
-     @
-     @@
-      @
- /\\  @
-|| || @
-||/|| @
-||\|  @
-||    @
- \\_, @
-      @
-      @@
-  ___    @
- -   -_, @
-(  ~/||  @
-(  / ||  @
- \/==||  @
- /_ _||  @
-(  - \\, @
-         @
-         @@
-          @
-_-_ _,,   @
-   -/  )  @
-  ~||_<   @
-   || \\  @
-   ,/--|| @
-  _--_-'  @
- (        @
-          @@
-         @
-  ,- _~. @
- (' /|   @
-((  ||   @
-((  ||   @
- ( / |   @
-  -____- @
-         @
-         @@
-          @
--_____    @
-  ' | -,  @
- /| |  |` @
- || |==|| @
-~|| |  |, @
- ~-____,  @
-(         @
-          @@
-         @
-  ,- _~, @
- (' /| / @
-((  ||/= @
-((  ||   @
- ( / |   @
-  -____- @
-         @
-         @@
-    _ ,@
-  ,- - @
- _||_  @
-' ||   @
-  ||   @
-  |,   @
-_-/    @
-       @
-       @@
-    __ ,  @
-  ,-| ~   @
- ('||/__, @
-(( |||  | @
-(( |||==| @
- ( / |  , @
-  -____/  @
-          @
-          @@
-          @
-_-_-      @
-  /,      @
-  || __   @
- ~||-  -  @
-  ||===|| @
- ( \_, |  @
-       `  @
-          @@
-     @
-_-_, @
-  // @
-  || @
- ~|| @
-  || @
-_-_, @
-     @
-     @@
-       @
- _-_,, @
-(  //  @
-  _||  @
-  _||  @
-   ||  @
--__-,  @
-       @
-       @@
-          @
-_-_-,     @
-  // ,    @
-  ||/\\   @
- ~|| <    @
-  ||/\\   @
- _-__,\\, @
-          @
-          @@
-        @
-_-_-    @
- /,     @
- ||     @
-~||     @
- ||     @
-(  -__, @
-        @
-        @@
-           @
-  /\\,/\\, @
- /| || ||  @
- || || ||  @
- ||=|= ||  @
-~|| || ||  @
- |, \\,\\, @
-_-         @
-           @@
-    __   @
-   /  -, @
-  ||   ) @
- ~||---) @
- ~||---, @
- ~||  /  @
-  |, /   @
--_-  --~ @
-         @@
-    __     @
-  ,-||-,   @
- ('|||  )  @
-(( |||--)) @
-(( |||--)) @
- ( / |  )  @
-  -____-   @
-           @
-           @@
-         @
--__ /\\  @
-  ||  \\ @
- /||__|| @
- \||__|| @
-  ||  |, @
-_-||-_/  @
-  ||     @
-         @@
-    __     @
-  ,-||-,   @
- ('|||  )  @
-(( |||--)) @
-(( |||--)) @
- ( / |  )  @
-  -____-\\ @
-           @
-           @@
-         @
--__ /\   @
-  || \,  @
- /|| /   @
- \||/-   @
-  ||  \  @
-_---_-|, @
-         @
-         @@
-        @
-  -_-/  @
- (_ /   @
-(_ --_  @
-  --_ ) @
- _/  )) @
-(_-_-   @
-        @
-        @@
- ___        @
--   ---___- @
-   (' ||    @
-  ((  ||    @
- ((   ||    @
-  (( //     @
-    -____-  @
-            @
-            @@
- _ _    _ , @
-- - /  - -  @
-  ('||  ||  @
- (( ||--||  @
- (( ||--||  @
- (( /   ||  @
-   -___-\\, @
-            @
-            @@
- _      @
-- - _-  @
-  )-  ) @
-  )___) @
- ~)___) @
-  )  )  @
- /-_/   @
-        @
-        @@
- _        @
-- - /, /, @
-  )/ )/ ) @
-  )__)__) @
- ~)__)__) @
-  )  )  ) @
- /-_/-_/  @
-          @
-          @@
- _        @
-- -    /` @
-  \\  /   @
-   \\/    @
-  ==/\==  @
-   / \\   @
-\\/   \\, @
-          @
-          @@
-         @
--_   _   @
-  |,- `  @
- ~||__)) @
- ~||__)) @
-  |_ _,  @
- -' -    @
-( _-_    @
-         @@
-      @
-_-___ @
-    / @
-   /  @
- =/=  @
- /    @
-/-__- @
-      @
-      @@
-  __ @
-||   @
-||   @
-||   @
-||   @
-||   @
-||   @
-||__ @
-     @@
-      @
-\     @
- \    @
- \\   @
-  \   @
-  \\  @
-   \  @
-    \ @
-      @@
-__   @
-  || @
-  || @
-  || @
-  || @
-  || @
-  || @
-__|| @
-     @@
-  x   @
- / \  @
-/   \ @
-      @
-      @
-      @
-      @
-      @
-      @@
-      @
-      @
-      @
-      @
-      @
-      @
-      @
-_____ @
-      @@
-   @
-<> @
-(  @
-   @
-   @
-   @
-   @
-   @
-   @@
-      @
-      @
-  _   @
- < \, @
- /-|| @
-(( || @
- \/\\ @
-      @
-      @@
-      @
-,,    @
-||    @
-||/|, @
-|| || @
-|| |' @
-\\/   @
-      @
-      @@
-     @
-     @
-     @
- _-_ @
-||   @
-||   @
-\\,/ @
-     @
-     @@
-      @
- |\   @
-  \\  @
- / \\ @
-|| || @
-|| || @
- \\/  @
-      @
-      @@
-      @
-      @
-      @
- _-_  @
-|| \\ @
-||/   @
-\\,/  @
-      @
-      @@
-     @
-  /\ @
- ||  @
-=||= @
- ||  @
- ||  @
- \\, @
-     @
-     @@
-      @
-      @
-  _   @
- / \\ @
-|| || @
-|| || @
-\\_-| @
- /  \ @
-'----`@@
-      @
-,,    @
-||    @
-||/\\ @
-|| || @
-|| || @
-\\ |/ @
-  _/  @
-      @@
-   @
-   @
- ' @
-\\ @
-|| @
-|| @
-\\ @
-   @
-   @@
-   @
-   @
- ' @
-\\ @
-|| @
-|| @
-|| @
-|; @
-/  @@
-     @
-,,   @
-||   @
-||/\ @
-||_< @
-|| | @
-\\,\ @
-     @
-     @@
-   @
-,, @
-|| @
-|| @
-|| @
-|| @
-\\ @
-   @
-   @@
-         @
-         @
-         @
-\\/\\/\\ @
-|| || || @
-|| || || @
-\\ \\ \\ @
-         @
-         @@
-      @
-      @
-      @
-\\/\\ @
-|| || @
-|| || @
-\\ \\ @
-      @
-      @@
-      @
-      @
-      @
- /'\\ @
-|| || @
-|| || @
-\\,/  @
-      @
-      @@
-      @
-      @
-      @
--_-_  @
-|| \\ @
-|| || @
-||-'  @
-|/    @
-'     @@
-      @
-      @
-      @
- /'\\ @
-|| || @
-|| || @
-\\,|| @
-   || @
-   '` @@
-      @
-      @
-      @
-,._-_ @
- ||   @
- ||   @
- \\,  @
-      @
-      @@
-      @
-      @
-      @
- _-_, @
-||_.  @
- ~ || @
-,-_-  @
-      @
-      @@
-     @
-  ,  @
- ||  @
-=||= @
- ||  @
- ||  @
- \\, @
-     @
-     @@
-      @
-      @
-      @
-\\ \\ @
-|| || @
-|| || @
-\\/\\ @
-      @
-      @@
-     @
-     @
-;    @
-\\/\ @
-|| | @
-|| | @
-\\/  @
-     @
-     @@
-       @
-       @
-;      @
-\\/\/\ @
-|| | | @
-|| | | @
-\\/\\/ @
-       @
-       @@
-      @
-      @
-,     @
-\\ /` @
- \\   @
- /\\  @
-/  \; @
-      @
-      @@
-       @
-       @
-       @
-'\\/\\ @
- || ;' @
- ||/   @
- |/    @
-(      @
- -_-   @@
-    @
-    @
-    @
-/\\ @
- /  @
-/\\ @
- || @
- /  @
-(,  @@
-   _ @
-  (  @
-  )  @
-  )  @
--{   @
-  )  @
-  )  @
-  (_ @
-     @@
-   @
-|| @
-|| @
-|| @
-|| @
-|| @
-|| @
-|| @
-   @@
-_    @
- )   @
- (   @
- (   @
-  }- @
- (   @
- (   @
-_)   @
-     @@
- _    @
-/ \_/ @
-      @
-      @
-      @
-      @
-      @
-      @
-      @@
-  ___    @
- -   -_, @
-(  ~/||  @
-(  / ||  @
- \/==||  @
- /_ _||  @
-(  - \\, @
-         @
-         @@
-    __     @
-  ,-||-,   @
- ('|||  )  @
-(( |||--)) @
-(( |||--)) @
- ( / |  )  @
-  -____-   @
-           @
-           @@
- _ _    _ , @
-- - /  - -  @
-  ('||  ||  @
- (( ||--||  @
- (( ||--||  @
- (( /   ||  @
-   -___-\\, @
-            @
-            @@
-      @
- ` `  @
-  _   @
- < \, @
- /-|| @
-(( || @
- \/\\ @
-      @
-      @@
-      @
- ` `  @
-      @
- /'\\ @
-|| || @
-|| || @
-\\,/  @
-      @
-      @@
-      @
- ` `  @
-      @
-\\ \\ @
-|| || @
-|| || @
-\\/\\ @
-      @
-      @@
-          @
-_-_ _,,   @
-   -/  )  @
-  ~||_<   @
-   || \\  @
-   ,/--|| @
-  _--_-'  @
- ( ||     @
-   ||     @@
+state=`stty -g`
+system 'stty raw -echo cbreak'
+begin
+  banner = Banner.new argv * ' ', font_list, font_name
+  if interactive
+    banner.interactive_choose_font
+  else
+    banner.render
+  end
+ensure
+  system "stty #{state}"
+end
