@@ -118,7 +118,12 @@ class Banner
     font_columns = fonts2.each_slice(column_height).to_a
 
     font_columns.first.size.times do |i|
-      puts font_columns.map {|column| format % column[i]} * ''
+      row = ''
+      font_columns.each do |column|
+        row << format % column[i]
+      end
+      puts row
+      # puts font_columns.map {|column| format % column[i]} * ''
     end
   end
 
