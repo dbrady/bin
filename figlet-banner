@@ -64,6 +64,7 @@ class Banner
     until done
       clear_screen
       render_list
+      render_navhelp
       render_message
       key = $stdin.getc
       case key
@@ -120,11 +121,19 @@ class Banner
     font_columns.first.size.times do |i|
       row = ''
       font_columns.each do |column|
-        row << format % column[i]
+        this_font = column[i]
+        if this_font == '> ' + font_name
+          row << ("#{ESC}[1;42m" + format + "#{ESC}[0m") % column[i]
+        else
+          row << format % column[i]
+        end
       end
       puts row
-      # puts font_columns.map {|column| format % column[i]} * ''
     end
+  end
+
+  def render_navhelp
+    puts "#{ESC}[30;47mNavigate: h,j,k,l or C-b, C-n, C-p, C-f#{ESC}[0m"
   end
 
   def render_message
@@ -139,6 +148,9 @@ class Banner
   end
 
   def render
+    # clear_screen
+    render_list
+    puts
     render_message
   end
 end
