@@ -145,7 +145,7 @@ class Banner
   end
 
   def render_command
-    puts "#{$0} --font #{font_name} \"#{message}\""
+    puts "#{File.basename($0)} --font #{font_name} \"#{message}\""
     puts
   end
 
