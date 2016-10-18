@@ -161,9 +161,6 @@ class Banner
   end
 
   def render
-    # clear_screen
-    render_list
-    puts
     render_message
   end
 end
