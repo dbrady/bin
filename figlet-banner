@@ -51,6 +51,8 @@ class Banner
   FORWARD = 6.chr
   PREVIOUS = 16.chr
   NEXT = 14.chr
+  BOL = 1.chr
+  EOL = 5.chr
   ENTER = "\r"
 
   attr_reader :message, :fonts, :font_index
@@ -76,6 +78,11 @@ class Banner
         @font_index = (font_index - 1) % fonts.size
       when NEXT, "j"
         @font_index = (font_index + 1) % fonts.size
+      when BOL, "^"
+        @font_index = font_index % column_height
+      when EOL, "$"
+        @font_index += column_height until @font_index > fonts.size
+        @font_index -= column_height
       when ENTER
         done = true
         clear_screen
@@ -133,7 +140,7 @@ class Banner
   end
 
   def render_navhelp
-    puts "#{ESC}[30;47mNavigate: h,j,k,l or C-b, C-n, C-p, C-f#{ESC}[0m"
+    puts "#{ESC}[30;47mNavigate: h,j,k,l,^,$ or C-b, C-n, C-p, C-f, C-a, C-e#{ESC}[0m"
   end
 
   def render_message
