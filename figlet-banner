@@ -37,7 +37,7 @@ end
 
 def font_list
   font_folder = File.join(font_dir, '*.flf')
-  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') } # .reject {|f| f.start_with?("contrib-") }
+  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }
 end
 
 def screen_width
@@ -86,6 +86,7 @@ class Banner
       when ENTER
         done = true
         clear_screen
+        render_command
         render_message
       end
     end
@@ -141,6 +142,11 @@ class Banner
 
   def render_navhelp
     puts "#{ESC}[30;47mNavigate: h,j,k,l,^,$ or C-b, C-n, C-p, C-f, C-a, C-e#{ESC}[0m"
+  end
+
+  def render_command
+    puts "#{$0} --font #{font_name} \"#{message}\""
+    puts
   end
 
   def render_message
