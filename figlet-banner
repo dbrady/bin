@@ -37,7 +37,7 @@ end
 
 def font_list
   font_folder = File.join(font_dir, '*.flf')
-  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }
+  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }.reject {|f| f.start_with?("contrib-") }
 end
 
 def screen_width
