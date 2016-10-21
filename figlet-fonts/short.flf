@@ -1,11 +1,15 @@
-flf2a$ 3 2 8 -1 4
+flf2a$ 3 2 8 -1 8
 Short and sweet by Sub-Zero (bodom@ugly.ucs.indiana.edu)
 Completed and ported to figlet by Juan Car (jc@juguete.quim.ucm.es)
 Improved again by Sub-Zero
 
-$@
-$@
-$@@
+---
+
+Font modified June 17, 2007 by patorjk 
+This was to widen the space character.
+$$@
+$$@
+$$@@
  |@
  .@
   @@
