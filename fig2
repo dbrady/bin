@@ -2,4 +2,4 @@
 # This wraps the figlet binary available from the internets.
 # OS X: brew install figlet
 font=$1; shift
-figlet -d /Users/dbrady/bin/figlet-fonts/ -w $COLUMNS -f"$font" $*
+figlet -d /Users/dbrady/bin/figlet-fonts/ -w 239 -f$font $*

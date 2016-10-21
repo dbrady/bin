@@ -1,0 +1,20 @@
+#!/bin/bash
+# git-favor <new> <old> - favor new file over existing file
+#
+# 1. Removes old file
+# 2. Renames new file to old file's name
+# 3. Commits new file with "Replace <old> with <new>, renaming it to <old>"
+#
+# E.g. say 3-d.flf is a decent figlet font but new-3-d.flf is a better one--they
+# are identical except for new-3-d.flf having more characters and better
+# kerning.
+#
+# git favor new-3-d.flf 3-d.flf
+#
+# =>
+# git rm 3-d.flf
+# git mv new-3-d.flf 3-d.flf
+# git commit -m "Replace 3-d.flf with new-3-d.flf, renaming it to 3-d.flf"
+git rm "$2"
+git mv "$1" "$2"
+git commit -m "Replace $2 with $1, renaming it to $2"
