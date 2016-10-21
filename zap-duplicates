@@ -43,7 +43,7 @@ files_by_hash.each do |hash, files|
     puts "    Keeping '#{keeper}'..."
     files.each do |file|
       next if file == keeper
-      command = %Q[git rm -f '#{file}']
+      command = %Q[git rm -f '#{file}' || rm '#{file}']
       puts "    #{command}"
       system command
     end
