@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+# zap-duplicates - find duplicate files in a folder and git rm them
+
+files = case ARGV.size
+        when 0 then
+          files = Dir.glob './*'
+        when 1 then
+          if File.directory? ARGV.first
+            path = File.join(ARGV.first, "*")
+          else
+            path = ARGV.first
+          end
+          files = Dir.glob path
+        else ARGV.dup
+        end
+
+files_by_hash = Hash.new {|h,k| h[k] = []}
+
+os = `uname -a | awk '{ print $1 }'`.strip
+checksum_app = case os
+               when 'Darwin' then 'md5 -q "%s"'
+               when 'Linux' then %q[md5sum "%s" | awk '{ print $1 }']
+               else 'sha "%s"' # slower but works everywhere my ~/bin is installed
+               end
+puts "Using checksumming app #{checksum_app.split.first}"
+
+files.each do |file|
+  command = checksum_app % file
+  hash = `#{command}`.strip
+  files_by_hash[hash] << file
+end
+puts '----'
+
+files_by_hash.each do |hash, files|
+  if files.size > 1
+    puts "#{hash}:"
+    files.each do |file|
+      puts "    #{file}"
+    end
+
+    # find best filename; usually shortest, but not always
+    keeper = files.min_by(&:size)
+    puts "    Keeping '#{keeper}'..."
+    files.each do |file|
+      next if file == keeper
+      command = %Q[git rm -f '#{file}']
+      puts "    #{command}"
+      system command
+    end
+  end
+end
