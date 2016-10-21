@@ -1,4 +1,4 @@
-flf2a 7 5 10 -1 12
+flf2a 7 5 10 -1 17
 Alphabet by Wendell Hicken 11/93 (whicken@parasoft.com)
 
 Explanation of first line:
@@ -11,13 +11,18 @@ $    - the "hardblank" -- prints as a blank, but can't be smushed
 15   - default smushmode for this font (like "-m 15" on command line)
 12   - number of comment lines
 
-@
-@
-@
-@
-@
-@
-@@
+---
+
+Font modified June 17, 2007 by patorjk 
+This was to widen the space character.
+
+  @
+  @
+  @
+  @
+  @
+  @
+  @@
 !!! @
 !!! @
 !!! @
