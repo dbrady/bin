@@ -1,14 +1,20 @@
-flf2a$ 8 8 17 -1 2
+flf2a$ 8 8 17 -1 8
 basic.flf by Craig O'Flaherty <cofl@it.ntu.edu.au>
 August 17, 1994
-$$@
-$$@
-$$@
-$$@
-$$@
-$$@
-$$@
-$$@@
+
+---
+
+Font modified June 17, 2007 by patorjk 
+This was to widen the space character.
+
+$   $@
+$   $@
+$   $@
+$   $@
+$   $@
+$   $@
+$   $@
+$   $@@
 db$@
 88$@
 YP$@
