@@ -1,4 +1,4 @@
-flf2a$ 6 5 16 0 9
+flf2a$ 6 5 16 0 14
 Original font by Gordon Lee <93cmgl@eng.cam.ac.uk>
 ==================================================
 Original figletization by Tony Nugent (T.Nugent@sct.gu.edu.au)
@@ -8,12 +8,17 @@ the characters.  The last 6 chars need to be done properly.
 Version 2 by Ian Chai <spectre@uiuc.edu> Added the hardblank fix and
 the German characters.
 ==================================================
-  $@
-  $@
-  $@
-  $@
-  $@
-  $@@
+
+---
+
+Font modified June 17, 2007 by patorjk 
+This was to widen the space character.
+$   $@
+$   $@
+$   $@
+$   $@
+$   $@
+$   $@@
  oo$ @
 8888$@
 8888$@
