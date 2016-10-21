@@ -1,0 +1,3 @@
+#!/bin/bash
+font=$1; shift
+figlet -d /Users/dbrady/bin/figlet-fonts/ -w $COLUMNS -f"$font" $*
