@@ -1,4 +1,4 @@
-flf2a$ 8 4 14 0 21 0 16256
+flf2a$ 8 4 14 0 25 0 16256
 Cricket by Leslie Bates        Jan. 1, 1996
 cricket9@aros.net       http://www.aros.net/~cricket9
 I wish to thank Wade Fincher for the SIG that was used as a base for Cricket as
@@ -20,14 +20,18 @@ FIGfont.
 
  Also see the FIGlet website:  http://st-www.cs.uiuc.edu/users/chai/figlet.html
 
- $$@
- $$@
- $$@
- $$@
- $$@
-   @
-   @
-   @@
+---
+
+Font modified June 17, 2007 by patorjk 
+This was to widen the space character.
+ $ $@
+ $ $@
+ $ $@
+ $ $@
+ $ $@
+ $ $@
+ $ $@
+ $ $@@
   __ @
  |  |@
  |__|@
