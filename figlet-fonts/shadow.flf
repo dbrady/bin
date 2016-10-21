@@ -1,4 +1,4 @@
-flf2a$ 5 4 16 0 10 0 4992
+flf2a$ 5 4 16 0 14 0 4992
 Shadow by Glenn Chappell 6/93 -- based on Standard & SmShadow
 Includes ISO Latin-1
 figlet release 2.1 -- 12 Aug 1994
@@ -9,11 +9,15 @@ Modified by Paul Burton <solution@earthlink.net> 12/96 to include new parameter
 supported by FIGlet and FIGWin.  May also be slightly modified for better use
 of new full-width/kern/smush alternatives, but default output is NOT changed.
 
- $$@
- $$@
- $$@
- $$@
- $$@@
+---
+
+Font modified June 17, 2007 by patorjk 
+This was to widen the space character.
+$ $$@
+$ $$@
+$ $$@
+$ $$@
+$ $$@@
  $|$@
  $|$@
  _|$@
