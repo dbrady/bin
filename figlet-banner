@@ -146,15 +146,21 @@ class Banner
 
   def render_command
     puts "#{File.basename($0)} --font #{font_name} \"#{message}\""
+    puts "figlet -w #{screen_width} -d /Users/dbrady/bin/figlet-fonts -f #{font_name} \"#{message}\""
     puts
   end
 
   def render_message
     begin
-      font_file = File.join(font_dir, font_name + '.flf')
-      font = Figlet::Font.new(font_file)
-      figlet = Figlet::Typesetter.new(font)
-      puts figlet[message]
+      if 1
+        # If figlet is installed, it's way more bug-free, sadly
+        puts `figlet -d #{font_dir} -f #{font_name} -w #{screen_width} '#{message}'`
+      else
+        font_file = File.join(font_dir, font_name + '.flf')
+        font = Figlet::Font.new(font_file)
+        figlet = Figlet::Typesetter.new(font)
+        puts figlet[message]
+      end
     rescue NoMethodError
       puts "<Font does not have characters necessary to render message>"
     end
