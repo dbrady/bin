@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+# bigger <file1> <file2> - return true if file1 is bigger than file 2
+exit 0 if File.size(ARGV[0]) > File.size(ARGV[1])
+exit 1

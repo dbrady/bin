@@ -1,0 +1,17 @@
+#!/bin/bash
+# autocmp - auto compare new figlet fonts and choose the better
+
+# better: output of "Test Message" is the same, but new file is bigger,
+# presumably because it has more characters.
+
+# WARNING: I RAN THIS DIRECTLY FROM THE COMMAND LINE. IT IS NOT A SCRIPT.
+
+
+# bigger is a ruby script I wrote that returns shell exit 0 (true) if file 1 is
+# bigger than file 2.
+
+# git-favor is a script that removes old file, renames new to old, and commits
+# the new file in the old name. E.g. git favor new-3-d.flf 3-d.flf will leave us
+# with only 3-d.flf, which will have new-3-d.flf's contents.
+
+# for f in new-*; do echo $f; f2=$(echo $f | sed -e 's/^new-//'); fig2 $f Test Message | tee f1.txt; fig2 $f2 Test Message | tee f2.txt; echo "============================="; diff -qu f1.txt f2.txt && echo output is the same || echo OUTPUT IS DIFFERENT; bigger $f $f2 && echo NEW FILE IS BIGGER || echo new file is not bigger; diff -qu f1.txt f2.txt && bigger $f $f2 && echo I PROPOSE FAVORING THE NEW FILE && git favor $f $f2; done
