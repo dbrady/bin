@@ -41,7 +41,7 @@ def font_list
 end
 
 def screen_width
-  $stdin.winsize[1]
+  $stdout.winsize[1]
 end
 
 ESC = 27.chr
@@ -151,18 +151,18 @@ class Banner
   end
 
   def render_message
-    begin
-      if 1
-        # If figlet is installed, it's way more bug-free, sadly
-        puts `figlet -d #{font_dir} -f #{font_name} -w #{screen_width} '#{message}'`
-      else
+    if 1
+      # If figlet is installed, it's way more bug-free, sadly
+      puts `figlet -d #{font_dir} -f #{font_name} -w #{screen_width} '#{message}'`
+    else
+      begin
         font_file = File.join(font_dir, font_name + '.flf')
         font = Figlet::Font.new(font_file)
         figlet = Figlet::Typesetter.new(font)
         puts figlet[message]
+      rescue NoMethodError
+        puts "<Font does not have characters necessary to render message>"
       end
-    rescue NoMethodError
-      puts "<Font does not have characters necessary to render message>"
     end
   end
 
@@ -196,15 +196,15 @@ font_name = if index = argv.index('--font')
             end
 
 
-state=`stty -g`
-system 'stty raw -echo cbreak'
-begin
-  banner = Banner.new argv * ' ', font_list, font_name
-  if interactive
+banner = Banner.new argv * ' ', font_list, font_name
+if interactive
+  begin
+    state=`stty -g`
+    system 'stty raw -echo cbreak'
     banner.interactive_choose_font
-  else
-    banner.render
+  ensure
+    system "stty #{state}"
   end
-ensure
-  system "stty #{state}"
+else
+  banner.render
 end
