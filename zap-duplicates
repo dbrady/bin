@@ -39,11 +39,19 @@ files_by_hash.each do |hash, files|
     end
 
     # find best filename; usually shortest, but not always
-    keeper = files.min_by(&:size)
+    keeper = files.min_by(&:size) # shortest filename
+
+    # For this run I've generated short test output files of the same name as
+    # the font in ~/bin/compare-fonts. When two output files are identical,
+    # their fonts are nearly the same, so peek at the file sizes of the fonts
+    # that generated the test message, and keep the largest font file--it has
+    # the most renderable characters.
+    # keeper = files.max_by {|file| File.size(File.expand_path("../figlet-fonts/#{file}")) }
     puts "    Keeping '#{keeper}'..."
     files.each do |file|
       next if file == keeper
       command = %Q[git rm -f '#{file}' || rm '#{file}']
+      # command = %Q[git rm -f '../figlet-fonts/#{file}']
       puts "    #{command}"
       system command
     end
