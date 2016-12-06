@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# rubanner - print a message with color
+# rubanner [options] "message" [color [color2]]
+#
+# Example:
+# rubanner "Test Message" bold on_red
+#
+# Options:
+# -f font_name, --font=font_name
+
+require 'colorize'
+require 'io/console'
+
+screen_width = $stdout.winsize[1]
+argv = ARGV.dup
+
+font = if idx = argv.index('-f')
+         argv.delete_at idx
+         argv.delete_at idx
+       elsif idx = argv.index {|arg| arg =~ /^--font=/ }
+         argv.delete_at(idx).split(/=/)[1]
+       else
+         'electronic'
+       end
+
+message = argv.shift
+colors = argv.empty? ? ['bold', 'on_blue'] : argv
+
+if $DEBUG || ENV['RUBY_DEBUG']
+  puts '-' * 80
+  puts "Font: #{font}"
+  puts "Message: #{message}"
+  puts '--'
+  argv.each.with_index do |arg, idx|
+    puts "#{idx}: #{arg}"
+  end
+  puts '-' * 80
+end
+
+banner = `figlet -w #{screen_width} -d /Users/dbrady/bin/figlet-fonts -f "#{font}" "#{message}"`
+banner_width = banner.each_line.to_a.first.chomp.length
+left_size = (screen_width - banner_width) / 2
+right_size = screen_width - (banner_width + left_size)
+
+lpad = ' ' * left_size
+rpad = ' ' * right_size
+
+def colorize(text, colors)
+  colors.reduce(text) {|t, color| t.send color }
+end
+
+puts colorize("#{' ' * screen_width}", colors)
+
+banner.each_line do |line|
+  puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
+end
+puts colorize("#{' ' * screen_width}", colors)
