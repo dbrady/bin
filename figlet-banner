@@ -2,6 +2,9 @@
 # figlet-banner - Write a message to the console in ascii-art fo.nt
 #
 #
+# figlet-banner --font gothic "figlet-banner"
+# figlet -w 236 -d /Users/dbrady/bin/figlet-fonts -f gothic "figlet-banner"
+#
 #    /\          ,,         ,        ,,
 #   ||   '   _   ||        ||        ||      _
 #  =||= \\  / \\ ||  _-_  =||=       ||/|,  < \, \\/\\ \\/\\  _-_  ,._-_
@@ -12,6 +15,48 @@
 #          '----`
 require 'figlet'
 require 'io/console'
+
+# ----------------------------------------------------------------------
+# TODO: Sorting/searching. Need to create a search mode where typing a search
+# thingy would help you find the font you want.
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# TODO: Show/Include/Hide Categories. Tag fonts by size (tiny, medium, large),
+# art style (hashy, strokey, bubbly, antialiased), shaded, etc. Toggling a
+# category would change the size of the list of fonts considerably
+
+# Examples of font category ideas here, to explain what I mean
+# tiny: 1row, braced
+# medium: contrib-C64-ascii___ (fonts between 4 and 10 lines high)
+# large: calgphy2
+# hashy: contrib-C64-ascii___ (all of contrib-C64 and contrib-bdf, etc)
+# strokey: bolger, gothic
+# bubbly: bubble, colossal, dotmatrix (filled with o, O, 8, (_), etc)
+# antialiased: contrib-nvscript
+# shaded: bright, contrast
+# faded: cosmic, blood
+# solid: delta-corps-priest-1,
+
+# Fonts can be in more than one category, e.g. calgphy2 is large, stroked and
+# hashy.
+
+# When hiding or showing, you pick which categories you want to tag (yay, now we
+# need a tagging UI - SERIOUSLY gotta learn me some NCurses).
+#
+# If you are HIDING a category, a font will vanish if matches at all.
+# If you are SHOWING a category, a font will appear if ANY of its categories are
+# shown.
+
+# When showing, if ALL of the categories for the font are unchecked, it will
+# disappear.
+# When hiding, if ALL of the categories for the font are unchecked, it will
+# appear.
+
+# When HIDING large OR stroked OR hashy, calgphy2 will disappear
+# When SHOWING large OR stroked OR hashy, calgphy2 will appear
+# ----------------------------------------------------------------------
+
 
 def show_usage
   puts <<USAGE
