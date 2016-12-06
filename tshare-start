@@ -11,7 +11,7 @@
 $TCMD -S /tmp/work new-session -s work -n emacs -d
 
 # window    2    3    4       5
-for name in bash spec vagrant console; do
+for name in spec bash functionals console; do
     $TCMD -S /tmp/work new-window -n $name -t work
 done
 
@@ -24,24 +24,22 @@ $TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
 
 # leave window 2 (bash) alone
 
-$TCMD -S /tmp/work send-keys -t work:3 'cd ~/cmm/vagrant/code' C-m
+# $TCMD -S /tmp/work send-keys -t work:3 'cd ~/cmm/vagrant/code' C-m
 # $TCMD -S /tmp/work send-keys -t work:3 'vagrant ssh' C-m
 
-# $TCMD -S /tmp/work send-keys -t work:3 ''
+# Start vagrant. Because I'm doing this in two windows at once, I often get
+# errors saying that the VM is locked. Which window barfs is nondeterministic,
+# so tack on this messy check/retry/giveup bit to all windows with the temerity
+# to start vagrant.
+# $TCMD -S /tmp/work send-keys -t work:4 'cd ~/cmm/vagrant/code' C-m
+# $TCMD -S /tmp/work send-keys -t work:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
 # Start vagrant. Because I'm doing this in two windows at once, I often get
 # errors saying that the VM is locked. Which window barfs is nondeterministic,
 # so tack on this messy check/retry/giveup bit to all windows with the temerity
 # to start vagrant.
-$TCMD -S /tmp/work send-keys -t work:4 'cd ~/cmm/vagrant/code' C-m
-$TCMD -S /tmp/work send-keys -t work:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
-
-# Start vagrant. Because I'm doing this in two windows at once, I often get
-# errors saying that the VM is locked. Which window barfs is nondeterministic,
-# so tack on this messy check/retry/giveup bit to all windows with the temerity
-# to start vagrant.
-$TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant/code' C-m
-$TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+# $TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant/code' C-m
+# $TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
 # $TCMD -S /tmp/work send-keys -t work:5 '' C-m
 
