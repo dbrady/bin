@@ -7,6 +7,6 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/5/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
-
+rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" bold on_blue
 rubanner --font=electronic "RUNNING" bold on_blue
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/5/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
