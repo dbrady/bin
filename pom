@@ -1,6 +1,34 @@
-#!/bin/sh
+#!/usr/bin/env ruby
+# pom - silly pom timer for shared tmate/ssh sessions
+#
+# Usage:
+#
+# pom # 25:00
+# pom <seconds>
+# pom mm:ss
 
-# Choose a pom- word at random from dictionary (for Pomodoro worksheet
-# titles)
-grep -Ei '^pom' /usr/share/dict/words | pickone
 
+# TODO: handle hours (WHY???)
+
+# TODO: use ANSI.clear each frame so screen size doesn't matter
+
+time = if ARGV[0]
+         if ARGV[0] =~ /:/
+           m,s = *ARGV[0].split(/:/).map(&:to_i)
+           m * 60 + s
+         else
+           ARGV[0].to_i
+         end
+       else
+         25 * 60
+       end
+
+time.downto(0).each do |seconds|
+  min = seconds / 60
+  sec = seconds - (min*60)
+  display = "%2d.%02d" % [min, sec]
+  system "rubanner '#{display}'"
+  sleep 1
+end
+system 'rubanner "DONE" white on_green'
+system 'say "Timer is done"'
