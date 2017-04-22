@@ -1,11 +1,26 @@
 #!/usr/bin/ruby
+
+# ------------------------------------------------------------------------------
+# dbrady 2017-04-22: "flavor" - Use Github Flavored Markdown. Uses ruby. Needs
+# the json gem.
+#
+# TL;DR:
+# 1. put this in the path as "flavor" and chmod a+x it
+# 2. `rvm @global do gem install json`
+# 3. `flavor somefile.md > somefile.html` # BOOM. Done.
+# 4. emacs: `(setq markdown-command "/usr/local/bin/flavor")`, now `C-c C-c p`
+# will use flavor
+# 5. Everything you flavor or preview now gets washed through github's api which
+# is on their servers, so don't markdown your PHI or PII!!!
+# ------------------------------------------------------------------------------
+
 # Convert a Markdown README to HTML with Github Flavored Markdown
 # Github and Pygments styles are included in the output
 #
 # Requirements: json gem (`gem install json`)
 #
 # Input: STDIN or filename
-# Output: STDOUT 
+# Output: STDOUT
 # Arguments: "-c" to copy to clipboard (or "| pbcopy"), or "> filename.html" to output to a file
 # cat README.md | flavor > README.html
 
