@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+require 'trollop'
+
+# Parse options
+opts = Trollop.options do
+  opt :off, "Off", type: :boolean, default: false
+  opt :hue, "Hue", type: :integer, default: 46920
+  opt :bri, "Brightness", type: :integer, default: 255
+  opt :sat, "Saturation", type: :integer, default: 0
+  opt :time, "Transition Time", type: :integer, default: 0
+end
+# lamp numbers
+lights=ARGV.empty? ? [1,2,3,5,6] : ARGV
+opts[:on] = !opts[:off]
+
+lights.each do |lamp|
+  command = %Q[curl -X PUT "http://192.168.0.66/api/$HUE/lights/#{lamp}/state" -d '{"on":#{opts[:on].inspect}, "bri":#{opts[:bri]},"sat":#{opts[:sat]},"hue":#{opts[:hue]}, "transitiontime":#{opts[:time]}}' 2>/dev/null > /dev/null]
+  puts command
+  system command
+end
