@@ -42,6 +42,14 @@ $known_databases = {
     "long_switches" => { },
     "args" => ["database"]
   },
+  "postgresql" => {
+    "adapter" => /postgresql/,
+    "command" => "psql",
+    # psql does not accept password at command line. Sorry.
+    "short_switches" => { "username" => "U", "host" => "h", "port" => "p" },
+    "long_switches" => { },
+    "args" => ["database"]
+  },
   "mysql" => {
     "adapter" => /mysql(2)?/,
     "command" => "mysql",
@@ -74,7 +82,10 @@ def build_config_aliases(config, prefix='')
   aliases = []
   config.each do |name, env|
     next unless env.key?("database") && env.key?("adapter")
-    next unless recognized_adapter? env
+    if !recognized_adapter?(env)
+      puts "Skipping environment #{env} because adapter #{fetch_adapter env['adapter']} was unrecognized"
+      next
+    end
     adapter = fetch_adapter env["adapter"]
     command = "%s %s %s %s" % [adapter["command"],
                                adapter["short_switches"].map {|env_key, switch| '-%s "%s"' % [switch, env[env_key]] if env[env_key]}.compact.join(' '),
