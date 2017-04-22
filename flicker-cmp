@@ -1,0 +1,4 @@
+#!/bin/sh
+# flicker-cmp - combine two images into a flicker comparision and view it
+convert -delay 50 $1 $2 -loop 0 /tmp/flicker_cmp.gif
+open -a Safari.app /tmp/flicker_cmp.gif
