@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+
+require "csv"
+
+begin
+  require "text-table"
+rescue LoadError
+  puts "Cannot load text-table, please do:"
+  puts "gem install text-table"
+  puts "And try again."
+  exit -1
+end
+
+if ARGV.empty?
+  puts <<-USAGE
+#{File.basename __FILE__} - Redraw a CSV file as a text table
+Usage:
+  #{File.basename __FILE__} filename.csv
+USAGE
+  exit -2
+end
+
+ARGV.each do |file|
+  puts CSV.read(file, headers: true).to_a.to_table first_row_is_head: true
+  # ----------------------------------------------------------------------
+  # This version does the same as above but adds the filename in a centered cell
+  # that spans all the columns
+  # ----------------------------------------------------------------------
+  # ray = CSV.read(file, headers: true).to_a
+  # cols = ray.first.size
+  # puts Text::Table.new rows: [
+  #                        { value: file, colspan: cols, align: :center },
+  #                        :separator,
+  #                        ray.shift,
+  #                        :separator
+  #                      ] + ray
+  # ----------------------------------------------------------------------
+end
