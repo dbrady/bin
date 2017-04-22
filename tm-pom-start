@@ -1,0 +1,3 @@
+#!/bin/bash
+
+tmate -f ~/.tmux.reset.conf
