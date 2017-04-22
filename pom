@@ -23,11 +23,23 @@ time = if ARGV[0]
          25 * 60
        end
 
+ESC = 27.chr
+
+# 20% of total time OR 1 minute, whichever is smaller
+warning_time = [time * 0.2, 60].min
+
 time.downto(0).each do |seconds|
   min = seconds / 60
   sec = seconds - (min*60)
   display = "%2d.%02d" % [min, sec]
-  system "rubanner '#{display}'"
+  bg_color = if seconds <= warning_time
+               "on_yellow"
+             else
+               "on_blue"
+             end
+#  print "#{ESC}[2J#{ESC}[0;0H"
+#  puts output.inspect
+  system "rubanner '#{display}' #{bg_color}"
   sleep 1
 end
 system 'rubanner "DONE" white on_green'
