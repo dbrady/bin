@@ -3,10 +3,27 @@
 # rubanner [options] "message" [color [color2]]
 #
 # Example:
-# rubanner "Test Message" bold on_red
+# rubanner "Cool Banner"
+# rubanner "To Boldly Go" bold # black on white
+# rubanner "This is bad" light_white on_red # light_white == bold
+# rubanner "CoverMyMeds" --font=nancyj-improved bold red on_light_yellow # any colorize color string
 #
+# TODO:
+# rubanner [options] "message" [options] --extra ["message2" [options]] [--extra [...]]
+#
+# e.g. our company logo could be approximated with:
+# rubanner "Cover" on_light_white --font=nancyj-improved bold light_yellow \
+#          --extra "My" bold light_red \
+#          --extra "Meds" bold light_yellow
+
 # Options:
 # -f font_name, --font=font_name
+
+# TODO: fiddle with colors inline. Would love to be able to say --left-background=light_yellow --right-background=light_red
+# TODO: composed messages. Would LOVE to be able to say
+#     rubanner Cover bold light_yellow on_light_white \
+#              My bold light_red on_light_white \
+#              Meds bold light_yellow on_light_white
 
 require 'colorize'
 require 'io/console'
