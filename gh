@@ -1,3 +1,4 @@
 #!/bin/bash
 # gh - Open the github homepage for the current project
+echo "Opening the github homepage for this project..."
 open http://$(git remote show origin | grep "Fetch URL" | awk '{ print $3 }' | cut -d @ -f 2 | sed -e 's/:/\//')
