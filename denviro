@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
 unless defined? Rails
-  puts "Run me with rails runner!"
-  exit 1
+  cmd = "bundle exec rails runner #{__FILE__}"
+  puts cmd
+  system cmd
+  exit $?.to_i
 end
 
 if ARGV.count > 0
