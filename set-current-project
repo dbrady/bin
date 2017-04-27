@@ -82,6 +82,8 @@ def build_config_aliases(config, prefix='')
   aliases = []
   config.each do |name, env|
     next unless env.key?("database") && env.key?("adapter")
+    next if name == 'default'
+
     if !recognized_adapter?(env)
       puts "Skipping environment #{env} because adapter #{fetch_adapter env['adapter']} was unrecognized"
       next
@@ -117,7 +119,8 @@ aliases = []
 Dir.glob(File.join(target, 'config/database*.yml')).each do |config_file|
   if File.exists? config_file
     # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
-    config = YAML.load(File.read(config_file) + "\n")
+    output = "---\n" + `bundle exec rails runner /Users/dbrady/bin/denviro`
+    config = YAML.load(output)
     prefix = config_filename_prefix(config_file)
     aliases += build_config_aliases config, prefix
   end
