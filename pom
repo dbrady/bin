@@ -12,14 +12,20 @@
 
 # TODO: use ANSI.clear each frame so screen size doesn't matter
 
-time = if ARGV[0]
-         if ARGV[0] =~ /:/
-           m,s = *ARGV[0].split(/:/).map(&:to_i)
-           m * 60 + s
-         else
-           ARGV[0].to_i
-         end
+time = case ARGV[0]
+       when /^\d*:\d\d:\d\d$/
+         puts "H:MM:SS"
+         h,m,s = *ARGV[0].split(/:/).map(&:to_i)
+         h * 3600 + m * 60 + s
+       when /^\d+:\d\d$/
+         puts "MM:SS"
+         m,s = *ARGV[0].split(/:/).map(&:to_i)
+         m * 60 + s
+       when /\d+/
+         puts "SS"
+         ARGV[0].to_i
        else
+         puts "DEFAULT"
          25 * 60
        end
 
@@ -29,9 +35,14 @@ ESC = 27.chr
 warning_time = [time * 0.2, 60].min
 
 time.downto(0).each do |seconds|
-  min = seconds / 60
-  sec = seconds - (min*60)
-  display = "%2d.%02d" % [min, sec]
+  hours = seconds / 3600
+  min = seconds / 60 - (hours*60)
+  sec = seconds - (min*60) - (hours*3600)
+  display = if hours > 0
+              "%d.%02d.%02d" % [hours, min, sec]
+            else
+              "%2d.%02d" % [min, sec]
+            end
   bg_color = if seconds <= warning_time
                "on_yellow"
              else
