@@ -1,4 +1,11 @@
 #!/usr/bin/env ruby
+# denviro - dump file in Rails environment
+
+# Why: Because sometimes I open a settings.yml or config/database.yml and it's
+# so full of <%= ... %> garbage that I have no idea what's going on
+
+# Part I - If you launched this script without rails runner, relaunch itself
+# under rails runner
 unless defined? Rails
   cmd = "bundle exec rails runner #{__FILE__}"
   puts cmd
@@ -6,10 +13,12 @@ unless defined? Rails
   exit $?.to_i
 end
 
+# Part II - Accept an arg for  filename to parse. Defaults to config/database.yml
 if ARGV.count > 0
   file = ARGV.pop
 else
   file = "./config/database.yml"
 end
 
+# Part III - Load it, bind it, parse it, puts it
 puts Erubis::Eruby.new(File.read(file)).result binding
