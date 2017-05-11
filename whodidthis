@@ -1,0 +1,9 @@
+#!/bin/sh
+# whodidthis - Who is responsible for a given line of code? Wrapper
+# for git blame that targets a specific line and extracts author name.
+#
+# usage:
+#   whodidthis <file> <line>
+NAME=$(git blame $1 | head -n $2 | tail -n 1 | ruby -ne 'puts $1 if $_=~/\((.*?) 20\d\d-\d\d-\d\d/')
+echo $NAME did this to us
+say $NAME did this to us
