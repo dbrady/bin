@@ -6,23 +6,24 @@ intensity = if ARGV.empty?
               :random
             elsif ARGV[0] && (ARGV[0] == "--annoy" || ARGV[0] == "--annoying")
               :annoying
-            elsif ARGV[0] && (ARGV[0] == "--god-damn" || ARGV[0] == "--holy-shit" || ARGV[0] =~ /^--fu+(ck)?/i)
+            elsif ARGV[0] && (ARGV[0] == "--god-damn" || ARGV[0] == "--holy-shit" || ARGV[0] =~ /^--f+u+(ck)?/i)
               :fuuuck
             end
 
 case intensity
 when :annoying
   mp3 = File.expand_path("~/bin/glassbreak%02d.mp3" % ANNOYING.sample)
-  puts mp3
+  # puts mp3
   system "afplay #{mp3}"
 when :fuuuck
   (SHORT.shuffle + [ANNOYING.sample]).each do |mp3|
     mp3 = File.expand_path("~/bin/glassbreak%02d.mp3" % mp3)
-    puts mp3
-    system "afplay #{mp3}"
+    # puts mp3
+    system "afplay #{mp3} &"
+    sleep(0.2)
   end
 when :random
   mp3 = File.expand_path("~/bin/glassbreak%02d.mp3" % SHORT.sample)
-  puts mp3
+  # puts mp3
   system "afplay #{mp3}"
 end
