@@ -1,0 +1,16 @@
+#!/bin/bash
+# rfc - "(rspec focus) clear" - clears rspec focus. See also rff, rfg, and rfh.
+#
+# usage:
+#
+# rfc [-h]
+
+if [ "$1" = "-h" ]; then
+    rfh
+    exit 1
+fi
+
+echo 'Rspec Focus: Clear! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
+echo "Clearing spec focus..."
+
+rm -f ~/.spec_focus

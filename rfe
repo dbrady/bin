@@ -1,0 +1,4 @@
+#!/bin/bash
+# rfe - "rspec edit" - edit spec focus file
+echo 'Rspec Focus: Edit! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
+$EDITOR ~/.spec_focus

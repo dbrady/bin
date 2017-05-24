@@ -1,0 +1,12 @@
+#!/bin/sh
+# rfh - rspec focus help - show help message
+echo 'Rspec Focus: Help! (rf - Focus; rg - Go; rc - Clear; rh - Help)'
+echo "rff - '(rspec focus) focus' - focus specs by temporarily setting fixed args to rspec"
+echo "rfg - '(rspec focus) go' - runs focused specs by running with the fixed args"
+echo "rfc - '(rspec focus) clear' - clears focused specs"
+echo "rfe - '(rspec focus) edit' - edit focused specs"
+echo "rfv - '(rspec focus) view' - view focused specs"
+echo "rfh - '(rspec focus) help' - show this help message"
+echo
+echo Current rspec focus is: `cat ~/.spec_focus`
+exit 1
