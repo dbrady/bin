@@ -1,0 +1,17 @@
+#!/bin/bash
+# rfg - "rspec go" rus specs focused on a specific subset, set by rff ("rspec focus")
+#
+# usage:
+#
+# rfg [additional args or focus--will not change focus]
+
+if [ "$1" = "-h" ]; then
+    rfh
+    exit 1
+fi
+
+echo 'Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
+echo "Running focused specs"
+echo time bundle exec rspec $@ $(cat ~/.spec_focus)
+cirun
+time (bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || cifail)

@@ -1,0 +1,33 @@
+#!/bin/bash
+# rff - "rspec focus" - focus specs on a specific subset, to be run with rg ("rspec go")
+#
+# focused args are stored in ~/.spec_focus.
+#
+# usage:
+#
+# Focus rspec on a single folder, file, or line:
+# rff spec/models
+# rff spec/models/some_model.rb
+# rff spec/models/some_model.rb:23
+#
+# and/or force arguments:
+# rff -f d spec/models
+# rff -f d spec/models/some_model.rb
+# rff -f d spec/models/some_model.rb:23
+#
+# Because rspec takes groups of files, you can focus on a set of files, e.g. for a feature:
+# rff spec/models/cache_spec.rb spec/interfaces/cache_inteface_spec.rb spec/controllers/cache_controller_spec.rb
+#
+# Or to just run model specs (e.g. if they are well-factored into unit-test style specs):
+# rff spec/models
+
+
+# TODO: Provide a way to split out environment prefixes, e.g. `rff COVERAGE=true : -f d`
+if [ "$1" = "-h" ]; then
+    rfh
+    exit 1
+fi
+
+echo 'Rspec Focus: Focus! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
+echo "Focusing specs on $@..."
+echo -n $@ > ~/.spec_focus

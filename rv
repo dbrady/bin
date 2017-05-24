@@ -1,4 +1,0 @@
-#!/bin/bash
-echo 'Rspec Focus: View! (rf - Focus; rg - Go; rc - Clear; re - Edit; rv - View; rh - Help)'
-cat ~/.spec_focus
-echo
