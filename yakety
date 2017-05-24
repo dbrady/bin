@@ -1,2 +1,2 @@
 #!/bin/sh
-afplay ~/bin/benny-hill-theme.mp3
+afplay ~/bin/benny-hill-theme-quiet.mp3
