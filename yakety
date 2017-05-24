@@ -1,0 +1,2 @@
+#!/bin/sh
+afplay ~/bin/benny-hill-theme.mp3
