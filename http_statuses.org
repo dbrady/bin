@@ -1,0 +1,139 @@
+* HTTP Status Codes
+
+See Also:
+Short/Mostly Canonical List: https://httpstatuses.com/
+Comprehensive List with Unofficials: https://en.wikipedia.org/wiki/List_of_HTTP_status_codes
+Best Listing Ever: https://http.cat
+
+* The Codes
+
+|-----+-------------------------------+-----------------------------------------------------------------------------------------------------------------|
+| 1** | Informational                 |                                                                                                                 |
+|-----+-------------------------------+-----------------------------------------------------------------------------------------------------------------|
+| 100 | Continue                      | Server has received request headers and client should proceed to send the request body                          |
+| 101 | Switching Protocols           | Requester has asked server to switch protocols and the server has agreed to do so                               |
+| 102 | Processing (WebDAV; RFC 2518) | A WebDAV request may contain many subrequests; this response keeps the client from disconnecting due to timeout |
+| 103 | Checkpoint [Unofficial]       | Used in the resumable requests proposal to resume aborted PUT or POSTS requests                                 |
+| 103 | Early Hints [Unofficial]      | Used to return some response headers before entire HTTP response                                                |
+|-----+-------------------------------+-----------------------------------------------------------------------------------------------------------------|
+
+|-----+-------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 2×× | Success                             |                                                                                                                                                                                      |
+|-----+-------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 200 | OK                                  | Standard response for successful HTTP requests                                                                                                                                       |
+| 201 | Created                             | Request has been fulfilled resulting in the creation of a new resource                                                                                                               |
+| 202 | Accepted                            | Request has been accepted for processing but the processing has not been completed (request may or may not be completed and may be disallowed when processing occurs)                |
+| 203 | Non-authoritative Information       | The server is a transforming proxy that received a 200 OK from its origin, but is returning a modified version of the origin's response                                              |
+| 204 | No Content                          | The server successfully processed the request and is not returning any content                                                                                                       |
+| 205 | Reset Content                       | Same as 204 but the requester is required to reset the document view                                                                                                                 |
+| 206 | Partial Content (RFC 7233)          | The server is delivering only part of the resource (e.g. byte serving) due to a range header sent by the client (used to resume downloads or split a download into multiple streams) |
+| 207 | Multi-Status (WebDAV; RFC 4918)     | Message body contains an XML message that can contain separate response codes depending on how many sub-requests were made                                                           |
+| 208 | Already Reported (WebDAV; RFC 5842) | The members of a DAV binding have already been enumerated in a preceding part of the (multistatus) response, and are not being included again                                        |
+| 226 | IM Used (RFC 3229)                  | The server has fulfilled the request for a resource, and the response is a representation of the result of one or more Instance Manipulations applied to the current instance        |
+|-----+-------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+
+|-----+-------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 3×× | Redirection                   |                                                                                                                                                                                                    |
+|-----+-------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 300 | Multiple Choices              | Multiple options for the resource exist from which the client may choose (agent-driven content negotiation)                                                                                        |
+| 301 | Moved Permanently             | This and all future requests should be directed to the given URI                                                                                                                                   |
+| 302 | Found                         | WARNING: Industry practice contradicts standard. RFC 1945 defined it as "Moved Temporarily", industry implemnted it as 303. Treat a 302 like a 303 but send a 307 if you mean a Temporary Redirect |
+| 303 | See Other                     | Response to the request can be found under another URI using a GET method. In response to PUT or POST, indicates the server has performed the operation and the results can be obtained via GET    |
+| 304 | Not Modified (RFC 7232)       | Resource has not been modified since the version specified by the request headers If-Modified-Since or If-None-Match, no content is sent and client should use previously downloaded copy          |
+| 305 | Use Proxy                     | WARNING: Many browsers deliberately do not handle this correctly due to security concerns. Resource is available only through a proxy, the address for which is is provided in the response        |
+| 307 | Temporary Redirect            | Request should be repeated with the provided URI; however future requests should still use the original URI. Differs from 302 in that request VERB does not change, e.g. repeat the PUT or POST    |
+| 308 | Permanent Redirect (RFC 7538) | Request and all future requests should be repeated using another URI. Unlike 301, request method must not change, e.g. resubmit a POSTed form at the new URI via POST if you get a 308             |
+|-----+-------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+
+|-----+---------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------|
+| 4×× | Client Error                                                  |                                                                                                                                            |
+|-----+---------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------|
+| 400 | Bad Request                                                   | Server cannot or will not process the request due to an apparent client error                                                              |
+| 401 | Unauthorized                                                  | Authentication IS required and has failed or has not yet been provided                                                                     |
+| 402 | Payment Required                                              | Reserved for future use which has never come into existence. Google Dev API uses this if a developer exceeds the daily limit on requests   |
+| 403 | Forbidden                                                     | Request was valid but server is refusing action. User might not have the necessary permissions for a resource                              |
+| 404 | Not Found                                                     | Requested resource was not found but may be available in the future. Subsequent requests by the client are permissible                     |
+| 405 | Method Not Allowed                                            | Request method is not supported for the requested resource such as a GET on a POST form or a PUT on a read-only resource                   |
+| 406 | Not Acceptable                                                | Requested resource is capable of generating only content not acceptable according to the Accept headers sent in the request                |
+| 407 | Proxy Authentication Required (RFC 7235)                      | Client must first authenticate itself with the proxy                                                                                       |
+| 408 | Request Timeout                                               | Server timed out waiting for the request. Client may repeat the request without modifications at a later time                              |
+| 409 | Conflict                                                      | Request could not be processed beacuse of conflict int he request, such as an edit conflict between multiple simultaneous updates          |
+| 410 | Gone                                                          | Requested resource is unavailable and will not be available again. Should only be used when a resource has been intentionally removed      |
+| 411 | Length Required                                               | Request did not specify the length of its content, which is required by the requested resource                                             |
+| 412 | Precondition Failed (RFC 7232)                                | Server does not meet one of the preconditions that the requester put on the request                                                        |
+| 413 | Payload Too Large (RFC 7231)                                  | The request is larger than the server is willing or able to process. Previously called "Request Entity Too Large"                          |
+| 414 | Request-URI Too Long (RFC 7231)                               | The URI was too long for the server to process. Previously called "Request-URI Too Long"                                                   |
+| 415 | Unsupported Media Type                                        | Request entity has a media type which the server or resource does not support, e.g. uploading an image in an unacceptable format           |
+| 416 | Range Not Satisfiable (RFC 7233)                              | The client has asked for a portion of the file (byte serving) but the server cannot supply that portion (e.g. range goes past EOF)         |
+| 417 | Expectation Failed                                            | The server cannot meet the requirements of the Expect request-header field                                                                 |
+| 418 | I'm a teapot (RFC 2324)                                       | 1998 IETF April Fool's joke. Should be returned by teapots requested to brew coffee. Many servers support it as an easter egg              |
+| 420 | Enhance Your Calm (Twitter) [Unofficial]                      | Used by version 1 of the Twitter Search and Trends API to implement rate limiting. Versions 1.1 and later use 429 Too Many Requests        |
+| 420 | Method Failure (Spring Framework) [Unofficial]                | A deprecated response used by the Spring Framework when a method has failed                                                                |
+| 421 | Misdirected Request (RFC 7540)                                | Request was directed at a server that is not able to produce a response, e.g. because of reused connection                                 |
+| 422 | Unprocessable Entity (WebDAV; RFC 4918)                       | The request was well-formed but was unable to be followed due to semantic errors                                                           |
+| 423 | Locked (WebDAV; RFC 4918)                                     | The resource that is being accessed is locked                                                                                              |
+| 424 | Failed Dependency (WebDAV; RFC 4918)                          | Request failed due to a failure of a previous request, e.g. a PROPPATCH                                                                    |
+| 426 | Upgrade Required                                              | Client should switch to a different protocol such as TL/1.0, given in the Upgrade header field                                             |
+| 428 | Precondition Required (RFC 6585)                              | Origin server requires the request to be conditional. Intended to prevent the "lost update" problem when treating GET/change/PUT as atomic |
+| 429 | Too Many Requests (RFC 6585)                                  | The user has sent too many requests in a given amount of time. Intended for use with rate-limiting schemes                                 |
+| 431 | Request Header Fields Too Large (RFC 6585)                    | Server is unwilling to process the request because either an individual header field, or all fields collectively, are too large            |
+| 444 | Connection Closed Without Response                            |                                                                                                                                            |
+| 450 | Blocked by Windows Parental Controls (Microsoft) [Unofficial] |                                                                                                                                            |
+| 451 | Unavailable For Legal Reasons (RFC 7725)                      | Server operator has received a legal demand to deny access to a resource. Chosen as a reference to Farenheit 451                           |
+| 498 | Invalid Token (Esri) [Unofficial]                             | Returned by ArcGIS for Server, indicates expired or otherwise invalid token                                                                |
+| 499 | Token Required (Esri) [Unofficial]                            | Returned by ArcGIS for Server, indicates token is required but was not submitted                                                           |
+|-----+---------------------------------------------------------------+--------------------------------------------------------------------------------------------------------------------------------------------|
+
+|-----+-------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------|
+| 5×× | Server Error                                                            |                                                                                                                                             |
+|-----+-------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------|
+| 500 | Internal Server Error                                                   | A generic error message, given when an unexpected condition was encountered and no more specific message is suitable                        |
+| 501 | Not Implemented                                                         | Server does not recognize the request method or lacks the ability to fulfil it, but wishes to imply future availability                     |
+| 502 | Bad Gateway                                                             | Server was acting as a gateway or proxy and received an invalid response from the upstream server                                           |
+| 503 | Service Unavailable                                                     | The server is currently unavailable beacuse it is overloaded or down for maintenance. Implies temporary state                               |
+| 504 | Gateway Timeout                                                         | The server was acting as a gateway or proxy and did not receive a timely response from the upstream server                                  |
+| 505 | HTTP Version Not Supported                                              | The server does not support the HTTP protocol version used in the request                                                                   |
+| 506 | Variant Also Negotiates (RFC 2295)                                      | Transparent content negotiation for the request results in a circular reference                                                             |
+| 507 | Insufficient Storage (WebDAV; RFC 4918)                                 | The server us unable to store the representation needed to complete the request                                                             |
+| 508 | Loop Detected (WebDAV; RFC 5842)                                        | The server detected an infinite loop while processing the request (sent in lieu of 208 Already Reported)                                    |
+| 509 | Bandwidth Limit Exceeded (Apache Web Server/cPanel) [Unofficial]        | Server has exceeded the bandwidth specified by the server administrator (i.e. shared hosting provider)                                      |
+| 510 | Not Extended (RFC 2774)                                                 | Further extensions to teh request are required for the server to fulfill it                                                                 |
+| 511 | Network Authentication Required (RFC 6585)                              | The client needs to authenticate to gain netowrk access. Used by "captive portals" to require ToS before enabling access via a WiFi Hotspot |
+| 530 | Site is frozen (Pantheon web platform) [Unofficial]                     | Used by Pantheon web platform to indicate a site that has been frozen due to inactivity                                                     |
+| 598 | Network Read Timeout Error (Informal convention) [Unofficial]           | Used by some HTTP proxies to signal a network read timeout behind the proxy to a client in front of the proxy                               |
+| 599 | Network Connect Timeout Error (Informal convention) [Unofficial]        | Used to indicate when the connection to the network times out                                                                               |
+|-----+-------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------|
+
+* Clumps of Custom Crap
+
+|-----+-----------------------------------+---|
+|     | Internet Information Server       |   |
+|-----+-----------------------------------+---|
+| 440 | Login Time-out (IIS) [Unofficial] |   |
+| 449 | Retry With (IIS) [Unofficial]     |   |
+| 451 | Redirect (IIS) [Unofficial]       |   |
+|-----+-----------------------------------+---|
+
+|-----+------------------------------------------------------+--------------------------------------------------------------------------------------------|
+|     | nginx                                                | Expands 400 space only; Used for logging purposes, no response is sent with these codes    |
+|-----+------------------------------------------------------+--------------------------------------------------------------------------------------------|
+| 444 | No Response (nginx) [Unofficial]                     | Server has returned no information to the client and has closed the connection             |
+| 495 | SSL Certificate Error (nginx) [Unofficial]           | An expansion of 400 Bad Request when the client has provided an invalid client certificate |
+| 496 | SSL Certificate Required (nginx) [Unofficial]        | An expansion of 400 Bad Request when a client certificate is required but not provided     |
+| 497 | HTTP Request Sent To HTTPS Port (nginx) [Unofficial] | An expansion of 400 Bad Request when client does exactly what the message says             |
+| 499 | Client Closed Request (nginx) [Unofficial]           | Client closed the request before the server could send a response                          |
+|-----+------------------------------------------------------+--------------------------------------------------------------------------------------------|
+
+
+|-----+-------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
+|     | Cloudflare                                                              | Expands 500 space to signal issues with the origin server                                                                                       |
+|-----+-------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
+| 520 | Unknown Error (Cloudflare Reverse Proxy Service) [Unofficial]           | catch-all response for when the origin server returns something unexpected, e.g. connection resets, large headers, empty/invalid responses, etc |
+| 521 | Web Server Is Down (Cloudflare Reverse Proxy Service) [Unofficial]      | Origin server has refused the connection from Cloudflare                                                                                        |
+| 522 | Connection Timed Out (Cloudflare Reverse Proxy Service) [Unofficial]    | Cloudflare could negotiate a TCP handshake with the origin server                                                                               |
+| 523 | Origin Is Unreachable  (Cloudflare Reverse Proxy Service) [Unofficial]  | Cloudflare could not reach the origin server, e.g. if the DNS records for the origin server are incorrect                                       |
+| 524 | A Timeout Occurred (Cloudflare Reverse Proxy Service) [Unofficial]      | Cloudflare was able to complete a TCP connection to the origin server but did not receive a timely HTTP response                                |
+| 525 | SSL Handshake Failed (Cloudflare Reverse Proxy Service) [Unofficial]    | Cloudflare could not negotiate a SSL/TLS handshake with the origin server                                                                       |
+| 526 | Invalid SSL Certificate (Cloudflare Reverse Proxy Service) [Unofficial] | Cloudflare could not validate the SSL/TLS certificate that the origin server provided                                                           |
+| 527 | Railgun Error (Cloudflare Reverse Proxy Service) [Unofficial]           | Request timed out or failed after the WAN connection was established                                                                            |
+|-----+-------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------|
