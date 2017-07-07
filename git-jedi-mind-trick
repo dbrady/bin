@@ -1,0 +1,4 @@
+#!/bin/sh
+cat $0
+exit
+git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch PATH-TO-FILE-YOU-WANT-TO-NEVER-HAVE-EXISTED' --prune-empty --tag-name-filter cat -- --all
