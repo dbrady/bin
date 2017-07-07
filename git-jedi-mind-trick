@@ -1,4 +1,22 @@
 #!/bin/sh
 cat $0
 exit
+
+# There is no effing way I'm automating something this dangerous ever.
+
+# Here's the command:
 git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch PATH-TO-FILE-YOU-WANT-TO-NEVER-HAVE-EXISTED' --prune-empty --tag-name-filter cat -- --all
+
+# Don't forget - because git is git, your old commits will still be present if
+# you've ever published your history. They're hard to find, but they're there.
+#
+# You probably want to do the following:
+# - Log into your repo on github
+# - Click on Settings in the github toolbar (| <> Code | (!) Issues | Pull requests | Projects | Wiki | * Settings | etc )
+# - Scroll to the bottom and click "Delete this repository"
+# - Recreate the repository
+# - git push your local, filtered version up. It'll take a while because it's pushing the entire (newly rewritten) history
+
+# Finally, track down anybody who has an old copy of your repo and kill^H^H^H^H
+# tell them they need to blow away their copy and reclone. (They'll never be
+# able to merge so don't even try.)
