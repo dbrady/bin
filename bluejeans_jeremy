@@ -1,2 +1,4 @@
 #!/bin/sh
-open -a Safari https://bluejeans.com/3939692953
+open -a Safari https://bluejeans.com/2165331259
+sleep 15
+killall Safari

@@ -1,2 +1,3 @@
 #!/bin/sh
-afplay ~/bin/benny-hill-theme-quiet.mp3
+here=`dirname $0`
+afplay $here/benny-hill-theme-quiet.mp3
