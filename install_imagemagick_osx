@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+echo --------------------------------------------------------------------------------
+echo WOOT LETS INSTALL IMAGEMAGICK WOOT
+echo --------------------------------------------------------------------------------
+
+echo '[1/4] Installing Known Requirements...'
+echo 'Installing known requirements (some of these may already be installed)'
+echo brew install pkg-config libtool xz gcc
+brew install pkg-config libtool xz gcc
+echo
+
+echo "[2/4] Installing Recommended Packages (Except For Perl >= 5.5 (which if you don't already have, LOL)..."
+echo brew install jpeg libpng libtiff freetype fontconfig little-cms little-cms2 libwmf librsvg liblqr openexr ghostscript webp openjpeg fftw pango
+brew install jpeg libpng libtiff freetype fontconfig little-cms little-cms2 libwmf librsvg liblqr openexr ghostscript webp openjpeg fftw pango
+echo
+
+echo '[3/4] Installing undocumented but crashy required dependencies...'
+echo brew cask install xquartz
+brew cask install xquartz
+
+echo '[4/4] Installing imagemagick with all those options turned on...'
+echo brew install imagemagick --with-fftw --with-fontconfig --with-ghostscript --with-hdri --with-liblqr --with-librsvg --with-libwmf --with-little-cms --with-little-cms2 --with-opencl --with-openexr --with-openjpeg --with-openmp --with-pango --with-perl --with-webp
+brew install imagemagick --with-fftw --with-fontconfig --with-ghostscript --with-hdri --with-liblqr --with-librsvg --with-libwmf --with-little-cms --with-little-cms2 --with-opencl --with-openexr --with-openjpeg --with-openmp --with-pango --with-perl --with-webp
+echo --------------------------------------------------------------------------------
+echo ALL DONE, HAVE FUN
+echo --------------------------------------------------------------------------------
