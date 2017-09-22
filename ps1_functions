@@ -201,3 +201,15 @@ ps1_set()
 {
   PROMPT_COMMAND="ps1_update $@"
 }
+
+ps1_plain()
+{
+    PROMPT_COMMAND=""
+    PS1="$(ps1_identity)\\$ "
+}
+
+ps1_bare()
+{
+    PROMPT_COMMAND=""
+    PS1="\\$ "
+}
