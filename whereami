@@ -1,0 +1,2 @@
+#!/bin/sh
+curl -s https://www.iplocation.net/find-ip-address | grep "<th>IP Location</th>" | ruby -ne 'puts $_.gsub(/^.*<td>/,"").gsub(/<\/td>.$/, "").gsub(/&nbsp;.*$/,"")'

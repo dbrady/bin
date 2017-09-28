@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "Starting up integration functionals..."
+(sleep 4 && yakety) &
+script/integration_functional_spec master
+killall afplay

@@ -1,0 +1,5 @@
+#!/bin/bash
+echo "Starting up production functionals..."
+(sleep 4 && yakety) &
+script/production_functional_spec
+killall afplay
