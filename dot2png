@@ -1,30 +1,47 @@
 #!/bin/sh
 SCRIPT=dot
+OSX_PREVIEW=false
 
-while getopts ":f:" opt; do
-  case $opt in
-    f)
-      case $OPTARG in
-        dot|neato|twopi|circo|fdp|sfdp)
-          SCRIPT=$OPTARG
-          ;;
-        *)
-          echo "Invalid formatter '$OPTARG'. Must be one of: dot, neato, twopi, circo, fdp, sfdp"
-          exit 1
-          ;;
-      esac
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
-      ;;
-    :)
-      echo "Option -$OPTARG requires an argument." >&2
-      exit 1
-      ;;
-  esac
+# LOLBASH: You can use -p to open in preview automatically OR you can say -f
+# neato but I'm too dumb right now to figure out how to allow "-p -f neato"
+#
+# But I'm so tired of doing dot2png filename.dot && open filename.png that I'm
+# calling this good enough for now. Debug me later. Ship it now: EITHER argument
+# will work, just not both at once.
+while getopts "pf:" opt; do
+    case $opt in
+        f)
+            case $OPTARG in
+                dot|neato|twopi|circo|fdp|sfdp)
+                    SCRIPT=$OPTARG
+                    ;;
+                *)
+                    echo "Invalid formatter '$OPTARG'. Must be one of: dot, neato, twopi, circo, fdp, sfdp"
+                    exit 1
+                    ;;
+            esac
+            shift
+            shift
+            ;;
+        p)
+            OSX_PREVIEW=true
+            shift
+            ;;
+        \?)
+            echo "Invalid option: -$OPTARG" >&2
+            exit 1
+            ;;
+        :)
+            echo "Option -$OPTARG requires an argument." >&2
+            exit 1
+            ;;
+    esac
 done
 
 echo "Using formatter '$SCRIPT'"
 echo $SCRIPT -T png -o $(basename $1 .dot).png $1
 $SCRIPT -T png -o $(basename $1 .dot).png $1
+
+if [ $OSX_PREVIEW == "true" ]; then
+    open $(basename $1 .dot).png
+fi
