@@ -14,4 +14,8 @@ echo 'Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - Vi
 echo "Running focused specs"
 echo time bundle exec rspec $@ $(cat ~/.spec_focus)
 cirun
+# TODO: Bring back the old, better version that parsed the RSpec output,
+# e.g. if output includes /[1-9]+ failures/ cifail
+# and if output include /[1-9]+ pending/ ciwarn
+#
 time (bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || cifail)

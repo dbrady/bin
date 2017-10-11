@@ -22,10 +22,10 @@ else
 fi
 
 
-echo scp "$1" "monkey:shinybit.com/public/images/$DSTFILE"
-scp "$1" "monkey:shinybit.com/public/images/$DSTFILE"
+echo scp "$1" "dikdik.shinybit.com:/var/www/html/images/$DSTFILE"
+scp "$1" "dikdik.shinybit.com:/var/www/html/images/$DSTFILE"
 
-echo ssh monkey chmod 644 "shinybit.com/public/images/$DSTFILE"
-ssh monkey chmod 644 "shinybit.com/public/images/$DSTFILE"
+echo ssh dikdik.shinybit.com chmod 664 "/var/www/html/images/$DSTFILE"
+ssh dikdik.shinybit.com chmod 664 "/var/www/html/images/$DSTFILE"
 
-echo "You can now access the image at: http://shinybit.com/images/$DSTFILE"
+echo "You can now access the image at: http://dikdik.shinybit.com/images/$DSTFILE"
