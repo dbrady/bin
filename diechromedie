@@ -4,6 +4,16 @@
 
 # MAKE UP YOUR FUCKING MIND, GOOGLE
 #GOOGLE_PROCESS_NAME_THIS_WEEK=/opt/google/chrome
-#GOOGLE_PROCESS_NAME_THIS_WEEK=chromium-browser
-GOOGLE_PROCESS_NAME_THIS_WEEK="Google Chrome"
-ps auwx | grep "$GOOGLE_PROCESS_NAME_THIS_WEEK" | awk '{ print $2 }' | while read pid; do kill -9 $pid 2>&1 > /dev/null; done
+if [ `uname -a | awk '{ print $1 }'` == 'Linux' ]; then
+    # chromium on Linux
+    GOOGLE_PROCESS_NAME_THIS_WEEK=chromium-browser
+else
+    # Google Chrome.app on OSX
+    GOOGLE_PROCESS_NAME_THIS_WEEK="Google Chrome"
+fi
+
+echo Asking chrome nicely to please die...
+ps auwx | grep chromium-browser | grep -v grep | awk '{ print $2 }' | while read pid; do echo "kill $pid"; kill $pid; done
+
+echo Asking much more insistently...
+ps auwx | grep chromium-browser | grep -v grep | awk '{ print $2 }' | while read pid; do echo "kill -9 $pid"; kill -9 $pid; done
