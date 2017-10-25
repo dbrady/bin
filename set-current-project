@@ -131,7 +131,7 @@ if include_aliases
   Dir.glob(File.join(target, 'config/database*.yml')).each do |config_file|
     if File.exists? config_file
       # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
-      output = "---\n" + `bundle exec rails runner /Users/dbrady/bin/denviro`
+      output = "---\n" + `bundle exec rails runner ~/bin/denviro`
       config = YAML.load(output)
       prefix = config_filename_prefix(config_file)
       aliases += build_config_aliases config, prefix

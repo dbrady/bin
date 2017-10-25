@@ -1,9 +1,9 @@
 #!/bin/bash
-touch /Users/dbrady/.ciblink
+touch ~/.ciblink
 
 # blink 100 times (200 sec) or until ~/.ciblink vanishes
 for i in 1 2 3 4 5 6 7 8 9 10; do
-         if [ -e /Users/dbrady/.ciblink ]; then
+         if [ -e ~/.ciblink ]; then
              for j in 1 2 3 4 5 6 7 8 9 10; do
                       cipass
                       sleep 1

@@ -1,11 +1,12 @@
 #!/bin/sh
+# Keeping this around for Lore value -- TeamEdward has been dead for years now
+
 echo "Backing up iTunes..."
-# All the delete has ever brought me is grief. Let Time Machine handle those.
-#echo "rsync -av --delete --ignore-existing /Users/dbrady/Music/iTunes/ /Volumes/TeamEdward/iTunes"
-echo "rsync -av --ignore-existing /Users/dbrady/Music/iTunes/ /Volumes/TeamEdward/iTunes"
-rsync -av --ignore-existing /Users/dbrady/Music/iTunes/ /Volumes/TeamEdward/iTunes
+# All the --delete switch has ever brought me is grief. Let Time Machine handle those.
+#echo "rsync -av --delete --ignore-existing ~/Music/iTunes/ /Volumes/TeamEdward/iTunes"
+echo "rsync -av --ignore-existing ~/Music/iTunes/ /Volumes/TeamEdward/iTunes"
+rsync -av --ignore-existing ~/Music/iTunes/ /Volumes/TeamEdward/iTunes
 
 echo "Backing up shiny_systems..."
-echo "rsync -av --ignore-existing /Users/dbrady/shiny_systems/ /Volumes/TeamEdward/shiny_systems"
-rsync -av --ignore-existing /Users/dbrady/shiny_systems/ /Volumes/TeamEdward/shiny_systems
-
+echo "rsync -av --ignore-existing ~/shiny_systems/ /Volumes/TeamEdward/shiny_systems"
+rsync -av --ignore-existing ~/shiny_systems/ /Volumes/TeamEdward/shiny_systems
