@@ -54,7 +54,7 @@ if $DEBUG || ENV['RUBY_DEBUG']
   puts '-' * 80
 end
 
-banner = `figlet -w #{screen_width} -d /Users/dbrady/bin/figlet-fonts -f "#{font}" "#{message}"`
+banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
 banner_width = banner.each_line.to_a.first.chomp.length
 left_size = (screen_width - banner_width) / 2
 right_size = screen_width - (banner_width + left_size)

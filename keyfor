@@ -1,0 +1,25 @@
+#!/bin/bash
+# keyfor - search Ubuntu Compose map to find the "key for" a given character
+#
+# E.g. trademark (™):
+# in HTML is just &trade;
+# On windows can be typed as ALT-0153
+# On OSX can be typed as Option-2
+# On Linux can be typed as Win-t-m, or any other way specified in the Compose file
+#
+# This script is essentially a wrapper to grep to search the Compose file.
+COMPOSEFILE=/usr/share/X11/locale/en_US.UTF-8/Compose
+
+# TODO: this will effectively strip quotes, boo.
+#
+# Can do this with grep but ag is awesome. If you don't have it:
+# sudo apt install silversearcher-ag
+#
+
+# TODO: This isn't ideal but you can either have quotes or you can have search
+# options. Right now I choose quotes, and to pass in -i every time (case
+# insensitivity)
+
+echo keyfor $*...
+echo '<Multi_key> == compose key (Right Alt)'
+grep -E '^<Multi_key>' $COMPOSEFILE | ag -i "$*"
