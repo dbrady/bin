@@ -11,6 +11,6 @@
 # curl -X PUT "http://192.168.0.66/api/$HUE/lights/1/state" -d '{"on":true, "bri":56,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
 # curl -X PUT "http://192.168.0.66/api/$HUE/lights/2/state" -d '{"on":true, "bri":56,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
 # curl -X PUT "http://192.168.0.66/api/$HUE/lights/3/state" -d '{"on":true, "bri":56,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":true, "bri":56,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/10/state" -d '{"on":true, "bri":56,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/11/state" -d '{"on":true, "bri":56,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":false, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/10/state" -d '{"on":false, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/11/state" -d '{"on":false, "transitiontime":0}' 2>/dev/null > /dev/null
