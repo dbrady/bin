@@ -54,4 +54,15 @@ time.downto(0).each do |seconds|
   sleep 1
 end
 system 'rubanner "DONE" white on_green'
-system 'say "Timer is done"'
+# dbrady 2017-10-18: say is broken wtf/lol
+# hangs with no sound in bash in Terminal
+# works from bash in iTerm2
+# hangs with no sound in ruby system() in Terminal AND iTerm
+# "It Just Works" -- Some Guy Who Must Be Dead Now I Guess
+#
+# Update: Actually, it looks like it might be me trying to run two tmate
+# sessions at once. In the second session, tssh and/or pbcopy do not work
+# either.
+#
+# Steve Jobs is still dead though, so eh. Win some/Lose some
+# system 'say "Timer is done"'

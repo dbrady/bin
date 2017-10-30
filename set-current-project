@@ -91,7 +91,7 @@ end
 
 def build_config_aliases(config, prefix='')
   aliases = []
-  config.each do |name, env|
+  Array(config).each do |name, env|
     next unless env.key?("database") && env.key?("adapter")
     next if name == 'default'
 
