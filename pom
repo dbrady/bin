@@ -7,6 +7,27 @@
 # pom <seconds>
 # pom mm:ss
 
+def say(msg)
+  # dbrady 2017-10-18: say is broken wtf/lol
+  # hangs with no sound in bash in Terminal
+  # works from bash in iTerm2
+  # hangs with no sound in ruby system() in Terminal AND iTerm
+  # "It Just Works" -- Some Guy Who Must Be Dead Now I Guess
+  #
+  # Update: Actually, it looks like it might be me trying to run two tmate
+  # sessions at once. In the second session, tssh and/or pbcopy do not work
+  # either.
+  #
+  # Steve Jobs is still dead though, so eh. Win some/Lose some
+  # system 'say "Timer is done"'
+  #
+  # HACK/SOLUTION: Added watch-and-say to bin. Anything written to
+  # ~/.watch-and-say will be picked up and passed to the say command. Have to
+  # run watch-and-say from a terminal that DOES have working sound.
+  File.open(File.expand_path("~/.watch-and-say"),"a") do |f|
+    f.puts msg
+  end
+end
 
 # TODO: handle hours (WHY???)
 
@@ -24,6 +45,12 @@ time = case ARGV[0]
        when /\d+/
          puts "SS"
          ARGV[0].to_i
+       when /\d+m/
+         puts "MM:SS"
+         ARGV[0].to_i * 60
+       when /^b(reak)$/
+         puts "MM:SS"
+         5 * 60
        else
          puts "DEFAULT"
          25 * 60
@@ -33,6 +60,8 @@ ESC = 27.chr
 
 # 20% of total time OR 1 minute, whichever is smaller
 warning_time = [time * 0.2, 60].min
+
+say "Starting pom"
 
 time.downto(0).each do |seconds|
   hours = seconds / 3600
@@ -54,15 +83,7 @@ time.downto(0).each do |seconds|
   sleep 1
 end
 system 'rubanner "DONE" white on_green'
-# dbrady 2017-10-18: say is broken wtf/lol
-# hangs with no sound in bash in Terminal
-# works from bash in iTerm2
-# hangs with no sound in ruby system() in Terminal AND iTerm
-# "It Just Works" -- Some Guy Who Must Be Dead Now I Guess
-#
-# Update: Actually, it looks like it might be me trying to run two tmate
-# sessions at once. In the second session, tssh and/or pbcopy do not work
-# either.
-#
-# Steve Jobs is still dead though, so eh. Win some/Lose some
-# system 'say "Timer is done"'
+
+
+
+say "Timer is done"
