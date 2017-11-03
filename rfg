@@ -10,6 +10,23 @@ if [ "$1" = "-h" ]; then
     exit 1
 fi
 
+# LOL/cry
+# if this is request-pages-api
+pwd | grep request-pages-api &&
+    # and you're not on vagrant
+    uname -a | grep -v vagrant &&
+    echo "#     #     #      #####   ######      #     #     #  #######" &&
+    echo "#     #    # #    #     #  #     #    # #    ##    #     #" &&
+    echo "#     #   #   #   #        #     #   #   #   # #   #     #" &&
+    echo "#     #  #     #  #  ####  ######   #     #  #  #  #     #" &&
+    echo " #   #   #######  #     #  #   #    #######  #   # #     #" &&
+    echo "  # #    #     #  #     #  #    #   #     #  #    ##     #" &&
+    echo "   #     #     #   #####   #     #  #     #  #     #     #" &&
+
+    echo "*** WARNING *** Dave, you're trying to run rpapi specs outside of vagrant" &&
+    echo "Please check your number and do not attempt your call again." &&
+    exit -1
+
 echo 'Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
 echo "Running focused specs"
 echo time bundle exec rspec $@ $(cat ~/.spec_focus)
