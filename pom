@@ -42,15 +42,18 @@ time = case ARGV[0]
          puts "MM:SS"
          m,s = *ARGV[0].split(/:/).map(&:to_i)
          m * 60 + s
-       when /\d+/
+       when /^\d+$/
          puts "SS"
          ARGV[0].to_i
-       when /\d+m/
+       when /^\d+m$/
          puts "MM:SS"
          ARGV[0].to_i * 60
-       when /^b(reak)$/
+       when /^b(reak)?$/
          puts "MM:SS"
          5 * 60
+       when /^eatadick$/ # TJ made me do this ;-)
+         puts "HH:MM:SS"
+         24 * 60 * 60
        else
          puts "DEFAULT"
          25 * 60
