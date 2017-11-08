@@ -1,0 +1,4 @@
+#!/bin/bash
+echo "Network Preferences > Wi-Fi > Advanced > TCP/IP > Renew DHCP Lease"
+echo "sudo killall -HUP mDNSResponder"
+sudo killall -HUP mDNSResponder
