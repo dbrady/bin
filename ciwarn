@@ -9,4 +9,4 @@
 # | magenta | 56100 |
 
 rubanner --font=electronic "WARNING" white on_yellow
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":12750, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":7750, "transitiontime":0}' 2>/dev/null > /dev/null
