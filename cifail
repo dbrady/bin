@@ -8,4 +8,4 @@
 # | magenta | 56100 |
 #rubanner --font=electronic "FAIL" bold on_red
 rubanner --font=electronic "FAIL" white on_red
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
