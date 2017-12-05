@@ -1,0 +1,12 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/1/state" -d '{"on":true, "sat":254, "bri":254, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/2/state" -d '{"on":true, "sat":254, "bri":254, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/3/state" -d '{"on":true, "sat":254, "bri":254, "transitiontime":0}' 2>/dev/null > /dev/null

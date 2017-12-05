@@ -1,0 +1,14 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+# rubanner --font=electronic "PASS" bold on_green
+rubanner --font=electronic "PASS" white on_green
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/1/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/2/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/3/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
