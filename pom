@@ -33,27 +33,91 @@ end
 
 # TODO: use ANSI.clear each frame so screen size doesn't matter
 
-time = case ARGV[0]
+# ==============================================================================
+# Write sensible defaults -- keep this code here until refactoring; if I ever
+# need this on a new machine I'll want to rewrite these. Ponder: Maybe instead
+# of putting these in ~/.poms.yml I should keep them in this file as DATA after
+# an __END__ tag?
+#
+# known_poms = {
+#   'b' => { 'alias' => 'break' },
+#   'break'=> {
+#     'time' => '5:00',
+#     'start_message' => 'breaktime five minutes',
+#     'stop_message' => 'breaktime over'
+#   },
+#   'pomodoro' => {
+#     'time' => '25:00',
+#     'start_message' => 'starting pomodoro',
+#     'stop_message' => 'stopping pomodoro'
+#   },
+#   'pom'=>{'alias' => 'pomodoro'},
+#   'p'=>{'alias' => 'pomodoro'},
+#   'eatadick' => {
+#     'time' => '9:00:00',
+#     'start_message' => 'TJ says eat a dick',
+#     'stop_message' => 'TJ says spit that dick out and get back to work'
+#   }
+# }
+#
+# require 'yaml'
+# File.open(CONFIG_FILE, 'w') do |f|
+#   f.puts known_poms.to_yaml
+# end
+# puts "WROTE INITIAL POM CONFIG"
+# exit
+# ==============================================================================
+
+require 'yaml'
+CONFIG_FILE = File.expand_path('~/.poms.yml').freeze
+known_poms = if File.exists? CONFIG_FILE
+               YAML.load_file CONFIG_FILE
+             else
+               {}
+             end
+
+require 'pp'
+pp known_poms
+
+# TODO: Refactor this whole mess
+# TODO: Capture and say start_message and stop_message instead of "starting pom"
+first_arg = if known_poms.keys.include? ARGV[0]
+              pom = known_poms[ARGV[0]]
+              alias_depth = 5
+              while pom['alias']
+                the_alias = pom['alias']
+                alias_depth -= 1
+                fail "Too many aliases; stopping at pom[:alias] => '#{the_alias}'" if alias_depth <= 0
+                pom = known_poms[the_alias]
+                fail "Unrecognized alias: '#{the_alias}'" unless known_poms.key? the_alias
+              end
+              say pom['start_message'] if pom['start_message']
+              pom['time']
+            else
+              ARGV[0]
+            end
+
+time = case first_arg
        when /^\d*:\d\d:\d\d$/
          puts "H:MM:SS"
-         h,m,s = *ARGV[0].split(/:/).map(&:to_i)
+         h,m,s = *first_arg.split(/:/).map(&:to_i)
          h * 3600 + m * 60 + s
        when /^\d+:\d\d$/
          puts "MM:SS"
-         m,s = *ARGV[0].split(/:/).map(&:to_i)
+         m,s = *first_arg.split(/:/).map(&:to_i)
          m * 60 + s
        when /^\d+$/
          puts "SS"
-         ARGV[0].to_i
+         first_arg.to_i
        when /^\d+m$/
          puts "MM:SS"
-         ARGV[0].to_i * 60
-       when /^b(reak)?$/
-         puts "MM:SS"
-         5 * 60
-       when /^eatadick$/ # TJ made me do this ;-)
-         puts "HH:MM:SS"
-         9 * 60 * 60
+         first_arg.to_i * 60
+       # when /^b(reak)?$/
+       #   puts "MM:SS"
+       #   5 * 60
+       # when /^eatadick$/ # TJ made me do this ;-)
+       #   puts "HH:MM:SS"
+       #   9 * 60 * 60
        else
          puts "DEFAULT"
          25 * 60

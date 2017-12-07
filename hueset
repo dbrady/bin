@@ -21,7 +21,7 @@ lights=ARGV.empty? ? [1,2,3,5,6] : ARGV
 opts[:on] = !opts[:off]
 
 lights.each do |lamp|
-  command = %Q[curl -X PUT "http://192.168.0.66/api/$HUE/lights/#{lamp}/state" -d '{"on":#{opts[:on].inspect}, "bri":#{opts[:bri]},"sat":#{opts[:sat]},"hue":#{opts[:hue]}, "transitiontime":#{opts[:time]}}' 2>/dev/null > /dev/null]
+  command = %Q[curl -X PUT "http://$HUE_IP/api/$HUE/lights/#{lamp}/state" -d '{"on":#{opts[:on].inspect}, "bri":#{opts[:bri]},"sat":#{opts[:sat]},"hue":#{opts[:hue]}, "transitiontime":#{opts[:time]}}' 2>/dev/null > /dev/null]
   puts command
   system command
 end
