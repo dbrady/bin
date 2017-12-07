@@ -7,4 +7,6 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":false, "transitiontime": 0}' 2>/dev/null > /dev/null
+#curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":false, "transitiontime": 0}' 2>/dev/null > /dev/null
+# I'm in Ohio
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/3/state" -d '{"on":false, "sat":254, "bri":64, "transitiontime":0}' 2>/dev/null > /dev/null

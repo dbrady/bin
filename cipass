@@ -9,4 +9,6 @@
 
 # rubanner --font=electronic "PASS" bold on_green
 rubanner --font=electronic "PASS" white on_green
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+#curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+# I'm in Ohio, baby
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/3/state" -d '{"on":true, "bri":64,"sat":254,"hue":25500, "transitiontime":0}' 2>/dev/null > /dev/null
