@@ -9,6 +9,10 @@
 
 # rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" bold on_blue
 # rubanner --font=electronic "RUNNING" bold on_blue
-rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" white on_blue
+if [ -e .rfg_project_name ]; then
+    rubanner --font=electronic "$(cat .rfg_project_name)" white on_blue
+else
+    rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" white on_blue
+fi
 rubanner --font=electronic "RUNNING" white on_blue
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
+#curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
