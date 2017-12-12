@@ -8,9 +8,6 @@
 # | magenta | 56100 |
 
 # TODO: Find a way to embed this all in one call? Bet it can be done with a jquery compound body posted directly to /lights/
-# curl -X PUT "http://192.168.0.66/api/$HUE/lights/1/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-# curl -X PUT "http://192.168.0.66/api/$HUE/lights/2/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-# curl -X PUT "http://192.168.0.66/api/$HUE/lights/3/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/10/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/11/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
+for lamp in 4 9 10 11; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":1,"sat":212,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
+done

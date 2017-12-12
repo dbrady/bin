@@ -7,4 +7,4 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl "http://192.168.0.66/api/$HUE/lights"
+curl "http://$HUE_IP/api/$HUE/lights"

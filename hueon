@@ -7,9 +7,9 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d  '{"on": true, "bri": 254, "hue": 14910, "sat": 144, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/10/state" -d '{"on": true, "bri": 254, "hue": 14910, "sat": 144, "transitiontime":0}' 2>/dev/null > /dev/null
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/11/state" -d '{"on": true, "bri": 254, "hue": 14910, "sat": 144, "transitiontime":0}' 2>/dev/null > /dev/null
+for lamp in 4 9 10 11; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri": 254, "hue": 14910, "sat": 144, "transitiontime":0}' 2>/dev/null > /dev/null
+done
 
 # With the "conce
   # "11": {
