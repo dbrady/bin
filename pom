@@ -7,6 +7,11 @@
 # pom <seconds>
 # pom mm:ss
 
+def cmm?
+  host = `uname -a`
+  host =~ /^Darwin CMM/ || host =~ /^Linux vagrant-dbrady/
+end
+
 def say(msg)
   # dbrady 2017-10-18: say is broken wtf/lol
   # hangs with no sound in bash in Terminal
@@ -24,7 +29,17 @@ def say(msg)
   # HACK/SOLUTION: Added watch-and-say to bin. Anything written to
   # ~/.watch-and-say will be picked up and passed to the say command. Have to
   # run watch-and-say from a terminal that DOES have working sound.
-  File.open(File.expand_path("~/.watch-and-say"),"a") do |f|
+  #
+  # UPDATE: change this file to be in ~/cmm/vagrant/code because then it can be
+  # shared from OSX because still very lol.
+  file_path = if cmm?
+                File.expand_path("~/cmm/vagrant/code/.watch-and-say")
+              else
+                File.expand_path("~/.watch-and-say")
+              end
+
+
+  File.open(file_path,"a") do |f|
     f.puts msg
   end
 end
