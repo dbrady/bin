@@ -9,4 +9,12 @@
 
 # rubanner --font=electronic "PASS" bold on_green
 rubanner --font=electronic "PASS" white on_green
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+# GEEZ MAN FIGURE OUT groups
+# 4 - Upstairs office spot
+# 9 - Lightstrip in upstairs office
+for light in 4 9; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+done
+# the spotlight is wayyyy too strong, let's back it off
+sleep 1
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/4/state" -d  '{"on": true, "bri": 254, "hue": 33862, "sat": 50, "transitiontime":0}' 2>/dev/null > /dev/null
