@@ -1,17 +1,26 @@
 #!/usr/bin/env ruby
 # watch-and-say - because multiple tmates break the say command, grr
+# watch-and-say [queue_filename]
+#
+# If omitted, queue_filename will be ~/.watch_and_say
 require 'fileutils'
 
-WATCH_FILE = File.expand_path("~/.watch-and-say")
+watch_file = if ARGV.size.zero?
+               "~/.watch-and-say"
+             else
+               File.join(Dir.getwd, ARGV[0])
+             end
+
+watch_file = File.expand_path watch_file
+
 # Clean out anything already in there
-FileUtils.rm_f WATCH_FILE
+FileUtils.rm_f watch_file
 
-
-puts "Watching #{WATCH_FILE}..."
+puts "Watching #{watch_file}..."
 while true
-  if File.exist? WATCH_FILE
-    text = File.readlines WATCH_FILE
-    FileUtils.rm_f WATCH_FILE
+  if File.exist? watch_file
+    text = File.readlines watch_file
+    FileUtils.rm_f watch_file
     text.each do |line|
       line = line.strip
       puts "Saying #{line}..."
