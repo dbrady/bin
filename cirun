@@ -15,4 +15,6 @@ else
     rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" white on_blue
 fi
 rubanner --font=electronic "RUNNING" white on_blue
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
+for light in 4 9; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
+done

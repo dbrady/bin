@@ -1,2 +1,8 @@
 #!/bin/sh
+# see also: brew services start redis on OSX - NOTE: THIS WILL START
+# IT AUTOMATICALLY, WHICH MAY BE UNDESIRABLE ESPECIALLY ON MACHINES
+# WITH LESS RAM AND WHERE REDIS IS ONLY NEEDED ONCE IN A BLUE MOON
+#
+# probably a linux equivalent
+# this version does not run in background
 redis-server /usr/local/etc/redis.conf
