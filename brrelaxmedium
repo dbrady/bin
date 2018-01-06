@@ -1,0 +1,12 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+for lamp in 7 8; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":155,"sat":144,"hue":13123, "transitiontime":30}' 2>/dev/null > /dev/null
+done
