@@ -38,7 +38,8 @@ def say(msg)
                 File.expand_path("~/.watch-and-say")
               end
 
-
+  puts "Writing message to #{file_path}"
+  puts "  Message: #{msg}"
   File.open(file_path,"a") do |f|
     f.puts msg
   end
