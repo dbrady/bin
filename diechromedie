@@ -2,19 +2,20 @@
 # For use when Chrome goes permanently out to lunch.
 # I'm not sad. I AM ANGRY. DIE, CHROME, DIE.
 
-# MAKE UP YOUR FUCKING MIND, GOOGLE
-#GOOGLE_PROCESS_NAME_THIS_WEEK=/opt/google/chrome
 if [ `uname -a | awk '{ print $1 }'` == 'Linux' ]; then
     # chromium on Linux
-    GOOGLE_PROCESS_NAME_THIS_WEEK=chromium-browser
+    # MAKE UP YOUR FUCKING MIND, GOOGLE
+    #GOOGLE_PROCESS_NAME_THIS_WEEK=/opt/google/chrome
+    GOOGLE_PROCESS_NAME_THIS_WEEK=/opt/google/chrome/chrome
+    #GOOGLE_PROCESS_NAME_THIS_WEEK=chromium-browser
 else
     # Google Chrome.app on OSX
     GOOGLE_PROCESS_NAME_THIS_WEEK="Google Chrome"
 fi
 
 echo Asking chrome nicely to please die...
-ps auwx | grep chromium-browser | grep -v grep | awk '{ print $2 }' | while read pid; do echo "kill $pid"; kill $pid; done
+ps auwx | grep $GOOGLE_PROCESS_NAME_THIS_WEEK | grep -v grep | awk '{ print $2 }' | while read pid; do echo "kill $pid"; kill $pid; done
 
-ps auwx | grep chromium-browser | grep -v grep && sleep 1
-ps auwx | grep chromium-browser | grep -v grep && echo Asking much more insistently...
-ps auwx | grep chromium-browser | grep -v grep | awk '{ print $2 }' | while read pid; do echo "kill -9 $pid"; kill -9 $pid; done
+ps auwx | grep $GOOGLE_PROCESS_NAME_THIS_WEEK | grep -v grep && sleep 1
+ps auwx | grep $GOOGLE_PROCESS_NAME_THIS_WEEK | grep -v grep && echo Asking much more insistently...
+ps auwx | grep $GOOGLE_PROCESS_NAME_THIS_WEEK | grep -v grep | awk '{ print $2 }' | while read pid; do echo "kill -9 $pid"; kill -9 $pid; done
