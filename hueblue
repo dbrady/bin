@@ -1,0 +1,21 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+# Interestingly, the lightstrip gives significantly different color
+# displays--OHHHH, because the COBs are in a clear gel instead of behind a WHITE
+# diffuser. So naturally the overheads and the spot look whiter
+
+
+for lamp in 9; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":254,"hue":44920, "transitiontime":0}' 2>/dev/null > /dev/null
+done
+
+for lamp in 4 10 11; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":254,"hue":45920, "transitiontime":0}' 2>/dev/null > /dev/null
+done

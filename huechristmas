@@ -1,0 +1,88 @@
+#!/usr/bin/env ruby
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+
+require 'json'
+require 'faraday'
+
+IP_ADDRESS = ENV.fetch("HUE_IP").dup.freeze
+HUE_API_KEY = ENV.fetch("HUE").dup.freeze
+LAMPS = [4, 9, 10, 11].freeze
+
+yellow = { hue: 13123, sat: 254 }
+blue =   { hue: 46920, sat: 254 }
+red =    { hue:     0, sat: 254 }
+green =  { hue: 25500, sat: 254 }
+white =  { hue:     0, sat:   0 }
+
+colors = [ blue, red, green, white ]
+
+color = blue
+
+LAMPS.each do |lamp|
+  Faraday.put "http://#{IP_ADDRESS}/api/#{HUE_API_KEY}/lights/#{lamp}/state", {on: true, bri: 64, sat: 144, hue: color, transitiontime: 10}.to_json
+end
+sleep 1
+color = yellow
+LAMPS.each do |lamp|
+  Faraday.put "http://#{IP_ADDRESS}/api/#{HUE_API_KEY}/lights/#{lamp}/state", {on: true, bri: 64, sat: 144, hue: color, transitiontime: 10}.to_json
+end
+
+
+# for lamp in 4 9 10 11; do
+#     curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":144,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
+# done
+
+# Set to 1 for normal, 2 for night mode, 3+ for "very night mode"
+# - brightness is divided by the factor
+# - transition times are multiplied by the factor
+# - hang times are unaffected
+dim_and_slow_factor = 4
+dim_and_slow_factor = [1, dim_and_slow_factor].max # dim_and_slow MUST be at least 1
+
+loop do
+  on_brightness = [254, 192, 128, 64].sample
+  on_ramp_time = 10 + rand(40) # HUE time is 1/10th of a second
+  on_hang_time = [0.5, 1.0, 3.0, 5.0].sample # sleep time in seconds
+  off_ramp_time = 10 + rand(40)
+  off_hang_time = [0.5, 1.0, 3.0, 5.0].sample
+
+  on_brightness /= dim_and_slow_factor
+  on_brightness = [1, on_brightness].max
+  on_brightness = [on_brightness, 254].min
+
+  on_ramp_time *= dim_and_slow_factor
+  off_ramp_time *= dim_and_slow_factor
+
+  old_color = color
+  color = colors.sample until color != old_color
+  lamp_command = { on: true, bri: on_brightness, sat: 254, hue: red, transitiontime: on_ramp_time }
+                 .merge(color)
+
+  puts lamp_command
+  LAMPS.each do |lamp|
+    Faraday.put "http://#{IP_ADDRESS}/api/#{HUE_API_KEY}/lights/#{lamp}/state", lamp_command.to_json
+  end
+
+  sleep on_hang_time
+
+  # dim the lights back down
+  lamp_command[:bri] = 0
+  lamp_command[:transitiontime] = off_ramp_time
+  puts lamp_command
+  LAMPS.each do |lamp|
+    Faraday.put "http://#{IP_ADDRESS}/api/#{HUE_API_KEY}/lights/#{lamp}/state", lamp_command.to_json
+  end
+
+  sleep off_hang_time
+end
+
+color = yellow
+LAMPS.each do |lamp|
+  Faraday.put "http://#{IP_ADDRESS}/api/#{HUE_API_KEY}/lights/#{lamp}/state", {on: true, bri: 64, sat: 144, hue: color, transitiontime: 10}.to_json
+end
