@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# rfsave - save current spec focus for posterity
+# Usage:
+# rfsave [<name>]
+#
+# current focus is always in .spec_focus
+# saved foci are in .spec_foci.yml
+#
+# TODO: break foci into sections by project folder, plus have a global/all section
+# rfsave -g name - saves to section="global"
+# rfsave name - saves to section="pwd"
+require 'yaml'
+
+class RfSaver
+  FOCUS_FILE = File.expand_path '~/.spec_focus'
+  FOCI_FILE = File.expand_path '~/.spec_foci.yml'
+
+  def save_focus name
+    if !File.exists? FOCUS_FILE
+      puts "No saved focus. Use rfh to list rspec focus scripts/commands"
+      return
+    end
+    foci = if File.exists? FOCI_FILE
+             YAML::load_file FOCI_FILE
+           else
+             {}
+           end
+    focus = File.read FOCUS_FILE
+    foci[name] = focus
+    File.open(FOCI_FILE, "w") do |file|
+      file.puts foci.to_yaml
+    end
+    puts "Saved '#{name}' => '#{focus}'"
+  end
+
+  def run(args)
+    if args.empty?
+      puts "rfsave <name> - save current spec focus to <name>. Use rfload with no args to list existing saved specs"
+    else
+      save_focus args.first
+    end
+  end
+end
+
+RfSaver.new.run ARGV
