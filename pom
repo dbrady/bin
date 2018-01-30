@@ -14,6 +14,11 @@ end
 
 def say(msg)
   # dbrady 2017-10-18: say is broken wtf/lol
+  #
+  # TODO: Here's a silly brainwave - how about starting this in the primary
+  # window (that has access to say) and let the muted window be the one hosting
+  # code?
+  #
   # hangs with no sound in bash in Terminal if running multiple tmate sessions
   # but literally the point of the CLI app is to run in a second shared window
   # and be the timer.
