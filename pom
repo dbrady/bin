@@ -19,6 +19,11 @@ def say(msg)
   # window (that has access to say) and let the muted window be the one hosting
   # code?
   #
+  # dbrady 2018-01-31: DISCOVERY - it's actually tm-pom-start that has the
+  # problem. Of special note is that it has a anonymous share queue, e.g. it
+  # doesn't run out of /tmp/work or any other reattach/pid/name
+  # thingy. Investigate! (Later.)
+  #
   # hangs with no sound in bash in Terminal if running multiple tmate sessions
   # but literally the point of the CLI app is to run in a second shared window
   # and be the timer.
