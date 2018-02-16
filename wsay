@@ -1,0 +1,2 @@
+#!/bin/sh
+echo "$*" >> /Users/dbrady/cmm/vagrant/code/.watch-and-say
