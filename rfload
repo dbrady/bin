@@ -61,6 +61,7 @@ class RfLoader
     puts "Loading focus '#{name}' from #{FOCI_FILE}"
     puts "Old rspec focus was:"
     puts File.read FOCUS_FILE
+    system 'rfsave', 'last'
     puts "New rspec focus is:"
     puts focus
     File.open(FOCUS_FILE, "w") do |file|
