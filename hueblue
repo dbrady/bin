@@ -16,6 +16,8 @@ for lamp in 9; do
     curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":254,"hue":44920, "transitiontime":0}' 2>/dev/null > /dev/null
 done
 
+# TODO: Would be nice to read previous state ofthis light and just restore it
+# rather than assuming I want to go back to concentrate/white.
 for lamp in 4 10 11; do
     curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":254,"hue":45920, "transitiontime":0}' 2>/dev/null > /dev/null
 done
