@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+# most useful and mature script ever
+puts "8" + ("=" * 80) + "|)" + ("~" * 20)
