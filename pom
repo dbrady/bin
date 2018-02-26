@@ -14,9 +14,24 @@ end
 
 def say(msg)
   # dbrady 2017-10-18: say is broken wtf/lol
-  # hangs with no sound in bash in Terminal
-  # works from bash in iTerm2
-  # hangs with no sound in ruby system() in Terminal AND iTerm
+  #
+  # TODO: Here's a silly brainwave - how about starting this in the primary
+  # window (that has access to say) and let the muted window be the one hosting
+  # code?
+  #
+  # dbrady 2018-01-31: DISCOVERY - it's actually tm-pom-start that has the
+  # problem. Of special note is that it has a anonymous share queue, e.g. it
+  # doesn't run out of /tmp/work or any other reattach/pid/name
+  # thingy. Investigate! (Later.)
+  #
+  # hangs with no sound in bash in Terminal if running multiple tmate sessions
+  # but literally the point of the CLI app is to run in a second shared window
+  # and be the timer.
+  #
+  # Workaround: use watch-and-say. We write to shared file, essentially a disk
+  # queue of messages to speak. Then run watch-and-say from one of the terminals
+  # where say *does* work and boom you got messages.
+  #
   # "It Just Works" -- Some Guy Who Must Be Dead Now I Guess
   #
   # Update: Actually, it looks like it might be me trying to run two tmate
@@ -24,6 +39,7 @@ def say(msg)
   # either.
   #
   # Steve Jobs is still dead though, so eh. Win some/Lose some
+  #
   # system 'say "Timer is done"'
   #
   # HACK/SOLUTION: Added watch-and-say to bin. Anything written to
@@ -69,11 +85,6 @@ end
 #   },
 #   'pom'=>{'alias' => 'pomodoro'},
 #   'p'=>{'alias' => 'pomodoro'},
-#   'eatadick' => {
-#     'time' => '9:00:00',
-#     'start_message' => 'TJ says eat a dick',
-#     'stop_message' => 'TJ says spit that dick out and get back to work'
-#   }
 # }
 #
 # require 'yaml'
@@ -170,3 +181,23 @@ system 'rubanner "DONE" white on_green'
 
 
 say "Timer is done"
+__END__
+---
+b:
+  alias: break
+break:
+  time: '5:00'
+  start_message: breaktime five minutes
+  stop_message: breaktime over
+pomodoro:
+  time: '25:00'
+  start_message: starting pomodoro
+  stop_message: stopping pomodoro
+pom:
+  alias: :pomodoro
+p:
+  alias: :pomodoro
+biteme:
+  time: '9:00:00'
+  start_message: TJ says bite me
+  stop_message: TJ says stop biting me what is wrong with you I didnt mean it literally

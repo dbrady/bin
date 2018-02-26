@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+# rfload - load a saved rspec focus by name
+# Usage:
+# rfload [<name>]
+#
+# If no args given, lists saved spec foci
+
+# current focus is always in .spec_focus
+# saved foci are in .spec_foci.yml
+require 'yaml'
+# Dear Dave, stop using colorize, term-ansicolor is SO much more powerful. Love, Dave
+# Admittedly it needs a monkeypatch to be as simple to use, but here you go.
+require 'colorize'
+# class String
+#   include Term::ANSIColor
+# end
+
+class RfLoader
+  FOCUS_FILE = File.expand_path '~/.spec_focus'
+  FOCI_FILE = File.expand_path '~/.spec_foci.yml'
+
+  def show_saved_foci
+    if !File.exists? FOCI_FILE
+      puts "No saved foci. Save a new one with rfsave"
+      return
+    end
+    foci = YAML::load_file FOCI_FILE
+    longest_key = foci.keys.map(&:size).max
+    format = "%#{longest_key}s => %s"
+    current_focus = File.read FOCUS_FILE
+    found = false
+    foci.keys.sort.each do |name|
+      selected = "  "
+      output = format % [name, foci[name]]
+      if foci[name] == current_focus
+        found = true
+        output = "* #{output}".green
+        selected = "* "
+      else
+        output = "  #{output}"
+      end
+      puts output
+    end
+    if !found
+      puts "Current focus was not found; use rfsave <name> to save it:"
+      puts current_focus
+    end
+  end
+
+  def load_save_focus name
+    if !File.exists? FOCI_FILE
+      puts "No saved foci. Save a new one with rfsave"
+      return
+    end
+    foci = YAML::load_file FOCI_FILE
+    focus = foci[name]
+    if !focus
+      puts "No saved focus named '#{name}'. List with rfload"
+      return
+    end
+    puts "Loading focus '#{name}' from #{FOCI_FILE}"
+    puts "Old rspec focus was:"
+    puts File.read FOCUS_FILE
+    system 'rfsave', 'last'
+    puts "New rspec focus is:"
+    puts focus
+    File.open(FOCUS_FILE, "w") do |file|
+      file.print focus
+    end
+  end
+
+  def run(args)
+    if args.empty?
+      show_saved_foci
+    else
+      load_save_focus args.first
+    end
+  end
+end
+
+RfLoader.new.run ARGV

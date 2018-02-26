@@ -1,0 +1,2 @@
+#!/bin/sh
+say -v "$1" "Hello, my name is ${1}. The quick brown fox tiptoes through the tulips on the plain in Spain in the rain."

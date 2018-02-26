@@ -7,7 +7,7 @@ require 'fileutils'
 
 watch_file = if ARGV.size.zero?
                "~/.watch-and-say"
-             elsif File.dir?(File.dirname(ARGV[0]))
+             elsif File.directory?(File.dirname(ARGV[0]))
                ARGV[0]
              else
                File.join(Dir.getwd, ARGV[0])
@@ -16,7 +16,10 @@ watch_file = if ARGV.size.zero?
 watch_file = File.expand_path watch_file
 
 # Clean out anything already in there
-FileUtils.rm_f watch_file
+if File.exists? watch_file
+    puts "Clearing out existing watch file at #{watch_file}..."
+    FileUtils.rm_f watch_file
+end
 
 puts "Watching #{watch_file}..."
 while true
@@ -26,7 +29,7 @@ while true
     text.each do |line|
       line = line.strip
       puts "Saying #{line}..."
-      system "say", line
+      system "say", '-v', 'Fiona', line
     end
   end
   sleep 1

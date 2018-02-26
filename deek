@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# most useful and mature script ever
+
+require 'trollop'
+
+opts = Trollop.options do
+  opt :nojizz, "No Jizz", short: "Z", default: false
+  opt :minshaft, "Min Shaft Length", short: "s", type: :int, default: 40
+  opt :maxshaft, "Max Shaft Length", short: "S", type: :int, default: 40
+  opt :minjizz, "Min Jizz Length", short: "j", type: :int, default: 20
+  opt :maxjizz, "Max Jizz Length", short: "J", type: :int, default: 20
+end
+
+def rand_between(a, b)
+  # a,b = b,a if a>b
+  # Normally you'd swap here but if you spec a min length and NO max length, you get max=min=the length
+  b=a if a>b
+
+  a + rand(1 + b-a)
+end
+
+opts[:minshaft], opts[:maxshaft] = opts[:maxshaft], opts[:minshaft] if opts[:minshaft] > opts[:maxshaft]
+shaft_length = rand_between opts[:minshaft], opts[:maxshaft]
+jizz_length = if opts[:nojizz]
+                0
+              else
+                rand_between opts[:minjizz], opts[:maxjizz]
+              end
+
+
+puts "8" + ("=" * shaft_length) + "|)" + ("~" * jizz_length)

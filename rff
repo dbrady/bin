@@ -28,6 +28,8 @@ if [ "$1" = "-h" ]; then
     exit 1
 fi
 
+rfsave last
+
 echo 'Rspec Focus: Focus! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
 echo "Focusing specs on $@..."
 echo -n $@ > ~/.spec_focus

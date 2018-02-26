@@ -11,7 +11,7 @@
 $TCMD -S /tmp/work new-session -s work -n emacs -d
 
 # window    2    3    4       5
-for name in spec bash functionals console; do
+for name in spec bash logging console redis watch-and-say; do
     $TCMD -S /tmp/work new-window -n $name -t work
 done
 
@@ -42,6 +42,10 @@ $TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
 # $TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
 # $TCMD -S /tmp/work send-keys -t work:5 '' C-m
+
+$TCMD -S /tmp/work send-keys -t work:6 'redis_start' C-m
+
+$TCMD -S /tmp/work send-keys -t work:7 'watch-and-say ~/cmm/vagrant/code/.watch-and-say' C-m
 
 # Select window 1 and attach to it
 $TCMD -S /tmp/work select-window -t work:1
