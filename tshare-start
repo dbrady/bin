@@ -10,42 +10,57 @@
 
 $TCMD -S /tmp/work new-session -s work -n emacs -d
 
-# window    2    3    4       5
-for name in spec bash logging console redis watch-and-say; do
-    $TCMD -S /tmp/work new-window -n $name -t work
-done
+if [ `uname -s` == "Darwin" ]; then
+    # window    2    3    4       5
+    for name in spec bash logging console redis watch-and-say; do
+        $TCMD -S /tmp/work new-window -n $name -t work
+    done
 
-# get this party started
+    # get this party started
 
-# Clear the crap out of window 1, I mean, what even?
-$TCMD -S /tmp/work send-keys -t work:1 C-w
+    # Clear the crap out of window 1, I mean, what even?
+    $TCMD -S /tmp/work send-keys -t work:1 C-w
 
-$TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
+    $TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
 
-# leave window 2 (bash) alone
+    # leave window 2 (bash) alone
 
-# $TCMD -S /tmp/work send-keys -t work:3 'cd ~/cmm/vagrant/code' C-m
-# $TCMD -S /tmp/work send-keys -t work:3 'vagrant ssh' C-m
+    # $TCMD -S /tmp/work send-keys -t work:3 'cd ~/cmm/vagrant/code' C-m
+    # $TCMD -S /tmp/work send-keys -t work:3 'vagrant ssh' C-m
 
-# Start vagrant. Because I'm doing this in two windows at once, I often get
-# errors saying that the VM is locked. Which window barfs is nondeterministic,
-# so tack on this messy check/retry/giveup bit to all windows with the temerity
-# to start vagrant.
-# $TCMD -S /tmp/work send-keys -t work:4 'cd ~/cmm/vagrant/code' C-m
-# $TCMD -S /tmp/work send-keys -t work:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+    # Start vagrant. Because I'm doing this in two windows at once, I often get
+    # errors saying that the VM is locked. Which window barfs is nondeterministic,
+    # so tack on this messy check/retry/giveup bit to all windows with the temerity
+    # to start vagrant.
+    # $TCMD -S /tmp/work send-keys -t work:4 'cd ~/cmm/vagrant/code' C-m
+    # $TCMD -S /tmp/work send-keys -t work:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
-# Start vagrant. Because I'm doing this in two windows at once, I often get
-# errors saying that the VM is locked. Which window barfs is nondeterministic,
-# so tack on this messy check/retry/giveup bit to all windows with the temerity
-# to start vagrant.
-# $TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant/code' C-m
-# $TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+    # Start vagrant. Because I'm doing this in two windows at once, I often get
+    # errors saying that the VM is locked. Which window barfs is nondeterministic,
+    # so tack on this messy check/retry/giveup bit to all windows with the temerity
+    # to start vagrant.
+    # $TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant/code' C-m
+    # $TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
-# $TCMD -S /tmp/work send-keys -t work:5 '' C-m
+    # $TCMD -S /tmp/work send-keys -t work:5 '' C-m
 
-$TCMD -S /tmp/work send-keys -t work:6 'redis_start' C-m
+    $TCMD -S /tmp/work send-keys -t work:6 'redis_start' C-m
 
-$TCMD -S /tmp/work send-keys -t work:7 'watch-and-say ~/cmm/vagrant/code/.watch-and-say' C-m
+    $TCMD -S /tmp/work send-keys -t work:7 'watch-and-say ~/cmm/vagrant/code/.watch-and-say' C-m
+else
+    # Linux, most likely
+    # window    2    3    4       5
+    for name in spec bash console; do
+        $TCMD -S /tmp/work new-window -n $name -t work
+    done
+
+    # get this party started
+
+    # Clear the crap out of window 1, I mean, what even?
+    $TCMD -S /tmp/work send-keys -t work:1 C-w
+
+    $TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
+fi
 
 # Select window 1 and attach to it
 $TCMD -S /tmp/work select-window -t work:1
