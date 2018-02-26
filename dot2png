@@ -1,6 +1,6 @@
 #!/bin/sh
 SCRIPT=dot
-OSX_PREVIEW=false
+OSX_PREVIEW="false"
 
 # LOLBASH: You can use -p to open in preview automatically OR you can say -f
 # neato but I'm too dumb right now to figure out how to allow "-p -f neato"
@@ -24,7 +24,12 @@ while getopts "pf:" opt; do
             shift
             ;;
         p)
-            OSX_PREVIEW=true
+            if [ `uname -s` == "Darwin" ]; then
+                OSX_PREVIEW="true"
+            else
+                echo "Invalid option: -p turns on OSX preview; expected operating system to be 'Darwin' but uname -s detected '`uname -s`' instead"
+                exit 1
+            fi
             shift
             ;;
         \?)
