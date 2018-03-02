@@ -1,0 +1,2 @@
+#!/bin/sh
+say -v "Good News" Your specs are all passing
