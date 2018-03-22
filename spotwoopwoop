@@ -1,0 +1,25 @@
+#!/bin/bash
+# spotwoopwoop - Flash CI spotlight with Red Alert
+# Usage: spotwoopwoop [times]
+# If omitted, times = 10
+# If times = 0, runs forever (until killed) # TODO does bash have a non-blocking read, so we could animate until user hits enter?
+
+SPOTLIGHT=4
+TIMES=10
+
+# TODO: hue_save 4
+
+for i in `seq $TIMES`; do
+    #spot_on()
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$SPOTLIGHT/state" -d '{"on":true, "bri":255,"sat":254,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
+    sleep 0.5
+    #spot_off()
+    #    curl -X PUT "http://192.168.0.66/api/$HUE/lights/$SPOTLIGHT/state" -d '{"on":false,"transitiontime":0}' 2>/dev/null > /dev/null
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$SPOTLIGHT/state" -d '{"on":true, "bri":255,"sat":254,"hue":33862, "transitiontime":0}' 2>/dev/null > /dev/null
+    sleep 0.5
+done
+
+# TODO: hue_load 4
+
+# Turn light off
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/$SPOTLIGHT/state" -d '{"on":false,"transitiontime":0}' 2>/dev/null > /dev/null
