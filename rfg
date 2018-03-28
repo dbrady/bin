@@ -5,6 +5,18 @@
 #
 # rfg [additional args or focus--will not change focus]
 
+# TODO: Feature (may require rewriting in ruby?)
+# IFF:
+#   1. There is exactly one cmd line argument
+#   2. That argument is not a path (contains no /'s)
+#   3. That argument is not an option (does not begin with -)
+#   4. That argument exists as one of the loadable specs in rfload
+# THEN:
+#   rfload $1 && rfg
+# ELSE:
+#   # pass arguments directly to rspec as normal
+#   bundle exec rspec $@
+
 if [ "$1" = "-h" ]; then
     rfh
     exit 1

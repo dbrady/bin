@@ -1,0 +1,2 @@
+#!/bin/sh
+say -v "Bad News" Specs do not pass
