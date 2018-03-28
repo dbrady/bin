@@ -42,6 +42,6 @@ echo "Using formatter '$SCRIPT'"
 echo $SCRIPT -T png -o $(basename $1 .dot).png $1
 $SCRIPT -T png -o $(basename $1 .dot).png $1
 
-if [ $OSX_PREVIEW == "true" ]; then
-    open $(basename $1 .dot).png
-fi
+# if [ $OSX_PREVIEW == "true" ]; then
+#     open $(basename $1 .dot).png
+# fi
