@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+# bundle-why <gem> - WHY is a given gem being bundled?
+
+# E.g.
+# $ bundle-why rspec-support
+# * guard-rspec 4.7.3
+#   * guard 2.13.0 (~> 2.1)
+#     * rspec 3.7.0 (>= 2.99.0, < 4.0)
+#       - rspec-core 3.7.1 (~> 3.7.0)
+#         - rspec-support 3.7.1
+#       - rspec-expectations 3.7.0 (~> 3.7.0)
+#         - rspec-support 3.7.1
+#       - rspec-mocks 3.7.0 (~> 3.7.0)
+#       - rspec-mocks 3.7.0 (~> 3.7.0)
+#
+# Lines marked * are in green and mean "this is in your Gemfile"
+# Lines marked - are gray and mean "this is included implicitly"
+#
+# If version requirements are different or there are multiple root nodes then the tree may be duplicated
+
+class BundledGem
+  attr_reader :name, :version
+  def initialize(name, version)
+    @name, @version = name, version
+    @parents = {}
+  end
+
+  def add_parent_version_spec(gem, version_spec)
+    raise "WTF? #{name} is needed by #{gem.name} at version #{version_spec} but is already known to be needed by #{gem.name} at version #{@parents[gem]}" if @parents[gem]
+    @parents[gem] = version_spec
+  end
+
+  def needs?(target_gem)
+    dependencies.keys.include?(target_gem) ||
+      dependencies.values.any? {|gem| gem.needs?(target_gem) }
+  end
+
+  def to_s
+    "#{name} (#{version})"
+  end
+end
+
+class BundleWhy
+  attr_reader :target_gem
+  def initialize(target_gem)
+    @target_gem = target_gem
+  end
+
+  def run!
+    gems = get_installed_gems_from_lockfile
+    add_dependencies_from_lockfile(gems)
+    gems.keep_if { |gem| gem.needs? target_gem }
+    # display tree
+    find_root_gems(gems).each do |gem|
+      puts gem.to_s
+
+    end
+
+  end
+
+  def get_installed_gems_from_lockfile
+    lockfile = File.readlines("./Gemfile.lock").map(&:strip)
+    puts lockfile.first
+    foundgem = false
+    foundspecs = false
+    while !lockfile.empty? && !foundspecs
+      line = lockfile.shift
+      puts line
+      if foundgem
+        if line == "specs:"
+          puts "FOUND SPECS"
+          foundspecs = true
+        end
+      elsif line == "GEM"
+        puts "FOUND GEM"
+        foundgem = true
+      end
+    end
+    puts "DONE."
+    puts lockfile.first
+
+    # loop through Gemfile from GEM\nremote: .*\nspecs: until \n\n
+    # Read GEM section for name (version)
+    []
+  end
+
+  def add_dependencies_from_lockfile(gems)
+
+    # Read GEM section for name (version_spec) under a given parent_name
+    # get parent gem from gems.detect {|gem| gem.name == name }
+    # call gem.add_parent_version_spec
+  end
+
+  def find_root_gems(gems)
+    # Find gems with no parents -- they are roots
+    []
+  end
+end
+
+if __FILE__==$0
+  BundleWhy.new(ARGV[0]).run!
+end
