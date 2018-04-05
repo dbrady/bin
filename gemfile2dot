@@ -22,6 +22,11 @@
 #         emit %q|    "#{gem1}" -> "#{gem2}";\n|
 #       end
 
+# TODO: Clean this up lol
+# TODO: Exclude common monstrous subgraphs (e.g. Rails)
+# TODO: Give it a target and only include the ancestry of the target (tiny
+# graph, e.g. "bundle-who-brought-this-into-my-house")
+
 def read_gemfile(filename)
   lines = File.open(filename).readlines.map(&:strip)
   lines.keep_if {|line| line =~ /^gem /}
