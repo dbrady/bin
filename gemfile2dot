@@ -70,9 +70,13 @@ gems, links, versions = *read_gemfile_lock(ARGV[0] + "/Gemfile.lock")
 
 puts "digraph gems {"
 gems.each do |gem|
-  color = defined_gems.include?(gem) ? "black" : "gray"
+  color, bgcolor, penwidth = if defined_gems.include?(gem)
+                       ["blue", "white", 2]
+                     else
+                       ["#999999", "#cccccc", 1]
+                     end
   version = versions[gem]
-  puts %Q|    "#{gem}" [label="#{gem}\\n#{version}", color="#{color}"];|
+  puts %Q|    "#{gem}" [label="#{gem}\\n#{version}", color="#{color}", fontcolor="#{color}", fillcolor="#{bgcolor}", bgcolor="#{bgcolor}", penwidth="#{penwidth}"];|
 end
 puts
 links.each do |parent, child|
