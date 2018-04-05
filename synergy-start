@@ -1,7 +1,8 @@
 #!/bin/bash
 if [ `uname -s` == 'Darwin' ]; then
+    echo launchctl load /Library/LaunchAgents/com.symless.synergy.synergy-service.plist
     launchctl load /Library/LaunchAgents/com.symless.synergy.synergy-service.plist
 else
-    echo "THIS IS AN OSX-ONLY SCRIPT, SORRY."
-    exit -1
+    echo sudo service synergy start
+    sudo service synergy start
 fi
