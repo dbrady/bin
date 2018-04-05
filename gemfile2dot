@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+# gemfile2dot - generate a graph of your Gemfile dependencies
+# gemfile2dot [<gem>]
+#
+# If a gem name is specified, it will be drawn in green if present
+# Gems explicitly defined in the Gemfile are drawn in black
+# Gems implicitly included as dependencies are drawn in gray
+
+# 1. Scan through Gemfile and/or gemspec for gem 'name' definitions and add them
+#    to the list of explicitly-defined gems
+# 2. Scan through Gemfile.lock until you reach the GEM section and the specs: subsection
+# 3. Until a blank line is reached,
+#   3.1 if line begins with 4 spaces, it defines an installed gem.
+#     3.1.1 name, version = line.strip.split(/ /). Set current_gem to this name
+#     3.1.2 color = if required_gems.include?(name) then 'black' else 'gray'
+#     3.1.3 emit %q|    "#{name}" [label="#{name}\n#{version}", color="#{color}"];\n|
+#   3.2 If line begins with 6 spaces, it defines a gem required by the current_gem
+#     3.2.1 name = line.strip.split(/ /).first
+#     3.2.2 links[current_gem] << name
+# 4. We've now written all the gem names but no dependencies. Let's write those now.
+#   4.1 links.each_pair do |gem1, gem2|
+#         emit %q|    "#{gem1}" -> "#{gem2}";\n|
+#       end
+
+def read_gemfile(filename)
+  lines = File.open(filename).readlines.map(&:strip)
+  lines.keep_if {|line| line =~ /^gem /}
+  lines = lines.map do |line|
+    line.split(/ /).fetch(1).gsub(/['",]/, "")
+  end
+end
+
+def read_gemfile_lock(filename)
+  gems = []
+  links = []
+  versions = {}
+  current_gem = nil
+  found_specs = false
+  found_gem = false
+  File.open(filename).readlines.map(&:rstrip).each do |line|
+    if !found_specs
+      if !found_gem
+        found_gem = line =~ /^GEM$/
+      else
+        found_specs = line =~ /^  specs:$/
+      end
+    else
+      break if line.empty?
+      if line.start_with?("      ")
+        gem = line.strip.split(/ /).first
+        links << [current_gem, gem]
+      else
+        current_gem, version = *line.strip.split(/ /)
+        gems << current_gem
+        versions[current_gem] = version
+      end
+    end
+  end
+  [gems, links, versions]
+end
+
+defined_gems = read_gemfile(ARGV[0] + "/Gemfile")
+gems, links, versions = *read_gemfile_lock(ARGV[0] + "/Gemfile.lock")
+
+# puts defined_gems
+# puts '-' * 10
+# puts gems
+# puts '-' * 10
+# puts links.map {|a,b| "#{a} -> #{b}"}
+
+puts "digraph gems {"
+gems.each do |gem|
+  color = defined_gems.include?(gem) ? "black" : "gray"
+  version = versions[gem]
+  puts %Q|    "#{gem}" [label="#{gem}\\n#{version}", color="#{color}"];|
+end
+puts
+links.each do |parent, child|
+  puts %Q|    "#{parent}" -> "#{child}";|
+end
+puts "}"
