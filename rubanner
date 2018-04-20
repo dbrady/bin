@@ -26,10 +26,25 @@
 #              Meds bold light_yellow on_light_white
 
 require 'colorize'
+
+argv = ARGV.dup
+output = if idx = argv.index('-o')
+           argv.delete_at idx
+           File.open(argv.delete_at(idx), 'w')
+         else
+           $stdout
+         end
+
 require 'io/console'
 
-screen_width = $stdout.winsize[1]
-argv = ARGV.dup
+screen_width = if idx = argv.index('-w')
+                argv.delete_at(idx)
+                argv.delete_at(idx).to_i
+              else
+                # Must supply -w to pipe to a file but if you DO
+                # pipe $stdout.winzie will ASPLODE
+                screen_width = $stdout.winsize[1]
+              end
 
 font = if idx = argv.index('-f')
          argv.delete_at idx
@@ -54,6 +69,8 @@ if $DEBUG || ENV['RUBY_DEBUG']
   puts '-' * 80
 end
 
+screen_width.inspect
+
 banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
 banner_width = banner.each_line.to_a.first.chomp.length
 left_size = (screen_width - banner_width) / 2
@@ -66,9 +83,9 @@ def colorize(text, colors)
   colors.reduce(text) {|t, color| t.send color }
 end
 
-puts colorize("#{' ' * screen_width}", colors)
+output.puts colorize("#{' ' * screen_width}", colors)
 
 banner.each_line do |line|
-  puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
+  output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
 end
-puts colorize("#{' ' * screen_width}", colors)
+output.puts colorize("#{' ' * screen_width}", colors)
