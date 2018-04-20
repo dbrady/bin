@@ -22,6 +22,11 @@
 #         emit %q|    "#{gem1}" -> "#{gem2}";\n|
 #       end
 
+# TODO: Clean this up lol
+# TODO: Exclude common monstrous subgraphs (e.g. Rails)
+# TODO: Give it a target and only include the ancestry of the target (tiny
+# graph, e.g. "bundle-who-brought-this-into-my-house")
+
 def read_gemfile(filename)
   lines = File.open(filename).readlines.map(&:strip)
   lines.keep_if {|line| line =~ /^gem /}
@@ -70,9 +75,13 @@ gems, links, versions = *read_gemfile_lock(ARGV[0] + "/Gemfile.lock")
 
 puts "digraph gems {"
 gems.each do |gem|
-  color = defined_gems.include?(gem) ? "black" : "gray"
+  color, bgcolor, penwidth = if defined_gems.include?(gem)
+                       ["blue", "white", 2]
+                     else
+                       ["#999999", "#cccccc", 1]
+                     end
   version = versions[gem]
-  puts %Q|    "#{gem}" [label="#{gem}\\n#{version}", color="#{color}"];|
+  puts %Q|    "#{gem}" [label="#{gem}\\n#{version}", color="#{color}", fontcolor="#{color}", fillcolor="#{bgcolor}", bgcolor="#{bgcolor}", penwidth="#{penwidth}"];|
 end
 puts
 links.each do |parent, child|
