@@ -16,6 +16,17 @@
 require 'figlet'
 require 'io/console'
 
+# TODO: Extract this to a whichos gem; I use it a lot--add `def windows?` and
+# call it a day
+def osx?
+  `uname -s` == 'Darwin'
+end
+
+def linux?
+  `uname -s` == 'Linux'
+end
+
+
 # ----------------------------------------------------------------------
 # TODO: Sorting/searching. Need to create a search mode where typing a search
 # thingy would help you find the font you want.
@@ -82,7 +93,7 @@ end
 
 def font_list
   font_folder = File.join(font_dir, '*.flf')
-  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }
+  Dir.glob(font_folder).map {|f| File.basename(f, '.flf') }.sort
 end
 
 def screen_width
@@ -90,6 +101,12 @@ def screen_width
 end
 
 ESC = 27.chr
+
+def debug(data)
+  File.open("./debug.txt", "a") do |fp|
+    fp.puts "#{Time.now.strftime('%F %T')} #{data}"
+  end
+end
 
 class Banner
   BACK = 2.chr
@@ -99,6 +116,10 @@ class Banner
   BOL = 1.chr
   EOL = 5.chr
   ENTER = "\r"
+  FIRST = "FIRST".freeze # very first index
+  LAST = "LAST".freeze # very last index
+  TOP = "TOP".freeze # top of current column
+  BOTTOM = "\u0016" # bottom of current column
 
   attr_reader :message, :fonts, :font_index
   def initialize(message, fonts, font='gothic')
@@ -113,8 +134,52 @@ class Banner
       render_list
       render_navhelp
       render_message
-      key = $stdin.getc
+      begin
+        state=`stty -g`
+        system 'stty raw -echo cbreak'
+        key = $stdin.getc
+        key = if key=="\e"
+                key = $stdin.getc
+                case key
+                when "["
+                  key = $stdin.getc
+                  case key
+                  when "A"
+                    PREVIOUS
+                  when "B"
+                    NEXT
+                  when "C"
+                    FORWARD
+                  when "D"
+                    BACK
+                  else
+                    key
+                  end
+                when "<"
+                  FIRST
+                when ">"
+                  LAST
+                when "v"
+                  TOP
+                when BOTTOM
+                  BOTTOM
+                end
+              else
+                key
+              end
+      ensure
+        system "stty #{state}"
+      end
       case key
+      when FIRST
+        @font_index = 0
+      when LAST
+        @font_index = fonts.size-1
+      when TOP
+        @font_index = font_index - (font_index % column_height)
+      when BOTTOM
+        @font_index = font_index + (column_height - (font_index % column_height)) - 1
+        @font_index = fonts.size - 1 if @font_index >= fonts.size
       when BACK, "h"
         @font_index = (font_index - column_height) % fonts.size
       when FORWARD, "l"
@@ -138,6 +203,9 @@ class Banner
   end
 
   def clear_screen
+    # ESC[2J - clears screen
+    # ESC[0;0H - sends cursor to 0,0; if all your fonts and the sample fit on
+    # one screen it'll keep things from scrolling
     print "#{ESC}[2J#{ESC}[0;0H"
   end
 
@@ -186,7 +254,7 @@ class Banner
   end
 
   def render_navhelp
-    puts "#{ESC}[30;47mNavigate: h,j,k,l,^,$ or C-b, C-n, C-p, C-f, C-a, C-e#{ESC}[0m"
+    puts "#{ESC}[30;47mNavigate: arrows, h,j,k,l,^,$, or C-b,C-n,C-p,C-f, C-a,C-e, C-v,M-v, or M-<,M-> #{ESC}[0m"
   end
 
   def render_command
@@ -243,13 +311,13 @@ font_name = if index = argv.index('--font')
 
 banner = Banner.new argv * ' ', font_list, font_name
 if interactive
-  begin
-    state=`stty -g`
-    system 'stty raw -echo cbreak'
+  # begin
+  #   state=`stty -g`
+  #   system 'stty raw -echo cbreak'
     banner.interactive_choose_font
-  ensure
-    system "stty #{state}"
-  end
+  # ensure
+  #   system "stty #{state}"
+  # end
 else
   banner.render
 end
