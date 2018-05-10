@@ -1,0 +1,22 @@
+#!/bin/bash
+# rfr - "rspec run" run specs but wrapped with ci lights and timing
+# basically it's rfg without reading ~/.spec_focus
+#
+# usage:
+#
+# rfr [additional args or focus--will not change focus]
+
+if [ "$1" = "-h" ]; then
+    rfh
+    exit 1
+fi
+
+echo 'Rspec Focus: RUN! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
+echo "Running specs"
+echo time bundle exec rspec $@
+cirun
+# TODO: Bring back the old, better version that parsed the RSpec output,
+# e.g. if output includes /[1-9]+ failures/ cifail
+# and if output include /[1-9]+ pending/ ciwarn
+#
+(time bundle exec rspec $@ && cipass || (cifail && exit -1))
