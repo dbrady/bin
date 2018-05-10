@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+def usage
+    puts 'json2ruby - convert a json hash to ruby 2.0 e.g. { symbol: "value" }'
+    puts 'Usage:'
+    puts '    json2ruby <filename>'
+    puts '    cat filename.json | json2ruby'
+end
+
+if ARGV.include?("-h") || ARGV.include?("--help")
+  usage
+  exit 0
+end
+
+ARGF.readlines.each do |line|
+  puts line.chomp.gsub(/"(.+)":/, "\\1:").gsub(/:(\s*)null,/, ":\\1nil,")
+end
