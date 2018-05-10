@@ -4,6 +4,7 @@ echo 'Rspec Focus: Help! (rf - Focus; rg - Go; rc - Clear; rh - Help)'
 echo "rfh - '(rspec focus) help' - show this help message"
 echo "rff - '(rspec focus) focus <rspec params>' - focus specs by temporarily setting fixed args to rspec"
 echo "rfg - '(rspec focus) go' - runs focused specs by running with the fixed args"
+echo "rfr - '(rspec focus) run' - runs only with the fixed args (ignores current focus entirely)"
 echo "rfc - '(rspec focus) clear' - clears currently focused specs"
 echo "rfe - '(rspec focus) edit' - edit currently focused specs"
 echo "rfv - '(rspec focus) view' - view currently focused specs"
