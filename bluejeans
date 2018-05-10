@@ -1,0 +1,5 @@
+#!/bin/sh
+echo "open -a Safari https://bluejeans.com/$1"
+open -a Safari https://bluejeans.com/$1
+sleep 15
+killall Safari
