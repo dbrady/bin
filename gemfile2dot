@@ -67,6 +67,8 @@ end
 defined_gems = read_gemfile(ARGV[0] + "/Gemfile")
 gems, links, versions = *read_gemfile_lock(ARGV[0] + "/Gemfile.lock")
 
+highlighted_gems = ARGV[1..-1] || []
+
 # puts defined_gems
 # puts '-' * 10
 # puts gems
@@ -75,11 +77,15 @@ gems, links, versions = *read_gemfile_lock(ARGV[0] + "/Gemfile.lock")
 
 puts "digraph gems {"
 gems.each do |gem|
-  color, bgcolor, penwidth = if defined_gems.include?(gem)
-                       ["blue", "white", 2]
-                     else
-                       ["#999999", "#cccccc", 1]
-                     end
+  color, bgcolor, penwidth = if highlighted_gems.include?(gem)
+                               ["green", "white", 2]
+                             else
+                               if defined_gems.include?(gem)
+                                 ["blue", "white", 2]
+                               else
+                                 ["#999999", "#cccccc", 1]
+                               end
+                             end
   version = versions[gem]
   puts %Q|    "#{gem}" [label="#{gem}\\n#{version}", color="#{color}", fontcolor="#{color}", fillcolor="#{bgcolor}", bgcolor="#{bgcolor}", penwidth="#{penwidth}"];|
 end
