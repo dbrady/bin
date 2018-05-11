@@ -1,16 +1,48 @@
 #!/usr/bin/env ruby
 def usage
-    puts 'json2ruby - convert a json hash to ruby 2.0 e.g. { symbol: "value" }'
-    puts 'Usage:'
-    puts '    json2ruby <filename>'
-    puts '    cat filename.json | json2ruby'
+  puts <<DOC
+json2ruby - convert a json hash to ruby 2.0 e.g. { symbol: "value" }
+
+Usage:
+    json2ruby [options] <filename>
+    cat filename.json | json2ruby [options]
+Options:
+    -p, --prety        Use pretty-generate to reformat the JSON
+
+By default, json2ruby preserves the formatting of the existing json; use -p or
+--pretty to reformat the JSON (via Ruby's pretty_generate)
+DOC
 end
+
 
 if ARGV.include?("-h") || ARGV.include?("--help")
   usage
   exit 0
 end
 
-ARGF.readlines.each do |line|
-  puts line.chomp.gsub(/"(.+)":/, "\\1:").gsub(/:(\s*)null,/, ":\\1nil,")
+prettify = if index = ARGV.index("-p") || ARGV.index("--pretty")
+             ARGV.delete_at index
+             true
+           end
+
+def json2ruby(json)
+  json.gsub(/"([^"]+)":/, "\\1:").gsub(/:(\s*)null/, ":\\1nil")
+end
+
+if prettify
+  begin
+    require 'json'
+  rescue LoadError
+    $stderr.puts "Using json2ruby with -p requires the json gem."
+    $stderr.puts "Please `gem install json` and try again."
+    exit -1
+  end
+  json = JSON.pretty_generate(JSON.parse(ARGF.read))
+  json.each_line do |line|
+    puts json2ruby(line)
+  end
+else
+  ARGF.readlines.each do |line|
+    puts json2ruby(line.chomp)
+  end
 end
