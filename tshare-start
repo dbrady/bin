@@ -12,11 +12,13 @@ $TCMD -S /tmp/work new-session -s work -n emacs -d
 
 if [ `uname -s` == "Darwin" ]; then
     # window    2    3    4       5
-    for name in spec bash logging console redis watch-and-say; do
+    for name in spec bash logging TODO redis watch-and-say; do
         $TCMD -S /tmp/work new-window -n $name -t work
     done
 
     # get this party started
+    # Jump TODO window over to TODO project
+    $TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant/code/todo' C-m
 
     # Clear the crap out of window 1, I mean, what even?
     $TCMD -S /tmp/work send-keys -t work:1 C-w
@@ -65,6 +67,7 @@ fi
 # Select window 1 and attach to it
 $TCMD -S /tmp/work select-window -t work:1
 $TCMD -S /tmp/work -2 attach -t work
+
 
 # NOTES
 
