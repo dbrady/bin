@@ -13,11 +13,12 @@ opts = Trollop.options do
   opt :off, "Off", type: :boolean, default: false
   opt :hue, "Hue", type: :integer, default: 46920
   opt :bri, "Brightness", type: :integer, default: 255
-  opt :sat, "Saturation", type: :integer, default: 0
+  opt :sat, "Saturation", type: :integer, default: 255
   opt :time, "Transition Time", type: :integer, default: 0
 end
 # lamp numbers
-lights=ARGV.empty? ? [1,2,3,5,6] : ARGV
+#lights=ARGV.empty? ? [1,2,3,5,6] : ARGV
+lights=ARGV.empty? ? [4,9,10,11] : ARGV
 opts[:on] = !opts[:off]
 
 lights.each do |lamp|
