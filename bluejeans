@@ -1,5 +1,15 @@
 #!/bin/sh
-echo "open -a Safari https://bluejeans.com/$1"
-open -a Safari https://bluejeans.com/$1
+# Usage:
+#     # TODO: bluejeans 1111111111
+#     bluejeans https://bluejeans.com/1111111111
+#     # TODO: bluejeans http://bluejeans.com/1111111111
+if [ `uname -s` != "Darwin" ]; then
+    echo "This script only runs on OSX, sorry."
+    echo "(Why are you even trying to launch beans NOT on your work machine?)"
+    exit -1
+fi
+
+echo "open -a Safari $1"
+open -a Safari $1
 sleep 15
 killall Safari

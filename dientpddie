@@ -1,0 +1,4 @@
+#!/bin/bash
+# because compliance keeps turning on services that lock up my cpu when ntpd can't find a server it likes
+echo "Killing ntpd with fire..."
+sudo kill -9 $(ps auwx | grep ntpd | grep -v grep | awk '{print $2}')

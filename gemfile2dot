@@ -64,8 +64,11 @@ def read_gemfile_lock(filename)
   [gems, links, versions]
 end
 
-defined_gems = read_gemfile(ARGV[0] + "/Gemfile")
-gems, links, versions = *read_gemfile_lock(ARGV[0] + "/Gemfile.lock")
+path = ARGV[0] || Dir.pwd
+gemfile_path = File.join path, "Gemfile"
+gemfile_lock_path = File.join path, "Gemfile.lock"
+defined_gems = read_gemfile gemfile_path
+gems, links, versions = *read_gemfile_lock(gemfile_lock_path)
 
 highlighted_gems = ARGV[1..-1] || []
 

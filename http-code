@@ -1,0 +1,5 @@
+#!/bin/bash
+# http-code <code> - describe an http status code
+for code in $*; do
+    grep $code ~/Documents/refdox/http_statuses.txt
+done
