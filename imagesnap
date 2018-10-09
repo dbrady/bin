@@ -1,0 +1,39 @@
+#!/bin/bash
+
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Sorry, this script only runs on OSX! Look into finding an"
+    echo "equivalent application for your OS."
+    exit -1
+fi
+
+BINFILE=/usr/local/bin/imagesnap
+
+if [ ! -e $BINFILE ]; then
+    echo "Could not find ${BINFILE}"
+    echo "Try installing it with brew install imagesnap"
+    exit -2
+fi
+
+# TL;DR: take a picture with `imagesnap [options] [filename]`
+#
+# Defaults:
+# - Uses the system preferred camera, not necessarily the built-in FaceTime cam
+# - Outputs to ./snapshot.jpg
+#
+# Notes:
+# - Use -l to list the available devices. You'll get a list of items like this:
+#   <AVCaptureDALDevice: 0x7ffd48c3e000 [FaceTime HD Camera][CC27294TC78G1HNAW]>
+#   To specify this device Use -d and the human-readable portion in quotes:
+#   $ imagesnap -d "FaceTime HD Camera" # note that FaceTime has 2 capitals
+#
+# - If you specify the wrong device (such as by forgetting that FaceTime !=
+#   Facetime), you'll get an error message instead of taking a picture
+#
+# - Without a warmup the camera light barely flickers but the light cannot be
+#   entirely suppressed
+#
+# - The built-in FaceTime HD Camera needs about 0.25s warmup or it will just
+#   return a nearly-black image
+#
+# - The Logitech "C922 Pro Stream Webcam" does NOT need any warmup time (but the
+#   camera still flickers)
