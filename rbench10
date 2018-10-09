@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# rbench10 - Run a ruby benchmark script and compare all of the outputs against
+# the first (reference) benchmark.
+#
+# Rehearsal ----------------------------------------------------
+# Array with join:   0.170000   0.010000   0.180000 (  0.221139)
+# String addition:   0.100000   0.000000   0.100000 (  0.116968)
+# With Enumerator:   0.530000   0.010000   0.540000 (  0.566584)
+# ------------------------------------------- total: 0.820000sec
+#
+#                        user     system      total        real
+# Array with join:   0.170000   0.010000   0.180000 (  0.190019)
+# String addition:   0.100000   0.000000   0.100000 (  0.103147)
+# With Enumerator:   0.530000   0.010000   0.540000 (  0.547689)
+
+seen = false
+timings = [] # pairs of [label, real]
+
+ARGF.each_line do |line|
+  unless seen
+    seen = line =~ /^\s+user\s+system\s+total\s+real\s*$/
+    next
+  end
+
+  label = line.split(/:/).first
+  timing = line[/\(\s*[\d\.]+\)/].gsub(/\(\s*/, '').gsub(/\)/, '').to_f
+
+  timings << [label, timing]
+end
+longest = timings.map { |label, timing| label.size }.max + 1
+
+format = "%-#{longest}s %8.6f %7.3fx"
+timings.each do |label, timing|
+  factor = if timing == 0.0
+             0.0
+           else
+             timings[0].last / timing
+           end
+  puts format % [label + ':', timing, factor]
+end
