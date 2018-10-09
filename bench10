@@ -17,7 +17,7 @@
 # With Enumerator:   0.480000   0.000000   0.480000 (  0.518744)
 # ------------------------------------------- total: 0.680000sec
 #
-# user     system      total        real
+#                        user     system      total        real
 # Array with join:   0.160000   0.010000   0.170000 (  0.172731)
 # With Enumerator:   0.490000   0.010000   0.500000 (  0.507471)
 
