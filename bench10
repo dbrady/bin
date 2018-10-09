@@ -6,32 +6,39 @@
 # Usage:
 # bench10 <ruby_benchmark_script.rb>
 #
+# PROTIP: Put your REFERENCE code first, because reasons. (If I ever figure out
+# how to make this work with >2 alternatives all compared to a single reference,
+# we're gonna want the reference to be in timings[0], narmean?)
+#
 # Example Benchmark.bmbm output:
 # $ ruby keygen_benchmark.rb
 # Rehearsal ----------------------------------------------------
-# String addition:   0.890000   0.010000   0.900000 (  0.949600)
-# Array with join:   1.550000   0.040000   1.590000 (  1.620246)
-# ------------------------------------------- total: 2.490000sec
+# Array with join:   0.190000   0.010000   0.200000 (  0.230284)
+# With Enumerator:   0.480000   0.000000   0.480000 (  0.518744)
+# ------------------------------------------- total: 0.680000sec
 #
-#                        user     system      total        real
-# String addition:   0.810000   0.010000   0.820000 (  0.834334)
-# Array with join:   1.560000   0.040000   1.600000 (  1.620172)
-#
-#
+# user     system      total        real
+# Array with join:   0.160000   0.010000   0.170000 (  0.172731)
+# With Enumerator:   0.490000   0.010000   0.500000 (  0.507471)
+
 # This scriptlet looks for the line with the "real" on it, then grabs the
 # numbers in parentheses and prints them as a ratio.
 #
 # Example Output:
-# 1. 0.835488 / 1.553796 => 0.5377076527420588
-# 2. 0.845584 / 1.526981 => 0.5537619656040252
-# 3. 0.826432 / 1.532587 => 0.5392398604451167
-# 4. 0.818110 / 1.532715 => 0.5337652466375027
-# 5. 0.836752 / 1.549950 => 0.5398574147553148
-# 6. 0.846850 / 1.643286 => 0.515339387057396
-# 7. 0.800611 / 1.566787 => 0.5109890495644909
-# 8. 0.847739 / 1.585312 => 0.5347458418279809
-# 9. 0.919796 / 1.668774 => 0.5511806871391812
-# 10. 0.878255 / 1.607779 => 0.5462535584803633
+# $ bench10 keygen_benchmark.rb
+#  1. 0.143617 / 0.502916 => 0.28556856413397064
+#  2. 0.150246 / 0.488346 => 0.3076630094236463
+#  3. 0.169519 / 0.553037 => 0.3065237949721266
+#  4. 0.162363 / 0.484136 => 0.33536650858436473
+#  5. 0.167374 / 0.493827 => 0.3389324601530495
+#  6. 0.197403 / 0.691167 => 0.285608253866287
+#  7. 0.175552 / 0.618753 => 0.28371902843299346
+#  8. 0.199851 / 0.645255 => 0.30972406257991025
+#  9. 0.186563 / 0.575400 => 0.32423183872088984
+# 10. 0.241346 / 0.713072 => 0.3384595104000718
 #
-# TODO: Make this work with more than 2 outputs...
-seq 10 | while read f; do printf '%2d. ' $f; ruby $1 | grep -A 2 real | tail -n 2 | cut -d ':' -f 2 | awk '{ print $5 }' | tr -d ')' | xargs ruby -e 'puts "#{ARGV[0]} / #{ARGV[1]} => #{ARGV[0].to_f/ARGV[1].to_f}"'; done
+# TODO: Make this work with more than 2 outputs... (Did this. It gets really
+# hard to read the output. Better to either write a ruby script to consume the
+# benchmark output, or better yet to just write your benchmark script to call
+# measure and then play with the Benchmark::Tms objects yourself.)
+seq 10 | while read f; do printf '%2d. ' $f; ruby $1 | grep -A 2 real | tail -n 2 | cut -d ':' -f 2 | awk '{ print $5 }' | tr -d ')' | xargs ruby -e 'puts "#{ARGV[1]} / #{ARGV[0]} => #{ARGV[1].to_f/ARGV[0].to_f}"'; done
