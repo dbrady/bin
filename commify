@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+# commify <number> - Format a number with commas
+
+# TODO: Override commas with . or _ for Euro or Ruby src
+# TODO: Handle floating-point numbers
+
+# Code stolen shamelessly and with gratitude from @tokland on StackExchange:
+# https://codereview.stackexchange.com/questions/28054/separate-numbers-with-commas
+
+# "Simple" Integer version
+def commify_integer(number)
+  number.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(",").reverse
+end
+
+# More complicated version for floatscomm
+def commify_float(number)
+  characteristic, mantissa = number.to_s.split(/\./)
+  mantissa = mantissa.chars.each_slice(3).map(&:join).join(',')
+  commify_integer(characteristic)
+end
+
+if ARGV[0] =~ /\./
+  puts commify_float ARGV[0]
+else
+  puts commify_integer ARGV[0]
+end
