@@ -7,20 +7,60 @@
 # Code stolen shamelessly and with gratitude from @tokland on StackExchange:
 # https://codereview.stackexchange.com/questions/28054/separate-numbers-with-commas
 
+require "optparse"
+
+def usage
+  str = <<USAGE
+
+USAGE
+end
+
+@options = {}
+@options[:separator] = ','
+@options[:decimal] = '.'
+
+OptionParser.new do |opts|
+  opts.banner = 'commify - Reformat number with localized commas and decimals'
+  opts.separator ''
+  opts.separator 'Usage: commify [options] <number>'
+  opts.separator ''
+  opts.separator 'Options:'
+
+  opts.on('-s [separator]', '--separator') do |v|
+    @options[:separator] = v
+  end
+  opts.on('-d [decimal]', '--decimal') do |v|
+    @options[:decimal] = v
+  end
+  opts.on('-r', '--ruby', 'Same as `--separator=_ --decimal=.`. Not valid with any other flag.') do
+    @options[:separator] = "_"
+    @options[:decimal] = "."
+  end
+  opts.on('-e', '--euro', 'Same as `--separator=. --decimal=,`. Not valid with any other flag.') do
+    @options[:separator] = "."
+    @options[:decimal] = ","
+  end
+  opts.on('-h', '--help', 'Show this message') do
+    puts opts
+    exit
+  end
+end.parse!
+
 # "Simple" Integer version
-def commify_integer(number)
-  number.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(",").reverse
+def commify_integer(number, separator)
+  number.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(separator).reverse
 end
 
 # More complicated version for floatscomm
-def commify_float(number)
+def commify_float(number, separator, decimal)
   characteristic, mantissa = number.to_s.split(/\./)
-  mantissa = mantissa.chars.each_slice(3).map(&:join).join(',')
-  commify_integer(characteristic)
+  mantissa = mantissa.chars.each_slice(3).map(&:join).join(separator)
+  characteristic = commify_integer(characteristic, separator)
+  "#{characteristic}#{decimal}#{mantissa}"
 end
 
 if ARGV[0] =~ /\./
-  puts commify_float ARGV[0]
+  puts commify_float ARGV[0], @options[:separator], @options[:decimal]
 else
-  puts commify_integer ARGV[0]
+  puts commify_integer ARGV[0], @options[:separator]
 end
