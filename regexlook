@@ -1,0 +1,19 @@
+#!/bin/sh
+# regexlook - Document pos/neg look ahead/behind
+LOOK="\033[1m"
+PATTERN="\033[0;32m"
+OPER="\033[1;43m"
+NEG="\033[1;31m"
+CLEAR="\033[0m"
+
+echo "THE RULE:"
+echo "Use ${LOOK}(?${CLEAR}${OPER}<oper>${CLEAR}${PATTERN}<pat>${CLEAR}${LOOK})${CLEAR} for positive/negative lookahead/behind"
+echo "1. Enclose the look expression in ${LOOK}(?${CLEAR}...${LOOK})${CLEAR}"
+echo "2. Next add ${OPER}${NEG}<${CLEAR} for lookbehind, otherwise omit it for lookahead"
+echo "3. Finally use ${OPER}=${CLEAR} for positive and ${OPER}!${CLEAR} for negative"
+echo
+echo "THE EXAMPLES:"
+echo "${LOOK}(?${CLEAR}${OPER}=${CLEAR}${PATTERN}positive_lookahead${CLEAR}${LOOK})${CLEAR}"
+echo "${LOOK}(?${CLEAR}${OPER}${NEG}!${CLEAR}${PATTERN}negative_lookahead${CLEAR}${LOOK})${CLEAR}"
+echo "${LOOK}(?${CLEAR}${OPER}<=${CLEAR}${PATTERN}positive_lookbehind${CLEAR}${LOOK})${CLEAR}"
+echo "${LOOK}(?${CLEAR}${OPER}<${NEG}!${CLEAR}${PATTERN}negative_lookbehind${CLEAR}${LOOK})${CLEAR}"
