@@ -2,7 +2,7 @@
 # For use when Chrome goes permanently out to lunch.
 # I'm not sad. I AM ANGRY. DIE, CHROME, DIE.
 
-if [ `uname -a | awk '{ print $1 }'` == 'Linux' ]; then
+if [ `uname -s` == 'Linux' ]; then
     # chromium on Linux
     # MAKE UP YOUR FUCKING MIND, GOOGLE
     #GOOGLE_PROCESS_NAME_THIS_WEEK=/opt/google/chrome

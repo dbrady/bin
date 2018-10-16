@@ -1,5 +1,5 @@
 #!/bin/bash
-if uname -a | grep Darwin; then
+if [ `uname -s` != 'Linux' ]; then
     echo "Sorry, this is a linux-only command. Please write my OSX version!"
     exit 1
 fi

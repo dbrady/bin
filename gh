@@ -2,7 +2,7 @@
 # gh - Open the github homepage for the current project
 URL=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }' | cut -d @ -f 2 | sed -e 's/:/\//'`
 echo "Opening the github homepage for this project: $URL..."
-if [ 'Darwin' == `uname -a | awk '{print $1}'` ]; then
+if [ 'Darwin' == `uname -s` ]; then
     open http://$URL
 else
     # In theory, sensible-browser is more correct than xdg-open, but in practice

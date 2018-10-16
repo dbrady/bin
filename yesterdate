@@ -15,7 +15,7 @@ else
     format=$1
 fi
 
-if [ `uname -a | awk '{ print $1 }'` == "Linux" ]; then
+if [ `uname -s` == "Linux" ]; then
     # echo "Linux detected; using date command"
     date -d yesterday +$format
 else

@@ -8,8 +8,7 @@
 # pom mm:ss
 
 def cmm?
-  host = `uname -a`
-  host =~ /^Darwin CMM/ || host =~ /^Linux vagrant-dbrady/
+  `uname -a` =~ /^(Darwin CMM|Linux vagrant-dbrady)/
 end
 
 def say(msg)

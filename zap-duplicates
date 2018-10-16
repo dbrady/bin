@@ -16,7 +16,7 @@ files = case ARGV.size
 
 files_by_hash = Hash.new {|h,k| h[k] = []}
 
-os = `uname -a | awk '{ print $1 }'`.strip
+os = `uname -s`
 checksum_app = case os
                when 'Darwin' then 'md5 -q "%s"'
                when 'Linux' then %q[md5sum "%s" | awk '{ print $1 }']
