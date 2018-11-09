@@ -1,0 +1,19 @@
+#!/bin/bash
+# is-ntpd-cpu-bound - exit with true/success status if ntpd is using more than 50% cpu
+# It shouldn't ever really be measurable, most of the time it's 0.0% CPU. But Trend AV
+# on OSX turns on location services which causes a known bug that causes ntpd to eat up
+# half the cores on my machine or more. 199.0% CPU is not uncommon. Le LOL.
+
+# Polite usage:
+#     is-ntpd-cpu-bound && echo YES, ntpd is CPU bound || echo NO, ntpd is fine
+#
+# INTENDED USAGE:
+#     is-ntpd-cpu-bound && echo ntpd is CPU bound, nuking it from orbit && dientpddie || echo ntpd is fine
+
+CPU=$(ps auwx | grep [/]usr/sbin/ntpd | awk '{ print $3 }' | sed -e 's/\.[[:digit:]]*$//')
+
+if [ $CPU -gt 50 ]; then
+    exit 0
+else
+    exit 1
+fi
