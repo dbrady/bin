@@ -1,5 +1,5 @@
 #!/bin/bash
 # http-code-long <code> - describe an http status code with extended information
 for code in $*; do
-    grep $code ~/Documents/refdox/http_statuses.org
+    grep -i $code ~/Documents/refdox/http_statuses.org
 done
