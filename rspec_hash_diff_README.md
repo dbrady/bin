@@ -59,6 +59,10 @@ run `rspec_hash_diff <filename>` to see the pretty differences.
 
 ## It's Not Perfect
 
+* The clipboard version does not work under TMUX because tmux breaks up the
+  line-by-line output. Sorry about that. You'll have to either run the spec in a
+  separate iTerm window and copy from there, or get used to copying, merging the
+  lines together and saving it off as a file. Patches are welcome.
 * I use JSON.pretty_generate to render the hashes in a pretty, line-oriented way
   that colordiff can render. Since JSON doesn't support symbol keys, this means
   you're only ever going to see string keys in the diffs.
