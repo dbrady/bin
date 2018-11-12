@@ -1,9 +1,16 @@
 #!/usr/bin/env ruby
-# rspec_hash_diff <diff_file>
-# Usage: Copy and paste JUST THE TWO LINES containing the red/green pair of
+# rspec_hash_diff - display pretty, colorized side-by-side hash diff
+# Usage:
+# rspec_hash_diff [options] <diff_file>
+#
+# options:
+# --no-sort:     do not sort hash keys before comparing, default is off (sorting
+#                is on) TODO: THIS OPTION DOES NOT EXIST YET
+#
+# diff_file: Copy and paste JUST THE TWO LINES containing the red/green pair of
 # expected/got hashes from an rspec failure. The first line will begin with
 # a - and the second line will begin with a +. Save these two lines to a file
-# and then run rspec_hash_diff <filename>
+# and then run rspec_hash_diff <filename>.
 #
 # OSX only: Skip the filename saving part, just copy the 2 lines to the system
 # clipboard and run this script with no args.
@@ -31,6 +38,7 @@ end
 
 diff = if osx? && ARGV.empty?
          lines = `pbpaste`.each_line.to_a
+         # test for >= 2 lines, if you copy a trailing line it's ok
          if lines.size < 2 || lines[0] !~ /^\s+-/ || lines[1] !~ /^\s+\+/
            usage
            exit -1
@@ -46,10 +54,10 @@ txt1, txt2 = diff
 txt1 = txt1.sub(/^\s*-/, '{').sub(/,\s*$/, '}')
 txt2 = txt2.sub(/^\s*\+/, '{').sub(/,\s*$/, '}')
 
-# I know, I know. It makes my skin crawl, too. Find me Hash.parse method that
-# understands Hashes and Arrays as dumped by Hash#inspect and I'll switch these
-# in a heartbeat. In the meantime, maybe don't put executable code in your hash
-# diff file, mmmkay?
+# I know, I know. eval() makes my skin crawl, too. Find me Hash.parse method
+# that understands Hashes and Arrays as dumped by Hash#inspect and I'll switch
+# these in a heartbeat. In the meantime, maybe don't put executable code in your
+# hash diff file, mmmkay?
 h1 = eval(txt1)
 h2 = eval(txt2)
 load File.expand_path(File.join(File.dirname(__FILE__),"hash_diff.rb"))
