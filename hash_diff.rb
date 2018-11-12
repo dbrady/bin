@@ -109,9 +109,11 @@ def hash_deep_sort_keys(hash)
   h
 end
 
-def hash_diff(h1, h2)
-  h1 = hash_deep_sort_keys(h1)
-  h2 = hash_deep_sort_keys(h2)
+def hash_diff(h1, h2, sort_keys: true)
+  if sort_keys
+    h1 = hash_deep_sort_keys(h1)
+    h2 = hash_deep_sort_keys(h2)
+  end
   file1 = Tempfile.new
   file1.puts JSON.pretty_generate(h1)
   file1.close
