@@ -41,6 +41,22 @@ But if we copy the two lines from the diff and run them through
 
 ![RSpec Hash Diff Such Wow](rspec_hash_diff_such_wow.png)
 
+## How To Use It
+
+### OSX
+
+On OSX, `rspec_hash_diff` will read from a diff file on disk, but if you don't
+give it a filename, it will try to read from the OSX clipboard. This means you
+can look at the two-line diff output (the +red,-green lines), and triple click
+to select one whole line, then drag to the next line to grab the other hash. Hit
+Cmd-C to copy it, and you're golden. Just run the script.
+
+### Everybody Else
+
+Sorry, no clipboard support for you. Copy the two-line diff output (the
++red,-green lines), paste them into a text editor, and save it as a file. Now
+run `rspec_hash_diff <filename>` to see the pretty differences.
+
 ## It's Not Perfect
 
 * I use JSON.pretty_generate to render the hashes in a pretty, line-oriented way
