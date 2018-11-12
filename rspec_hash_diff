@@ -4,8 +4,44 @@
 # expected/got hashes from an rspec failure. The first line will begin with
 # a - and the second line will begin with a +. Save these two lines to a file
 # and then run rspec_hash_diff <filename>
-diff_file = ARGV.first
-txt1, txt2 = IO.readlines(diff_file)
+#
+# OSX only: Skip the filename saving part, just copy the 2 lines to the system
+# clipboard and run this script with no args.
+def osx?
+  `uname -s`.strip == 'Darwin'
+end
+
+def usage
+  puts <<USAGE
+rspec_hash_diff [<diff_file>] - print a readable, colorized rspec hash diff
+
+To use, copy the 2 lines containing JUST the rspec hash diff to a file and run
+this script with that filename.
+USAGE
+  if osx?
+    puts <<OSX_ONLY
+
+OSX ONLY: This script will read directly from the clipboard if you omit the
+filename. Just triple-click the first line, drag to select the second, and hit
+Cmd-C. It needs to be in the *system* clipboard, not the tmux/tmate clipboard.
+end
+OSX_ONLY
+  end
+end
+
+diff = if osx? && ARGV.empty?
+         lines = `pbpaste`.each_line.to_a
+         if lines.size < 2 || lines[0] !~ /^\s+-/ || lines[1] !~ /^\s+\+/
+           usage
+           exit -1
+         end
+         lines
+       else
+         IO.readlines ARGV.first
+       end
+
+
+txt1, txt2 = diff
 
 txt1 = txt1.sub(/^\s*-/, '{').sub(/,\s*$/, '}')
 txt2 = txt2.sub(/^\s*\+/, '{').sub(/,\s*$/, '}')
