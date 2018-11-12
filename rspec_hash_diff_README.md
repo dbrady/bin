@@ -13,7 +13,7 @@ I give you _this_, because _I love you more_.
 ## The Problem
 
 When you're debugging an API, sometimes the difference between what you expect
-and what you get is very small, but buried inside a very large server
+and what you get is very small, but it's buried inside a very large server
 response. RSpec tries to helpfully give you the diff of the two hashes, but good
 luck finding the changes in a response like this:
 
