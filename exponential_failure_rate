@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+# exponential_failure_rates - show how much effort a retry scenario takes for a given failure rate
+#
+# Usage:
+# exponential_failure_rate <rate> [<attempts>=DEFAULT_NUMBER_OF_ATTEMPTS]
+DEFAULT_NUMBER_OF_ATTEMPTS = 100000
+
+# histogram is a Hash.new(0)
+# failure_rate must be [0.0..1.0)
+#
+# below 0.0 histogram will always be 1 because it will always succeed on the
+# first try
+#
+# at 1.0 or above this method will never terminate because it will never succeed
+def try_until_success(histogram,failure_rate)
+  count = 1
+  count += 1 until rand > failure_rate
+  histogram[count] += 1
+end
+
+rate = ARGV[0].to_f
+raise "rate must be at least 0.0 and less than 1.0" unless rate >= 0.0 && rate < 1.0
+
+attempts = if ARGV.size == 2
+             ARGV[1].to_i
+           else
+             DEFAULT_NUMBER_OF_ATTEMPTS
+           end
+
+results = Hash.new 0
+
+puts "Calculating failure rate by brute forcing %d attempts..." % [attempts]
+
+attempts.times do
+  try_until_success results, rate
+end
+
+effort = results[1] + results
+                        .dup
+                        .tap {|hash| hash.delete 1 }
+                        .each_pair
+                        .map {|a,b| a*b}
+                        .reduce(&:+)
+
+puts "With a failure rate of %f, it takes %d attempts to generate %d results. (%5.2f%%)" % [
+       rate,
+       effort,
+       attempts,
+       (100.0*effort) / attempts
+     ]
