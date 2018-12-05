@@ -29,7 +29,9 @@ attempts = if ARGV.size == 2
 
 results = Hash.new 0
 
-puts "Calculating failure rate by brute forcing %d attempts..." % [attempts]
+calculated_failure_rate = 1.0 / (1.0-rate)
+
+puts "Calculating failure rate by brute forcing %d attempts (should be close to %5.2f%%)..." % [attempts, 100.0*calculated_failure_rate]
 
 attempts.times do
   try_until_success results, rate
