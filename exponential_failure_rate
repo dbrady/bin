@@ -44,7 +44,7 @@ effort = results[1] + results
                         .map {|a,b| a*b}
                         .reduce(&:+)
 
-puts "With a failure rate of %f, it takes %d attempts to generate %d results. (%5.2f%%)" % [
+puts "With a failure rate of %f, it took %d attempts to generate %d results. (%5.2f%%)" % [
        rate,
        effort,
        attempts,
