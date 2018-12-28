@@ -1,0 +1,3 @@
+#!/bin/sh
+echo 'You are onsite! Disabling hue lights in ci...'
+touch ~/onsite.touch

@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# gemver - do a gem search for JUST the named gem to see the current version
+#
+# Why? Because there are over 500 gems with redis in the name, over 750 gems
+# with rspec in the name, and over 5000 gems with rails in the name.
+
+command = "gem search #{ARGV * ' '} | egrep '^(#{ARGV * '|'}) '"
+puts command
+puts `#{command}`

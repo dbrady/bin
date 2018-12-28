@@ -1,2 +1,3 @@
 #!/bin/sh
+# huemauve - adds more ram
 curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "bri":64,"sat":254,"hue":49500, "transitiontime":0}' 2>/dev/null > /dev/null

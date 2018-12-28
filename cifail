@@ -7,9 +7,13 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 rubanner --font=electronic "FAIL" white on_red
-for light in 4 9; do
-    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
-done
-# the spotlight is wayyyy too strong, let's back it off
-sleep 1
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/4/state" -d  '{"on": true, "bri": 254, "hue": 33862, "sat": 50, "transitiontime":0}' 2>/dev/null > /dev/null
+if [ -e ~/onsite.touch ]; then
+    echo "You're onsite! Skipping HUE lights."
+else
+    for light in 4 9; do
+        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
+    done
+    # the spotlight is wayyyy too strong, let's back it off
+    sleep 1
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/4/state" -d  '{"on": true, "bri": 254, "hue": 33862, "sat": 50, "transitiontime":0}' 2>/dev/null > /dev/null
+fi

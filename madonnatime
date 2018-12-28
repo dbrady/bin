@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+while true
+  5.times do
+    system "clear"
+    puts ["\\O|  \"Because I'm living in", "<|<   a material world\"", " | ", "/ |"]
+    sleep 1
+    system "clear"
+    puts ["|O/  \"and I am", ">|>   a material girl\"", " | ", "| \\"]
+    sleep 1
+  end
+  system "clear"
+  puts [" <  \"VOGUE", "<|<   STRIKE A POSE\"", " | ", "/ \\"]
+  sleep 8
+end

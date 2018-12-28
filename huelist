@@ -6,5 +6,11 @@
 # | green   | 25500 |
 # | blue    | 46920 |
 # | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
 
 curl "http://$HUE_IP/api/$HUE/lights"
