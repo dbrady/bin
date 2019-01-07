@@ -4,6 +4,16 @@
 # Why? Because there are over 500 gems with redis in the name, over 750 gems
 # with rspec in the name, and over 5000 gems with rails in the name.
 
-command = "gem search #{ARGV * ' '} | egrep '^(#{ARGV * '|'}) '"
+# 2019-01-02: LOL, I just discovered that gem search -e <gemname> will show you
+# JUST exact match. Might want to just learn the official syntax, I'm just
+# saying. Then again, this script suppresses the "*** Remote Gems ***\n\n"
+# message before every gem. On the other hand, if one gem completely contains
+# the name of another, this script will show duplicate entries unless we include
+# a | sort | uniq step at the end. Problem there is this is a CLI script where
+# the input is short enough that I'd want to show the results in the order the
+# user entered rather than shuffle them around. So I'm just going to keep this
+# script, but also add -e to it, to remove duplicates and also so I'll see it
+# and be reminded of it every time I run the script.
+command = "gem search -e #{ARGV * ' '} | egrep '^(#{ARGV * '|'}) '"
 puts command
 puts `#{command}`
