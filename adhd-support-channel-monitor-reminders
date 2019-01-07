@@ -1,0 +1,10 @@
+#!/bin/bash
+# Because I have ADHD and there's no way to make HipChat get extreme about
+# notifications in one specific channel, here's a reminder script. Run this in a
+# separate tmux window. Also for some reason tmux in Terminal doesn't honor my
+# system preferences, but iTerm2 does. Probably some login environment capture
+# thing I've set up in iTerm but not in Terminal. Anyway point is I have Fiona
+# installed and set to default, but if I don't specify Fiona here, this will use
+# the shrinkwrapped default voice (Alex) instad.
+echo "Reminding you to check on the support channel every 30 minutes"
+watch -n 1800 "say -v Fiona Check on the support channel"
