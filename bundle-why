@@ -11,12 +11,18 @@
 #       - rspec-expectations 3.7.0 (~> 3.7.0)
 #         - rspec-support 3.7.1
 #       - rspec-mocks 3.7.0 (~> 3.7.0)
-#       - rspec-mocks 3.7.0 (~> 3.7.0)
+#         - rspec-support 3.7.1
 #
 # Lines marked * are in green and mean "this is in your Gemfile"
 # Lines marked - are gray and mean "this is included implicitly"
-#
-# If version requirements are different or there are multiple root nodes then the tree may be duplicated
+
+# TODO: Would this just be easier if it cat'd the Gemfile with every line in
+# dark gray except for relevant lines? Still have to determine all the gems in
+# the network but then only have to choose a color based on whether or not it
+# was in the list.
+
+# Oh, snap, what about building the graph as a hash and just pretty-printing it?
+# Hmmm...
 
 class BundledGem
   attr_reader :name, :version
