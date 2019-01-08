@@ -26,13 +26,87 @@
 # gem 'ice_nine', '~> 0.11.2'
 # gem 'memorandum', '~> 2.2'
 #
+# If you pipe it into pessimize-gem-version --gemspec, you'll get this instead:
+# spec.add_dependency 'faraday', '~> 0.15.4'
+# spec.add_dependency 'typhoeus', '~> 1.3'
+# spec.add_dependency 'ice_nine', '~> 0.11.2'
+# spec.add_dependency 'memorandum', '~> 2.2'
+#
+# And if you pipe into pessimize-gem-version --gemspec-dev, you get this:
+# spec.add_development_dependency 'faraday', '~> 0.15.4'
+# spec.add_development_dependency 'typhoeus', '~> 1.3'
+# spec.add_development_dependency 'ice_nine', '~> 0.11.2'
+# spec.add_development_dependency 'memorandum', '~> 2.2'
+#
 # Note that gems still on version 0 typically follow semantic versioning one
 # step deeper, e.g. a minor version bump can introduce a breaking change while
 # additive and documentation changes are relegated to micro version bumps.
+class GemRenderer
+  attr_reader :gem, :version
+
+  def initialize(gem, version)
+    @gem, @version = gem, version
+  end
+end
+
+class GemfileRenderer < GemRenderer
+  def render
+    "gem '#{gem}', '~> #{version}'"
+  end
+end
+
+class GemspecRenderer < GemRenderer
+  def render
+    "spec.add_dependency '#{gem}', '~> #{version}'"
+  end
+end
+
+class GemspecDevRenderer < GemRenderer
+  def render
+    "spec.add_development_dependency '#{gem}', '~> #{version}'"
+  end
+end
+
+def usage
+  puts <<USAGE
+pessimize-gem-version - convert a gem version to pessimized form
+
+Usage:
+gem search [-e] [gemlist] | pessimize-gem-version [option]
+
+Input is a list of gem names and versions, per the standard output of gem
+search. Lines not matching "gem_name (version)" are ignored. Output is a list of
+pessimized gem specifications suitable for pasting into a Gemfile.
+
+Gem versions beginning with 0 are pessimized to the micro version, preventing an
+upgrade of the minor version. Other gems are pessimized to the minor version,
+allowing anything short of a major version upgrade.
+
+option can be at most one of:
+
+-h, --help    - show this information
+--gemspec     - Instead of Gemfile format, emit pessimized versions for a
+                gemspec as runtime dependencies
+--gemspec-dev - Instead of Gemfile format, emit pessimized versions for a
+                gemspec as development dependencies
+USAGE
+end
+
+render_class = if ARGV.first == '--gemspec'
+                 ARGV.shift
+                 GemspecRenderer
+               elsif ARGV.first == '--gemspec-dev'
+                 ARGV.shift
+                 GemspecDevRenderer
+               else
+                 GemfileRenderer
+               end
+
 ARGF.each_line do |line|
   line.strip!
   next unless line =~ /([^\s]+)\s\(([\d\.]+)\)/
   gem, version = $1, $2
   version = version.sub(/\.\d+$/, '') unless version.start_with?('0.')
-  puts "gem '#{gem}', '~> #{version}'"
+  renderer = render_class.new(gem, version)
+  puts renderer.render
 end
