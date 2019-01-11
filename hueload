@@ -1,0 +1,50 @@
+#!/usr/bin/env ruby
+# hueload - restore named state of a HUE lamp, see also huesave
+#
+# usage: hueload <lamp> [<key> [<filename>]]
+require 'json'
+require 'typhoeus'
+require 'yaml'
+
+STATE_KEYS = %w(on bri hue sat effect)
+DEFAULT_FILE = File.expand_path("~/.hue_states.yml")
+
+unless (1..3).include? ARGV.size
+  puts "Got #{ARGV.size} arguments, expected 1-3"
+  puts "Usage: hueload <lamp> [<key> [<filename>]]"
+  exit -1
+end
+
+# Get args, set defaults
+lamp, key, filename = *ARGV
+
+if lamp == '-h' || lamp == '--help' || lamp == '-?'
+  puts "Usage: hueload <lamp> [<key> [<filename>]]"
+  exit -1
+end
+
+unless lamp =~ /^\d$/
+  puts "First argument must be a lamp number, not whatever '#{lamp}' is."
+  puts "Hint: think integers."
+  puts "Usage: hueload <lamp> [<key> [<filename>]]"
+  exit -1
+end
+
+key ||= "#{lamp}.last"
+filename ||= DEFAULT_FILE
+
+url = "http://#{ENV['HUE_IP']}/api/#{ENV['HUE']}/lights/#{lamp}/state"
+# puts "url: #{url}"
+# puts "lamp: #{lamp}"
+# puts "key: #{key}"
+# puts "filename: #{filename}"
+
+config = YAML.load_file(filename)
+# puts config
+# puts '--'
+json = config[key].to_json
+# puts json
+response = Typhoeus.put url,
+                        headers: {"Content-Type" => "application/json"},
+                        body: json
+# puts response.status_message

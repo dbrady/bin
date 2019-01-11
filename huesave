@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# huesave - save state of a HUE lamp, see also hueload
+#
+# usage: huesave <lamp> [<key> [<filename>]]
+#
+# lamp - number of lamp, e.g. 4 is the spotlight in my upstairs office, 9 is the
+# lightstrip on my office wall
+#
+# key - name of color or state to store, can be pretty much anything you want,
+# e.g. "lurid green", "concentrate", "relax", "sunset", ad infinitum. If
+# omitted, defaults to "<lamp>.last" where lamp is the id you just saved.
+#
+# filename - file to store lamp state in. Defaults is ~/.hue_states.yml. If set
+# to --, writes lamp state to stdout.
+#
+# Get the state of a light by querying HUE. You get back a LOT of fields, but
+# for our purposes we only need SOME of the state field, namely: on, bri, hue,
+# sat, and effect.
+require 'json'
+# note to self if this gets annoying enough on account of typhoeus not being
+# installed, either switch to Net::Http or just shell out to curl.
+require 'typhoeus'
+require 'yaml'
+
+STATE_KEYS = %w(on bri hue sat effect)
+DEFAULT_FILE = File.expand_path("~/.hue_states.yml")
+
+unless (1..3).include? ARGV.size
+  puts "Got #{ARGV.size} arguments, expected 1-3"
+  puts "Usage: huesave <lamp> [<key> [<filename>]]"
+  exit -1
+end
+
+# Get args, set defaults
+lamp, key, filename = *ARGV
+
+if lamp == '-h' || lamp == '--help' || lamp == '-?'
+  puts "Usage: huesave <lamp> [<key> [<filename>]]"
+  exit -1
+end
+
+unless lamp =~ /^\d$/
+  puts "First argument must be a lamp number, not whatever '#{lamp}' is."
+  puts "Hint: think integers."
+  puts "Usage: huesave <lamp> [<key> [<filename>]]"
+  exit -1
+end
+
+key ||= "#{lamp}.last"
+filename ||= DEFAULT_FILE
+
+url = "http://#{ENV['HUE_IP']}/api/#{ENV['HUE']}/lights"
+
+response = Typhoeus.get url
+state = JSON.parse(response.response_body)[lamp]["state"]
+
+output = {}
+STATE_KEYS.each do |key|
+  output[key] = state[key]
+end
+output["transitiontime"] = 0
+
+config, fp = if filename == '--'
+               [{}, $stdout]
+             else
+               if File.exist?(filename)
+                 [YAML.load_file(filename) || {}, File.open(filename, 'w')]
+               else
+                 [{}, File.open(filename, 'w')]
+               end
+             end
+
+config[key] = output
+
+fp.puts config.to_yaml

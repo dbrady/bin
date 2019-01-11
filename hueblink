@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+# hueblink - Turn a HUE lamp off and back on repeatedly
+def usage
+  puts <<USAGE
+NOTE: LAMP IS THE ONLY ARGUMENT THAT CURRENTLY WORKS. LOL/SORRY/TODO.
+hueblink - Turn a HUE lamp off and back on repeatedly
+Usage:
+    hueblink <lamp> [<times>] [options]
+
+If times is omitted, defaults to 3.
+
+Options:
+-n, --on-time - Time to blink light on in seconds. Defaults to 1.0.
+-f, --off-time - Time to blink light off in seconds. Defaults to 0.5.
+
+Note that HUE won't let you blink more than about twice a second because while
+their legal department thinks epilepsy is every bit as funny as we do, they take
+a much more dim view of being help liable for letting software defects or
+hackers injure humans with their product. If you want to turn a lamp into a
+flickering candle, go get some LEDs and an arduino.
+USAGE
+end
+
+# TODO actually parse those args here...
+
+lamp = ARGV[0]
+
+on_time = 0
+off_time = 0
+
+system "huesave #{lamp}"
+10.times do
+  system "hueload #{lamp} off"
+  sleep off_time
+  system "hueload #{lamp} red"
+  sleep on_time
+end
+system "hueload #{lamp}"
