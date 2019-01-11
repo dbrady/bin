@@ -104,7 +104,7 @@ render_class = if ARGV.first == '--gemspec'
 
 ARGF.each_line do |line|
   line.strip!
-  next unless line =~ /([^\s]+)\s\(([\d\.]+)\)/
+  next unless line =~ /([^\s]+)\s\(([\d\.]+)([\s\w]*\sruby\s*).*\)/
   gem, version = $1, $2
   version = version.sub(/\.\d+$/, '') unless version.start_with?('0.')
   renderer = render_class.new(gem, version)
