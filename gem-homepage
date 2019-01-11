@@ -1,0 +1,10 @@
+#!/bin/bash
+# gem-homepage - Open homepage of the named gem
+if [ `uname -s` == "Darwin" ]; then
+# on Ubuntu linux, xdg-open might work
+    OPEN_CMD=open
+elif [ `uname -s` == "Linux" ]; then
+    OPEN_CMD=xdg-open
+fi
+
+gem search -e -d "$1" | grep 'Homepage' | awk '{print $2}' | xargs $OPEN_CMD
