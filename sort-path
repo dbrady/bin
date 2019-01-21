@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+# sort-path - Show the $PATH variable in declared order OR as a sorted list
+def usage
+  str=<<USAGE
+sort-path - Show all paths in $PATH on per line, sorted or in normal order
+
+Usage:
+sort-path [options]
+
+Options:
+-h, -?     show this help
+-n, -p     show path is unsorted/priority order
+-q         quiet; suppress "Showing $PATH in x/y order" messages
+USAGE
+end
+
+def barf!(msg)
+  puts msg
+  puts "Run #{File.basename($0)} -h for help"
+  puts usage
+  exit -1
+end
+
+HELP_ARGS = %w(-h -?)
+NOSORT_ARGS = %w(-n -p)
+QUIET_ARGS = %w(-q)
+KNOWN_ARGS = HELP_ARGS + NOSORT_ARGS + QUIET_ARGS
+
+unless ARGV.all? {|arg| KNOWN_ARGS.include? arg }
+  barf! "Unrecognized option. Legal options are #{KNOWN_ARGS * ', '}"
+end
+
+if HELP_ARGS.any? { |arg| ARGV.include? arg }
+  puts usage
+  exit 0
+end
+
+quiet = ARGV.include?("-q")
+
+if NOSORT_ARGS.any? {|arg| ARGV.include?(arg) } # show path unsorted
+  $stderr.puts "Showing $PATH in unsorted/priority order:" unless quiet
+  puts ENV["PATH"].split(/:/)
+else
+  $stderr.puts "Showing $PATH in sorted order:" unless quiet
+  puts ENV["PATH"].split(/:/).sort
+end

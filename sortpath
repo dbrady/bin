@@ -1,7 +1,0 @@
-#!/usr/bin/env ruby
-if ARGV.include?("-n")
-  puts ENV["PATH"].split(/:/)
-else
-  puts ENV["PATH"].split(/:/).sort
-end
-
