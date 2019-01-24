@@ -1,0 +1,21 @@
+#!/bin/bash
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+
+for lamp in 4 9; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d  '{"on": true, "bri": 0, "hue": 46420, "sat": 254, "transitiontime":0}' 2>/dev/null > /dev/null
+done
+for lamp in 4 9; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d  '{"on": true, "bri": 254, "hue": 46420, "sat": 254, "transitiontime":30}' 2>/dev/null > /dev/null
+done
