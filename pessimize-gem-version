@@ -102,9 +102,15 @@ render_class = if ARGV.first == '--gemspec'
                  GemfileRenderer
                end
 
+$debug=false
+puts render_class if $debug
+gem_pattern = /([^\s]+)\s\(([\d\.]+)([\s\w]*\sruby\s*)?.*\)/
 ARGF.each_line do |line|
   line.strip!
-  next unless line =~ /([^\s]+)\s\(([\d\.]+)([\s\w]*\sruby\s*).*\)/
+  if $debug && line !~ gem_pattern
+    puts "Line does not match gem pattern: #{line}"
+  end
+  next unless line =~ gem_pattern
   gem, version = $1, $2
   version = version.sub(/\.\d+$/, '') unless version.start_with?('0.')
   renderer = render_class.new(gem, version)
