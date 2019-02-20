@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+# marksdown - Convert a file to John Marks' preferred style
+# 1. All lines of source code are put into alphabetical order
+# 2. All characters on each line are put into alphabetical order
+# 3. Blank lines are not stripped because, although they're effectively meaningless, technically so is everything else now, and we're not strippid THAT, so.
+
+puts ARGF.each_line.map {|line| line.strip.split(//).sort.join('')}.sort
