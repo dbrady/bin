@@ -1,0 +1,38 @@
+#!/usr/bin/env ruby
+# luhn <number> - emit the luhn check digit for number
+def luhn_algorithm(number)
+  multiplications = []
+
+  number.split(//).each_with_index do |digit, i|
+    if i % 2 == 0
+      multiplications << digit.to_i * 2
+    else
+      multiplications << digit.to_i
+    end
+  end
+
+  sum = 0
+
+  multiplications.each do |num|
+    num.to_s.each_byte do |character|
+      sum += character.chr.to_i
+    end
+  end
+
+  if sum % 10 == 0
+    control_digit = 0
+  else
+    control_digit = (sum / 10 + 1) * 10 - sum
+  end
+
+  control_digit
+end
+
+if ARGV.empty?
+  puts "Usage: luhn <number_without_check_digit>"
+  exit -1
+end
+
+if $0==__FILE__
+  puts luhn_algorithm(ARGV.first)
+end
