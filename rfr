@@ -6,9 +6,16 @@
 #
 # rfr [additional args or focus--will not change focus]
 
+SING='n'
+
 if [ "$1" = "-h" ]; then
     rfh
     exit 1
+fi
+
+if [ "$1" = "--sing" ]; then
+    SING='y'
+    shift
 fi
 
 echo 'Rspec Focus: RUN! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
@@ -19,4 +26,10 @@ cirun
 # e.g. if output includes /[1-9]+ failures/ cifail
 # and if output include /[1-9]+ pending/ ciwarn
 #
-(time bundle exec rspec $@ && cipass || (cifail && exit -1))
+if [ "$SING" = 'y' ]; then
+    echo 'SINGING SPECS ENABLED, YAY!!!'
+    (time bundle exec rspec $@ && cipass && say -v "Good News" Your specs are all passing || (cifail && say -v "Bad News" Your specs all fail you are bad you should feel bad && exit -1))
+else
+    echo 'Non-singing specs'
+    (time bundle exec rspec $@ && cipass || (cifail && exit -1))
+fi
