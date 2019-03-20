@@ -1,0 +1,3 @@
+#!/bin/sh
+echo 'Your specs are all passing!'
+say -v "Good News" "Your specs are all passing" &

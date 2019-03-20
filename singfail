@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "Your specs have failed you are bad you should feel bad."
+say -v "Bad News" "Your specs have failed you are bad you should feel bad." &

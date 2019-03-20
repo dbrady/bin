@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ !? ]; then
+    say -v "Good News" "Your stuff is all working"
+else
+    say -v "Bad News" "Your stuff is broke it's all broke it makes me sad"
+fi

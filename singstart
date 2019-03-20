@@ -1,0 +1,3 @@
+#!/bin/sh
+echo "Your specs are running lets get it on"
+say -v "Pipe Organ" "Your specs are running lets get it on" &
