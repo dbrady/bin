@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # pessimize-gem-version - transform gem name and version to pessimized gem spec
 #
+# Usage:
+#  pessimize-gem-version --help
+#  gem search [-e] [gemlist] | pessimize-gem-version [option]
+#
 # Example: If you run
 #     gem search -e faraday typhoeus ice_nine memorandum
 # You get this output:
@@ -90,6 +94,11 @@ option can be at most one of:
 --gemspec-dev - Instead of Gemfile format, emit pessimized versions for a
                 gemspec as development dependencies
 USAGE
+end
+
+if ARGV.first == '--help'
+  puts usage
+  exit 1
 end
 
 render_class = if ARGV.first == '--gemspec'
