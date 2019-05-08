@@ -28,7 +28,8 @@ cirun
 #
 if [ "$SING" = 'y' ]; then
     echo 'SINGING SPECS ENABLED, YAY!!!'
-    (time bundle exec rspec $@ && cipass && say -v "Good News" Your specs are all passing || (cifail && say -v "Bad News" Your specs all fail you are bad you should feel bad && exit -1))
+    say -v "Pipe Organ" "Sam Jackson says hang on to your butts" &
+    (time bundle exec rspec $@ && cipass && say -v "Good News" "Your specs are all passing" || (cifail && say -v "Bad News" "Your specs all fail you are bad you should feel bad" && exit -1))
 else
     echo 'Non-singing specs'
     (time bundle exec rspec $@ && cipass || (cifail && exit -1))
