@@ -1,0 +1,53 @@
+#!/bin/bash
+# exit-with-status <code> - Exits with designated status code (exit-with-status
+# 0 exits successfully, anything else is an error code)
+#
+# Combine with alias='redostatus'='exit-with-status $?'
+#
+# Usage:
+# $ foo && bar && baz <RET>
+# # ... dang, I forgot to put && qaz || blah at the end of that
+# $ redostatus && qaz || blah
+# # => GREAT SUCCESS!
+#
+# TL;dr you need BOTH the alias AND the script (TODO: If you are a greater bash
+# wizard than I, please advise me how to do this more cleanly!)
+#
+# We WANT to just be able to say "$ $? && qaz || blah", BUT:
+#
+# 1. Can't run directly from command line, because:
+#
+# $ $? just runs the integer status, e.g. if the previous command succeeded, you
+# will get "bash: 0: command not found"
+
+# 2. Can't run from just a script, because:
+#
+# $? gets cleared to success when a script or program starts, and only contains
+# the exit status of any NEW scripts you launch from inside your script
+
+# 3. Can't run from just an alias, because:
+#
+# $? works as expected, but an alias can't call 'exit', beacuse that will close
+# your bash terminal. Ooops.
+
+# So with BOTH, you get:
+#
+# 1. redostatus alias can capture the PREVIOUS program's exit status, and
+# 2. exit-with-status is a script so it can exit without closing your shell
+exit $1
+
+#
+# Why?
+#
+# Sometimes I chaian a bunch of processes together with && and || and stuff, and
+# sometimes I run a process and decide after the fact that I wish it were
+# chained up with something later. So a real-word example might be:
+#
+# git checkout master && git pull && git checkout - && git merge master && rspec
+# # ... crap, that'll take a few minutes, I want to go work on something else, I'd
+# # like to know if it succeeded or failed.
+# `redostatus && say -v "Pipe Organ" "Your specs are all passing" || say -v "Bad News" "Your specs have failed you are bad and should feel bad"`
+#
+# ...yes, this really is a real-world example. I take not taking myself
+# seriously VERY seriously. (So much so that the previous can actually be
+# expressed as `$ redostatus && singstatus` ;-)
