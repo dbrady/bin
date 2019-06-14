@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ $# == 0 ] || [ $1 == "-?" ] || [ $1 == "--help" ]; then
+    echo "exit-with-status <code> - exits with designated status code."
+    echo "NOTE: This script works with alias redostatus; you probably want that instead"
+    exit 1
+fi
 # exit-with-status <code> - Exits with designated status code (exit-with-status
 # 0 exits successfully, anything else is an error code)
 #
