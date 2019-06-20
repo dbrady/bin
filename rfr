@@ -29,7 +29,7 @@ cirun
 if [ "$SING" = 'y' ]; then
     echo 'SINGING SPECS ENABLED, YAY!!!'
     singbegin
-    (time bundle exec rspec $@ && cipass && singpass || (cifail && singfail && exit -1)
+    (time bundle exec rspec $@ && cipass && singpass || (cifail && singfail && exit -1))
 else
     echo 'Non-singing specs (you can turn them on with --sing as the first argument)'
     (time bundle exec rspec $@ && cipass || (cifail && exit -1))
