@@ -29,7 +29,7 @@ while true
     text.each do |line|
       line = line.strip
       puts "Saying #{line}..."
-      system "say", '-v', 'Fiona', line
+      system "say", line
     end
   end
   sleep 1
