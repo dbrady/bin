@@ -21,4 +21,5 @@ else
 end
 
 # Part III - Load it, bind it, parse it, puts it
-puts Erubis::Eruby.new(File.read(file)).result binding
+# puts Erubis::Eruby.new(File.read(file)).result binding
+puts ERB.new(File.read(file)).result(binding) 
