@@ -1,4 +1,16 @@
 #!/usr/bin/env ruby
+# Consider putting 'os' in dotfiles/gems_i_always_want_in_global, and then
+# require 'os'
+# unless OS.osx? # etc
+def osx?
+  `uname -s`.strip == 'Darwin'
+end
+
+unless osx?
+  puts "This script only runs on OSX, sorry. TODO: Find a linux equivalent of afplay"
+  exit 1
+end
+
 ANNOYING = [1, 5]
 SHORT = [2, 3, 4, 6]
 
