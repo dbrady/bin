@@ -8,5 +8,7 @@ api_key, api_secret = *ARGV
 require 'base64'
 
 puts "Basic Authorization Token for api_key '#{api_key}' and secret '#{api_secret}':"
-puts "Use this with curl -H \"Authorization: Basic BLAH\""
-puts Base64.encode64(api_key + ":" + api_secret)
+authtext = Base64.encode64(api_key + ":" + api_secret)
+authcode = authtext.each_line.to_a.map(&:strip).join('')
+
+puts "Use this with curl -H \"Authorization: Basic #{authcode}\""
