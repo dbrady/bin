@@ -6,7 +6,7 @@
 # is I only needed Ruport's text table rendering, not any of the
 # PdfWriter dependencies.)
 require 'rubygems'
-require 'trollop'
+require 'optimist'
 require 'beanstalk-client'
 require 'terminal-table/import'
 

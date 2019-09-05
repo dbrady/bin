@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-require 'trollop'
+require 'optimist'
 
 opts = Trollop.options do
   version "plot v 1.0.0 (C) 2010 David Brady"
