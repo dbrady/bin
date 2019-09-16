@@ -1,0 +1,4 @@
+#!/bin/bash
+# In case I left the clowncar running...
+echo killall afplay
+killall afplay
