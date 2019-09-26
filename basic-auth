@@ -1,12 +1,15 @@
 #!/usr/bin/env ruby
-# basic-auth - generate the basic auth header from api key and token
+# basic-auth - generate the basic auth header from api_key/username and secret/password
 
 # for use wherever fine curl -H "Authorization: Basic JABBERJABBERJABBER" are sold
 
 api_key, api_secret = *ARGV
+api_key ||= ""
+api_secret ||= ""
 
 require 'base64'
 
+puts "REMEMBER: Basic authorization is Base64 encoded, but Bearer auth is not"
 puts "Basic Authorization Token for api_key '#{api_key}' and secret '#{api_secret}':"
 authtext = Base64.encode64(api_key + ":" + api_secret)
 authcode = authtext.each_line.to_a.map(&:strip).join('')
