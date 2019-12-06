@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# unix2time [--utc] <seconds_since_epoch>
+
+require "time"
+args = ARGV
+utc=false
+if args.delete "--utc"
+  utc=true
+end
+
+time = Time.strptime(args.first, "%s")
+if utc
+  time.utc
+else
+  time.localtime
+end
+
+puts time.strftime("%F %T%:z")
