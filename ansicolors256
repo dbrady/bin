@@ -121,10 +121,6 @@ def print_16_colorbars
   puts
 end
 
-def explain_256_color_table
-  puts "256-color palette: print ESC[38;5;<color>m for fg, ESC[48;5;<color>m for bg. Print ESC[38;5;<fg>;48;5;<bg>m for both."
-end
-
 def print_color_cube_panels
   puts "Colors 16-231 form a 6x6x6 color cube of black -> r/g/b -> c/m/y -> white. (color = 16 + r*36 + g*6 + b, where r,g,b -> (0..5) )"
   (1..6).each do |row|
@@ -164,8 +160,6 @@ def print_grayscale_bars
 end
 
 def print_256_color_table
-  explain_256_color_table
-  puts
   print_16_colorbars
   puts
   print_color_cube_panels
@@ -178,6 +172,9 @@ def print_instructions
   puts "Usage / Examples:"
   puts 'Use ESC[38;5;<color>m to tell bash the color is a 256-color foreground.'
   puts 'Use ESC[48;5;<color>m to tell bash the color is a 256-color background.'
+  puts "Use  ESC[38;5;<fg>;48;5;<bg>m for both. Note: Foreground must come first."
+
+
   puts 'In bash you can use \x1b or \033 to send an ESC code.'
   puts 'echo requires the (undocumented) -e flag to print extended color characters'
   puts
@@ -203,6 +200,6 @@ def print_everything
 end
 
 if __FILE__==$0
-  #  print_everything
-  print_16x16_table
+  print_everything
+  # print_16x16_table
 end
