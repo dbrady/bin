@@ -7,4 +7,9 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/5/state" -d '{"on":true, "bri":254,"sat":144,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
+Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d '{"on":true, "bri":254,"sat":144,"hue":13123, "transitiontime":0}' 2>/dev/null > /dev/null
