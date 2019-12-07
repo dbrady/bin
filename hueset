@@ -12,7 +12,7 @@
 # 9 - Office Lightstrip
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
-require 'trollop'
+require 'optimist'
 
 # Parse options
 opts = Trollop.options do

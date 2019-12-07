@@ -5,7 +5,7 @@
 
 require 'rubygems'
 require 'beanstalk-client'
-require 'trollop'
+require 'optimist'
 
 opts = Trollop.options do
   opt :port, "port", :type => :integer, :default => 11300

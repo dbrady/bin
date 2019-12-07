@@ -1,6 +1,5 @@
 #!/bin/bash
-echo "Make me work someplace besides ehr7"
-echo "Starting up testing functionals..."
+echo 'Kicking off something flaky. Cue the music!'
 (sleep 4 && yakety) &
-script/testing_functional_spec ehr7 $*
+$*
 killall afplay

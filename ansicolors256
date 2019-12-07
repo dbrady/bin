@@ -1,0 +1,205 @@
+#!/usr/bin/env ruby
+# ...rewriting this in ruby because a 256-iteration bash loop of expr + echo
+# makes this script take almost 5 seconds to execute, yikes. If I knew how to
+# concatenate a string in bash (I'm sure it can be done) it might be worth
+# staying in bash, but at this point this script is very close to unreadable
+# already so a rewrite in ruby will be more clean.
+#
+# Notes from https://misc.flogisoft.com/bash/tip_colors_and_formatting
+
+# Set Attributes
+# 1 - Bold
+# 2 - Dim
+# 4 - Underline
+# 5 - Blink (doesn't work on some terminals, mercifully)
+# 7 - Reverse (invert colors)
+# 8 - Hidden (useful for passwords)
+
+# Reset Attributes
+# 0 - Reset everything
+# 21 - Reset Bold/Bright
+# 22 - Reset Dim
+# 24 - Reset Underline
+# 25 - Reset blink
+# 27 - Reset inverse
+# 28 - Reset hidden
+
+# 256-color mode:
+# - to set the foreground send 38;5; as a prefix to to the color
+# - to set the background send 48;5; as a prefix to to the color
+
+# In the wild I have seen 37;5 and 47;5, but I don't know how or why they work,
+# or if the computer considers them different.
+
+
+
+# 8/16 Colors
+
+# These colors date back to the bit-twiddling days when a bit corresponded to a
+# literal wire in the hardware that turned on a electron beam in the CRT. 1 was
+# the red beam, 2 was the green beam, 4 was the blue beam, and 8 was the
+# "intensity" or "bright" switch. (Remember that in transmissive colors, red and
+# blue do not make green; instead red and green make yellow, red and blue make
+# magenta, and blue and green make cyan). In 256 color palettes, the basic
+# colors are shifted up by 30 and the intense colors are shifted up by 90.
+#
+# Adding brightness to black gives you "dark gray"; adding brightness to "light
+# gray" gives you "white".
+
+# Some old manuals call "yellow" "brown" and "bright yellow" "yellow", others
+# call "light gray" "white" and "white" "bright white".
+
+# 30 Black
+# 31 Red
+# 32 Green
+# 33 Yellow
+# 34 Blue
+# 35 Magenta
+# 36 Cyan
+# 37 Light Gray
+
+ESC=0x1b
+
+def colorize_fg(text, color, bg="")
+  if bg
+    bg = ";48;5;#{bg}"
+  end
+  "%c[38;5;#{color}#{bg}m#{text}%c[0m" % [ESC, ESC]
+end
+
+def colorize_bg(text, color, fg="")
+  if fg
+    fg = "38;5;#{fg};"
+  end
+  "%c[#{fg}48;5;#{color}m#{text}%c[0m" % [ESC, ESC]
+end
+
+def print_16x16_table
+  puts '\\x1b[38;5;<color>m sets foreground color...                         %c[30;48;5;7m\\x1b[48;5;<color>m sets background                              %c[0m' % [ESC, ESC]
+  (1..16).each do |row|
+    (0..15).each do |col|
+      color = col*16 + row - 1
+      disp = sprintf "%3d ", color
+      print colorize_fg(disp, color)
+    end
+    print "    "
+    (0..15).each do |col|
+      color = col*16 + row - 1
+      disp = sprintf "%3d ", color
+      print colorize_bg(disp, color)
+    end
+    puts
+  end
+ end
+
+# ----------------------------------------------------------------------
+# Print 1 bar each of basic 16 colors in 4-bit and 8-bit mode
+# Bar 1: 0-15 fg on black <space> 0-15 fg on white
+# Bar 2: 0-15 white on bg <space> 0-15 black on bg
+# ----------------------------------------------------------------------
+def print_16_colorbars
+  puts "Colors 0-15 are identical to the 4-bit colors (see ansicolors script for details)."
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_fg(disp, color, 0)
+  end
+  print "    "
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_fg(disp, color, 7)
+  end
+  puts
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_bg(disp, color, 7)
+  end
+  print "    "
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_bg(disp, color, 0)
+  end
+  puts
+end
+
+def print_color_cube_panels
+  puts "Colors 16-231 form a 6x6x6 color cube of black -> r/g/b -> c/m/y -> white. (color = 16 + r*36 + g*6 + b, where r,g,b -> (0..5) )"
+  (1..6).each do |row|
+    (0..35).each do |col|
+      color = 16 + col*6 + row - 1
+      disp = sprintf "%3d ", color
+      bg = (color <= 123) ? 255 : 232
+      print colorize_fg(disp, color, 16)
+      print " " if col % 6 == 5
+    end
+    puts
+  end
+  (1..6).each do |row|
+    (0..35).each do |col|
+      color = 16 + col*6 + row - 1
+      disp = sprintf "%3d ", color
+      fg = (color <= 123) ? 255 : 232
+      print colorize_bg(disp, color, 255)
+      print " " if col % 6 == 5
+    end
+    puts
+  end
+end
+
+def print_grayscale_bars
+  puts "Colors 232-255 are an extended 24-shade grayscale palette."
+  (232..255).each do |color|
+    disp = sprintf "%3d ", color
+    print colorize_fg(disp, color, 0)
+  end
+  puts
+  (232..255).each do |color|
+    disp = sprintf "%3d ", color
+    print colorize_bg(disp, color, 255)
+  end
+  puts
+end
+
+def print_256_color_table
+  print_16_colorbars
+  puts
+  print_color_cube_panels
+  puts
+  print_grayscale_bars
+end
+
+
+def print_instructions
+  puts "Usage / Examples:"
+  puts 'Use ESC[38;5;<color>m to tell bash the color is a 256-color foreground.'
+  puts 'Use ESC[48;5;<color>m to tell bash the color is a 256-color background.'
+  puts "Use  ESC[38;5;<fg>;48;5;<bg>m for both. Note: Foreground must come first."
+
+
+  puts 'In bash you can use \x1b or \033 to send an ESC code.'
+  puts 'echo requires the (undocumented) -e flag to print extended color characters'
+  puts
+  puts 'Other prefixes: 1 - bold, 2 - dim, 4 - underline'
+  puts
+  puts 'Example: print a bold orange (color) on a white background:'
+  puts 'echo -e "\x1b[1;38;5;208;48;5;255m(color)\x1b[0m"'
+  puts '%c[1;38;5;208;48;5;255m(color)%c[0m' % [ESC, ESC]
+
+  puts 'Example: print a bold orange (color) on a magenta background:'
+  puts "echo -e '\x1b[1;38;5;208;48;5;127m(color)\x1b[0m'"
+  puts '%c[1;38;5;208;48;5;127m(color)%c[0m' % [ESC, ESC]
+  puts
+  puts 'Example: print a bold magenta (color) on a white background:'
+  puts "echo -e '\033[1;47;38;5;127m(color)\033[0m'"
+  puts '%c[1;47;38;5;127m(color)%c[0m' % [ESC, ESC]
+end
+
+def print_everything
+  print_256_color_table
+  puts
+  print_instructions
+end
+
+if __FILE__==$0
+  print_everything
+  # print_16x16_table
+end

@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+# https://twitter.com/josh_cheek/status/1096865203004809216
+require 'io/console'
+h,w=$stdout.winsize
+D=h/2
+S=->n{Math.sin n}
+C=1.6
+∆=0.003
+1.step{|n|$><<"\e[47m\e[H\e[J\e[41m#{0.step(C*4,∆).map{|t|x=S[t]**3*D+D
+y=S[t+C]*D-S[2*t+C]*D+D
+e=S[n*∆]
+r=9*e
+a=S[r+C]
+b=S[n*∆+C]
+"\e[#{(x*S[r]*b+y*a*e+D).round};#{(x*a*b-y*S[r]*e+w/2).round}H "}.uniq.join}"}

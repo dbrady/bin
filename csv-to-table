@@ -1,9 +1,9 @@
 #!/usr/bin/env ruby
-# csv_to_table - Print a csv file as a text table
+# csv-to-table - Print a csv file as a text table
 # Usage:
-#     csv_to_table filename.csv
-#     cat filename.csv | csv_to_table
-#     curl https://example.org/somefile.csv | csv_to_table
+#     csv-to-table filename.csv
+#     cat filename.csv | csv-to-table
+#     curl https://example.org/somefile.csv | csv-to-table
 
 require "csv"
 

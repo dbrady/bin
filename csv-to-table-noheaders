@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# csv-to-table - Print a csv file as a text table
+# Usage:
+#     csv-to-table filename.csv
+#     cat filename.csv | csv-to-table
+#     curl https://example.org/somefile.csv | csv-to-table
+
+require "csv"
+
+begin
+  require "text-table"
+rescue LoadError
+  puts "Cannot load text-table, please do:"
+  puts "gem install text-table"
+  puts "And try again."
+  exit -1
+end
+
+csv = ARGF.readlines.join
+puts CSV.parse(csv, headers: false).to_a.to_table(first_row_is_head: false)
