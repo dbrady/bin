@@ -193,13 +193,12 @@ def print_instructions
   puts '%c[1;47;38;5;127m(color)%c[0m' % [ESC, ESC]
 end
 
-def print_everything
+def print_table_and_instructions
   print_256_color_table
   puts
   print_instructions
 end
 
 if __FILE__==$0
-  print_everything
-  # print_16x16_table
+  print_table_and_instructions
 end
