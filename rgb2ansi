@@ -1,0 +1,127 @@
+#!/usr/bin/env ruby
+# rgb2ansi <r> <g> <b> - emit ANSI color cube index for nearest color
+# returns the ANSI index inside the 216-color cube found in the 256-color
+# ANSI palette from color indexes 16 to 231.
+# Reference Colors:
+# 16 is pure black
+# 21 is pure blue
+# 46 is pure green
+# 51 is pure cyan
+# 196 is pure red
+# 201 is pure magenta
+# 226 is pure yellow
+# 231 is pure white
+#
+# 196 ------------
+#
+#
+#          196 Red                      226 Yellow
+#                 +-------------------+
+# 201 Magenta    /                   /|
+#     (behind)  /                   / |
+#         \    /                   /  |
+#          \  /                   /   |
+#            /                   /    |
+# 16 Black  /             Green /     |
+#          +-------------------+      + 231 White
+#          | 16 22 28 34 40 46 |     /
+#          | 17 23 29 35 41 47 |    /
+#          | 18 24 30 36 42 48 |   /
+#          | 19 25 31 37 43 49 |  /
+#          | 20 26 32 38 44 50 | /
+#          | 21 27 33 39 45 51 |/
+#          +-------------------+
+#   21 Blue                      51 Cyan
+require 'byebug'
+
+class Rgb2ansi
+  # red, green, blue should be numerics between 0 and 255, inclusive
+  def self.rgb2ansi(red, green, blue)
+    red = (5 * red / 255.0).round
+    green = (5 * green / 255.0).round
+    blue = (5 * blue / 255.0).round
+
+    16 + red * 36 + green * 6 + blue
+  end
+
+  def self.looks_like_an_integer?(string)
+    string.to_i.to_s == string
+  end
+
+  def self.looks_like_hexadecimal?(string)
+    string =~ /^[0-9A-Fa-f]+$/
+  end
+
+  def self.args_look_like_0_255_triad?(args)
+    return false unless args.size == 3
+    return false unless args.all? { |arg| looks_like_an_integer?(arg) }
+    args = args.map(&:to_i)
+    return false unless args.all? { |arg| arg >= 0 && arg <= 255 }
+    true
+  end
+
+  def self.strip_whitespace_and_leading_hash_if_present(arg)
+    arg.strip.sub /^#/, ''
+  end
+
+  def self.args_look_like_html_color?(args)
+    return false unless args.size == 1
+    arg = args.first
+    arg = strip_whitespace_and_leading_hash_if_present(arg)
+    return false unless looks_like_hexadecimal?(arg)
+    return false unless arg.size == 6
+    true
+  end
+
+  def self.args_look_like_css_color?(args)
+    return false unless args.size == 1
+    arg = args.first
+    arg = strip_whitespace_and_leading_hash_if_present(arg)
+    return false unless looks_like_hexadecimal?(arg)
+    return false unless arg.size == 3
+    true
+  end
+
+  def self.convert_html_color_to_rgb(arg)
+    red, green, blue = arg[0..1], arg[2..3], arg[4..5]
+    red, green, blue = *([red, green, blue].map { |code| code.to_i(16) })
+    [red, green, blue]
+  end
+
+  def self.convert_css_color_to_rgb(arg)
+    convert_html_color_to_rgb("#{arg[0]}#{arg[0]}#{arg[1]}#{arg[1]}#{arg[2]}#{arg[2]}")
+  end
+
+  def self.run(args)
+    red, green, blue = if args_look_like_0_255_triad?(args)
+                         args.map(&:to_i)
+                       elsif args_look_like_html_color?(args)
+                         convert_html_color_to_rgb(args.first)
+                       elsif args_look_like_css_color?(args)
+                         convert_css_color_to_rgb(args.first)
+                       else
+                         puts "Could not recognize args, please pass three 0..255 args, or an html or css hex code"
+                         exit -1
+                       end
+    rgb2ansi red, green, blue
+  end
+end
+
+def print_usage
+  puts "rgb2ansi - convert color codes to ANSI 216-color palette"
+  puts "rgb2ansi <red> <green> <blue> # give each color as 0..255"
+  puts "rgb2ansi <html>               # give color as 6-digit hex html code, eg ff1a3f"
+  puts "rgb2ansi <css>                # give color as 3-digit hex css color, eg f03"
+end
+
+if __FILE__ == $0
+  if ARGV.include?("-?") || ARGV.include?("--help")
+    print_usage
+  else
+    color = Rgb2ansi.run(ARGV)
+    puts "\e[38;5;#{color};48;5;16m #{color} \e[0m" +
+         "\e[38;5;#{color};48;5;231m #{color} \e[0m" +
+         "\e[38;5;16;48;5;#{color}m #{color} \e[0m" +
+         "\e[38;5;231;48;5;#{color}m #{color} \e[0m"
+  end
+end
