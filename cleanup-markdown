@@ -1,0 +1,14 @@
+#!/bin/bash
+# cleanup-markdown - clean up markdown written by editors who omit the
+# whitespace in headers Also strips trailing whitespace on nonblank lines
+# because the "foo###" -> "foo ###" part strips trailing whitespace on those
+# lines and I didn't want it to look inconsistent.
+
+echo "Putting spaces between leading #'s and headers, e.g. ##Section -> ## Section"
+find . -type f -name '*.md' | while read file; do ruby -ne 'puts $_.gsub(/^(#+)(\w+)/) { "#{$1} #{$2}" }' -i "$file"; done
+
+echo "Putting spaces between section and trailing #'s, e.g. ## Section## -> ## Section ##"
+find . -type f -name '*.md' | while read file; do ruby -ne 'puts $_.gsub(/(\w)(#+)$/) { "#{$1} #{$2}" }' -i "$file"; done
+
+echo "Stripping trailing whitespace, but only if line is not blank (i.e. dont screw up indented blockquotes)"
+find . -type f -name '*.md' | while read file; do ruby -ne 'if $_.strip.empty?; puts $_; else; puts $_.rstrip; end' -i "$file"; done

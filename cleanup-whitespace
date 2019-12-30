@@ -1,0 +1,7 @@
+#!/bin/bash
+# cleanup-whitespace <args> - clean out trailing whitespace
+#
+# Args will be passed to find, e.g. cleanup-whitespace -name '*.rb'
+
+echo "Stripping trailing whitespace, but only if line is not blank (i.e. dont screw up indented blockquotes)"
+find . -type f $@ | while read file; do ruby -ne 'if $_.strip.empty?; puts $_; else; puts $_.rstrip; end' -i "$file"; done
