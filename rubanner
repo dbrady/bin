@@ -25,68 +25,90 @@
 #              My bold light_red on_light_white \
 #              Meds bold light_yellow on_light_white
 
+require 'io/console'
 require 'colorize'
 
-argv = ARGV.dup
-output = if idx = argv.index('-o')
-           argv.delete_at idx
-           File.open(argv.delete_at(idx), 'w')
-         else
-           $stdout
-         end
+class Rubanner
+  attr_reader :args, :output, :screen_width, :font, :message, :colors
 
-require 'io/console'
+  DEFAULT_FONT = "roman"
 
-screen_width = if idx = argv.index('-w')
-                argv.delete_at(idx)
-                argv.delete_at(idx).to_i
-              else
-                # Must supply -w to pipe to a file but if you DO
-                # pipe $stdout.winzie will ASPLODE
-                screen_width = $stdout.winsize[1]
-              end
-
-font = if idx = argv.index('-f')
-         argv.delete_at idx
-         argv.delete_at idx
-       elsif idx = argv.index {|arg| arg =~ /^--font=/ }
-         argv.delete_at(idx).split(/=/)[1]
-       else
-         'roman'
-       end
-
-message = argv.shift
-colors = argv.empty? ? ['bold', 'on_blue'] : argv
-
-if $DEBUG || ENV['RUBY_DEBUG']
-  puts '-' * 80
-  puts "Font: #{font}"
-  puts "Message: #{message}"
-  puts '--'
-  argv.each.with_index do |arg, idx|
-    puts "#{idx}: #{arg}"
+  def initialize(argv)
+    @args = argv.dup
+    @output = init_output
+    @screen_width = init_screen_width
+    @font = init_font
+    @message = init_message
+    @colors = init_colors
   end
-  puts '-' * 80
+
+  def init_output
+    if idx = args.index('-o')
+      args.delete_at idx
+      File.open(args.delete_at(idx), 'w')
+    else
+      $stdout
+    end
+  end
+
+  def init_screen_width
+    if idx = args.index('-w')
+      args.delete_at(idx)
+      args.delete_at(idx).to_i
+    else
+      # Must supply -w to pipe to a file but if you DO
+      # pipe $stdout.winzie will ASPLODE
+      $stdout.winsize[1]
+    end
+  end
+
+  def init_font
+    if idx = args.index('-f')
+      args.delete_at idx
+      args.delete_at idx
+    elsif idx = args.index {|arg| arg =~ /^--font=/ }
+      args.delete_at(idx).split(/=/)[1]
+    else
+      DEFAULT_FONT
+    end
+  end
+
+  def init_message
+    args.shift
+  end
+
+  def init_colors
+    args.empty? ? ['bold', 'on_blue'] : args
+  end
+
+  def run
+    # render message and calculate padding
+    screen_width.inspect
+
+    banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
+    banner_width = banner.each_line.to_a.first.chomp.length
+    left_size = (screen_width - banner_width) / 2
+    right_size = screen_width - (banner_width + left_size)
+
+    lpad = ' ' * left_size
+    rpad = ' ' * right_size
+
+    # Okay, calculations done, here comes the output!
+    blank_line
+    banner.each_line do |line|
+      output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
+    end
+  end
+
+  def colorize(text, colors)
+    colors.reduce(text) {|t, color| t.send color }
+  end
+
+  def blank_line
+    output.puts colorize("#{' ' * screen_width}", colors)
+  end
 end
 
-screen_width.inspect
-
-banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
-banner_width = banner.each_line.to_a.first.chomp.length
-left_size = (screen_width - banner_width) / 2
-right_size = screen_width - (banner_width + left_size)
-
-lpad = ' ' * left_size
-rpad = ' ' * right_size
-
-def colorize(text, colors)
-  colors.reduce(text) {|t, color| t.send color }
+if __FILE__==$0
+  Rubanner.new(ARGV).run
 end
-
-
-output.puts colorize("#{' ' * screen_width}", colors)
-
-banner.each_line do |line|
-  output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
-end
-# output.puts colorize("#{' ' * screen_width}", colors)
