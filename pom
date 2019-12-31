@@ -47,7 +47,7 @@ def say(msg)
   #
   # UPDATE: change this file to be in ~/cmm/vagrant/code because then it can be
   # shared from OSX because still very lol.
-  file_path = if cmm?
+  file_path = if !cmm?
                 File.expand_path("~/cmm/vagrant/code/.watch-and-say")
               else
                 File.expand_path("~/.watch-and-say")
