@@ -6,7 +6,14 @@
 # | green   | 25500 |
 # | blue    | 46920 |
 # | magenta | 56100 |
-rubanner --font=electronic "FAIL" white on_red
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+
+rubanner --font=roman "FAIL" bold white on_red
 if [ -e ~/onsite.touch ]; then
     echo "You're onsite! Skipping HUE lights."
 else

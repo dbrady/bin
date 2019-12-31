@@ -6,12 +6,15 @@
 # | green   | 25500 |
 # | blue    | 46920 |
 # | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
 
-# rubanner --font=electronic "PASS" bold on_green
-rubanner --font=electronic "PASS" white on_green
-# GEEZ MAN FIGURE OUT groups
-# 4 - Upstairs office spot
-# 9 - Lightstrip in upstairs office
+# rubanner --font=roman "PASS" bold on_green
+rubanner --font=roman "PASS" bold white on_green
 if [ -e ~/onsite.touch ]; then
     echo "You're onsite! Skipping HUE lights."
 else

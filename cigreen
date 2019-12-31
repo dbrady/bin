@@ -1,0 +1,23 @@
+#!/bin/sh
+# cigreen - like cipass but no text banner, just diddles the lights. I use this to create a visual alert. Use cioff to clear it.
+
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+
+for light in 4 9; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+done
+# the spotlight is wayyyy too strong, turn it off once it's got our attention
+sleep 1
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/4/state" -d  '{"on": true, "bri": 254, "hue": 33862, "sat": 50, "transitiontime":0}' 2>/dev/null > /dev/null

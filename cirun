@@ -6,15 +6,20 @@
 # | green   | 25500 |
 # | blue    | 46920 |
 # | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
 
-# rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" bold on_blue
-# rubanner --font=electronic "RUNNING" bold on_blue
+# roman font needs bold, electronic font does not
 if [ -e .rfg_project_name ]; then
-    rubanner --font=electronic "$(cat .rfg_project_name)" white on_blue
+    rubanner --font=roman "$(cat .rfg_project_name)" bold white on_blue
 else
-    rubanner --font=electronic "$(pwd | sed -e 's/^.*\///')" white on_blue
+    rubanner --font=roman "$(pwd | sed -e 's/^.*\///')" bold white on_blue
 fi
-rubanner --font=electronic "RUNNING" white on_blue
+rubanner --font=roman "RUNNING" bold white on_blue
 if [ -e ~/onsite.touch ]; then
     echo "You're onsite! Skipping HUE lights."
 else
