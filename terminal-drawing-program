@@ -1,0 +1,31 @@
+#!/bin/bash
+# copied directly from https://gist.github.com/JoshCheek/f8415943f5fbec2ec27e9e379d443331
+# TODO: Tear this down and grok it. Josh is reading the *mouse* from the console,
+# and he's not using xdotool or xinput or libcurses, just pure ANSI terminal escape
+# code voodoo.
+#
+# It may also be worth going to the top of his gist because he has longer versions that
+# don't fit into a tweet; they may be more readable.
+ruby -rio/console -e'$><<"\e[?1006h\e[?1003h"
+END{$><<"\e[?1006l\e[?1003l"}
+K=IO. new c=0
+$><<"\e[40m\e[2J"
+loop{$><<"\e[H"+(?0..?7).map{|i|"\e[4#{i}m#{i==c ??*:" "}#{i} \e[4#{c}m"}*""
+s=K.raw{K.readpartial 99}
+s==?q?1/0:s=~/^\d/?c=s:s=~/<(0|32);(\d+);(\d+)/&&$><<"\e[#$3;#$2H "}'
+
+
+# Continuing my comment from above, for instance, here is his "50 over" script which
+# actually still has recognizable code in it ;)
+# ruby -rio/console -e '
+# [6,3].each{|n|$><<"\e[?100#{n}h";at_exit{$><<"\e[?100#{n}l"}}
+# kb=IO. open 0
+# c=0
+# $><<"\e[40m\e[2J"
+# loop{$><<"\e[H"+8.times. map{|i|"\e[4#{i}m #{?*if i==c}#{i} "}*""
+# s=kb.raw{kb.readpartial 99}
+# case s
+# when ?\C-c;break
+# when /^\d$/;c=s. to_i
+# when /^\e\[<(0|32);(\d+);(\d+)/;$><<"\e[#{$3};#{$2}H\e[4#{c}m "
+# end}'
