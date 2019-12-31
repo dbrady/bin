@@ -52,7 +52,7 @@ font = if idx = argv.index('-f')
        elsif idx = argv.index {|arg| arg =~ /^--font=/ }
          argv.delete_at(idx).split(/=/)[1]
        else
-         'electronic'
+         'roman'
        end
 
 message = argv.shift
@@ -83,9 +83,10 @@ def colorize(text, colors)
   colors.reduce(text) {|t, color| t.send color }
 end
 
+
 output.puts colorize("#{' ' * screen_width}", colors)
 
 banner.each_line do |line|
   output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
 end
-output.puts colorize("#{' ' * screen_width}", colors)
+# output.puts colorize("#{' ' * screen_width}", colors)
