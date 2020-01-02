@@ -7,6 +7,20 @@
 # pom <seconds>
 # pom mm:ss
 
+# BOLD
+#
+# Set to "bold " if the default pom font really needs boldfacing.  E.g. 'roman'
+# and 'univers' really need bolding, but 'electronic' does not.
+#BOLD=""
+BOLD="bold"
+
+# FONT
+#
+# Override default font setting, or leave blank to use rubanner's default
+# FONT=""
+FONT="--font='univers'"
+FONT="--font='roman'"
+
 def cmm?
   `uname -a` =~ /^(Darwin CMM|Linux vagrant-dbrady)/
 end
@@ -172,10 +186,10 @@ time.downto(0).each do |seconds|
              end
 #  print "#{ESC}[2J#{ESC}[0;0H"
 #  puts output.inspect
-  system "rubanner '#{display}' #{bg_color}"
+  system "rubanner '#{display}' #{FONT} #{BOLD} #{bg_color}"
   sleep 1
 end
-system 'rubanner "DONE" white on_green'
+system "rubanner 'DONE' #{FONT} #{BOLD} white on_green"
 
 
 
