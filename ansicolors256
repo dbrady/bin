@@ -194,11 +194,21 @@ def print_instructions
 end
 
 def print_table_and_instructions
-  print_256_color_table
-  puts
-  print_instructions
+    print_256_color_table
+    puts
+    print_instructions
+end
+
+def print_old_style_table
+  print_16x16_table
 end
 
 if __FILE__==$0
-  print_table_and_instructions
+  if ARGV.size.zero?
+    print_table_and_instructions
+  elsif ARGV.first == '-o' || ARGV.first == '--old'
+    print_old_style_table
+  else
+    puts "ansicolors256 [-o|--old] - print 256-color ansi chart"
+  end
 end
