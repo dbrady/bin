@@ -1,0 +1,77 @@
+#!/usr/bin/env ruby
+# ansicolors16 - print a color chart using the basic 16 ANSI colors
+#
+# This was originally a bash script in 2006 or so. It has since grown
+# way out of control and you probably just want ansicolors256 anyway,
+# but whatever, man.
+#
+# Here we build a chart of the 8x8 ANSI foreground and background colors. It
+# actually works out to 16x32 because background colors come in normal and
+# bright versions and foreground colors come in dim, normal, bold, and light
+# versions.
+#
+# WARNING: YOUR MILEAGE *WILL* VARY. This is a color swatch app as much as a
+# color-number reminder. The whole reason this chart exists is (aside from
+# helping me remember that 31 is red and 34 is blue, etc) to show how the
+# various colors look on a given monitor with given profile settings. For
+# example, iTerm2 on OSX has a toggle option to "brighten bold characters" which
+# changes the color of bold letters. At the same time, dim and normal are the
+# same color. But in Ubuntu's Terminal program, dim and normal are different
+# colors while bold is always bright.
+#
+# TODO: Rewrite me from scratch. I really want this to be able to name the
+# colors being printed, as well as to iterate over dim, light, normal, and bold
+# versions, which sort of begs for a colorize(color_name) method of some sort.
+class AnsiColors16
+  attr_reader :fg_dim, :fg_normal, :fg_light, :fg_bold, :fg_off,
+              :bg_dim, :bg_normal, :bg_light, :bg_bold, :bg_off
+
+  def initialize(args=nil)
+    @fg_dim = @fg_normal = @fg_light = @fg_bold = true
+    @fg_off = false
+
+    @bg_normal = @bg_light = true
+    @bg_off = false
+  end
+
+  def usage
+    puts <<USAGE
+ansicolors16 - print a color chart using the basic 16 ANSI colors
+
+Usage:
+    ansicolors16 <options>
+
+Options:
+    None available yet. What you see is what you get.
+USAGE
+  end
+
+
+  def fg_colors
+    base_colors = (30...37).to_a
+    fg_colors = []
+    base_colors.each do |color|
+      fg_colors << "2;#{color}" if fg_dim
+      fg_colors << "#{color}" if fg_normal
+      fg_colors << "#{color+60}" if fg_light
+      fg_colors << "2;#{color}" if fg_bold
+    end
+    fg_colors
+  end
+
+  def bg_colors
+    base_colors = (40...47).to_a
+    bg_colors = []
+    base_colors.each do |color|
+      bg_colors << "#{color}" if bg_normal
+      bg_colors << "#{color+60}" if bg_light
+    end
+    bg_colors
+  end
+end
+
+if __FILE__==$0
+  app = AnsiColors16.new(ARGV)
+  puts "FG: " + app.fg_colors * ', '
+  puts "BG: " + app.bg_colors * ', '
+end
