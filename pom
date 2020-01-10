@@ -21,11 +21,30 @@ BOLD="bold"
 FONT="--font='univers'"
 FONT="--font='roman'"
 
-def cmm?
-  `uname -a` =~ /^(Darwin CMM|Linux vagrant-dbrady)/
+def osx?
+  `uname -s` == "Darwin"
+end
+
+def file_path
+  File.expand_path("~/.watch-and-say")
+end
+
+def got_watchfile?
+  File.exists?(file_path)
 end
 
 def say(msg)
+  # configuration management is of teh debbil. Vagrant is gone, haxxor straight
+  # into
+  if osx?
+    system "say", msg
+  else
+    puts '\x1b[1;37;41mSAY IS DISABLED BECAUSE THIS IS NOT OSX\x1b[0m'
+  end
+  return
+  # dbrady 2020-01-10: everything past here is hot garbage. Keeping it in case
+  # future me ever wants to blackmail past me.
+  #
   # dbrady 2017-10-18: say is broken wtf/lol
   #
   # TODO: Here's a silly brainwave - how about starting this in the primary
@@ -61,13 +80,15 @@ def say(msg)
   #
   # UPDATE: change this file to be in ~/cmm/vagrant/code because then it can be
   # shared from OSX because still very lol.
-  file_path = File.expand_path("~/.watch-and-say")
-
-  puts "Writing message to #{file_path}"
-  puts "  Message: #{msg}"
-  File.open(file_path,"a") do |f|
-    f.puts msg
-  end
+  # if osx?
+  #   if got_watchfile?
+  #     puts "Writing message to #{file_path}"
+  #     puts "  Message: #{msg}"
+  #     File.open(file_path,"a") do |f|
+  #       f.puts msg
+  #     end
+  #   end
+  # end
 end
 
 # TODO: handle hours (WHY???)
