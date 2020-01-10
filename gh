@@ -1,7 +1,8 @@
 #!/bin/bash
 # gh - Open the github homepage for the current project
+echo "Opening the github homepage for this project: "
 URL=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }' | cut -d @ -f 2 | sed -e 's/:/\//'`
-echo "Opening the github homepage for this project: $URL..."
+echo -e "\x1b[1;37;42mhttps://$URL\x1b[0m"
 if [ 'Darwin' == `uname -s` ]; then
     open http://$URL
 else
