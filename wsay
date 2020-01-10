@@ -1,2 +1,4 @@
 #!/bin/sh
-echo "$*" >> /Users/dbrady/cmm/vagrant/code/.watch-and-say
+# this used to be a thing, back when vagrant used to be a thing
+#echo "$*" >> /Users/dbrady/cmm/vagrant/code/.watch-and-say
+echo "$*" >> /Users/dbrady/.watch-and-say
