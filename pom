@@ -61,11 +61,7 @@ def say(msg)
   #
   # UPDATE: change this file to be in ~/cmm/vagrant/code because then it can be
   # shared from OSX because still very lol.
-  file_path = if !cmm?
-                File.expand_path("~/cmm/vagrant/code/.watch-and-say")
-              else
-                File.expand_path("~/.watch-and-say")
-              end
+  file_path = File.expand_path("~/.watch-and-say")
 
   puts "Writing message to #{file_path}"
   puts "  Message: #{msg}"
@@ -190,8 +186,6 @@ time.downto(0).each do |seconds|
   sleep 1
 end
 system "rubanner 'DONE' #{FONT} #{BOLD} white on_green"
-
-
 
 say "Timer is done"
 __END__
