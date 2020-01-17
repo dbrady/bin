@@ -1,0 +1,5 @@
+#!/bin/bash
+# Per ops, next time our deploy infrastructure goes out in production, try this
+# to investigate root cause. Being randomly unable to deploy is a known risk
+# that we just accept.
+az acr check-health --name covermymeds
