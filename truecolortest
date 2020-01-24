@@ -1,0 +1,72 @@
+#!/usr/bin/env ruby
+# print a 24x6 gradient behind "TRUE COLOR" and another behind "ANSI 256 COLOR"
+
+
+
+def lerp888(x, y)
+  black = [0,0,0]
+  blue = [0,0,255]
+  green = [0,255,0]
+  cyan = [0,255,255]
+end
+
+# return the ANSI color for x, y on a 24x6 grid, numbered
+# as follows:
+#
+#     x -->
+#     012345678901234567890123
+#     ------------------------
+# y 0| 16  22  28  34  40  46
+# | 1| 17  23  29  35  41  47
+# v 2| 18  24  30  36  42  48
+#   3| 19  25  31  37  43  49
+#   4| 20  26  32  38  44  50
+#   5| 21  27  33  39  45  51
+
+
+def lerp256(x, y)
+  # This is such a weird stupid lerp and I'm tired and I can't math.
+  # It should be a lerp onto the 6x6 square and then stretched horizontally.
+  # But I can do this awful thing in much less time...
+  ray = [
+    [16, 16, 16, 16, 22, 22, 22, 22, 28, 28, 28, 28, 34, 34, 34, 34, 40, 40, 40, 40, 46, 46, 46, 46],
+    [17, 17, 17, 17, 23, 23, 23, 23, 29, 29, 29, 29, 35, 35, 35, 35, 41, 41, 41, 41, 47, 47, 47, 47],
+    [18, 18, 18, 18, 24, 24, 24, 24, 30, 30, 30, 30, 36, 36, 36, 36, 42, 42, 42, 42, 48, 48, 48, 48],
+    [19, 19, 19, 19, 25, 25, 25, 25, 31, 31, 31, 31, 37, 37, 37, 37, 43, 43, 43, 43, 49, 49, 49, 49],
+    [20, 20, 20, 20, 26, 26, 26, 26, 32, 32, 32, 32, 38, 38, 38, 38, 44, 44, 44, 44, 50, 50, 50, 50],
+    [21, 21, 21, 21, 27, 27, 27, 27, 33, 33, 33, 33, 39, 39, 39, 39, 45, 45, 45, 45, 51, 51, 51, 51],
+  ]
+  ray[y][x]
+end
+# ruby -e '"   TRUE COLOR   ".each_char.with_index { |c,i| print "\x1b[48;2;0;0;#{i*16+15}m#{c}"}; puts "\x1b[0m"'
+# echo -e "\x1b[38;5;15;48;5;16m ANS\x1b[48;5;17mI 25\x1b[48;5;19m6 CO\x1b[48;5;21mLOR \x1b[0m"
+
+puts "+------------------------+"
+puts "|    ANSI 256 COLORS     |"
+puts "+------------------------+"
+6.times do |y|
+  print "|"
+  24.times do |x|
+    color = lerp256(x, y)
+    #    char = " #{color} "[x%4]
+    char = " "
+    print "\x1b[48;5;#{color}m#{char}"
+  end
+  puts "\x1b[0m|"
+end
+puts "+------------------------+"
+
+puts "+------------------------+"
+puts "|    24-BIT TRUECOLOR    |"
+puts "+------------------------+"
+6.times do |y|
+  blue = (255 * (y/6.0)).to_i
+  print "|"
+  24.times do |x|
+    green = (255 * (x/24.0)).to_i
+    char = " "
+    print "\x1b[48;2;0;#{green};#{blue}m#{char}"
+  end
+  puts "\x1b[0m|"
+end
+puts "+------------------------+"

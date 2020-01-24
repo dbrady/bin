@@ -1,0 +1,220 @@
+#!/usr/bin/env ruby
+# ansicolors888 - demonstrate ANSI colors in 24-bit colorspace
+#
+# TL;dr ESC[38;2;<r>;<g>;<b>m sets 24-bit color foreground, 48;2 sets
+# background. r, g and b are 8-bit values 0 to 255.
+#
+# I cribbed a lot of this from https://gist.github.com/XVilka/8346728, what
+# follows is my own testing with Anton's notes. In particular Anton's gist gives
+# a way to detect the colorspace by rendering a string and then passing it to
+# xxd; I don't need to dive into it to understand enough here to make what I
+# need work so if you're following my notes, there's an intentional gap there
+# and you should go read Anton's gist.
+#
+# My notes and findings, as of January 2020:
+#
+# * Works in iTerm2 and Ubuntu console as of January 2020. If $COLORTERM is set
+#   to "truecolor" or "24bit" (case-sensitive), then the terminal WILL support
+#   24-bit color. This is not standard, however; if COLORTERM is NOT set, the
+#   terminal MAY still support it.
+#
+# * echo -e DOES NOT WORK in iTerm on OSX Mojave. $COLORTERM returns "truecolor"
+#   and printf works in bash and puts works from ruby, so it's probably just a
+#   temporary limitation in echo.
+#
+
+# * $COLORTERM is blank in Ubuntu console (Ubuntu 16.04 LTS) but the truecolor
+#   support is present and does work. (I know Ubuntu 16 is old and deprecated
+#   but I'm still using it because reasons.)
+#
+# * An easy way to test this, if you have my bin folder (which you probably do
+#   if you're reading this) is to test a truecolor against rgb2ansi, which
+#   prints the nearest 666 color. 200 100 0 is a fairly visible example of two
+#   colors with differ enough to be visually detectable.
+#
+#   printf "\x1b[48;2;0;100;200m   TRUE COLOR   \x1b[0m\n"; rgb2ansi 0 100 200
+#
+#   or more simply
+#
+#   seq 0 2 255 | while read c; do printf "\x1b[48;2;0;0;${c}m "; done; echo
+#
+#   but if you really want to show off, (be honest: who doesn't?):
+#
+#   ruby -e '"   TRUE COLOR   ".each_char.with_index { |c,i| print "\x1b[48;2;0;0;#{i*16+15}m#{c}"}; puts "\x1b[0m"'; \
+#   echo -e "\x1b[38;5;15;48;5;16m ANS\x1b[48;5;17mI 25\x1b[48;5;19m6 CO\x1b[48;5;21mLOR \x1b[0m"
+#
+# * Testing gradients in tmux/tmate, blue will produce about 9 discrete bands of
+#   color from black to 255, so this is probably more like ~700 colors. Ditto
+#   for red, green, magenta, yellow, and cyan. Gray has a lot more graduations
+#   so idk how the banding will break down across the color cube. If it came out
+#   at 1024 colors I would be fascinated but not surprised. UPDATE: This is
+#   fixable by make sure you hawe BOTH of these settings (in order) in your
+#   .tmux.conf:
+#
+#   # Set the default terminal mode to 256color mode
+#   set -g default-terminal "screen-256color"
+#   # And now expand that up to 24-bit color (requires 256color first)
+#   set-option -sa terminal-overrides ",xterm*:Tc"
+#
+# Okay, so what do I want to display? I have WAY more colors to display here
+# than I have room to display them, so I'm going to have to pick a color range
+# and subsample. I want to display the usage, e.g. ESC[38;2;r;g;bm. Then I
+# suppose I could pick 4 colors and display a mat of those shades. Now that I
+# see how shallow the real color depth is, I suspect that will be a bit
+# underwhelming, but eh. At least we can see it. Maybe red, blue and green in 3
+# corners and either white or black in the 4th. (Alternately the app could take
+# 1-4 colors as arguments, or it could select 4 colors at random.)
+ESC=0x1b
+
+def colorize_fg(text, color, bg="")
+  if bg
+    bg = ";48;5;#{bg}"
+  end
+  "%c[38;5;#{color}#{bg}m#{text}%c[0m" % [ESC, ESC]
+end
+
+def colorize_bg(text, color, fg="")
+  if fg
+    fg = "38;5;#{fg};"
+  end
+  "%c[#{fg}48;5;#{color}m#{text}%c[0m" % [ESC, ESC]
+end
+
+def print_16x16_table
+  puts '\\x1b[38;5;<color>m sets foreground color...                         %c[30;48;5;7m\\x1b[48;5;<color>m sets background                              %c[0m' % [ESC, ESC]
+  (1..16).each do |row|
+    (0..15).each do |col|
+      color = col*16 + row - 1
+      disp = sprintf "%3d ", color
+      print colorize_fg(disp, color)
+    end
+    print "    "
+    (0..15).each do |col|
+      color = col*16 + row - 1
+      disp = sprintf "%3d ", color
+      print colorize_bg(disp, color)
+    end
+    puts
+  end
+ end
+
+# ----------------------------------------------------------------------
+# Print 1 bar each of basic 16 colors in 4-bit and 8-bit mode
+# Bar 1: 0-15 fg on black <space> 0-15 fg on white
+# Bar 2: 0-15 white on bg <space> 0-15 black on bg
+# ----------------------------------------------------------------------
+def print_16_colorbars
+  puts "Colors 0-15 are identical to the 4-bit colors (see ansicolors script for details)."
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_fg(disp, color, 0)
+  end
+  print "    "
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_fg(disp, color, 7)
+  end
+  puts
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_bg(disp, color, 7)
+  end
+  print "    "
+  16.times do |color|
+    disp = sprintf "%3d ", color
+    print colorize_bg(disp, color, 0)
+  end
+  puts
+end
+
+def print_color_cube_panels
+  puts "Colors 16-231 form a 6x6x6 color cube of black -> r/g/b -> c/m/y -> white. (color = 16 + r*36 + g*6 + b, where r,g,b -> (0..5) )"
+  (1..6).each do |row|
+    (0..35).each do |col|
+      color = 16 + col*6 + row - 1
+      disp = sprintf "%3d ", color
+      bg = (color <= 123) ? 255 : 232
+      print colorize_fg(disp, color, 16)
+      print " " if col % 6 == 5
+    end
+    puts
+  end
+  (1..6).each do |row|
+    (0..35).each do |col|
+      color = 16 + col*6 + row - 1
+      disp = sprintf "%3d ", color
+      fg = (color <= 123) ? 255 : 232
+      print colorize_bg(disp, color, 255)
+      print " " if col % 6 == 5
+    end
+    puts
+  end
+end
+
+def print_grayscale_bars
+  puts "Colors 232-255 are an extended 24-shade grayscale palette."
+  (232..255).each do |color|
+    disp = sprintf "%3d ", color
+    print colorize_fg(disp, color, 0)
+  end
+  puts
+  (232..255).each do |color|
+    disp = sprintf "%3d ", color
+    print colorize_bg(disp, color, 255)
+  end
+  puts
+end
+
+def print_256_color_table
+  print_16_colorbars
+  puts
+  print_color_cube_panels
+  puts
+  print_grayscale_bars
+end
+
+
+def print_instructions
+  puts "Usage / Examples:"
+  puts 'Use ESC[38;5;<color>m to tell bash the color is a 256-color foreground.'
+  puts 'Use ESC[48;5;<color>m to tell bash the color is a 256-color background.'
+  puts "Use  ESC[38;5;<fg>;48;5;<bg>m for both. Note: Foreground must come first."
+
+
+  puts 'In bash you can use \x1b or \033 to send an ESC code.'
+  puts 'echo requires the (undocumented) -e flag to print extended color characters'
+  puts
+  puts 'Other prefixes: 1 - bold, 2 - dim, 4 - underline'
+  puts
+  puts 'Example: print a bold orange (color) on a white background:'
+  puts 'echo -e "\x1b[1;38;5;208;48;5;255m(color)\x1b[0m"'
+  puts '%c[1;38;5;208;48;5;255m(color)%c[0m' % [ESC, ESC]
+
+  puts 'Example: print a bold orange (color) on a magenta background:'
+  puts "echo -e '\x1b[1;38;5;208;48;5;127m(color)\x1b[0m'"
+  puts '%c[1;38;5;208;48;5;127m(color)%c[0m' % [ESC, ESC]
+  puts
+  puts 'Example: print a bold magenta (color) on a white background:'
+  puts "echo -e '\033[1;47;38;5;127m(color)\033[0m'"
+  puts '%c[1;47;38;5;127m(color)%c[0m' % [ESC, ESC]
+end
+
+def print_table_and_instructions
+    print_256_color_table
+    puts
+    print_instructions
+end
+
+def print_old_style_table
+  print_16x16_table
+end
+
+if __FILE__==$0
+  if ARGV.size.zero?
+    print_table_and_instructions
+  elsif ARGV.first == '-o' || ARGV.first == '--old'
+    print_old_style_table
+  else
+    puts "ansicolors256 [-o|--old] - print 256-color ansi chart"
+  end
+end
