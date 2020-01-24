@@ -22,7 +22,7 @@ FONT="--font='univers'"
 FONT="--font='roman'"
 
 def osx?
-  `uname -s` == "Darwin"
+  `uname -s`.strip == "Darwin"
 end
 
 def file_path
@@ -39,7 +39,7 @@ def say(msg)
   if osx?
     system "say", msg
   else
-    puts '\x1b[1;37;41mSAY IS DISABLED BECAUSE THIS IS NOT OSX\x1b[0m'
+    puts "\x1b[1;37;41mSAY IS DISABLED BECAUSE THIS IS NOT OSX\x1b[0m"
   end
   return
   # dbrady 2020-01-10: everything past here is hot garbage. Keeping it in case
