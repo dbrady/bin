@@ -5,5 +5,5 @@
 # usage:
 #   whodidthis <file> <line>
 NAME=$(git blame $1 | head -n $2 | tail -n 1 | ruby -ne 'puts $1 if $_=~/\((.*?) 20\d\d-\d\d-\d\d/')
-echo $NAME did this to us
-say $NAME did this to us
+echo $NAME has done this thing to us
+say $NAME has done this thing to us
