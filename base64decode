@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# base64decode <str>
+#
+# note, you can do this on OSX (and probably linux) with
+# echo <str> | base64 -d ; echo
+#
+# I'm doing this here anyway, mostly to remind myself how to do it in ruby
+require "base64"
+
+puts Base64.decode64(ARGV.first)
