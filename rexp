@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+$SAFE = 1
+expr = ARGV.join(' ')
+
+if expr =~ /^[\d\.\s\+\/\*-]*$/
+   expr.untaint
+   puts eval(expr)
+else
+  $stderr.puts "Sorry, math operations only (did you put an unescaped/unquoted `*` in the command line?)"
+  $stderr.puts "Cannot safely eval #{ARGV.inspect}"
+  exit 1
+end
