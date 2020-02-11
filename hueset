@@ -1,4 +1,24 @@
 #!/usr/bin/env ruby
+# hueset --help for all the deets
+#
+# TODO: Add light/group names, e.g.
+# { office: [4,9,10,11], lightstrip: 9, strip: 9, spotlight: 4, spot: 4 }
+#
+# TODO: Add "lights" and "colors" commands, e.g. `hueset lights` lists the
+# lights table and `hueset colors` lists a table of common colors (and probably
+# shows a warning about how different devices have different phosphors so won't
+# show the same colors.)
+#
+# TODO: Add two-point commands that set to one color then slide to
+# another. E.g. "sunset" would send `hueset -h 13123 -b 254` followed by `hueset
+# -h 0 -b 0 -t 600`
+
+# TODO: Do it all in one command (requires research, it's a different endpoint
+# with different data structure)
+
+# +-----------------+
+# |   Color Table   |
+# |---------+-------|
 # | color   |   hue |
 # |---------+-------|
 # | red     |     0 |
@@ -6,29 +26,77 @@
 # | green   | 25500 |
 # | blue    | 46920 |
 # | magenta | 56100 |
+# +-----------------+
+
+# +----------------------------------------+
+# |      Office Lamp Arrangement 2018      |
+# +----------------------------------------+
+# |  4 | Office Spotlight                  |
+# |  9 | Office Lightstrip                 |
+# | 10 | Office Light Fixture (North Bulb) |
+# | 11 | Office Light Fixture (South Bulb) |
+# +----------------------------------------+
+
+# Note that different lights have different phosphor coatings and casing and as
+# a result have different chromatic responses. The Sky Blue example has been
+# hand-massaged to nearest approximation. The LEDs have no phosphor and a clear
+# resin coating. The overheads have a light phosphor coat but are inside a white
+# frosted glass dome. The spotlight may or may not have a phosphor coat but is
+# inside a frosted white plastic diffuser. So the settings:
 #
-# Office Lamp Arrangement 2018
-# 4 - Office Spotlight
-# 9 - Office Lightstrip
-# 10 - Office Light Fixture (North Bulb)
-# 11 - Office Light Fixture (South Bulb)
+# hueset -h 40000 -s 212 -b 192 4 9 10 11
+#
+# produces:
+#
+# Lightstrip: A perfect, if slightly dim, cerulean blue
+# Overheads: A powdery blue with a tint of purple, almost feels like UV
+# Spotlight: A cool white, hardly blue at all
+
 require 'optimist'
 
+
 # Parse options
-opts = Trollop.options do
+opts = Optimist.options do
+  banner <<STR
+Usage:
+hueset [options] <lights>
+
+Office Lamp Arrangement 2018:
+ 4: Office Spotlight
+ 9: Office Lightstrip
+10: Office Light Fixture (North Bulb)
+11: Office Light Fixture (South Bulb)
+
+Example: Sky Blue
+
+  hueset -h 42000 -s 255 -b 128 4
+  hueset -s 254 -h 40000 10 11
+  hueset -s 212 -h 40000 9
+
+Example: Sunset
+
+  hueset -h 13123 -b 254       # set to relaxed warm white
+  hueset -h 0 -t 600 -b 0      # fade out to red over ten minutes
+
+Notes:
+- Different devices have different phosphor coats which cause different
+  chromatic responses
+- Philips recommends a max of 254 instead of 255 for 8-bit devices. Go fig.
+STR
   opt :off, "Off", type: :boolean, default: false
   opt :hue, "Hue", type: :integer, default: 46920
-  opt :bri, "Brightness", type: :integer, default: 255
-  opt :sat, "Saturation", type: :integer, default: 255
-  opt :time, "Transition Time", type: :integer, default: 0
+  opt :bri, "Brightness", type: :integer, default: 254
+  opt :sat, "Saturation (0-254)", type: :integer, default: 254
+  opt :time, "Transition Time (tenths of a second)", type: :integer, default: 0
+  opt :pretend, "Pretend (Show command only)", type: :boolean, default: false
 end
-# lamp numbers
-#lights=ARGV.empty? ? [1,2,3,5,6] : ARGV
+
+
 lights=ARGV.empty? ? [4,9,10,11] : ARGV
 opts[:on] = !opts[:off]
 
 lights.each do |lamp|
-  command = %Q[curl -X PUT "http://$HUE_IP/api/$HUE/lights/#{lamp}/state" -d '{"on":#{opts[:on].inspect}, "bri":#{opts[:bri]},"sat":#{opts[:sat]},"hue":#{opts[:hue]}, "transitiontime":#{opts[:time]}}' 2>/dev/null > /dev/null]
+  command = %Q[curl -X PUT "http://#{ENV['HUE_IP']}/api/$HUE/lights/#{lamp}/state" -d '{"on":#{opts[:on].inspect}, "bri":#{opts[:bri]},"sat":#{opts[:sat]},"hue":#{opts[:hue]}, "transitiontime":#{opts[:time]}}' 2>/dev/null > /dev/null]
   puts command
   system command
 end
