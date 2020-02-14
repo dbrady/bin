@@ -1,12 +1,12 @@
 #!/bin/bash
 # gh - Open the github homepage for the current project
 echo "Opening the github homepage for this project: "
-URL=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }' | cut -d @ -f 2 | sed -e 's/:/\//'`
-echo -e "\x1b[1;37;42mhttps://$URL\x1b[0m"
+URL=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
+echo -e "\x1b[1;37;42m$URL\x1b[0m"
 if [ 'Darwin' == `uname -s` ]; then
-    open http://$URL
+    open $URL
 else
     # In theory, sensible-browser is more correct than xdg-open, but in practice
     # it opens Mozilla Firefox even if chromium is my default browser
-    xdg-open https://$URL &> /dev/null
+    xdg-open $URL &> /dev/null
 fi
