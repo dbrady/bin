@@ -1,0 +1,5 @@
+#!/bin/bash
+echo -e "\x1b[1;37;41m    USE git home INSTEAD, GITHUB WROTE THEIR OWN STUPID gh TOOL    \x1b[0m"
+echo "Launching that for you now..."
+echo "git home"
+git home
