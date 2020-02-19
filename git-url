@@ -1,0 +1,3 @@
+#!/bin/bash
+# git-url - show the fetch url or ssh url for this project
+git remote show origin | grep "Fetch URL" | awk '{ print $3 }'

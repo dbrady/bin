@@ -42,7 +42,20 @@ end
 # echo -e "\x1b[38;5;15;48;5;16m ANS\x1b[48;5;17mI 25\x1b[48;5;19m6 CO\x1b[48;5;21mLOR \x1b[0m"
 
 puts "+------------------------+"
-puts "|    ANSI 256 COLORS     |"
+puts "|      8 BIT COLOR       |"
+puts "+------------------------+"
+[40,100].each do |offset|
+  print "|"
+  (0..7).each do |color|
+    print "\x1b[#{color+offset}m   \x1b[0m"
+  end
+  puts "|"
+end
+puts "+------------------------+"
+
+
+puts "+------------------------+"
+puts "|     ANSI 256 COLOR     |"
 puts "+------------------------+"
 6.times do |y|
   print "|"
