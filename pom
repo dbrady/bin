@@ -18,7 +18,7 @@ BOLD="bold"
 #
 # Override default font setting, or leave blank to use rubanner's default
 # FONT=""
-FONT="--font='univers'"
+# FONT="--font='univers'"
 FONT="--font='roman'"
 
 def osx?
@@ -133,9 +133,6 @@ known_poms = if File.exists? CONFIG_FILE
                {}
              end
 
-require 'pp'
-pp known_poms
-
 # TODO: Refactor this whole mess
 # TODO: Capture and say start_message and stop_message instead of "starting pom"
 first_arg = if known_poms.keys.include? ARGV[0]
@@ -176,7 +173,7 @@ time = case first_arg
        #   puts "HH:MM:SS"
        #   9 * 60 * 60
        else
-         puts "DEFAULT"
+         # Default pom is 25m
          25 * 60
        end
 
