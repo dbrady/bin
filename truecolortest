@@ -83,3 +83,9 @@ puts "+------------------------+"
   puts "\x1b[0m|"
 end
 puts "+------------------------+"
+
+if ENV["TMUX"] && `tmux -V` < 'tmux 2.9'
+  puts "\x1b[1mDO THESE COLORS LOOK BAD?\x1b[0m"
+  puts "I see \x1b[31myou are running #{`tmux -V`.strip}\x1b[0m. Your truecolortest will probably look about like the 256-color test until you \x1b[32mupgrade to tmux 2.9\x1b[0m or so."
+  puts "\x1b[1;31;107m   BEWARE THAT THIS MAY BREAK YOUR EXISTING TMUX CONFIG SO HOLD OFF UNTIL YOU'RE UP FOR AN OPS HASSLE    \x1b[0m"
+end
