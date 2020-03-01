@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+#
+# args_to_sql_values - transform a list of args/words to something suitable for
+# an sql query
+#
+# Why? Because I kept running reports that emitted one word per line, but not
+# every day, so I kept forgetting how to write
+#
+# xargs ruby -e "puts ARGV.map {|a| 39.chr + a + 39.chr}.join(',')"
+#
+# Bonus: I never actually get multiple words per line, so I'm just gonna make
+# this read from $stdin so we don't need to remeber the xargs bit.
+
+puts(
+  "(" +
+  $stdin.each_line.to_a.map {|arg| "'#{arg.strip}'"}.join(',') +
+  ")"
+)
