@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+# rubydoc - look up a class and/or method in rubydoc
+class RubyDoc
+  attr_reader :core_only, :stdlib_only, :search, :ruby_version, :klass, :method_name
+
+  def initialize(core_only, stdlib_only, search, ruby_version, klass=nil, method_name=nil)
+    @core_only = core_only
+    @stdlib_only = stdlib_only
+    @ruby_version = cleanup_ruby_version(ruby_version)
+    @search = search
+    @klass, @method_name = klass, method_name
+  end
+
+  def run
+    puts '-' * 80
+    puts "Values:"
+    [:core_only, :stdlib_only, :search, :ruby_version, :klass, :method_name].each do |arg|
+      puts "#{arg}: #{send(arg)}"
+    end
+    puts "-" * 80
+
+    # Okay, what to do?
+    # if klass && method_name are both blank, open the root page
+    if klass.nil? && method_name.nil?
+      open_root_page # for ruby version
+    elsif search
+      open_search_page # for klass and/or method_name
+    elsif method_name.nil?
+      open_class_page(klass) # for klass
+    else
+      open_class_page(klass, method_name)
+    end
+  end
+
+  def cleanup_ruby_version(ver)
+    major, minor, micro = *ver.split(/\./)
+    puts "major, minor, micro = #{major.inspect}, #{minor.inspect}, #{micro.inspect}"
+    micro ||= 0
+    minor ||= 0
+    clean_ver = "#{major}.#{minor}.#{micro}"
+    puts clean_ver
+    clean_ver
+  end
+
+  def open_root_page
+    puts "TODO: Open root page for ruby version #{ruby_version}"
+  end
+
+  def core_or_stdlib
+    stdlib_only ? "stdlib" : "core"
+  end
+
+  def open_class_page(klass, method_name=nil)
+    url = "https://ruby-doc.org/#{core_or_stdlib}/#{klass}"
+    if method_name.nil?
+      puts "TODO: Open #{url}..."
+    else
+      # UGH. TODO: Have to figure out if method_name is a class or instance method
+      # Also have to HTML escape. E.g. Array[] is #method-c-5B-5D
+      # Option: Could require :: on class methods
+
+      # Option: Could curl the class page and search it for the link to the
+      # method name. E.g. Array#collect has a methods box that contains <a
+      # href="#method-i-collect"#collect</a> in it; could use that.
+
+      # Potential fun: if we can't find the method in core we could fail over to
+      # stdlib, dunno...
+      url = "https://ruby-doc.org/#{core_or_stdlib}/#{klass}"
+      puts "TODO: Open #{klass} page to #{method_name} method"
+    end
+  end
+
+  def open_search_page
+    puts "Opening search page..."
+    search_params = [klass, method_name].compact.join(' ').gsub(/\s+/, '+')
+    url = "https://ruby-doc.com/search.html?q=#{search_params}&sa=Search"
+    puts url
+  end
+
+  def browser_open_command
+    if osx?
+      "open"
+    else
+      # else Linux.
+      # TODO: support Windows maybe someday #ContrubutionsWelcome
+      "xdg-open"
+    end
+  end
+
+  def osx?
+    `uname -s`.strip == 'Darwin'
+  end
+end
+
+if __FILE__==$0
+  require 'optimist'
+
+  opts = Optimist.options do
+    #banner "rubydoc - look up a class and/or method on ruby-doc.org"
+    opt :core, "Restrict lookup to ruby Core", type: :boolean, default: false
+    opt :stdlib, "Restrict lookup to ruby StdLib", short: :l, type: :boolean, default: false
+    opt :search, "Open ruby-doc Search page", type: :boolean, default: false
+    opt :ruby_version, "Select ruby version", type: :string, default: RUBY_VERSION
+  end
+  Optimist.die "--core and --stdlib are mutually exclusive" if opts[:core] && opts[:stdlib]
+  Optimist.die "--core and --search are mutually exclusive" if opts[:core] && opts[:search]
+  Optimist.die "--stdlib and --search are mutually exclusive" if opts[:stdlib] && opts[:stdlib]
+
+  RubyDoc.new(opts[:core], opts[:stdlib_only], opts[:search], opts[:ruby_version], *ARGV).run
+end
