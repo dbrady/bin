@@ -1,5 +1,11 @@
 #!/bin/bash
 while true; do
     echo 'sleep 600; say "Check Slack"; seq 10 | while read i; do rubanner "CHECK SLACK" bold yellow on_black && rubanner "CHECK SLACK" bold on_yellow; done; say "Check Slack"'
-    sleep 600; say "Check Slack"; seq 10 | while read i; do rubanner "CHECK SLACK" bold yellow on_black && rubanner "CHECK SLACK" bold on_yellow; done; say "Check Slack"
+    sleep 600
+    say "Check Slack"
+    seq 10 | while read i; do
+        rubanner "CHECK SLACK" bold on_yellow
+        rubanner "CHECK SLACK" bold yellow on_black
+    done
+    say "Check Slack"
 done
