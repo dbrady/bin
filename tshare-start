@@ -12,14 +12,11 @@ $TCMD -S /tmp/work new-session -s work -n emacs -d
 
 if [ `uname -s` == "Darwin" ]; then
     # window    2    3    4       5
-    for name in spec bash logging TODO; do
+    for name in spec bash logging scratch; do
         $TCMD -S /tmp/work new-window -n $name -t work
     done
 
     # get this party started
-    # Jump TODO window over to TODO project
-    $TCMD -S /tmp/work send-keys -t work:5 'emacs ~/TODO.org' C-m
-
     # Clear the crap out of window 1, I mean, what even?
     $TCMD -S /tmp/work send-keys -t work:1 C-w
 
