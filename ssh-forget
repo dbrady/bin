@@ -35,7 +35,7 @@ class Target
   def initialize(value)
     if value.to_i.zero?
       @match_by_line = false
-      @value = /^.*#{value}.*,/
+      @value = /^.*#{value}.*[,\s]+/
     else
       @match_by_line = true
       @value = value.to_i
