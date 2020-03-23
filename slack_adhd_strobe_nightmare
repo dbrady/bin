@@ -1,4 +1,12 @@
 #!/bin/bash
+# slack_adhd_strobe_nightmare - historically relevant artifact from CMM. Ask me
+# about the story behind this sometime. (I probably won't tell you, but you can
+# ask.)
+if [ `uname -s` != "Darwin" ]; then
+    echo "Sorry, this script only runs on OSX."
+    exit -1
+fi
+
 while true; do
     echo 'sleep 600; say "Check Slack"; seq 10 | while read i; do rubanner "CHECK SLACK" bold yellow on_black && rubanner "CHECK SLACK" bold on_yellow; done; say "Check Slack"'
     sleep 600
