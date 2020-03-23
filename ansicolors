@@ -13,7 +13,7 @@
 #            http://gilesorr.com/bashprompt/howto/a1004.html
 
 
-FORMAT=" %4s "
+FORMAT=" %8s "
 echo -ne "\nv FG \ BG >   "
 for bg in 40m 100m  41m 101m  42m 102m  43m 103m 44m 104m  45m 105m  46m 106m 47m 107m; do
     printf "$FORMAT" $bg
@@ -46,9 +46,12 @@ for FGs in '2;30m' '  30m' '  90m' '1;30m' \
   esac
   line=$(expr $line + 1)
   echo -en " $FGs \033[$FG"
+  FGCLEAN=`echo $FG | sed -e 's/m//'`
+
   for BG in 40m 100m 41m 101m 42m 102m 43m 103m 44m 104m 45m 105m 46m 106m 47m 107m; do
+      BGCLEAN=`echo $BG | sed -e 's/m//'`
       echo -en "\033[$FG\033[$BG";
-      printf "$FORMAT" 'Aa0'
+      printf "$FORMAT" "$FGCLEAN;${BGCLEAN}"
       echo -en "\033[0m";
   done
   echo;

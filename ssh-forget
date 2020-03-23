@@ -18,8 +18,9 @@
 #
 # And the offending line will be removed.
 #
-# Note: the second example actually takes a regex, and removes all ssh
-# hosts that match that regex starting at the beginning of the line.
+# Note: the second example actually takes a regex, and removes all ssh hosts
+# that match that regex anywhere before the first comma (the end of the
+# hostname)
 
 # Just a convenience class to turn:
 #
@@ -34,7 +35,7 @@ class Target
   def initialize(value)
     if value.to_i.zero?
       @match_by_line = false
-      @value = /^#{value}/
+      @value = /^.*#{value}.*[,\s]+/
     else
       @match_by_line = true
       @value = value.to_i
