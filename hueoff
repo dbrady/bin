@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # hueoff <time> - shut off lamps (gently)
 # | color   |   hue |
 # |---------+-------|
@@ -14,11 +14,18 @@
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
+if [ $# == 0 ]; then
+    DELAY=10
+else
+    DELAY=$1
+fi
+TTIME="${DELAY}0"
+
 # bring lights down softly
 for lamp in 4 9 10 11; do
-    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"bri":0, "transitiontime":100}' 2>/dev/null > /dev/null
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d "{\"bri\":0, \"transitiontime\":$TTIME}" 2>/dev/null > /dev/null
 done
-sleep 10
+sleep $DELAY
 
 # TODO: Find a way to embed this all in one call? Bet it can be done with a jquery compound body posted directly to /lights/
 for lamp in 4 9 10 11; do
