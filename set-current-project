@@ -69,8 +69,9 @@ $known_databases = {
 
 args = ARGV.dup
 include_aliases = true
-if args.include?("--quick")
+if args.include?("--quick") || args.include?("-q")
   args.delete("--quick")
+  args.delete("-q")
   include_aliases = false
 end
 
@@ -110,9 +111,13 @@ def build_config_aliases(config, prefix='')
   aliases
 end
 
+def cdp_alias
+  %q(alias 'cdp'="cd \\"$CURRENT_PROJECT\\"")
+end
+
 def build_command_aliases
   aliases = []
-  aliases << %{alias 'cdp'="cd \\"$CURRENT_PROJECT\\""}
+  aliases << cdp_alias
   aliases
 end
 
@@ -131,7 +136,7 @@ if include_aliases
   Dir.glob(File.join(target, 'config/database*.yml')).each do |config_file|
     if File.exists? config_file
       # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
-      output = "---\n" + `bundle exec rails runner ~/bin/denviro`
+      output = "---\n" + `bundle exec rails r unner ~/bin/denviro`
       config = YAML.load(output)
       prefix = config_filename_prefix(config_file)
       aliases += build_config_aliases config, prefix
@@ -144,6 +149,8 @@ if include_aliases
   puts "Command aliases:"
   puts aliases
   puts '-' * 80
+else
+  aliases = Array(cdp_alias)
 end
 
 File.open(File.expand_path("~/.current-project"), "w") do |file|
