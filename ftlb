@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+def usage
+  puts "ftlb - calculate foot pounds of ballistic energy"
+  puts "Usage:"
+  puts "ftlb <grains> <fp>"
+end
+
+if $0==__FILE__
+  if ARGV.size != 2
+    usage
+    exit -1
+  end
+
+  grains, fps = *(ARGV.map(&:to_f))
+
+  # 450,240 is a magic number, TL;dr it's grains to ounces to mass because
+  # ounces aren't mass, you literally have to divide by Earth's gravity
+  # lolmurica
+  ftlb = (fps * fps * grains) / 450240
+
+  puts "#{grains} grains at #{fps} fps is #{ftlb} ft-lb"
+end
