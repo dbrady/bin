@@ -105,23 +105,24 @@ ps1_git_email()
 
     case $hash in
         "1d0e58ecbd97780bb36f6db90a2b57ac") bgcolor=""   ; fgcolor="32"   ;; # shinybit - green
-        # "563e2af36b14b3c954f77e938469606b") bgcolor=43   ; fgcolor="1;37" ;; # CMM - white on orange
-        #"563e2af36b14b3c954f77e938469606b") bgcolor=45   ; fgcolor="1;33" ;; # CMM colors (sorta) - yellow on purple
         "563e2af36b14b3c954f77e938469606b")
             git_email="\033[1;47;38;5;208mdbrady\033[0m\033[1;47;38;5;125m@\033[0m\033[1;47;38;5;208mcover\033[0m\033[1;47;38;5;125mmy\033[0m\033[1;47;38;5;208mmeds\033[0m"
             prerendered=1
             ;;
+        "abf0f4f7072d77a68ccec42247fe1e4f") fgcolor="1;38;5;27"; bgcolor="48;5;15" ;; # kp - bold blue on white
+        "745932c691e01f288d7b56625296afe8") fgcolor="1;38;5;15"; bgcolor="48;5;17" ;; # ks - bold white on blue
 
-        *)                                  bgcolor=41   ; fgcolor="1;37" ;; # white on red
+        # default
+        *)                                  bgcolor=41   ; fgcolor="1;37" ;; # bold white on bright red
     esac
 
     if [[ 1 -eq $prerendered ]] ; then
         printf "%s" $git_email
     else
         if [[ -n "${bgcolor}" ]] ; then
-            printf "\[\033[${fgcolor}m\[\033[${bgcolor}m%s\[\033[0m" $git_email
+            printf "\033[${fgcolor};${bgcolor}m%s\033[0m" $git_email
         else
-            printf "\[\033[${fgcolor}m%s\[\033[0m" $git_email
+            printf "\033[${fgcolor}m%s[\033[0m" $git_email
         fi
     fi
 }
