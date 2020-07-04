@@ -92,14 +92,14 @@ def print_16x16_table
   (1..16).each do |row|
     (0..15).each do |col|
       color = col*16 + row - 1
-      disp = sprintf "%3d ", color
-      print colorize_fg(disp, color)
+      label = sprintf "%3d ", color
+      print colorize_fg(label, color)
     end
     print "    "
     (0..15).each do |col|
       color = col*16 + row - 1
-      disp = sprintf "%3d ", color
-      print colorize_bg(disp, color)
+      label = sprintf "%3d ", color
+      print colorize_bg(label, color)
     end
     puts
   end
@@ -110,26 +110,26 @@ def print_16x16_table
 # Bar 1: 0-15 fg on black <space> 0-15 fg on white
 # Bar 2: 0-15 white on bg <space> 0-15 black on bg
 # ----------------------------------------------------------------------
-def print_16_colorbars
+def print_16_colorbars(reference_color: nil, bold: false)
   puts "Colors 0-15 are identical to the 4-bit colors (see ansicolors script for details)."
   16.times do |color|
-    disp = sprintf "%3d ", color
-    print colorize_fg(disp, color, 0)
+    label = sprintf "%3d ", color
+    print colorize_fg(label, color, reference_color || 0, bold: bold)
   end
   print "    "
   16.times do |color|
-    disp = sprintf "%3d ", color
-    print colorize_fg(disp, color, 7)
+    label = sprintf "%3d ", color
+    print colorize_fg(label, color, reference_color || 7, bold: bold)
   end
   puts
   16.times do |color|
-    disp = sprintf "%3d ", color
-    print colorize_bg(disp, color, 7)
+    label = sprintf "%3d ", color
+    print colorize_bg(label, color, reference_color || 7, bold: bold)
   end
   print "    "
   16.times do |color|
-    disp = sprintf "%3d ", color
-    print colorize_bg(disp, color, 0)
+    label = sprintf "%3d ", color
+    print colorize_bg(label, color, reference_color || 0, bold: bold)
   end
   puts
 end
@@ -142,8 +142,8 @@ def print_color_cube_panels(reference_color: nil, bold: false)
     (1..6).each do |row|
       (0..35).each do |col|
         color = 16 + col*6 + row - 1
-        disp = sprintf "%3d ", color
-        print colorize_fg(disp, color, bg, bold: bold)
+        label = sprintf "%3d ", color
+        print colorize_fg(label, color, bg, bold: bold)
         print " " if col % 6 == 5
       end
       puts
@@ -155,8 +155,8 @@ def print_color_cube_panels(reference_color: nil, bold: false)
     (1..6).each do |row| # color cubes: black (16) on color
       (0..35).each do |col|
         color = 16 + col*6 + row - 1
-        disp = sprintf "%3d ", color
-        print colorize_bg(disp, color, fg, bold: bold)
+        label = sprintf "%3d ", color
+        print colorize_bg(label, color, fg, bold: bold)
         print " " if col % 6 == 5
       end
       puts
@@ -164,26 +164,36 @@ def print_color_cube_panels(reference_color: nil, bold: false)
   end
 end
 
-def print_grayscale_bars
+def print_grayscale_bars(reference_color: nil, bold: false)
   puts "Colors 232-255 are an extended 24-shade grayscale palette (232 and 255 are grays, not black and white)."
-  (232..255).each do |color|
-    disp = sprintf "%3d ", color
-    print colorize_fg(disp, color, 0)
+
+  fgs = bgs = if reference_color
+                [{title: "#{reference_color}", color: reference_color}]
+              else
+                [{title: "Black", color: 16},{title: "White", color: 231}]
+              end
+  bgs.each do |bg|
+    (232..255).each do |color|
+      label = sprintf "%3d ", color
+      print colorize_fg(label, color, bg[:color], bold: bold)
+    end
+    puts
   end
-  puts
-  (232..255).each do |color|
-    disp = sprintf "%3d ", color
-    print colorize_bg(disp, color, 255)
+  fgs.each do |fg|
+    (232..255).each do |color|
+      label = sprintf "%3d ", color
+      print colorize_bg(label, color, fg[:color], bold: bold)
+    end
+    puts
   end
-  puts
 end
 
 def print_256_color_table(reference_color: nil, bold: false)
-  print_16_colorbars
+  print_16_colorbars(reference_color: reference_color, bold: bold)
   puts
   print_color_cube_panels(reference_color: reference_color, bold: bold)
   puts
-  print_grayscale_bars
+  print_grayscale_bars(reference_color: reference_color, bold: bold)
 end
 
 
@@ -206,8 +216,8 @@ end
 
 def print_table_and_instructions(reference_color: nil, bold: false)
   print_256_color_table(reference_color: reference_color, bold: bold)
-    puts
-    print_instructions
+  puts
+  print_instructions
 end
 
 def print_old_style_table
