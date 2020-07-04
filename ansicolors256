@@ -58,20 +58,33 @@
 # 36 Cyan
 # 37 Light Gray
 
+
+# ----------------------------------------------------------------------
+# TODO
+
+# The color cubes look great as color on black and white on color, but this
+# inescapably means dark numbers are hard to read on black and light backgrounds
+# make white numbers hard to read. I've tried emitting all four options but it
+# juuuuust doesn't fit on my 54-row screen, which is about all I'm comfortable
+# with on a 28" monitor with my increasingly presbyopic eyeballs.grayscale
+
+# ----------------------------------------------------------------------
+
+
 ESC=0x1b
 
-def colorize_fg(text, color, bg="")
-  if bg
-    bg = ";48;5;#{bg}"
-  end
-  "%c[38;5;#{color}#{bg}m#{text}%c[0m" % [ESC, ESC]
+def colorize_fg(text, color, bg=nil, bold: false)
+  bold_code = bold ? "1;" : ""
+  bg &&= ";48;5;#{bg}"
+
+  "%c[#{bold_code}38;5;#{color}#{bg}m#{text}%c[0m" % [ESC, ESC]
 end
 
-def colorize_bg(text, color, fg="")
-  if fg
-    fg = "38;5;#{fg};"
-  end
-  "%c[#{fg}48;5;#{color}m#{text}%c[0m" % [ESC, ESC]
+def colorize_bg(text, color, fg=nil, bold: false)
+  bold_code = $use_bold ? "1;" : "" # LOL it's 2020 and I'm still using ternary ops
+  fg &&= "38;5;#{fg};"
+
+  "%c[#{bold_code}#{fg}48;5;#{color}m#{text}%c[0m" % [ESC, ESC]
 end
 
 def print_16x16_table
@@ -121,32 +134,38 @@ def print_16_colorbars
   puts
 end
 
-def print_color_cube_panels
+def print_color_cube_panels(reference_color: nil, bold: false)
   puts "Colors 16-231 form a 6x6x6 color cube of black -> r/g/b -> c/m/y -> white. (color = 16 + r*36 + g*6 + b, where r,g,b -> (0..5) )"
-  (1..6).each do |row|
-    (0..35).each do |col|
-      color = 16 + col*6 + row - 1
-      disp = sprintf "%3d ", color
-      bg = (color <= 123) ? 255 : 232
-      print colorize_fg(disp, color, 16)
-      print " " if col % 6 == 5
+  # If no reference_color, print each color on lightest_gray then on darkest_gray
+  fgs = bgs = reference_color ? [reference_color] : [255, 232]
+  bgs.each do |bg|
+    (1..6).each do |row|
+      (0..35).each do |col|
+        color = 16 + col*6 + row - 1
+        disp = sprintf "%3d ", color
+        print colorize_fg(disp, color, bg, bold: bold)
+        print " " if col % 6 == 5
+      end
+      puts
     end
-    puts
   end
-  (1..6).each do |row|
-    (0..35).each do |col|
-      color = 16 + col*6 + row - 1
-      disp = sprintf "%3d ", color
-      fg = (color <= 123) ? 255 : 232
-      print colorize_bg(disp, color, 255)
-      print " " if col % 6 == 5
+
+  # If no reference_color, print lightest_gray then darkest_gray on each color
+  fgs.each do |fg|
+    (1..6).each do |row| # color cubes: black (16) on color
+      (0..35).each do |col|
+        color = 16 + col*6 + row - 1
+        disp = sprintf "%3d ", color
+        print colorize_bg(disp, color, fg, bold: bold)
+        print " " if col % 6 == 5
+      end
+      puts
     end
-    puts
   end
 end
 
 def print_grayscale_bars
-  puts "Colors 232-255 are an extended 24-shade grayscale palette."
+  puts "Colors 232-255 are an extended 24-shade grayscale palette (232 and 255 are grays, not black and white)."
   (232..255).each do |color|
     disp = sprintf "%3d ", color
     print colorize_fg(disp, color, 0)
@@ -159,10 +178,10 @@ def print_grayscale_bars
   puts
 end
 
-def print_256_color_table
+def print_256_color_table(reference_color: nil, bold: false)
   print_16_colorbars
   puts
-  print_color_cube_panels
+  print_color_cube_panels(reference_color: reference_color, bold: bold)
   puts
   print_grayscale_bars
 end
@@ -172,7 +191,7 @@ def print_instructions
   puts "Usage / Examples:"
   puts 'Use ESC[38;5;<color>m to tell bash the color is a 256-color foreground.'
   puts 'Use ESC[48;5;<color>m to tell bash the color is a 256-color background.'
-  puts "Use  ESC[38;5;<fg>;48;5;<bg>m for both. Note: Foreground must come first."
+  puts "Use  ESC[38;5;<fg>;48;5;<bg>m for both. Note: Order matters; foreground must come first."
 
 
   puts 'In bash you can use \x1b or \033 to send an ESC code.'
@@ -183,18 +202,10 @@ def print_instructions
   puts 'Example: print a bold orange (color) on a white background:'
   puts 'echo -e "\x1b[1;38;5;208;48;5;255m(color)\x1b[0m"'
   puts '%c[1;38;5;208;48;5;255m(color)%c[0m' % [ESC, ESC]
-
-  puts 'Example: print a bold orange (color) on a magenta background:'
-  puts "echo -e '\x1b[1;38;5;208;48;5;127m(color)\x1b[0m'"
-  puts '%c[1;38;5;208;48;5;127m(color)%c[0m' % [ESC, ESC]
-  puts
-  puts 'Example: print a bold magenta (color) on a white background:'
-  puts "echo -e '\033[1;47;38;5;127m(color)\033[0m'"
-  puts '%c[1;47;38;5;127m(color)%c[0m' % [ESC, ESC]
 end
 
-def print_table_and_instructions
-    print_256_color_table
+def print_table_and_instructions(reference_color: nil, bold: false)
+  print_256_color_table(reference_color: reference_color, bold: bold)
     puts
     print_instructions
 end
@@ -204,11 +215,16 @@ def print_old_style_table
 end
 
 if __FILE__==$0
-  if ARGV.size.zero?
-    print_table_and_instructions
-  elsif ARGV.first == '-o' || ARGV.first == '--old'
+  bold = ARGV.include?('-b')
+  reference_color = if ARGV.include?('-c')
+                      ARGV[ARGV.index('-c')+1].to_i
+                    end
+
+  puts "bold: #{bold.inspect}"
+  puts "reference_color: #{reference_color}"
+  if ARGV.include?('-o') || ARGV.include?('--old')
     print_old_style_table
   else
-    puts "ansicolors256 [-o|--old] - print 256-color ansi chart"
+    print_table_and_instructions(reference_color: reference_color, bold: bold)
   end
 end
