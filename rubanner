@@ -27,11 +27,15 @@
 
 require 'io/console'
 require 'colorize'
+require 'yaml'
 
 class Rubanner
   attr_reader :args, :output, :screen_width, :font, :message, :colors
 
-  DEFAULT_FONT = "roman"
+  # load_default_font will try to load a font name from ~/.rubanner.yml; if it
+  # fails will fall back to this hardcoded font.
+  DEFAULT_FONT = "electronic"
+  CONFIG_FILE = File.expand_path("~/.rubanner.yml")
 
   def initialize(argv)
     @args = argv.dup
@@ -69,7 +73,14 @@ class Rubanner
     elsif idx = args.index {|arg| arg =~ /^--font=/ }
       args.delete_at(idx).split(/=/)[1]
     else
-      DEFAULT_FONT
+      load_default_font || DEFAULT_FONT
+    end
+  end
+
+  def load_default_font
+    if File.exists?(CONFIG_FILE)
+      config = YAML::load_file(CONFIG_FILE)
+      config[:default_font]
     end
   end
 
