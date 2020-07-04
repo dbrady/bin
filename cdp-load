@@ -1,0 +1,45 @@
+#!/bin/bash
+# cdp-load <name> - load ~/.current-project.name to ~/.current-project
+# I am useful when set-current-project starts repeatedly iterating over multple targets
+PROJ_FILE=~/.current-project
+USAGE="cdp-load <name> - load ~/.current-project.name to ~/.current-project"
+
+function barf {
+    if [ "$1" != "" ]; then
+        echo "BARF: $1"
+    fi
+    echo $USAGE
+    exit 1
+}
+
+# test number of args
+if [ $# != 1 ]; then
+    barf "Must supply exactly 1 argument"
+fi
+
+# test for help
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    echo $USAGE
+    exit 1
+fi
+
+# barf if ~/.current-project.name doesn't exist
+if [ ! -e "$PROJ_FILE.$1" ]; then
+    barf "$PROJ_FILE.$1 does not currently exist. Create it with set-current-project then save it with cdp-save."
+fi
+
+# barf if $! contains a space
+if grep -Eq "\s" <<<$1 ; then
+    barf "No spaces allowed in project name, sorry"
+fi
+
+# ======================================================================
+# MAIN SCRIPT (FINALLY LOL)
+echo cp $PROJ_FILE{.$1,}
+cp $PROJ_FILE{.$1,}
+
+echo "Loaded project file $1 as current:"
+head -n 1 $PROJ_FILE
+
+echo "You'll want to reload your terminal or source the file with:"
+echo ". ~/.current-project"
