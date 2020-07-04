@@ -7,7 +7,7 @@ require 'rubygems'
 require 'beanstalk-client'
 require 'optimist'
 
-opts = Trollop.options do
+opts = Optimist.options do
   opt :port, "port", :type => :integer, :default => 11300
   opt :host, "host", :default => "localhost"
   opt :tube, "tube to send message in", :default => "default"
@@ -17,4 +17,3 @@ bs.use(opts[:tube])
 msg = ARGV * ' '
 puts "msg: #{msg}"
 bs.put msg
-

@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # headers - program to read and output email headers.
-# 
+#
 # Copyright (c) 2008-2009 David Brady <github@shinybit.com>
 
 require 'rubygems'
@@ -10,12 +10,12 @@ require 'optimist'
 # have aggregates? E.g. --simple would be equivalent to "--to --from
 # --subject --date", etc? Danger: it would actually have to be --To
 # --From etc.
-# 
+#
 # Should we then also have --no-To --no-From etc?
-# 
+#
 # How do we express "any/all"? Wildcards? I bet "--*" would look
 # LOVELY once POSIX got ahold of it...
-opts = Trollop.options do
+opts = Optimist.options do
   opt :multiline, "Show all lines of multiline values", :type => :boolean, :default => false
   opt :simple, "Show only from/to/subject/date", :type  => :boolean, :default => false
   opt :cc, "Include CC in --simple format", :type  => :boolean, :default => false

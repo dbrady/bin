@@ -7,7 +7,7 @@ require 'rubygems'
 require 'beanstalk-client'
 require 'optimist'
 
-opts = Trollop.options do
+opts = Optimist.options do
   opt :port, "port", :type => :integer, :default => 11300
   opt :host, "host", :default => "localhost"
   opt :tube, "tube to get message from", :default => "default"
@@ -31,5 +31,3 @@ bs.watch(opts[:tube])
 msg = bs.reserve(opts[:wait])
 puts msg.body
 msg.delete unless opts[:peek]
-
-

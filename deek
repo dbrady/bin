@@ -3,7 +3,10 @@
 
 require 'optimist'
 
-opts = Trollop.options do
+opts = Optimist.options do
+  banner <<EOF
+It draws an ascii penis. Obviously the most useful and mature script ever.
+EOF
   opt :nojizz, "No Jizz", short: "Z", default: false
   opt :minshaft, "Min Shaft Length", short: "s", type: :int, default: 40
   opt :maxshaft, "Max Shaft Length", short: "S", type: :int, default: 40

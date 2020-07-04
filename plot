@@ -1,13 +1,13 @@
 #!/usr/bin/env ruby
 require 'optimist'
 
-opts = Trollop.options do
+opts = Optimist.options do
   version "plot v 1.0.0 (C) 2010 David Brady"
   banner(<<EOS
 plot - Use Gnuplot to plot a prepared datafile.
 
 Copyright (C) David Brady. Released under the MIT license.
-        
+
 Overview:
 
     Gnuplot has a lot of options and switches. If you are reviewing
@@ -18,7 +18,7 @@ Overview:
   frequently, and if you find yourself working with multiple distinct
   representations of data, you will find yourself maintaining
   different types of scripts. Enter the plot command.
-    
+
     Plot lets you put scripting directives directly into the header of
   the datafile, so that when you change the data you are emitting, you
   simply change the information in the header as well. Plot can then
@@ -28,23 +28,23 @@ Overview:
     Plot assumes that your data is organized in tab-separated columns
   and that the first column identifies the x axis while all subsequent
   columns identify y axis plots.
-    
+
 Header Directives:
-    
+
     Header directives are lines of text of the format
-  
+
     # <name>: <value>
-  
+
     At present, there are only two: LEGEND and COMMAND. Plot stops
   looking for header directives as soon as it sees a line that does
   not begin with #, so take care not to include blank lines.
-        
+
     # LEGEND: <x_axis_title>; <column_title1>[; <column_title2> ...]
-          
+
     Gives labels to the columns to be plotted in the file.
-        
+
     # COMMAND: <command>
-    
+
     Writes a command directive to gnuplot. Example: "# COMMAND: set
   log y". The command directive can appear any number of times, and
   you can include multiple commands on a single line by separating the
@@ -52,34 +52,34 @@ Header Directives:
   command, the first label in the legend (the x axis label) will be
   ignored. In other words, COMMAND trumps LEGEND if you explicitly
   order it to be so.
-          
+
 Plot Commands:
-          
+
     You can pass arbitrary commands to the plot script using the
   --command switch; the argument should be a single string. Multiple
   commands can be added by separating them with semicolons. The same x
   axis label override statement is true here as well.
-          
+
 Extra Plots:
-          
+
     You can add arbitrary plot lines to the output using the --add
   switch; you can reference other columns by number with a dollar
   sign. Separate multiple plots with semicolons. Example:
-          
+
     plot datafile.dat --add 'sin($1); log($4-$3) title \"log diff\"'
 
     The title is optional. Currently, added plots MUST reference
   discrete columns in the data; you cannot reference the x axis except
   as $1.
 EOS
-         )  
+         )
   opt :xrange, "XRange set the xrange to show", :type => :string, :default => nil
   opt :only, "Only show columns (eg: -o 'foo; bar')", :type => :string, :default => nil
   opt :hide, "Hide columns (eg: -h 'foo; bar')", :type => :string, :default => nil
   opt :regex, "Show/Hide column names by regex, not by exact name, e.g. -r -o 'comb.+'", :type => :boolean, :default => false
   opt :command, "Commands to include/override. e.g. -c 'set log x; set label \"data\"'", :type => :string, :default => ""
   opt :add, "Additional columns/functions to plot. e.g. -a '1+sin($2); log($4-$3) title \"log diff\"'", :type => :string, :default => ""
-end 
+end
 
 
 # TODO: plot command should be its own class instead of an array pair.
@@ -89,7 +89,7 @@ end
 # method to Array because I anticipate adding a third column to
 # override the plot style, e.g. [2, "pants", "lines"]. If/when that
 # happens, I don't want to be stuck using "last" when I mean "second".
-# 
+#
 # DEAR DAVE: Okay, seriously, when you make this change (and my
 # money's on YAGNI) please remember that comments are a code smell and
 # obviate this long-winded explication by simply promoting this to a
@@ -167,12 +167,12 @@ elsif opts[:hide]
 end
 
 # Now add in user-added plots
-# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  
-# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  
-# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  
-# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  
-# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  
-# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  
+# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!
+# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!
+# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!
+# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!
+# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!
+# KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!  KLUD WRITE ME!
 plots += opts[:add].split(/;/).map {|a| a.strip }.map {|a| a =~ /\btitle\b/ ? a.split(/\btitle\b/, 2) : [a,a] }.map {|a,b| ["(#{a})", b] }
 
 plot_cmd += plots.map { |plot| "\"#{ARGV[0]}\" using 1:#{plot.first} title \"#{plot.second}\" with lines"} * ', '
@@ -186,4 +186,3 @@ plot_cmd.strip!
 cmd = "gnuplot -p -e '#{plot_cmd}'"
 puts cmd
 system "#{cmd}"
-

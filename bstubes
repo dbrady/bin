@@ -10,7 +10,7 @@ require 'optimist'
 require 'beanstalk-client'
 require 'terminal-table/import'
 
-opts = Trollop.options do
+opts = Optimist.options do
   opt :port, "port", :type => :integer, :default => 11300
   opt :host, "host", :default => "localhost"
 end

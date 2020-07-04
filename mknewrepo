@@ -1,22 +1,22 @@
 #!/usr/bin/env ruby
-# 
+#
 # Create a new git repository on monkey, turn the current folder into
 # a git repo, and push it to monkey.
-# 
+#
 # Usage:
-# 
+#
 # # creates repo in ./, commits it, creates copy on monkey, pushes it
 # ~/foobar $ mknewrepo foobar.git
-# 
-# 
+#
+#
 # # creates copy on monkey, pushes it
 # ~/foobar $ mknewrepo --remote-only
-# 
+#
 # TODO: Make interactive with -i. Detect each stage and prompt.
 
 require 'optimist'
 
-# opts = Trollop.options do
+# opts = Optimist.options do
 #   # TODO: This should autodetect!
 #   opt :remote-only, "remote only; local repository is already created", :type => :boolean, :default => false
 # end

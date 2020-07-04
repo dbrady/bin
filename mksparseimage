@@ -1,11 +1,23 @@
 #!/usr/bin/env ruby
 require 'optimist'
 
-opts = Trollop.options do
+def osx?
+  `uname -s` == "Darwin"
+end
+
+opts = Optimist.options do
+  banner <<EOF
+mksparseimage - Create a tiny encrypted file that can be mounted as a drive and grows only as you add data
+EOF
   opt :size, "Maximum size", :type => :string, :default => '100m'
   opt :name, "Sparseimage name", :type => :string
   opt :volname, "Volume name", :type => :string
 end
 
-puts `hdiutil create -size #{opts[:size]} -volname #{opts[:volname]} -encryption -type SPARSE -fs HFS+ #{opts[:name]}`
-
+cmd = "hdiutil create -size #{opts[:size]} -volname #{opts[:volname]} -encryption -type SPARSE -fs HFS+ #{opts[:name]}"
+puts cmd
+if osx?
+  puts `cmd`
+else
+  puts "Cowardly refusing to run his command: it only works on OSX."
+end
