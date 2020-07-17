@@ -1,2 +1,5 @@
+# Edit me and copy me to ~/.rubanner.yml
 ---
 :default_font: dos-rebel
+:ci:
+  :font: 3d
