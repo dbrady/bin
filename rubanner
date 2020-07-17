@@ -11,7 +11,7 @@
 # TODO:
 # rubanner [options] "message" [options] --extra ["message2" [options]] [--extra [...]]
 #
-# e.g. our company logo could be approximated with:
+# e.g. the CoverMyMeds logo could be approximated with:
 # rubanner "Cover" on_light_white --font=nancyj-improved bold light_yellow \
 #          --extra "My" bold light_red \
 #          --extra "Meds" bold light_yellow
