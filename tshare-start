@@ -12,7 +12,7 @@ $TCMD -S /tmp/work new-session -s work -n emacs -d
 
 if [ `uname -s` == "Darwin" ]; then
     # window    2    3    4       5
-    for name in spec bash logging scratch docker; do
+    for name in spec bash logging scratch; do
         $TCMD -S /tmp/work new-window -n $name -t work
     done
 
@@ -45,8 +45,8 @@ if [ `uname -s` == "Darwin" ]; then
 
 else
     # Linux, most likely
-    # window    2    3    4       5
-    for name in spec bash console; do
+    # window    2    3    4        5
+    for name in spec bash dc-shell docker; do
         $TCMD -S /tmp/work new-window -n $name -t work
     done
 
