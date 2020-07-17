@@ -30,7 +30,7 @@ require 'colorize'
 require 'yaml'
 
 class Rubanner
-  attr_reader :args, :output, :screen_width, :font, :message, :colors
+  attr_reader :args, :output, :screen_width, :app, :font, :message, :colors
 
   # load_default_font will try to load a font name from ~/.rubanner.yml; if it
   # fails will fall back to this hardcoded font.
@@ -41,7 +41,8 @@ class Rubanner
     @args = argv.dup
     @output = init_output
     @screen_width = init_screen_width
-    @font = init_font
+    @app = init_app
+    @font = init_font(app)
     @message = init_message
     @colors = init_colors
   end
@@ -66,21 +67,31 @@ class Rubanner
     end
   end
 
-  def init_font
+  def init_app
+    app = if idx = args.index('-a')
+            args.delete_at idx
+            args.delete_at idx
+          elsif idx = args.index {|arg| arg =~ /^--app=/ }
+            args.delete_at(idx).split(/=/)[1]
+          end
+    app&.to_sym
+  end
+
+  def init_font(app)
     if idx = args.index('-f')
       args.delete_at idx
       args.delete_at idx
     elsif idx = args.index {|arg| arg =~ /^--font=/ }
       args.delete_at(idx).split(/=/)[1]
     else
-      load_default_font || DEFAULT_FONT
+      load_default_font(app) || DEFAULT_FONT
     end
   end
 
-  def load_default_font
+  def load_default_font(app)
     if File.exists?(CONFIG_FILE)
       config = YAML::load_file(CONFIG_FILE)
-      config[:default_font]
+      config.fetch(app,{}).fetch(:font, config[:default_font])
     end
   end
 
