@@ -122,7 +122,7 @@ ps1_git_email()
         if [[ -n "${bgcolor}" ]] ; then
             printf "\033[${fgcolor};${bgcolor}m%s\033[0m" $git_email
         else
-            printf "\033[${fgcolor}m%s[\033[0m" $git_email
+            printf "\033[${fgcolor}m%s\033[0m" $git_email
         fi
     fi
 }
