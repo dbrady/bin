@@ -5,4 +5,8 @@
 #
 # probably a linux equivalent
 # this version does not run in background
-redis-server /usr/local/etc/redis.conf
+if [ `uname -s` == "Darwin" ]; then
+    redis-server /usr/local/etc/redis.conf
+else
+    redis-server
+fi
