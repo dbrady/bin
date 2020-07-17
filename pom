@@ -34,14 +34,17 @@ def got_watchfile?
 end
 
 def say(msg)
-  # configuration management is of teh debbil. Vagrant is gone, haxxor straight
-  # into
-  if osx?
-    system "say", msg
-  else
-    puts "\x1b[1;37;41mSAY IS DISABLED BECAUSE THIS IS NOT OSX\x1b[0m"
-  end
-  return
+  return unless osx?
+  system "say", msg
+
+  # if osx?
+  #   system "say", msg
+  # else
+  #   # yeah yeah, we know
+  #   # puts "\x1b[1;37;41mSAY IS DISABLED BECAUSE THIS IS NOT OSX\x1b[0m"
+  # end
+  # return
+
   # dbrady 2020-01-10: everything past here is hot garbage. Keeping it in case
   # future me ever wants to blackmail past me.
   #
