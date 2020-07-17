@@ -15,11 +15,11 @@
 
 # roman font needs bold, electronic font does not
 if [ -e .rfg_project_name ]; then
-    rubanner --font=roman "$(cat .rfg_project_name)" bold white on_blue
+    rubanner --app=ci "$(cat .rfg_project_name)" bold white on_blue
 else
-    rubanner --font=roman "$(pwd | sed -e 's/^.*\///')" bold white on_blue
+    rubanner --app=ci "$(pwd | sed -e 's/^.*\///')" bold white on_blue
 fi
-rubanner --font=roman "RUNNING" bold white on_blue
+rubanner --app=ci "RUNNING" bold white on_blue
 if [ -e ~/onsite.touch ]; then
     echo "You're onsite! Skipping HUE lights."
 else

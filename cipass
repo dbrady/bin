@@ -13,8 +13,7 @@
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
-# rubanner --font=roman "PASS" bold on_green
-rubanner --font=roman "PASS" bold white on_green
+rubanner --app=ci "PASS" bold white on_green
 if [ -e ~/onsite.touch ]; then
     echo "You're onsite! Skipping HUE lights."
 else
