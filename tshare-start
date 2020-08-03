@@ -46,7 +46,14 @@ if [ `uname -s` == "Darwin" ]; then
 else
     # Linux, most likely
     # window    2    3    4        5
-    for name in spec bash dc-shell docker; do
+    if grep -E 'CURRENT_PROJECT=.*/Bookly' ~/.current-project; then
+        NAMED_SHELLS="spec bash redis sidekiq rails psql"
+    else
+        NAMED_SHELLS="spec bash dc-shell docker"
+    fi
+
+    # for name in spec bash redis sidekiq rails
+    for name in $NAMED_SHELLS; do
         $TCMD -S /tmp/work new-window -n $name -t work
     done
 
