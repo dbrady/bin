@@ -1,0 +1,3 @@
+#!/bin/bash
+echo -e "\033[1;47;41mDid you mean h1?\033[0m"
+h1 $*
