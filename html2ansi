@@ -120,6 +120,7 @@ if __FILE__==$0
   bg_black = "48;5;16"
   bg_white = "48;5;231"
 
+  puts
   nearest.each do |color_index|
     puts "color_index: #{color_index}"
 
@@ -130,13 +131,25 @@ if __FILE__==$0
     #  white on color
 
     [
-      ["38;5;#{color_index}", bg_black],
-      [fg_black, "48;5;#{color_index}"],
-      ["38;5;#{color_index}", bg_white],
-      [bg_white, "48;5;#{color_index}"],
-    ].each do |fg, bg|
+      ["38;5;#{color_index}", bg_black, "This is #{color_index} on black"],
+      [fg_black, "48;5;#{color_index}", "This is black on #{color_index}"],
+      ["38;5;#{color_index}", bg_white, "This is #{color_index} on white"],
+      [fg_white, "48;5;#{color_index}", "This is white on #{color_index}"],
+    ].each do |fg, bg, label|
       on_code = "[#{fg};#{bg}m"
-      puts "\x1b#{on_code}Nearest color to #{color} is #{color_index}: print this with \\x1b#{on_code} TEXT \\x1b[0m\x1b[0m"
+      puts "#{label}: \x1b#{on_code}Nearest color to #{color} is #{color_index}: print this with \\x1b#{on_code} TEXT \\x1b[0m\x1b[0m"
     end
+  end
+
+  puts
+
+  # swatch
+  4.times do
+    puts "\x1b[48;5;#{nearest.first}m                \x1b[0m"
+  end
+  puts "\x1b[48;5;#{nearest.first}m     \x1b[38;5;16mSWATCH     \x1b[0m"
+  puts "\x1b[48;5;#{nearest.first}m     \x1b[38;5;231mSWATCH     \x1b[0m"
+  4.times do
+    puts "\x1b[48;5;#{nearest.first}m                \x1b[0m"
   end
 end
