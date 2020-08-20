@@ -1,6 +1,61 @@
 #!/bin/sh
 # Pushes the current branch to the remote server (default origin)
+#
+# TL;dr don't use this anymore. "git push" now does what you need.
+#
+# Historical Marker: This script came into life in 2009 back when "git push"
+# would push EVERY local branch from your machine up to the server, and if your
+# version was out of date the push would fail. That doesn't sound unreasonable,
+# but at LMP we were pairing promiscously and hopping machines, but we were
+# holding onto story branches for days and weeks, so very quickly you could end
+# up with many branches on your machine that your coworkers were updating. A git
+# pull of coworker's foo branch would update your origin/foo branch but unless
+# you checked that branch out and merged or rebased to your local copy, your
+# local branch would be permanently out of date--and git push would fail every
+# time.
+#
+# Remember this was back in the days of git version 1.6/1.7 or so. It worked, it
+# worked well, and it worked fast... and it was NOT user friendly. Or, like
+# Linux, "it was user friendly; it was just very picky about its friends."
+#
+# Back then the "correct" way to push just one branch to the server was to be on
+# the branch you wanted to push and then specify both the remote name and branch
+# name in the command. This was way too much typing hassle for us
+# Laziness-as-a-virtue hackers, so we were always looking for ways to curry the
+# command to not need arguments.
+#
+# Fun fact: For a brief time, before I figured out how to get the current
+# branch, Past Me solved this problem with a bash loop that would check out
+# every local branch and git pull and merge it, then retry the git push. Oh,
+# Past Me, you made it work, you lovable idiot, I'm not even mad.
+#
+# So anyway... yeah. From 2009 until I upgraded to git 2.28 in 2020, the best
+# way for me to push the current branch to the server was to type "git
+# poosh". The fact that this amused my coworkers went a long way towards keeping
+# it in my arsenal.
+#
+# Bonus Historical Fact: I upgraded to 2.28 in 2020, from version 2.8, which was
+# released in 2014. This is actually a clear bracketing of when I started and
+# stopped working at CMM, where I had a company-provided OSX laptop and reduced
+# the maintenance effort on my linux dev machine all they way down to "if
+# something breaks, wait and see when I can get around to it."
+
+# get current branch
 branch=$(git branch 2>/dev/null | grep ^\* | sed -e s/^\*[[:space:]]// )
+
+# if an arg was provided, it's the name of the remote server, e.g. "git poosh monkey"
 [ x$1 != x ] && remote=$1 || remote=origin
+
+# Always show the user what we're about to do.
+#
+# 1. Beware evil wizards. (Google 'pragprog "Evil Wizards"' and learn you a thing)
+# 2. It reassures coworkers by letting them follow along.
+# 3. It teaches me the true/core implementation by repetition.
+# 4. I often abandon a script once the implementation is easier to understand.
+# 5. Or, I often keep a script if it really is more convenient.
+# 6. Either way, the script often shows me jumping-off points for alternate
+#    functionality.
 echo "git push ${remote} ${branch}"
+
+# Do the thing.
 git push ${remote} ${branch}
