@@ -3,3 +3,5 @@
 :default_font: dos-rebel
 :ci:
   :font: 3d
+:pom:
+  :font: 3d
