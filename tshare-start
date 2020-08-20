@@ -1,47 +1,52 @@
 #!/bin/bash
+if [ "$1" == "" ]; then
+    SESSION="work"
+else
+    SESSION=$1
+fi
 
 # TODO - I keep changing the list of windows and such. Maybe find a way to
 # separate these? E.g. read in a list of window names & initial commands from an
 # .rc file? Then the "for name in..." thing would be like "cat .twindowrc |
-# while read name; do $TCMD -S /tmp/work new-window -n $name -t work; done"
+# while read name; do $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION; done"
 #
 # Or, more likely, change this to a ruby file and have a yaml file listing
 # windows and the commands to be sent to them
 
-$TCMD -S /tmp/work new-session -s work -n emacs -d
+$TCMD -S /tmp/$SESSION new-session -s $SESSION -n emacs -d
 
 if [ `uname -s` == "Darwin" ]; then
     # window    2    3    4       5
     for name in spec bash logging scratch; do
-        $TCMD -S /tmp/work new-window -n $name -t work
+        $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
     done
 
     # get this party started
     # Clear the crap out of window 1, I mean, what even?
-    $TCMD -S /tmp/work send-keys -t work:1 C-w
+    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 C-w
 
-    $TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
+    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 'emacs' C-m
 
     # leave window 2 (bash) alone
 
-    # $TCMD -S /tmp/work send-keys -t work:3 'cd ~/cmm/vagrant/code' C-m
-    # $TCMD -S /tmp/work send-keys -t work:3 'vagrant ssh' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'cd ~/cmm/vagrant/code' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'vagrant ssh' C-m
 
     # Start vagrant. Because I'm doing this in two windows at once, I often get
     # errors saying that the VM is locked. Which window barfs is nondeterministic,
     # so tack on this messy check/retry/giveup bit to all windows with the temerity
     # to start vagrant.
-    # $TCMD -S /tmp/work send-keys -t work:4 'cd ~/cmm/vagrant/code' C-m
-    # $TCMD -S /tmp/work send-keys -t work:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'cd ~/cmm/vagrant/code' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
     # Start vagrant. Because I'm doing this in two windows at once, I often get
     # errors saying that the VM is locked. Which window barfs is nondeterministic,
     # so tack on this messy check/retry/giveup bit to all windows with the temerity
     # to start vagrant.
-    # $TCMD -S /tmp/work send-keys -t work:5 'cd ~/cmm/vagrant/code' C-m
-    # $TCMD -S /tmp/work send-keys -t work:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'cd ~/cmm/vagrant/code' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
-    # $TCMD -S /tmp/work send-keys -t work:5 '' C-m
+    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 '' C-m
 
 else
     # Linux, most likely
@@ -54,23 +59,23 @@ else
 
     # for name in spec bash redis sidekiq rails
     for name in $NAMED_SHELLS; do
-        $TCMD -S /tmp/work new-window -n $name -t work
+        $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
     done
 
     # get this party started
 
     # Clear the crap out of window 1, I mean, what even?
-    $TCMD -S /tmp/work send-keys -t work:1 C-w
+    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 C-w
 
-    $TCMD -S /tmp/work send-keys -t work:1 'emacs' C-m
+    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 'emacs' C-m
 fi
 
 # Select window 1 and attach to it
-$TCMD -S /tmp/work select-window -t work:1
-$TCMD -S /tmp/work -2 attach -t work
+$TCMD -S /tmp/$SESSION select-window -t $SESSION:1
+$TCMD -S /tmp/$SESSION -2 attach -t $SESSION
 
 
 # NOTES
 
 # How to rename a window after you've created it
-# $TCMD -S /tmp/work rename-window -t work:1 newname
+# $TCMD -S /tmp/$SESSION rename-window -t $SESSION:1 newname

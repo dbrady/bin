@@ -1,2 +1,8 @@
 #!/bin/bash
-$TCMD -S /tmp/work -2 attach -t work
+if [ "$1" == "" ]; then
+    SESSION="work"
+else
+    SESSION=$1
+fi
+
+$TCMD -S /tmp/$SESSION -2 attach -t $SESSION

@@ -1,2 +1,8 @@
 #!/bin/sh
-$TCMD -S /tmp/work kill-server
+if [ "$1" == "" ]; then
+    SESSION="work"
+else
+    SESSION=$1
+fi
+
+$TCMD -S /tmp/$SESSION kill-server

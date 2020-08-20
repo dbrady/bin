@@ -1,2 +1,2 @@
 #!/bin/bash
-TCMD=tmux tshare-attach
+TCMD=tmux tshare-attach $*

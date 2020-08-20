@@ -1,2 +1,2 @@
 #!/bin/sh
-TCMD=tmate tshare-attach
+TCMD=tmate tshare-attach $*
