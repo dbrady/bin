@@ -73,13 +73,13 @@ ps1_git()
   sha1=$(git rev-parse --short --quiet HEAD)
 
   case "${branch:-"(no branch)"}" in
-      production|prod) attr="1;37m\033[" ; color=41 ;; # bold white on red
-      master|deploy)   attr="1;37m\033[" ; color=41 ;; # bold white on red
-      stage|staging)   color=33                     ;; # yellow
-      dev|develop|development) color=34             ;; # blue
-      next)            color=36                     ;; # gray
+      production|prod)         attr="1;37m\033[" ; color=41 ;; # bold white on red
+      master|deploy|main)      attr="1;37m\033[" ; color=41 ;; # bold white on red
+      stage|staging)                               color=33 ;; # yellow
+      dev|develop|development)                     color=34 ;; # blue
+      next)                                        color=36 ;; # gray
       *)
-          if [[ -n "${branch}" ]] ; then # Feature Branch :)
+          if [[ -n "${branch}" ]] ; then # Happiness! This is a feature/story branch :)
               color=32 # green
           else
               color=0 # reset
