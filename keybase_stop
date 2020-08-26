@@ -1,0 +1,4 @@
+#!/bin/bash
+echo Stopping keybase...
+echo "run_keybase -k"
+run_keybase -k
