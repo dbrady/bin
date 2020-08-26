@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
 # denviro - dump file in Rails environment
 
+# TL;dr:
+# rails r 'puts ERB.new(File.read("./config/database.yml")).result(binding)'
+
 # Why: Because sometimes I open a settings.yml or config/database.yml and it's
 # so full of <%= ... %> garbage that I have no idea what's going on
 
@@ -22,4 +25,4 @@ end
 
 # Part III - Load it, bind it, parse it, puts it
 # puts Erubis::Eruby.new(File.read(file)).result binding
-puts ERB.new(File.read(file)).result(binding) 
+puts ERB.new(File.read(file)).result(binding)
