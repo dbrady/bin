@@ -1,0 +1,23 @@
+#!/bin/sh
+# git-cram - push and track a new branch to a remote
+# was: "cram a new branch right up a server's whiny push hole"
+#
+# It's not you, git, it's me. I have failed to move with the times. This will
+# not stop me from abusing you, however, because I am a human and you are a
+# machine and shut up just shut up.
+#
+# Somewhere between git 2.2.7 and git 2.27.0 my usual git poosh / git track
+# commands stopped working because, well, 20 versions went by. Now you have to
+# set the upstream on the push. Fine. This will push the current branch to the
+# remote with the --set-upstream flag turned on.
+
+# TODO: Investigate, maybe take a git refresher. git poosh fails now in some
+# cases, but I just tested it with a new branch it worked. git track still
+# works. Starting to think it's something in git poosh
+# if a branch isn't already tracked. git poosh works if there are no changes
+# between local and remote.
+
+
+branch=$(git branch 2>/dev/null | grep ^\* | sed -e 's/\* //')
+echo git push --set-upstream origin $branch
+git push --set-upstream origin $branch
