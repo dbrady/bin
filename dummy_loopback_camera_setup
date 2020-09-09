@@ -1,0 +1,27 @@
+#!/bin/bash
+# Set up loopback camera - run this after every reboot because it goes away. :(
+
+# Including this because sometimes when my machine reboots or crashes I lose
+# the video capture device. This sets up a dummy loopback camera for OBS to
+# output to; the exclusive_caps=1 tells the OS it's an input device only, which
+# in turn tells Chrome and a bunch of other camera-using programs (like Cheese
+# Webcam Booth) "yes, you can use this camera".
+#
+# NOTES:
+#
+# Updating linux headers can break this entirely. Not clear yet how to fix.
+#
+# I originally got this from
+# https://blog.jbrains.ca/permalink/using-obs-studio-as-a-virtual-cam-on-linux
+# with the addition of needing to pass "exclusive_caps=1" to make the camera
+# visible to my web browser. It has you compile v4l2loopback by hand. After an
+# OS upgrade, this stopped working, but switching to using apt to install
+# v4l2loopback DID fix the problem. I used sudo apt install to get:
+#
+# v4l2loopback-dkms
+# v4l2loopback-source
+# v4l2loopback-utils
+#
+# And after that, this loopback setup script worked.
+echo 'sudo modprobe v4l2loopback exclusive_caps=1 card_name="Loopback Camera"'
+sudo modprobe v4l2loopback exclusive_caps=1 card_name="Loopback Camera"
