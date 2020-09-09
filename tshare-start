@@ -10,8 +10,38 @@ fi
 # .rc file? Then the "for name in..." thing would be like "cat .twindowrc |
 # while read name; do $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION; done"
 #
-# Or, more likely, change this to a ruby file and have a yaml file listing
-# windows and the commands to be sent to them
+# TODO - It would be nice to adapt the initial commands around a bit. Note: This
+# is the same comment as the previous one, and that comment was written in
+# January 2016. It is now September 2020. That was at CMM and I never needed any
+# more turnover once I had things the way I wanted them. Now I'm at KPMG and I'm
+# switching between two projects repeatedly that have completely different tmux
+# setups. In August I tweaked this file to be informed by the contents of my
+# ~/.current-projects file. Today I wanted to change the way one project was set
+# up. ALMOST enough to warrant change, but not enough. Documenting this for
+# Future Me. If I circle back to this this year, it may be worth burning an hour
+# to fix (or four hours to port it to ruby, etc). If I don't circle back to this
+# before 2022 then it's probably not worth the payoff. See https://xkcd.com/1205
+# "Is It Worth The Time?". Then again, I'm a fussy hacker with OCD and if
+# investing the time is worth it in immediate satisfaction, I may do it
+# anyway. Just remember that this script has already outlived one major version
+# change of tmux and had to be maintained.
+#
+# CHANGE IMPACT NOTE: This set of scripts automates two different tmux
+# implementations (tmux vs. tmate) on two different operating systems (OSX
+# vs. Linux). Over the years, it needs very minor maintenance about twice a
+# year. Changes to this script have been caused by:
+#
+# * Wanting the startup sequence to be slighly different. Frequency: maybe
+#   yearly, but often entails multiple changes close together as I toss and turn
+#   to get comfortable.
+# * Switching between Linux and OSX and finding out the previous changes were
+#   not compatible on the other OS. Frequency: typically yearly or less, and
+#   usually several months after the previous change.
+# * Changes to operating system. Frequency: has happened maybe twice, both on
+#   OSX, but likely would be more if I hadn't decided to ride this Ubuntu LTS
+#   kernel into the ground.
+# * Changes to tmux and tmate. This has happened exactly once, when tmux
+#   upgraded to 2.0 and had breaking changes.
 
 $TCMD -S /tmp/$SESSION new-session -s $SESSION -n emacs -d
 
@@ -53,8 +83,10 @@ else
     # window    2    3    4        5
     if grep -E 'CURRENT_PROJECT=.*/Bookly' ~/.current-project; then
         NAMED_SHELLS="spec bash redis sidekiq rails psql"
+    elif grep -E 'CURRENT_PROJECT=.*/dart' ~/.current-project; then
+        NAMED_SHELLS="bash dc-spec docker dc-psql dc-shell"
     else
-        NAMED_SHELLS="spec bash dc-shell docker"
+        NAMED_SHELLS="spec bash"
     fi
 
     # for name in spec bash redis sidekiq rails
