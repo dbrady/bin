@@ -1,0 +1,55 @@
+#!/bin/bash
+# cdp-show [<name>] - dump the project file aimed at by ~/.current-project or or
+# ~/.current-project.name
+#
+# I am useful when you can't remember where you're at or want to know if aliases
+# beyond cdp are set
+
+PROJ_FILE=~/.current-project
+USAGE="cdp-show [<name>] - show current project aimed at by ~/.current-project or or ~/.current-project.name"
+
+function barf {
+    if [ "$1" != "" ]; then
+        echo "BARF: $1"
+    fi
+    echo $USAGE
+    exit 1
+}
+
+# test number of args
+if [ $# -gt 1 ]; then
+    barf "Must supply 1 or 0 arguments ($#)"
+fi
+
+# test for help
+if [ "$1" == "-h" ] || [ "$1" == "--help" ]; then
+    echo $USAGE
+    exit 1
+fi
+
+# barf if ~/.current-project.name doesn't exist
+if [ $# == 0 ]; then
+    if [ ! -e $PROJ_FILE ]; then
+        barf "Default project file $PROJ_FILE does not yet exist. Create it with set-current-project"
+    fi
+else
+    if [ ! -e "$PROJ_FILE.$1" ]; then
+        barf "$PROJ_FILE.$1 does not currently exist. Create it with set-current-project then save it with cdp-save."
+    fi
+fi
+
+# barf if $! contains a space
+if grep -Eq "\s" <<<$1 ; then
+    barf "No spaces allowed in project name, sorry"
+fi
+
+# ======================================================================
+# MAIN SCRIPT (FINALLY LOL)
+
+if [ $# == 0 ]; then
+    echo "Current project file $PROJ_FILE points at:"
+    cat $PROJ_FILE
+else
+    echo "Project file $PROJ_FILE.$1 points at:"
+    cat $PROJ_FILE.$1
+fi
