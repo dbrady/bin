@@ -1,2 +1,9 @@
 #!/bin/sh
-pg_ctl -D /usr/local/var/postgres stop -s -m fast
+
+if [ `uname -s` == 'Darwin' ]; then
+    # OSX - current as of Catalina
+    pg_ctl -D /usr/local/homebrew/var/postgres stop -s -m fast
+else
+    # linux - current as of Ubuntu 16.04 LTS
+    pg_ctl -D /usr/local/var/postgres stop -s -m fast
+fi
