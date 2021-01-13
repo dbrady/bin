@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+# newbin - create a new bin script
+
+# Things I always add to new bins
+# - Either bash or ruby
+
+# Common Things I Add To New Ruby Bins:
+# - args processing with Optimist
+# - color support with either the colorize or term-ansi gem
+# - have an Application class instead of a bare ruby script
+
+
+class Class
+  def self.attr_flag(*flags)
+    flags.each do |flag|
+      define_method "#{flag}?" do
+        instance_variable_get "@#{flag}"
+      end
+    end
+  end
+end
+
+class NewbinGenerator
+  attr_reader :app_name,
+              :app_description,
+              :app_type,
+              :use_optimist,
+              :use_colorize,
+              :use_term_ansicolor
+
+  def initialize(
+        app_name:,
+        app_description: "DESCRIBE ME",
+        app_type: "ruby",
+        use_optimist: false,
+        use_colorize: false,
+        use_term_ansicolor: false
+      )
+
+    @app_name = app_name
+    @app_description = app_description
+    @app_type = app_type
+    @use_optimist = use_optimist
+    @use_colorize = use_colorize
+    @use_term_ansicolor = use_term_ansicolor
+  end
+
+  def asplain
+    puts "#{app_name} - #{app_description}"
+    puts "App Type: #{app_type}"
+    puts "use_optimist: #{use_optimist ? 'Yes' : 'No'}"
+    puts "use_colorize: #{use_colorize ? 'Yes' : 'No'}"
+    puts "use_term_ansicolor: #{use_term_ansicolor ? 'Yes' : 'No'}"
+  end
+end
+
+
+if __FILE__==$0
+  # process args
+  # invoke NewbinGenerator
+  generator = NewbinGenerator.new app_name: "Test",
+                                  app_description: "Test Script",
+                                  app_type: "ruby",
+                                  use_optimist: true,
+                                  use_colorize: true,
+                                  use_term_ansicolor: true
+  generator.asplain
+
+  puts '--'
+  generator = NewbinGenerator.new app_name: "Test",
+                                  app_description: "Test Script"
+  generator.asplain
+
+end

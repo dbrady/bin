@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+# <%= app_name %> - <%= app_description %>
+
+
+<% if use_colorize %>
+require 'colorize'
+<% end %>
+<% if use_term_ansicolor %>
+require 'term/ansicolor'
+
+class String
+  include Term::ANSIColor
+end
+<% end %>
+<% if use_optimist %>
+require 'optimist'
+<% end %>
+
+
+<% if use_optimist %>
+# Handle
