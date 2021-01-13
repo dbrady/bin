@@ -21,6 +21,11 @@
 # v4l2loopback-dkms
 # v4l2loopback-source
 # v4l2loopback-utils
+
+if [ `uname -s` != "Linux" ]; then
+    echo "This script is only necessary on my Ubuntu linux laptop. Possibly only on 16.04LTS."
+    exit 1
+fi
 #
 # And after that, this loopback setup script worked.
 echo 'sudo modprobe v4l2loopback exclusive_caps=1 card_name="Loopback Camera"'
