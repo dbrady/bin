@@ -18,5 +18,42 @@ end
 
 
 if __FILE__==$0
+  require 'optimist'
+  require 'yaml'
+
+  # Parse options
+  opts = Optimist.options do
+    banner <<-EOS
+merge-commit-message - emit KPMG Spark merge commit message boilerplate
+
+For Trello card id and GitHub PR, you can submit the id or the complete url, e.g.
+
+-t ABC123YZ
+-t https://trello.com/c/ABC123YZ
+-t https://trello.com/c/ABC123YZ/this-is-a-story-card
+
+-p 123
+-p https://github.com/kpmgspark/dart/pull/123
+
+
+If pr is just an id, will assume kpmgspark and use the current folder name as
+the repo name. (TODO: read remote origin from .git/config)
+
+-a, --author can be a name or a list of names separated by commas,
+ e.g. --author=mike,tad. Names are looked up from ~/.merge-commit-message.yml in
+ the authors section.
+
+Usage:
+       merge-commit-message [options] <target> [<extra_args>]
+where [options] are:
+EOS
+    opt :trello, "Trello Card id or url", type: :string, default: 'https://trello.com/c/ABC123YZ'
+    opt :pr, "GitHub Pull Request id or url", type: String, default: '123'
+    opt :author, "(Co-)author", type: String
+    opt :reviewer, "(Sign-off) reviewer", type: String
+  end
+
+  puts opts.to_yaml
+
   MergeCommitMessageGenerator.new.run
 end
