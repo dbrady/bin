@@ -10,16 +10,6 @@
 # - have an Application class instead of a bare ruby script
 
 
-class Class
-  def self.attr_flag(*flags)
-    flags.each do |flag|
-      define_method "#{flag}?" do
-        instance_variable_get "@#{flag}"
-      end
-    end
-  end
-end
-
 class NewbinGenerator
   attr_reader :app_name,
               :app_description,
@@ -54,6 +44,8 @@ class NewbinGenerator
   end
 end
 
+class NewbinGeneratorTest < MiniTest::Unit::TestCase
+end
 
 if __FILE__==$0
   # process args

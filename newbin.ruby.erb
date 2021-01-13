@@ -18,4 +18,14 @@ require 'optimist'
 
 
 <% if use_optimist %>
-# Handle
+# Handle args
+<% end %>
+
+<% if use_application_class %>
+<%# emit app class here %>
+<% if use_application_test %>
+<%# emit test class here %>
+<% end %><%# end use_application_test %>
+<% else %>
+<# emit bare ruby script body here %>
+<% end %>
