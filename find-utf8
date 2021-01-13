@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+# Find Non-ascii (UTF-8) lines in a file
+file = ARGV.first
+
+if !File.exists? file
+  puts "Could not find file '#{file}'"
+  exit -1
+end
+
+IO.readlines(file).map(&:rstrip).each.with_index do |line, index|
+  encoded = line.encode("ASCII", "UTF-8", undef: :replace)
+  if encoded != line
+    marker_bar = line.dup
+    line.length.times do |char_offset|
+      marker_bar[char_offset] = (line[char_offset] == encoded[char_offset]) ? " " : "^"
+    end
+    line_num = (index + 1).to_s
+    puts "#{line_num}: #{line}"
+    puts "#{line_num.gsub(/./,' ')}  #{marker_bar}"
+  end
+end
