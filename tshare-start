@@ -47,7 +47,7 @@ $TCMD -S /tmp/$SESSION new-session -s $SESSION -n emacs -d
 
 if [ `uname -s` == "Darwin" ]; then
     # window    2    3    4       5
-    for name in spec bash logging scratch; do
+    for name in bash dshell dserver bash; do
         $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
     done
 
