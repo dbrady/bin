@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+# merge-commit-message - Generate merge commit template
+
+# v.1 - just emit the required tags:
+class MergeCommitMessageGenerator
+  def initialize
+  end
+
+  def run
+    puts <<STR
+Trello-Card: https://trello.com/c/ABC123YZ
+GitHub-Pull-Request: https://github.com/kpmgspark/dart/pull/123
+Co-authored-by: Tad Thorley <phaedryx@users.noreply.github.com>
+Signed-off-by: Mike Moore <mikemoore@kpmgspark.com>
+STR
+  end
+end
+
+
+if __FILE__==$0
+  MergeCommitMessageGenerator.new.run
+end
