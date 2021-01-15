@@ -2,20 +2,59 @@
 # merge-commit-message - Generate merge commit template
 
 # v.1 - just emit the required tags:
-class MergeCommitMessageGenerator
+def banner(msg)
+  puts '-' * 80
+  puts msg
+  puts '-' * 80
+end
+
+class Authors
+  attr_reader :authors
+
+  CONFIG_FILE = File.expand_path("~/.merge-commit-message.yml")
   def initialize
+    @authors = if File.exists? CONFIG_FILE
+                 YAML.load_file(CONFIG_FILE).fetch "authors", {}
+               else
+                 {}
+               end
   end
 
-  def run
-    puts <<STR
-Trello-Card: https://trello.com/c/ABC123YZ
-GitHub-Pull-Request: https://github.com/kpmgspark/dart/pull/123
-Co-authored-by: Tad Thorley <phaedryx@users.noreply.github.com>
-Signed-off-by: Mike Moore <mikemoore@kpmgspark.com>
-STR
+  def lookup(name)
+    authors[name.downcase]
   end
 end
 
+class MergeCommitMessageGenerator
+  attr_reader :trello_card, :pull_request, :co_authors, :signed_off_by
+  def initialize(trello_card:, pull_request:, co_authors:, signed_off_by:)
+    @trello_card = trello_card || 'https://trello.com/c/ABC123YZ'
+    @pull_request = pull_request || 'https://github.com/kpmgspark/dart/pull/123'
+    @co_authors = co_authors ? parse_teammates(co_authors) : ['Tad Thorley <phaedryx@users.noreply.github.com>']
+    @signed_off_by = signed_off_by ? parse_teammate(signed_off_by) : 'Mike Moore <mikemoore@kpmgspark.com>'
+  end
+
+  def parse_teammates(names)
+    (names || "").split(/,/).map do |name|
+      parse_teammate name
+    end
+  end
+
+  def parse_teammate(name)
+    Authors.new.lookup(name)
+  end
+
+  def run
+    puts '-' * 80
+    puts <<STR
+Trello-Card: #{trello_card}
+GitHub-Pull-Request: #{pull_request}
+#{co_authors.map { |ca| "Co-authored-by: #{ca}" }.join("\n")}
+Signed-off-by: #{signed_off_by}
+STR
+    puts '-' * 80
+  end
+end
 
 if __FILE__==$0
   require 'optimist'
@@ -26,7 +65,12 @@ if __FILE__==$0
     banner <<-EOS
 merge-commit-message - emit KPMG Spark merge commit message boilerplate
 
-For Trello card id and GitHub PR, you can submit the id or the complete url, e.g.
+Usage:
+  merge-commit-message --trello=https://trello.com/c/6fdiTXcg/15-file-extension-upload-whitelist-in-dart --pr=https://github.com/kpmgspark/dart/pull/795 --authors=tad,mike --signoff=mike
+
+Notes:
+
+TODO: For Trello card id and GitHub PR, you can submit the id or the complete url, e.g.
 
 -t ABC123YZ
 -t https://trello.com/c/ABC123YZ
@@ -36,11 +80,11 @@ For Trello card id and GitHub PR, you can submit the id or the complete url, e.g
 -p https://github.com/kpmgspark/dart/pull/123
 
 
-If pr is just an id, will assume kpmgspark and use the current folder name as
+TODO: If pr is just an id, will assume kpmgspark and use the current folder name as
 the repo name. (TODO: read remote origin from .git/config)
 
--a, --author can be a name or a list of names separated by commas,
- e.g. --author=mike,tad. Names are looked up from ~/.merge-commit-message.yml in
+-a, --authors can be a name or a list of names separated by commas,
+ e.g. --authors=mike,tad. Names are looked up from ~/.merge-commit-message.yml in
  the authors section.
 
 Usage:
@@ -49,11 +93,25 @@ where [options] are:
 EOS
     opt :trello, "Trello Card id or url", type: :string, default: 'https://trello.com/c/ABC123YZ'
     opt :pr, "GitHub Pull Request id or url", type: String, default: '123'
-    opt :author, "(Co-)author", type: String
-    opt :reviewer, "(Sign-off) reviewer", type: String
+    opt :authors, "(Co-)authors (comma separated)", type: String
+    opt :signoff, "reviewer", type: String
+    opt :reviewer, "(Sign-off) reviewer -- alias for sinoff"
   end
+  die "Supply either signoff or reviewer, not both" if opts[:signoff_given] && opts[:reviewer_given]
 
   puts opts.to_yaml
 
-  MergeCommitMessageGenerator.new.run
+  generator = MergeCommitMessageGenerator.new trello_card: opts[:trello],
+                                              pull_request: opts[:pr],
+                                              co_authors: opts[:authors],
+                                              signed_off_by: opts[:signoff]
+
+  generator.run
 end
+
+# SAMPLE .merge-commit-message.yml
+# ---
+# authors:
+#   dave: David Brady <davidbrady@kpmgspark.com
+#   mike: Mike Moore <mikemoore@kpmgspark.com
+#   tad: Tad Thorley <phaedryx@users.noreply.github.com>
