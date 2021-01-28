@@ -8,8 +8,9 @@ colors = base_colors.map {|c| [c, :"light_#{c}"] }.flatten
 format = "%14s | %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s"
 separator = ('-' * 14) + "-+-" + "-" * 8 * 8 * 2
 
-puts format % ([""] + ["", "light"] * 8)
-puts format % ([""] + base_colors.map {|c| [c, c]}.flatten)
+puts format % ([""] + ["", "on"] * 8).map {|c| c.center(7) }
+puts format % ([""] + ["on", "light"] * 8).map {|c| c.center(7) }
+puts format % ([""] + base_colors.map {|c| [c, c]}.flatten).map {|c| c.to_s.center(7) }
 puts separator
 
 base_colors.each do |color|
