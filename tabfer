@@ -25,7 +25,7 @@ TAB_FOLDER = File.expand_path("~/Documents/refdox/lpp")
 song = ARGV[0]
 
 # Be helpful, even if things aren't set up right
-if song == "--help"
+if song.nil? || song == "--help"
   puts "tabfer (<song>|--list|--help)"
   puts "Songs are .txt files (omit the extension) in #{TAB_FOLDER}"
   exit 0
