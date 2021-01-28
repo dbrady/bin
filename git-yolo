@@ -1,0 +1,20 @@
+#!/bin/bash
+# git yolo: force push the branch to the server. Uses --force-with-lease to stop
+# you if somebody else has pushed up commits since the last time you pulled. You
+# can yolo and be cautious at the same time. You know, if you're, like, old.
+#
+# Note: I like my git aliases to show me exactly how they do what they do. If
+# you don't care to echo the command like me, there is a more idiomatic way to
+# add a new command to git, and that is by editing your project or global
+# .gitconfig like so:
+#
+# [alias]
+#	yolo = push --force-with-lease
+#
+# You can also make git edit this file for you with
+#
+# git config --global alias.yolo 'push --force-with-lease'
+#
+# But I like the echo, so here's a whole darn bash script. You're welcome.
+echo git push --force-with-lease
+git push --force-with-lease
