@@ -20,7 +20,16 @@
 # would add some kind of ~start~/~end~ notation to the tablature, but I found
 # that made the rest of the file ugly, so instead I'm just going to go ahead and
 # let this program know about the important line numbers for any given song.
-
+#
+# TODO: KLUDGY HACK! Had to put stairway.txt into the lpp folder, even though
+# it's not a lpp song and in fact it's a uke tab, not even a guitar. I started
+# to add UKE_FOLDER and logic to know if a tab was for guitar or uke but it got
+# messy fast. We've probably reached the point where this should be an
+# Application class instead of a bare ruby script. For now, live with
+# stairway.txt hiding in the lpp folder--like I said when I started, I don't
+# want to have to remember where I put them. For now, this means "hiding the
+# crimes" as well as "covering up details", but eh, sounds like a problem for
+# Future Me.
 TAB_FOLDER = File.expand_path("~/Documents/refdox/lpp")
 song = ARGV[0]
 
