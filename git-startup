@@ -1,0 +1,13 @@
+#!/bin/bash
+echo git init
+git init
+
+# -a and -A are equivalent on the first commit. -A will honor deletions, but
+# since this is the initial commit there can't have been any, can there? Dear
+# Future Dave: This comment is entirely just to remind you that -A exists and is
+# a thing! `git help add` for more details! Love, Past Dave
+echo git add -A
+git add -A
+
+echo git commit -m "Initial commit"
+git commit -m "Initial commit"
