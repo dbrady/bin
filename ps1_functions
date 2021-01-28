@@ -103,6 +103,21 @@ ps1_git_email()
     hash=`echo ${git_email} | ${hash_program} | cut -f 1 -d ' '`
     prerendered=0
 
+    # TODO: 2020-10-11 - Today I did 3 commits from the wrong email even though
+    # it was colorized. Two thoughts about that: For now, just watch for it
+    # (YAGNI: it might have been a one-off?) and if it happens again let's add a
+    # path fragment for each email to belong to, and if it doesn't belong let's
+    # freak right out, like bold white on bright red at a minimum, possibly even
+    # blart an alarm to $stderr if possible?
+    #
+    # In the Interim: these were new repos that also needed add_nocommit to be
+    # run on them. I wonder if I could change git clone to emit a reminder
+    # and/or the same in add_nocommit (I forgot to run add_nocommit too until
+    # later, so eh.)
+    #
+    # IF IT HAPPENS AGAIN but isn't merged, git rebase -i
+    # <commit_before_mistake> and change all of them to "edit", then do 'git
+    # commit --amend author=blah <LOOK THIS UP, BUSY PAIRING>'
     case $hash in
         "1d0e58ecbd97780bb36f6db90a2b57ac") bgcolor=""   ; fgcolor="32"   ;; # shinybit - green
         "563e2af36b14b3c954f77e938469606b")
