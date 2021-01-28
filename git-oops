@@ -1,0 +1,18 @@
+#!/bin/bash
+# git oops: amend the current commit
+#
+# Note: I like my git aliases to show me exactly how they do what they do. If
+# you don't care to echo the command like me, there is a more idiomatic way to
+# add a new command to git, and that is by editing your project or global
+# .gitconfig like so:
+#
+# [alias]
+#	oops = commit --amend
+#
+# You can also make git edit this file for you with
+#
+# git config --global alias.oops 'commit --amend'
+#
+# But I like the echo, so here's a whole darn bash script. You're welcome.
+echo git commit --amend
+git commit --amend
