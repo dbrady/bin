@@ -67,6 +67,17 @@ Office Lamp Arrangement 2018:
 10: Office Light Fixture (North Bulb)
 11: Office Light Fixture (South Bulb)
 
++-----------------+
+| color   |   hue |
+|---------+-------|
+| red     |     0 |
+| yellow  | 12750 |
+| green   | 25500 |
+| blue    | 46920 |
+| magenta | 56100 |
+| red     | 65535 |
++-----------------+
+
 Example: Sky Blue
 
   hueset -h 42000 -s 255 -b 128 4
