@@ -1,0 +1,33 @@
+#!/bin/bash
+# huedown <time_in_seconds> - Tell lamps to ramp down gently, but exit script
+# immediately. The idea is that the lights will be shut off by some future
+# script or command. Combine with an external sleep if you want to shut the
+# lamps off at the end. See hueoff if you want a script that will block until it
+# can shut the lights off itself.
+#
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+
+if [ $# == 0 ]; then
+    DELAY=10
+else
+    DELAY=$1
+fi
+# Remember HUE delays are in deciseconds so add a 0 to the seconds argument
+TTIME="${DELAY}0"
+
+# bring lights down softly
+for lamp in 4 9 10 11; do
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d "{\"bri\":0, \"transitiontime\":$TTIME}" 2>/dev/null > /dev/null
+done
