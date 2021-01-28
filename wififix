@@ -1,0 +1,14 @@
+#!/bin/sh
+if [ `uname -s` != 'Linux' ]; then
+    echo 'Sorry, this script only runs on Linux! In fact, chances are real good that you'
+    echo 'only NEED this script if you are running Ubuntu 16.04 and your wifi keeps'
+    echo 'disconnecting.'
+    exit -1
+fi
+
+# If this keeps happening, check out https://www.youtube.com/watch?v=n49kukPf8HI
+# and https://pastebin.com/zTSjg98W to see how to automate restarting the
+# network manager.
+
+echo sudo service network-manager restart
+sudo service network-manager restart
