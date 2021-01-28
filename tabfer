@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+# tabfer <song> - show a sheet of music/tablature.
+#
+# TL;dr looks in ~/Documents/refdox/lpp/ for <song>.txt and prints it. Boom.
+#
+# To make this work you'll need my tablature files, which are in my refdox repo,
+# also available on github. Refdox should be cloned in your Documents
+# folder. Note: my tablature files are just text files, this is just a glorified
+# cat program.
+#
+# So if this is just a cat program, why write it? Easy: so I don't have to
+# remember WHERE I put the tablature files! I don't want to type "cat
+# ~/Documents/refdox/lpp/stairway.txt" when I can just write "tabfer stairway"
+# and boom, play some music.  you'll also need my refdox repo. Clone it in your
+# Documents folder.
+#
+# One additional note: the first version of this program was called "stairway"
+# and only did that one file, so it was okay for it to know that it should only
+# display lines 31 to 64. To expand to multiple files, I thought at first that I
+# would add some kind of ~start~/~end~ notation to the tablature, but I found
+# that made the rest of the file ugly, so instead I'm just going to go ahead and
+# let this program know about the important line numbers for any given song.
+
+TAB_FOLDER = File.expand_path("~/Documents/refdox/lpp")
+song = ARGV[0]
+
+# Be helpful, even if things aren't set up right
+if song == "--help"
+  puts "tabfer (<song>|--list|--help)"
+  puts "Songs are .txt files (omit the extension) in #{TAB_FOLDER}"
+  exit 0
+end
+
+# ensure tab folder exists
+if !File.directory?(TAB_FOLDER)
+  puts "Cannot find tablature folder '#{TAB_FOLDER}' -- did you clone the refdox repo into Documents?"
+  exit -1
+end
+
+# if "song" is "--list" or "--help", be helpful
+if song == "--list"
+  puts "I know these songs:"
+  Dir.glob(TAB_FOLDER + "/*").sort.each do |file|
+    puts "  " + File.basename(file, ".txt")
+  end
+  exit 0
+end
+
+# Some tab files have extra notes available
+magic_numbers = {
+  "stairway" => (31..64),
+  "andantino" => (35..55),
+}
+range = magic_numbers[song]
+
+filename = File.expand_path("~/Documents/refdox/lpp/#{song}.txt")
+if File.exists? filename
+  line_number = 0
+
+  puts
+  IO.readlines(filename).each do |line|
+    line_number += 1
+    if range
+      next unless range.cover? line_number
+    end
+    puts line.rstrip
+  end
+  puts
+else
+  puts "Cannot open file '#{filename}'."
+end
