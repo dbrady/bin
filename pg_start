@@ -1,9 +1,10 @@
 #!/bin/sh
 
 if [ `uname -s` == 'Darwin' ]; then
-    # OSX - current as of Catalina
-    pg_ctl -D /usr/local/homebrew/var/postgres start
+    # OSX - GOK which folder homebrew is stuffing databases this week :-/
+    # pg_ctl -D /usr/local/homebrew/var/postgres start
+    pg_ctl -D /usr/local/var/postgres start
 else
     # linux - current as of Ubuntu 16.04 LTS
     pg_ctl -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log start
-end
+fi
