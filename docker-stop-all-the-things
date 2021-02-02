@@ -1,0 +1,13 @@
+#!/bin/bash
+
+echo docker-compose stop
+docker-compose stop
+
+docker ps | ruby -ne 'last = $_.split.last; puts last unless last == "NAMES"' | while read container; do
+    echo docker stop $container
+    docker stop $container
+    echo stopped $container.
+done
+
+echo docker-sync stop
+docker-sync stop
