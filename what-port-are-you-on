@@ -1,0 +1,24 @@
+#!/bin/sh
+# what-port-are-you-on <app_or_pid> - Because I can never remember the command
+# -ltnp - man netstat for deets, but TL;dr
+# -l,--listening - ports are not shown by default, show them
+# -t,--tcp - type of packet/port
+# -n,--numeric - numeric IP addresses instead of trying to look up hostnames
+# -p,--program - show program and PID of program using that port
+#
+# TODO:
+# this generates a line like
+# tcp        0      0 127.0.0.1:3000          0.0.0.0:*               LISTEN      15544/localhost:300
+#
+# notice the 3000 is truncated and the program name is not displayed. This is
+# conspicuously truncated at 99 columns, even though I was running it on a
+# display that was 186 columns wide at the time. I'm guessing a longer line
+# would have said "Yeah, PID 15544 is puma".
+#
+# TODO:
+# a) Figure out how to show the whole line, and/or
+# b) Sed/awk/grep the output to snag the pid and ps -auxw | grep PID for
+# it.
+
+echo "sudo netstat -ltnp | grep -E \"$1\\\b\""
+sudo netstat -ltnp | grep -E "$1\b"

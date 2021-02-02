@@ -81,10 +81,16 @@ if [ `uname -s` == "Darwin" ]; then
 else
     # Linux, most likely
     # window    2    3    4        5
-    if grep -E 'CURRENT_PROJECT=.*/Bookly' ~/.current-project; then
+    if grep -E 'CURRENT_PROJECT=.*/bookly-heroku"$' ~/.current-project; then
         NAMED_SHELLS="spec bash redis sidekiq rails psql"
-    elif grep -E 'CURRENT_PROJECT=.*/dart' ~/.current-project; then
-        NAMED_SHELLS="bash dc-spec docker dc-psql dc-shell"
+    elif grep -E 'CURRENT_PROJECT=.*/bookly-aws"$' ~/.current-project; then
+        NAMED_SHELLS="bash dc-spec dc-rails dc-psql dc-shell"
+    elif grep -E 'CURRENT_PROJECT=.*/bookly"$' ~/.current-project; then
+        NAMED_SHELLS="bash dc-spec dc-rails dc-psql dc-shell"
+    elif grep -E 'CURRENT_PROJECT=.*/rimworld' ~/.current-project; then
+        NAMED_SHELLS="bash bash rimworld"
+    elif grep -E 'CURRENT_PROJECT=.*/dart"$' ~/.current-project; then
+        NAMED_SHELLS="bash dc-spec dc-rails dc-psql dc-shell"
     else
         NAMED_SHELLS="spec bash"
     fi

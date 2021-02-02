@@ -1,6 +1,5 @@
 #!/bin/sh
-# huewarm - a bright warm white, suitable for working but without the harsh blue
-# glare of hueconcentrate. Brighter than huerelax, not as bright as hueday.
+# A very bright yet warm color (not eye-searing blue-white)
 # | color   |   hue |
 # |---------+-------|
 # | red     |     0 |
@@ -16,5 +15,5 @@
 # 11 - Office Light Fixture (South Bulb)
 
 for lamp in 4 9 10 11; do
-    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":50,"hue":13123, "transitiontime":30}' 2>/dev/null > /dev/null
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/$lamp/state" -d '{"on":true, "bri":254,"sat":20,"hue":13123, "transitiontime":30}' 2>/dev/null > /dev/null
 done

@@ -1,0 +1,4 @@
+#!/bin/sh
+# Taken from https://twitter.com/rolfje/status/1113724061090222080
+# vim +/searchword some-file.txt # Neat @climagic trick: Open a some-file.txt in vim, highlight searchword and jump to first occurrence.
+vim +/"$1" "$2"

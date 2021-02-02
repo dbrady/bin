@@ -1,0 +1,2 @@
+#!/bin/sh
+what-port-are-you-on $@

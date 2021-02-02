@@ -1,0 +1,7 @@
+#!/bin/bash
+# Epic one-liner to dump out how many commits have been added by each author.
+# Makes no attempt to dedup inexact name matches. (Dave Brady, meet and compete
+# with David Brady!) Does at least ignore email address changes. (Work and
+# personal email, let's get along!)
+echo $'git shortlog | grep -E \'^\w+\' | ruby -ne \'$_ =~ /^(.+) \((\d+)/; puts "%4s %s" % [$2, $1]\' | sort -r -n'
+git shortlog | grep -E '^\w+' | ruby -ne '$_ =~ /^(.+) \((\d+)/; puts "%4s %s" % [$2, $1]' | sort -r -n

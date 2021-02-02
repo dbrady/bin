@@ -1,0 +1,10 @@
+#!/bin/bash
+# cdp-list - list available ~/.current-project.* files
+
+# Am I really this lazy? Yes I am, and proudly so. This script lets me stop
+# having to remember where cdp stores its data.
+
+# list the files but only 1 column
+ls ~/.current-project* | while read file; do
+    echo $file
+done

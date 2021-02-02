@@ -1,0 +1,49 @@
+#!/usr/bin/env ruby
+# piano_keyboard - stupid script to display a piano keyboard as ASCII because I
+# can never remember the notes without looking.
+#
+# |C |C#|D|Eb|
+# |  |  | |  |  |  | |  |  |  | |  |  |  | |  |  |  | |  |  |  | |  |  |  | |  |
+# |C |__| |__|
+# |   |    |
+# |___|
+
+ESC = "\x1b"
+W = WHITE_KEY = "\x1b[38;5;16;48;5;231m" # black on white
+B = BLACK_KEY = "\x1b[38;5;231;48;5;16m" # white on black
+RESET = "\x1b[0m"
+OCTAVES = 3
+KEY_LENGTH = 3
+#                C    C#     D    Eb     E  F     F#     G    G#     A    Bb     B
+keytops = "#{W}|  #{B}| |#{W} #{B}| |#{W}  |  #{B}| |#{W} #{B}| |#{W} #{B}| |#{W}  "
+keybots = "#{W}|   |   |   |   |   |   |   "
+labels = "#{W}| C | D | E | F | G | A | B "
+keybotedge = "#{W}|___|___|___|___|___|___|___"
+key_heights = [
+  [ keytops, 4 ],
+  [ keybots, 1 ],
+  [ labels, 1 ],
+  [ keybots, 1 ],
+#  [ keybotedge, 1 ],
+]
+
+key_heights.each do |strip, height|
+  height.times do
+    OCTAVES.times do
+      print strip
+    end
+    puts "|#{RESET}"
+  end
+end
+
+# |  | | | |  |  | | | | | |  |  | | | |  |  | | | | | |  |
+# |  |_| |_|  |  |_| |_| |_|  |  |_| |_|  |  |_| |_| |_|  |
+# |___|___|___|___|___|___|___|___|___|___|___|___|___|___|
+#   C   D   E   F   G   A   B   C   D   E   F   G   A   B
+#
+#
+# .#.#. .#.#.#..#.#..#.#.#..#.#..#.#.#..#.#..#.#.#.
+# .#.#. .#.#.#..#.#..#.#.#..#.#..#.#.#..#.#..#.#.#.
+# ..... ...........................................
+# C D EF G A BC
+puts "#{RESET}"

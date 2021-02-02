@@ -1,0 +1,15 @@
+#!/bin/bash
+# git delete-and-return-to-master - deletes current branch and puts you back on master
+# there's probably a cleaner and/or less-cleverness-required way to do this, but
+
+# get the branch ref, e.g. refs/heads/my-current-branch
+branch=$(git symbolic-ref -q HEAD)
+
+# slice off the refs/heads/ part
+branch=${branch##refs/heads/}
+
+echo git checkout master
+git checkout master
+
+echo git branch -d $branch
+git branch -d $branch

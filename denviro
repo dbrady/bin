@@ -1,11 +1,20 @@
 #!/usr/bin/env ruby
-# denviro - dump file in Rails environment
+
+# denviro - Dump ENVIROnment - cat a file in Rails environment with
+# interpolations
+
+# Usage: denviro [<file>] - if file is omitted, assumes ./config/database.yml
 
 # TL;dr:
 # rails r 'puts ERB.new(File.read("./config/database.yml")).result(binding)'
 
 # Why: Because sometimes I open a settings.yml or config/database.yml and it's
-# so full of <%= ... %> garbage that I have no idea what's going on
+# so full of <%= ... %> garbage that I have no idea what's going on. One gig in
+# particular placed even the developer-facing side of this information behind
+# the same layers of armor and secrets managment as the production code, making
+# such a problem that writing a custom solution became necessary to prevent
+# developer revolt. (It was an in-house gem called Enviro, hence the name of
+# this script).
 
 # Part I - If you launched this script without rails runner, relaunch itself
 # under rails runner
