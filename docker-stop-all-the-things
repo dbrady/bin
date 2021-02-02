@@ -1,13 +1,25 @@
 #!/bin/bash
 
-echo docker-compose stop
-docker-compose stop
+if which docker; then
+    if which docker-compose; then
+        echo docker-compose stop
+        docker-compose stop
+    else
+        echo 'docker-compose is not installed; not stopping'
+    fi
 
-docker ps | ruby -ne 'last = $_.split.last; puts last unless last == "NAMES"' | while read container; do
-    echo docker stop $container
-    docker stop $container
-    echo stopped $container.
-done
+    docker ps | ruby -ne 'last = $_.split.last; puts last unless last == "NAMES"' | while read container; do
+        echo docker stop $container
+        docker stop $container
+        echo stopped $container.
+    done
 
-echo docker-sync stop
-docker-sync stop
+    if which docker-sync; then
+        echo docker-sync stop
+        docker-sync stop
+    else
+        echo 'docker-sync is not installed; not stopping'
+    fi
+else
+    echo 'docker is not installed; bro do you even dock?'
+fi
