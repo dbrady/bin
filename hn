@@ -1,0 +1,47 @@
+#!/bin/sh
+# hn - hue next - dim lights one level.
+# reads recent state from ~/.hue_recent, increments it, and sets next level.
+# if no ~/.hue_recent, sets to h4 (huerelax).
+# if lights are at 7, turns them off (h0).
+# if lights are at 0, does nothing.
+if [ -e ~/.hue_recent ]; then
+    case `cat ~/.hue_recent` in
+        "0")
+            echo "At 0, doing nothing"
+            ;;
+        "1")
+            echo "At 1, dimming to 2"
+            h2
+            ;;
+        "2")
+            echo "At 2, dimming to 3"
+            h3
+            ;;
+        "3")
+            echo "At 3, dimming to 4"
+            h4
+            ;;
+        "4")
+            echo "At 4, dimming to 5"
+            h5
+            ;;
+        "5")
+            echo "At 5, dimming to 6"
+            h6
+            ;;
+        "6")
+            echo "At 6, dimming to 7"
+            h7
+            ;;
+        "7")
+            echo "At 7, turning off"
+            h0 0
+            ;;
+        *)
+            echo "Could not read file, setting to h4"
+            h4
+            ;;
+    esac
+else
+    h4
+fi

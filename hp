@@ -1,0 +1,47 @@
+#!/bin/sh
+# hp - hue previous - brighen lights one level.
+# reads recent state from ~/.hue_recent, decrements it, and sets brighter level.
+# if no ~/.hue_recent, sets to h4 (huerelax).
+# if lights are at 0, turns them on (h7).
+# if lights are at 1, does nothing.
+if [ -e ~/.hue_recent ]; then
+    case `cat ~/.hue_recent` in
+        "0")
+            echo "At 0, turning lights on"
+            h7
+            ;;
+        "1")
+            echo "Already at 1, doing nothing"
+            ;;
+        "2")
+            echo "At 2, brightening to 1"
+            h1
+            ;;
+        "3")
+            echo "At 3, brightening to 2"
+            h2
+            ;;
+        "4")
+            echo "At 4, brightening to 3"
+            h3
+            ;;
+        "5")
+            echo "At 5, brightening to 4"
+            h4
+            ;;
+        "6")
+            echo "At 6, brightening to 5"
+            h5
+            ;;
+        "7")
+            echo "At 7, brightening to 6"
+            h6
+            ;;
+        *)
+            echo "Could not read file, setting to h4"
+            h4
+            ;;
+    esac
+else
+    h4
+fi

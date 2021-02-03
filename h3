@@ -1,3 +1,4 @@
 #!/bin/sh
+echo 3 > ~/.hue_recent
 echo huewarm
 huewarm
