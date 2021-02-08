@@ -1,0 +1,18 @@
+#!/bin/bash
+# git glog: make a pretty graph logging wending from one commit to another.
+#
+# Note: I like my git aliases to show me exactly how they do what they do. If
+# you don't care to echo the command like me, there is a more idiomatic way to
+# add a new command to git, and that is by editing your project or global
+# .gitconfig like so:
+#
+# [alias]
+#       log --all --pretty='format:%d %Cgreen%h%Creset %an - %s' --graph
+#
+# You can also make git edit this file for you with
+#
+# git config --global alias.glog "log --all --pretty='format:%d %Cgreen%h%Creset %an - %s' --graph"
+#
+# But I like the echo, so here's a whole darn bash script. You're welcome.
+echo "git log --all --pretty='format:%d %Cgreen%h%Creset %an - %s' --graph" $@
+git log --all --pretty='format:%d %Cgreen%h%Creset %an - %s' --graph $@
