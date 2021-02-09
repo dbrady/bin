@@ -8,7 +8,9 @@ if which docker; then
         echo 'docker-compose is not installed; not stopping'
     fi
 
-    docker ps | ruby -ne 'last = $_.split.last; puts last unless last == "NAMES"' | while read container; do
+    # List running containers, skip the header row with tail +2, and emit the
+    # last word with awk $NF, which is the container name
+    docker ps | tail -n +2 | awk '{ print $NF }' | while read container; do
         echo docker stop $container
         docker stop $container
         echo stopped $container.
