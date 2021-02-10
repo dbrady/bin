@@ -6,7 +6,9 @@
 # probably a linux equivalent
 # this version does not run in background
 if [ `uname -s` == "Darwin" ]; then
+    echo 'redis-server /usr/local/etc/redis.conf'
     redis-server /usr/local/etc/redis.conf
 else
+    echo redis-server
     redis-server
 fi
