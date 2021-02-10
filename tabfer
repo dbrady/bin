@@ -30,7 +30,7 @@
 # want to have to remember where I put them. For now, this means "hiding the
 # crimes" as well as "covering up details", but eh, sounds like a problem for
 # Future Me.
-TAB_FOLDER = File.expand_path("~/Documents/refdox/tabs")
+TAB_FOLDER = File.expand_path(File.join(File.dirname(__FILE__), "tabs"))
 song = ARGV[0]
 
 # Be helpful, even if things aren't set up right
