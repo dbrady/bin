@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # tabfer <song> - show a sheet of music/tablature.
 #
-# TL;dr looks in ~/Documents/refdox/lpp/ for <song>.txt and prints it. Boom.
+# TL;dr looks in ~/Documents/refdox/tabs/ for <song>.txt and prints it. Boom.
 #
 # To make this work you'll need my tablature files, which are in my refdox repo,
 # also available on github. Refdox should be cloned in your Documents
@@ -10,7 +10,7 @@
 #
 # So if this is just a cat program, why write it? Easy: so I don't have to
 # remember WHERE I put the tablature files! I don't want to type "cat
-# ~/Documents/refdox/lpp/stairway.txt" when I can just write "tabfer stairway"
+# ~/Documents/refdox/tabs/stairway.txt" when I can just write "tabfer stairway"
 # and boom, play some music.  you'll also need my refdox repo. Clone it in your
 # Documents folder.
 #
@@ -21,16 +21,16 @@
 # that made the rest of the file ugly, so instead I'm just going to go ahead and
 # let this program know about the important line numbers for any given song.
 #
-# TODO: KLUDGY HACK! Had to put stairway.txt into the lpp folder, even though
-# it's not a lpp song and in fact it's a uke tab, not even a guitar. I started
+# TODO: KLUDGY HACK! Had to put stairway.txt into the tabs folder, even though
+# it's not a tabs song and in fact it's a uke tab, not even a guitar. I started
 # to add UKE_FOLDER and logic to know if a tab was for guitar or uke but it got
 # messy fast. We've probably reached the point where this should be an
 # Application class instead of a bare ruby script. For now, live with
-# stairway.txt hiding in the lpp folder--like I said when I started, I don't
+# stairway.txt hiding in the tabs folder--like I said when I started, I don't
 # want to have to remember where I put them. For now, this means "hiding the
 # crimes" as well as "covering up details", but eh, sounds like a problem for
 # Future Me.
-TAB_FOLDER = File.expand_path("~/Documents/refdox/lpp")
+TAB_FOLDER = File.expand_path("~/Documents/refdox/tabs")
 song = ARGV[0]
 
 # Be helpful, even if things aren't set up right
@@ -62,7 +62,7 @@ magic_numbers = {
 }
 range = magic_numbers[song]
 
-filename = File.expand_path("~/Documents/refdox/lpp/#{song}.txt")
+filename = File.join(TAB_FOLDER, "#{song}.txt")
 if File.exists? filename
   line_number = 0
 
