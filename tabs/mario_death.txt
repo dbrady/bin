@@ -1,0 +1,10 @@
+https://tabs.ultimate-guitar.com/tab/misc-computer-games/super-mario-bros-level-complete-tabs-1445532
+
+This is just the little 5-note descending run of "you lose" when you die, that plays as you fall off the screen.
+
+Not the death trill sfx, nor the slower "game over" theme.
+
+    1 &   2 &  <--3---> |  1
+e|  8 13  . 13 13 12 10 |  8
+                ^  ^  ^
+                Staccato/Aggressive downpicking

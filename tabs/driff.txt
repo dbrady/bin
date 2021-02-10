@@ -1,0 +1,18 @@
+D Riff
+
+Just a quick riff on the D chord. Play each note equally, as slow as you can
+manage the hammer-on in bar 2. It's particularly haunting if you can get it down
+to 120-150bpm. That seems fast but that 0h2 pulloff is a bear for me
+(2021-01-27).
+
+This was a throwaway embellishment by Paul in Learn, Practice, Play, Module 3,
+Lesson 5, "Chords: Major Chord Progression". Seek to 1:52 in the demo video.
+
+ 1Dsus4 -> D      2Dsus2 -> D      3Dmaj            4
+  1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |
+E|----------------|----------------|----------------|----------------|
+B|----------------|----------------|----------------|----------------|
+G|----------------|----------------|0|--------------|----------------|
+D|------------2---|------------2---|2|--------------|----------------|
+A|--------3-------|--------3-------|3|--------------|----------------|
+E|3 p 2-----------|0 h 2-----------|2v--------------|----------------|

@@ -1,0 +1,27 @@
+G Riff
+
+Module 4, Lesson 6: D, Cadd9, G - teaching the chord progression of using Cadd9
+and playing the G with the same fretting on the bottom 2 strings. The lesson
+uses these two embellishments.
+
+Downstrums throughout the chord bars, alternate picking on embellishments in
+bars 2 and 4
+
+ 1D       Cadd9   2G
+  1 & 2 & 3 & 4 & |1 & 2 & 3 e & a 4 e & a |
+E|----------------|3-3-3-3-----------------|
+B|--------3-3-3-3-|2-2-2-2-----------------|
+G|0-0-0-0-2-2-2-2-|0-0-0-0-------------0---|
+D|3-3-3-3-0-0-0-0-|0-0-0-0---------0-------|
+A|2-2-2-2-3-3-3-3-|3-3-3-3-----0h2---------|
+E|3-3-3-3-3-3-3-3-|3-3-3-3-3---------------|
+
+ 3D       Cadd9   4G
+  1 & 2 & 3 & 4 & |1 & 2 & 3 e & a 4 e & a |
+E|----------------|3-3-3-3-----------------|
+B|--------3-3-3-3-|2-2-2-2-----------------|
+G|0-0-0-0-2-2-2-2-|0-0-0-0-2p0-----0-------|
+D|3-3-3-3-0-0-0-0-|0-0-0-0-----0-2---------|
+A|2-2-2-2-3-3-3-3-|3-3-3-3-----------------|
+E|3-3-3-3-3-3-3-3-|3-3-3-3-----------------|
+                                   ^ 1/4 note, let ring

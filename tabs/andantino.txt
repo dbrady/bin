@@ -1,0 +1,55 @@
+Blues Solo - Learn Practice Play Module 4 Lesson 1
+
+Transcribed for my own practice and use, all rights reserved to original owners
+(Paul Davids and/or https://learnpracticeplay.com)
+
+Mod 1 Lesson 1
+
+A lesson in fingerpicking. Play the E and A open strings with the side of the
+thumb (point the tip of the thumb towards the headstock, parallel to the
+strings). Pluck the G, B and E strings with the 1st and 2nd fingers. Much like
+alternate picking, try to alternate 1st and 2nd fingertips. (1-2-1 is easier
+than 2-1-2 in bar 2 as you have to hit the G string with a single fingertip. The
+index tends to be more nimble and 2-1-1 just feels weird and wrong.)
+
+Let the bass string ring for the full bar, in musical notation it is written as
+a half note (in 2/4 time so for a full measure) with the melody written as
+eighth rest then 3 eight notes.
+
+Bar 7 has a tricky time to decipher from tab. The bass line is the and third
+notes (E on D:2, E on open E) and the melody is the second and fourth notes (E
+on open e and G# on G:1). The bass is a pair of quarter notes, the melody is an
+eight rest, a quarter note on the high E, and an eighth note on the G#.
+
+Bar 8 is the resolution; the A on G:2 is a half note and the open A is a quarter
+note coming in halfway through the measure. I like to leave both to ring to a
+fermata. (As a musical exercise, the whole piece is marked to repeat 4x to the
+beat, so no fermata there.)
+
+One last note (pun intended): this melody traces the chords except for the
+passing G# in bar 7, but it's MUCH harder to play by fretting the entire
+chord... which is why Paul doesn't do it. Remember: move your left hand as
+little as possible, so yes, Virginia, you can fret JUST the strings you need as
+you play.
+
+  Am ascending...  and descending   E ascending,  and descending
+ 1Am              2                3E               4
+  1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |
+E|----------------|----------------|----------------|----------------|
+B|--------0---1---|----1---0-------|----0---1---3---|----3---1---0---|
+G|----2-----------|------------2---|----------------|----------------|
+D|----------------|----------------|----------------|----------------|
+A|0---------------|0---------------|----------------|----------------|
+E|----------------|----------------|0---------------|0---------------|
+                       ^   ^   ^
+                       1   2   1 (fingertips)
+
+  Repeat bar 1...  but chord change, hop octaves,    and resolve.
+ 5Am              6Dm              7E               8Am
+  1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |1 & 2 & 3 & 4 & |
+E|----------------|--------0---1---|----0-----------|----------------|
+B|--------0---1---|----3-----------|----------------|----------------|
+G|----2-----------|----------------|------------1---|2---------------|
+D|----------------|0---------------|2---------------|----------------|
+A|0---------------|----------------|----------------|--------0-------|
+E|----------------|----------------|--------0-------|----------------|
