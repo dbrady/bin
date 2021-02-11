@@ -52,9 +52,9 @@
 source_root_branch = 'docker-services'
 target_root_branch = 'master'
 
-source_branch = ARGV[0]
+source_branch = ARGV[0] || 'fix-invite-deinvite-reinvite-wip'
 
-if ARGV.size.zero? || ARGV[0].empty?
+if source_branch.nil? || source_branch.empty?
   puts "git graft <source_branch>"
   exit 1
 end
