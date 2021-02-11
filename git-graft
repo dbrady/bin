@@ -1,0 +1,91 @@
+#!/usr/bin/env ruby
+#
+# ABORT ABORT ABORT. This is all based on the asumption that the same patch
+# applied to two different branches will have the same sha. This is not
+# true. The OUTPUT after APPLYING the patch determines the sha. Which makes
+# sense; if any two points in any two repos hav the same sha, then both repos
+# are identical at that point.
+#
+# Need to find a different way. Perhaps run them all through git patch and
+# compare the checksums of those patches?
+#
+# Parking this in "clever but futile idea: 75xp" for now.
+
+
+
+
+# git graft - FUNKY SCRIPT, READ CAREFULLY AND USE AT OWN RISK
+#
+# TL;dr given a source root branch and a target root branch, cherry pick all the
+# commits in source that aren't already in target.
+#
+# Q. Isn't that just a merge?
+
+# A. Not if the two branches do not share a common root. Please randomly select
+# a further rationale from the following list:
+#
+# 1. Look, it's complicated.
+# 2. I was young and I needed the money.
+# 3. Mike Moore's autobiography would be titled "When Chaos Agents Attack".
+# 4. Once upon a time, we had some docker stuff in one branch that could not be
+#    deployed to production, but that same docker stuff was the only way to get
+#    tests to run on my machine.
+# 5. Same as option 4, but add "It's worse than it sounds."
+# 6. Roll twice, ignoring sixes.
+
+# What? Why?
+
+# I am working off of the docker-services branch, which lets me run tests SUPER
+# fast in native OSX, while supported by the docker backends. This ONLY works on
+# Dart and this cannot as yet (as of 2020-02-10) be deployed, so I have to tip
+# my production work off of master, not off of docker-services.
+
+# So! What we gonna do, then, is...
+
+# 1. git co deploy_branch # the branch I want the commits pulled into
+# 2. git docker-shuffle source_branch # the branch I tipped off of docker-services
+# 3. find all the commits from docker-services..<source_branch>
+# 4. find all the commits from master..<deploy_branch>
+# 5. git cherry-pick commits not already found in step 4
+
+# DEFAULTS
+source_root_branch = 'docker-services'
+target_root_branch = 'master'
+
+source_branch = ARGV[0]
+
+if ARGV.size.zero? || ARGV[0].empty?
+  puts "git graft <source_branch>"
+  exit 1
+end
+
+unless source_branch =~ %r|\A[\w\d_/-]+\z|
+  puts <<IM_AFRAID_OF_YOUR_INPUT
+WHOA, there, tiger. I use ARGV[0] in a shell command so it had BETTER be a
+branch name. Currently I'm only allowing letters, numbers, hyphens, underscores,
+and forward slashes. You can go cherry pick those commits yourself if you can't
+be bothered to rename the branch to something that won't delete your hard drive.
+IM_AFRAID_OF_YOUR_INPUT
+  exit 1
+end
+
+target_branch = `git currentbranch`.strip
+
+
+puts "Source Branch: #{source_branch}"
+puts "Target Branch: #{target_branch}"
+
+
+git_log_command = "git log #{source_root_branch}..#{source_branch}"
+commits_command = git_log_command + %Q[ | grep -E '^commit ' | awk '{ print $2 }' ]
+puts "Source Commits Command: #{commits_command}"
+
+source_commits = `#{commits_command}`.each_line.map(&:strip)
+
+puts "List of Desired Commits:"
+puts source_commits.map { |sha| "  #{sha}" }
+
+
+git_log_command = "git log #{target_root_branch}..#{target_branch}"
+commits_command = git_log_command + %Q[ | grep -E '^commit ' | awk '{ print $2 }' ]
+puts "Target Commits Command: #{commits_command}"
