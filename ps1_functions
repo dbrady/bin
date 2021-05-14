@@ -126,7 +126,7 @@ ps1_git_email()
             ;;
         "abf0f4f7072d77a68ccec42247fe1e4f") fgcolor="1;38;5;27"; bgcolor="48;5;15" ;; # kp - bold blue on white
         "745932c691e01f288d7b56625296afe8") fgcolor="1;38;5;15"; bgcolor="48;5;17" ;; # ks - bold white on blue
-
+        "fdbc33b336274f0b0e65030f7e39d435") fgcolor="1;38;5;15"; bgcolor="48;5;33" ;; # acima - bold white on light blue
         # default
         *)                                  bgcolor=41   ; fgcolor="1;37" ;; # bold white on bright red
     esac
