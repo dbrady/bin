@@ -3,8 +3,10 @@
 if [ `uname -s` == 'Darwin' ]; then
     # OSX - GOK which folder homebrew is stuffing databases this week :-/
     # pg_ctl -D /usr/local/homebrew/var/postgres stop -s -m fast
+    echo pg_ctl -D /usr/local/var/postgres stop -s -m fast
     pg_ctl -D /usr/local/var/postgres stop -s -m fast
 else
     # linux - current as of Ubuntu 16.04 LTS
+    echo pg_ctl -D /usr/local/var/postgres stop -s -m fast
     pg_ctl -D /usr/local/var/postgres stop -s -m fast
 fi
