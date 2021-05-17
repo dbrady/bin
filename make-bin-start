@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# make-app-start <startup command> - create bin/start script to start this app
+#
+# E.g.
+# make-app-start bundle exec rails s -p 3065
+# will create bin/start as follows:
+# #!/bin/bash
+# echo 'bundle exec rails s -p 3065'
+# bundle exec rails s -p 3065
+require 'fileutils'
+
+def usage
+  str =<<USAGE
+make-app-start <startup command> - create bin/start script to start this app
+
+E.g.
+make-app-start bundle exec rails s -p 3065
+will create bin/start as follows:
+#!/bin/bash
+echo 'bundle exec rails s -p 3065'
+bundle exec rails s -p 3065
+USAGE
+end
+
+startfile_path = File.expand_path("./bin/start")
+puts startfile_path
+if File.exist?(startfile_path)
+  puts "Cowardly refusing to overwrite existing startfile #{startfile_path}"
+  exit 1
+end
+
+if ARGV.include?("-h") || ARGV.include?("--help")
+  puts usage
+  exit 2
+end
+
+command = ARGV * ' '
+
+puts "Creating bin/start as '#{command}'"
+
+# On linux just doing echo command might cause a problem, if command has
+# command-line switches they might be sent to echo instead. Just tested this on
+# OSX, however, and "echo this is -s my message -n" prints "this is -s my
+# message -n" exactly as desired. Since this is a one-off for an OSX project
+# swarm, leaving as-is. YMMV; update/fix if need be.
+File.open(startfile_path, "w") do |file|
+  file.puts "#!/bin/bash"
+  file.puts "echo #{command}"
+  file.puts "#{command}"
+end
+
+FileUtils.chmod(0755, startfile_path)
+
+puts "Wrote #{startfile_path} as follows:"
+puts '-' * 80
+puts IO.readlines(startfile_path)
+puts '-' * 80
