@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# TODO: atlas-slackup <new|date> should create a new file for today or date
+
+FILE=$(ls ~/acima/dox/slackup/202*.md | tail -n 1)
+echo "Copying most recent slackup file to clipboard..."
+echo "cat $FILE | pbcopy"
+cat $FILE | pbcopy
+echo "Paste into atlas-slackup and hit Cmd-Shift-F to format the markdown."
