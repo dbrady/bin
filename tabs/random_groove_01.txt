@@ -3,8 +3,6 @@ Random Groove 01
 My first improvisation played with a looper pedal. I set up 2 looping bars of C
 -> Am in 4/4 the improvised over it in C major pentatonic in position 5.
 
-Blank Tablature - 8th Notes
-
  | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & |
    C                 Am                C                 Am
 e|-----------------|-----------------|-----------------|-----------------|

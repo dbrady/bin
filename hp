@@ -1,47 +1,39 @@
-#!/bin/sh
-# hp - hue previous - brighen lights one level.
-# reads recent state from ~/.hue_recent, decrements it, and sets brighter level.
-# if no ~/.hue_recent, sets to h4 (huerelax).
-# if lights are at 0, turns them on (h7).
-# if lights are at 1, does nothing.
-if [ -e ~/.hue_recent ]; then
-    case `cat ~/.hue_recent` in
-        "0")
-            echo "At 0, turning lights on"
-            h7
-            ;;
-        "1")
-            echo "Already at 1, doing nothing"
-            ;;
-        "2")
-            echo "At 2, brightening to 1"
-            h1
-            ;;
-        "3")
-            echo "At 3, brightening to 2"
-            h2
-            ;;
-        "4")
-            echo "At 4, brightening to 3"
-            h3
-            ;;
-        "5")
-            echo "At 5, brightening to 4"
-            h4
-            ;;
-        "6")
-            echo "At 6, brightening to 5"
-            h5
-            ;;
-        "7")
-            echo "At 7, brightening to 6"
-            h6
-            ;;
-        *)
-            echo "Could not read file, setting to h4"
-            h4
-            ;;
-    esac
+#!/usr/bin/env ruby
+# This is sad. Honestly the old bash code was almost more readable. Why do I
+# even computer
+require_relative "hl"
+
+if !recent_exists?
+   puts "No recent file exists, setting to 4..."
+   set_light_level 4
+   write_recent 4
+   exit 0
+end
+
+levels = (ARGV.first || 1).to_i
+
+old_level = load_recent
+
+new_level = if old_level == 0
+              clamp((MAX_LEVEL+1) - levels, MIN_LEVEL, MAX_LEVEL)
+            else
+              clamp(old_level - levels, MIN_LEVEL, MAX_LEVEL)
+            end
+
+# puts "levels: #{levels}"
+# puts "new_level: #{new_level}"
+# puts "old_level: #{old_level}"
+
+new_level = 1 if old_level > 0 && new_level < 1
+
+if old_level == 1
+  puts "Already at h1, doing nothing"
+elsif old_level == 0
+  puts "Turning lights on to level #{new_level}"
+  write_recent new_level
+  set_light_level new_level
 else
-    h4
-fi
+  puts "At #{old_level}, brightening to #{new_level}"
+  write_recent new_level
+  set_light_level new_level
+end
