@@ -44,3 +44,16 @@ CE CE BD#  C  C  B
 AD# isn't a pairing that makes sense to me, and it's crazy that it's the resting
 chord halfway between the outgoing chords and the return to the tonic. It could
 be an inverted D#5 power chord.
+
+Okay, THIS is an attempt to transcribe what she's playing. The time is all wrong
+but hopefully I've found the 1 beat.
+
+
+ | 1  &  2 & 3 & 4 & | 1  &  2 & 3 & 4 & | 1  &  2 & 3 & 4 & | 1 & 2 & 3 & 4 & |
+
+e|-------------------|-------------------|-------------------|-----------------|
+B|-------------------|-------------------|-------------------|-----------------|
+G|-12-12-----7-9-9---|-12-12-----7-6-----|-12-12-----7-9-9---|-9-9---9-8-------|
+D|-------------------|-------------------|-------------------|-----------------|
+A|-------------------|-------------------|-------------------|-----------------|
+E|-12-12-----7-8-8---|-12-12-----7-5-----|-12-12-----7-8-8---|-8-8---8-7-------|
