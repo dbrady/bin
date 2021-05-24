@@ -1,4 +1,4 @@
 #!/bin/sh
 echo 0 > ~/.hue_recent
 echo hueoff $*
-hueoff $*
+hueoff $* 0
