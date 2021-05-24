@@ -1,0 +1,103 @@
+Jake Lizzio's Spooky Chords And How To Use Them
+
+From his YouTube video of the same name:
+https://www.youtube.com/watch?v=-dgicW1ioP0
+
+* Minor b6
+
+Emb6
+
+022010
+------
+||||1|
+|23|||
+
+Laura Palmer's Theme from Twin Peaks is Cmb6 Cm Cmb7 Cm, which you can transpose
+to Em as 022010 022000 022030 022000
+
+* Minor Add9
+
+EmAdd9
+
+022002 or 024000
+------    ------
+||||||    ||||||
+|12||3    |1||||
+          ||||||
+          ||4|||
+
+Jake comments that the second chord shape would sound good with the high E
+fretted as a F# as well but that our hands can't do that. To which I say, yeah,
+if you're into "proper fingering" and all that. On a low-slung electric, you can
+awfulfret it by doing a "broken finger barre" where you fret the B on the A
+string normally, but lay the edge of the finger against the high E string on the
+2nd fret for the F#. It's bad technique and probably bad for the hand, but kinda
+cool to be able to make a guitar make a "wrong" sound.
+
+And he's right; it does sound cool. He proves this by playing it on a synth, but
+hey, I can do it on my guitar. Neener neener. :-)
+
+* EmAdd2
+
+This is just EmAdd9, really, but especially in the lower voicing. Jake notes
+that it sounds good in a chord progression from i - iv as, e.g. EmAdd2 - AmAdd2
+
+* Minor Major7
+
+"The Detective Chord". Not spooky so much as suspenseful. Jake did a whole video
+on MinMaj7 chords.
+
+EmMaj7
+
+022040
+------
+||||||
+|12|||
+||||||
+||||4|
+
+
+* Augmented Major 7 Chord
+
+You can play this with a 4-chord diagonal on the middle 4 strings, but with the
+bonus that if you do it in E you can add the open E on the 1st string
+
+EAugM7
+
+ | 1 2 3 4 | 1 2 3 4 | 1 2 3 4 | 1 2 3 4 |
+  EAugM7
+e|---------|-0-------|---------|-0-------|
+B|-------4-|---4-----|-------4-|---4-----|
+G|-----5---|-----5---|-----5---|-----5---|
+D|---6-----|-------6-|---6-----|-------6-|
+A|-7-------|---------|-7-------|---------|
+E|---------|---------|---------|---------|
+  Let Ring for sustained, dreamy feel
+
+* i - bv
+
+This is a chord change: minor i to minor bv. You can make any chord sound creepy
+by preceeding it with a minor chord a tritone away.
+
+Pick any chord, say Em. Travel over 6 frets to find the tritone, Bb.
+
+Now listen to how dark and evil this chord change sounds:
+
+Em - Bbm - Em
+
+It's the chord you would play when entering a castle courtyard at midnight to
+communicate "this isn't just any old spooky castle, this is actual Count
+Dracula's actual castle!" Try singing an arpeggio, e.g. E G B Bb Db F for a
+haunted, floating melody.
+
+* Any Cluster Chord
+
+A cluster chord is a chord you can't call by any other name, it's just a bunch
+of chromatic notes next to each other, like D# E F, etc:
+
+D# E F (or, in this case, D# F E):
+
+  xxx760
+6 ||||1|
+  ||||||
+  |||3||

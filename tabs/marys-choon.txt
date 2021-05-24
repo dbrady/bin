@@ -1,0 +1,46 @@
+Mary Spender's "It Feels Good To Do This Again. Wanna Jam?"
+
+https://www.youtube.com/watch?v=h4Yv0_k-A6M
+
+This is not even an attempt at a perfect transcription or tab. This is mostly
+just me trying to figure WTF Mary is even playing. It sounds like E is the
+"home"; if I play the tune ("the choon") it will resolve quite contentedly on E
+natural. But the key of E has 4 sharps, and this tune has only two (and they're
+C# and D#, not the logical FCGDAEB ordering). The choon goes
+
+G D E
+G D C#
+G D E
+E E D#
+
+Which I *think* comes out as
+
+
+3 7 1
+3 7 6
+3 7 1
+1 1 7#
+
+But E major is E F# G# A B C# D#, and our tune prominently features D natural
+and G natural. Could be E natural minor, which would be E F# G A B C D E, which
+in turn looks like the key of G which is the relative major to E
+minor. The problem is that pesky C#.
+
+E B C
+E B A
+E B C
+C C B
+
+All notes written as naturals.
+
+If we mix the Bass and Melody notes together, we get partial chord voicings:
+
+Diads      I:III suggestion
+EG BD CE   Em Bm C
+EG BD AD#  Em Bm ?
+EG BD CE   Em Bm C
+CE CE BD#  C  C  B
+
+AD# isn't a pairing that makes sense to me, and it's crazy that it's the resting
+chord halfway between the outgoing chords and the return to the tonic. It could
+be an inverted D#5 power chord.
