@@ -1,0 +1,321 @@
+#!/usr/bin/env ruby
+# fretmap - display a map of the fretboard
+#
+# TODO:
+# - [ ] This is getting big. Stop, drop, and ~~roll~~ write tests.
+
+# - [ ] Add --scale option that works like intervals but highlights specific
+# scales, including but not limited to c)hromatic, p)entatonic, b)lues, and
+# h)exatonic, etc. I don't have enough music theory yet to know if I want to/can
+# combine modes like Lydian, Dorian, etc, and exotic scales like Byzantine, or
+# if these need to be in a separate parameter like --mode or something. idk
+# yet. Right now the "user request" is "I want to see the scales I should be
+# practicing for pentatonic C scale starting at fret 5". (Which techincally has
+# its root at A, but A is the relative minor key so blah blah this could be
+# "pentatonic scale for Am". You get the idea. Moving down a level I can picture
+# some tests like "in the pentatonic C scale, B and F are not in the scale, but
+# A, C, D, E, and G are." (This might be a complicated enough thing to merit a
+# separate binary, like `scale -p C#m` or something.
+
+# - [ ] Factor out the whole scales thing. I want a separate script to draw
+# chord figures. E.g. draw-chord Emb6 should emit something like 0-2-2-0-1-0 or
+# perhaps even a pretty ascii drawing of the strings, possibly even with
+# fingerings.
+
+# - [ ] I also want to decode chords. E.g. dechord 3-x-0-0-3-3 -> G-x-D-G-D-G ->
+# G5. (This will be much harder because many chords have multiple names and/or
+# combination names, such as 2-x-0-2-3-2 -> F#-x-E-A-D-F# which could be called
+# an F#/D or a "D, first inversion"
+
+# - [ ] Figure out the real math behind scales and notes_in_scale and
+# stuff. This business of counting up half-steps to reach the string and then
+# counting up frets from there seems super budjo. Mind you, while that is the
+# stupid way to do it, computers are very good at being stupid very fast, so
+# honestly this is probably more for my own learning than anything
+# else. Completely unnecessary from a performance standpoint.
+
+# I wrote this "Figure out the real math" comment on 2020-08-11. It is now
+# 2021-03-19, and honestly it seems like counting semitones is the right way to
+# do it. A major third is 4 semitones from the root, a major fifth is 7, etc. I
+# haven't unlocked the frequency math behind 12TET yet, but I know that this
+# math has some compromises built in, otherwise higher octaves would have more
+# notes in them. For now, it does seem like counting half steps is the right
+# approach to western harmony.
+
+
+
+# - [ ] add --notes/--chord option that will highlight the given notes, or the
+# notes of a given chord. E.g. --chord=G7b13 would highlight all G, B, D, F# and
+# E notes, perhaps with the G colored as the root (unsure if --notes should just
+# be a flat list of if it should have some way of denoting color, like
+# --notes="red:G;green:B,D,F#,E" etc)
+
+require 'colorize'
+require 'byebug'
+
+require_relative 'scale'
+
+class String
+  # centre - Do a center, but favor left-padding when sides are unequal.
+  # (String#center favors right-padding.)
+  def centre(width)
+    if (width - self.size) % 2 == 0
+      center(width)
+    else
+      " " + center(width-1)
+    end
+  end
+end
+
+class FretMap
+  attr_reader :naturals_only, :notes_given, :key, :frets, :intervals, :tuning, :chord_map, :show_options
+
+  FRET_WIDTH = 3
+  FRET_JOIN = "|"
+  FRET_BLANK_JOIN = FRET_JOIN.gsub(/./, ' ')
+
+  def initialize(naturals_only, notes_given, key, frets, intervals, tuning, chord_map, show_options)
+    @naturals_only = naturals_only
+    @notes_given = notes_given
+    @key = key
+    @frets = frets
+    @intervals = intervals
+    @tuning = tuning.split(//)
+    @chord_map = chord_map
+    @show_options = show_options
+  end
+
+  def run
+    if show_options
+      print_options
+    else
+      print_header
+      print_bar
+      if intervals
+        print_intervals
+      else
+        print_strings
+      end
+      print_bar
+    end
+  end
+
+  def print_header
+    print_dots
+    print_fret_numbers
+  end
+
+  def print_bar
+    str = string_begin
+    str += 1
+             .upto(frets)
+             .to_a
+             .map { "".centre(FRET_WIDTH).gsub(/ /, '-') }
+             .join(FRET_JOIN.gsub(/./, '-'))
+    str += string_end
+    puts str
+  end
+
+  def print_strings
+    tuning.reverse.each do |string_note|
+      print_string(string_note)
+    end
+  end
+
+  def print_string(string)
+    str = string_begin(string)
+    str += 1.upto(frets).to_a.map { |fret|
+      note_for_string_at_fret(string, fret)
+        .centre(FRET_WIDTH)
+    }.join(FRET_JOIN)
+    str += string_end
+    puts str
+  end
+
+  # demo/test
+  def print_intervals
+    tuning.reverse.each do |string_note|
+      print_string_as_intervals(string_note)
+    end
+  end
+
+  def print_string_as_intervals(string)
+    str = string_begin(string)
+    str += 1.upto(frets).to_a.map { |fret|
+      note = note_for_string_at_fret(string, fret)
+               .centre(FRET_WIDTH)
+               .colorize(color_for_string_at_fret(string, fret))
+    }.join(FRET_JOIN)
+    str += string_end
+    puts str
+  end
+
+  def print_dots
+    str = string_begin
+    str += 1.upto(frets).to_a.map { |fret|
+      dot = case fret
+            when 3,5,7,9,15,17,19,21
+              " o "
+            when 12
+              "oo"
+            when 24
+              "ooo"
+            else
+              ""
+            end
+      dot.centre(FRET_WIDTH)
+    }.join(FRET_BLANK_JOIN)
+    str += string_end
+    puts str
+  end
+
+  def print_fret_numbers
+    str = string_begin
+    str += 1.upto(frets).to_a.map { |number|
+      if number > 9
+        " #{number}".centre(FRET_WIDTH)
+      else
+        number.to_s.centre(FRET_WIDTH)
+      end
+    }.join(FRET_JOIN)
+    str += string_end
+    puts str
+  end
+
+  # Returns name to be displayed for note at given fretboard position
+  # Returns empty string if note name should not be shown
+  def note_for_string_at_fret(string, fret)
+    scale = Scale::SCALE.cycle
+    # tune note up the scale until we reach string
+    note = scale.next until note == string
+    # now move it up until we reach the desired fret
+    fret.times { note = scale.next }
+    if (naturals_only && note.size > 1) || (notes_given && !notes_given.include?(note))
+      ""
+    else
+      note
+    end
+  end
+
+  def color_for_string_at_fret(string, fret)
+    scale = Scale::SCALE.cycle
+    # tune note up the scale until we reach string
+    note = scale.next until note == string
+    # now move it up until we reach the desired fret
+    fret.times { note = scale.next }
+
+    # intervals are marked as (interval) [semitones from root note]
+
+    # No idea how to solve the problem of add9, add11, since 2nd interval is
+    # generally considered out of key. Or is it?
+
+    # Note:        C     D     E  F     G     A     B
+    # Semitone:    0  1  2  3  4  5  6  7  8  9 10 11
+    # Maj Int:     1     9     3 11     5           7
+    # Interval:    1     2     3  4     5     6     7
+    # Note In Key: M  x  s  x  M  s  x  M  x  s  x  s
+
+    # Legend:
+    # M - Major triad note, feels resolved or finished, basically 1/3/5
+    # s - suspended note, feels unresolved, basically 2/4/6
+    # x - out of key, note does not fit in this key according to this simplistic program.
+
+    colors = {
+      :M => { color: :bold_white, background: :light_green },
+      :s => { color: :bold_white, background: :light_blue },
+      :x => { color: :white }
+    }
+
+    # puts
+    # puts "Counting up semitones"
+
+
+    # TODO: I probably belong in the new Scale class
+    major_intervals = %i(M  x  s  x  M  s  x  M  x  s  x  s)
+    minor_intervals = %i(M  x  s  M  x  s  x  M  x  s  x  s)
+    dimin_intervals = %i(M  x  s  M  x  s  M  x  x  s  x  s)
+    penta_intervals = %i(M  x  s  x  M  x  x  M  x  s  x  x)
+
+    base_key, intervals = if key =~ /dim$/
+                            [key.sub(/dim$/, ''), dimin_intervals]
+                          elsif key =~ /m$/
+                            [key.sub(/m$/, ''), minor_intervals]
+                          elsif key =~ /pent$/
+                            [key.sub(/pent$/, ''), penta_intervals]
+                          else
+                            [key, major_intervals]
+                          end
+
+    # Now, how many intervals is that from the root note of the key?
+
+    interval_scale = Scale::SCALE.cycle
+    # Tune interval note up to base_key
+    interval_note = interval_scale.next until interval_note == base_key
+
+    # now count semitones from root to desired note
+    # puts "    You are playing #{note} at fret #{fret} on the #{string} string."
+    # puts "    You are playing in the key of #{key}"
+    # puts "    How many semitones up from the root are you?"
+    # puts
+    semitones = 0
+    # puts "        #{semitones} semitones up from #{key} is #{interval_note}..."
+    until interval_note == note
+      semitones += 1
+      interval_note = interval_scale.next
+      # puts "        #{semitones} semitones up from #{key} is #{interval_note}..."
+    end
+    colors[intervals[semitones]]
+  end
+
+  def string_begin(string="")
+    if intervals && !string.empty?
+      color = color_for_string_at_fret(string, 0)
+      string.centre(FRET_WIDTH).centre(FRET_WIDTH).colorize(color) + FRET_JOIN * 2
+    else
+      string.centre(FRET_WIDTH) + FRET_JOIN * 2
+    end
+  end
+
+  def string_end
+    FRET_JOIN*2
+  end
+
+  def print_options
+    options = [:naturals_only, :notes_given, :key, :frets, :intervals, :tuning, :chord_map]
+    longest = options.map(&:size).max
+    format = "%#{longest}s: %s"
+    options.each do |option|
+      puts sprintf(format, option, send(option).inspect)
+    end
+  end
+end
+
+if __FILE__==$0
+  require 'optimist'
+  opts = Optimist.options do
+    opt :naturals_only, "Show Natural Notes Only", default: false
+    opt :notes_given, "Show only these notes (csv)", default: ""
+    opt :key, "key (required for intervals and chord-map)", type: :string, default: nil
+    opt :frets, "Number of frets", type: :integer, default: 24 # because my guitar shreds by default (/>.>)/ ~woo~
+    opt :intervals, "Colorize major triad intervals in green and sustaining (7/9/11) intervals in blue", default: false
+    opt :show_options, "Show Options (debug mode and exit)", type: :boolean, short: :o, default: false
+    opt :tuning, "Tuning", type: :string, default: "EADGBE"
+    opt :chord_map, "Show I-IV-V-vi Chord Map", short: :m, default: false # Still in the works. Need to refactor this mess a bit. Honestly wouldn't mind if this were a string arg, like --map=I,IV,vi,viio etc
+  end
+  Optimist.die "Chord maps are not yet implemented, sorry." if opts[:chord_map]
+  Optimist.die "You must supply a key to display chord intervals" if opts[:intervals] && !opts[:key]
+  Optimist.die "You must supply a root key to display chord maps" if opts[:chord_map] && !opts[:key]
+  Optimist.die "You must supply a valid key (\"#{opts[:key]}\" must be one of #{Scale.valid_scales})" if opts[:key] && !Scale.valid?(opts[:key])
+
+
+  FretMap.new(
+    opts[:naturals_only],
+    opts[:notes_given],
+    opts[:key],
+    opts[:frets],
+    opts[:intervals],
+    opts[:tuning],
+    opts[:chord_map],
+    opts[:show_options]
+  ).run
+end
