@@ -1,0 +1,21 @@
+#!/bin/bash
+# configure-git-global-prefs <email> - configures ~/.gitconfig
+if [ "$1" == "" ]; then
+    echo "configure-git-global-prefs <email>"
+    exit 1
+fi
+
+echo git config --global user.name "David Brady"
+git config --global user.name "David Brady"
+
+echo git config --global user.email "$1"
+git config --global user.email "$1"
+
+echo git config --global pull.rebase true
+git config --global pull.rebase true
+
+echo git config --global fetch.prune true
+git config --global fetch.prune true
+
+echo git config --global diff.colorMoved zebra
+git config --global diff.colorMoved zebra
