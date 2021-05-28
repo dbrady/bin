@@ -43,40 +43,88 @@ fi
 # * Changes to tmux and tmate. This has happened exactly once, when tmux
 #   upgraded to 2.0 and had breaking changes.
 
-$TCMD -S /tmp/$SESSION new-session -s $SESSION -n emacs -d
+if [ "$SESSION" == "work" ]; then
+    $TCMD -S /tmp/$SESSION new-session -s $SESSION -n emacs -d
+    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 C-w
+    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 'emacs' C-m
+else
+    $TCMD -S /tmp/$SESSION new-session -s $SESSION -d
+fi
 
 if [ `uname -s` == "Darwin" ]; then
-    # window    2    3    4       5
-    for name in bash dshell dserver bash; do
-        $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
-    done
+    if [ "$SESSION" == "work" ]; then
+        # window    2    3    4       5  6   7
+        for name in bash spec console mp mpq bash; do
+            $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
+        done
+    elif [ "$SESSION" == "services" ]; then
+        # window    2   3   4   5  6  7  8  9   10  11
+        for name in ams bas cra gc np uw cc bms cls kipper; do
+            $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
+        done
 
-    # get this party started
-    # Clear the crap out of window 1, I mean, what even?
-    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 C-w
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:2 'cd ~/acima/devel/application_management_system' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:2 'bundle exec rails s -p 3030' C-m
 
-    $TCMD -S /tmp/$SESSION send-keys -t $SESSION:1 'emacs' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'cd ~/acima/devel/bank_account_service' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'bundle exec rails s -p 3065' C-m
 
-    # leave window 2 (bash) alone
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'cd ~/acima/devel/cra_products_emulator' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'bundle exec rackup' C-m
 
-    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'cd ~/cmm/vagrant/code' C-m
-    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'vagrant ssh' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'cd ~/acima/devel/global_customer' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'bundle exec rails s -p 3008' C-m
 
-    # Start vagrant. Because I'm doing this in two windows at once, I often get
-    # errors saying that the VM is locked. Which window barfs is nondeterministic,
-    # so tack on this messy check/retry/giveup bit to all windows with the temerity
-    # to start vagrant.
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:6 'cd ~/acima/devel/notary_public' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:6 'bundle exec rails s -p 3333' C-m
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:7 'cd ~/acima/devel/underwriting' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:7 'bundle exec rails s -p 3006' C-m
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:8 'cd ~/acima/devel/credit_card_service' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:8 'bundle exec rails s -p 3015' C-m
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'cd ~/acima/devel/benefits_management_service' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'bundle exec rails s -p 3031' C-m
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:10 'cd ~/acima/devel/cash_ledger_service' C-m
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:10 'bundle exec rails s -p 3075' C-m
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:11 'cd ~/acima/devel/kipper' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:11 'bundle exec rails s -p 3002' C-m
+
+    elif [ "$SESSION" == "queues" ]; then
+        # window    2    3
+        for name in ccq bmq; do
+            $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
+        done
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:2 'cd ~/acima/devel/credit_card_service' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:2 'bundle exec sidekiq' C-m
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'cd ~/acima/devel/benefits_management_service' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'bundle exec sidekiq' C-m
+    fi
+        # leave window 2 (bash) alone
+
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'cd ~/cmm/vagrant/code' C-m
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'vagrant ssh' C-m
+
+        # Start vagrant. Because I'm doing this in two windows at once, I often get
+        # errors saying that the VM is locked. Which window barfs is nondeterministic,
+        # so tack on this messy check/retry/giveup bit to all windows with the temerity
+        # to start vagrant.
     # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'cd ~/cmm/vagrant/code' C-m
-    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
-    # Start vagrant. Because I'm doing this in two windows at once, I often get
-    # errors saying that the VM is locked. Which window barfs is nondeterministic,
-    # so tack on this messy check/retry/giveup bit to all windows with the temerity
-    # to start vagrant.
-    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'cd ~/cmm/vagrant/code' C-m
-    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
+        # Start vagrant. Because I'm doing this in two windows at once, I often get
+        # errors saying that the VM is locked. Which window barfs is nondeterministic,
+        # so tack on this messy check/retry/giveup bit to all windows with the temerity
+        # to start vagrant.
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'cd ~/cmm/vagrant/code' C-m
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'vagrant ssh || (echo VAGRANT SSH FAILED, RETRYING IN 5s...; sleep 5; vagrant ssh || echo VAGRANT SSH FAILED AGAIN, GIVING UP)' C-m
 
-    # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 '' C-m
+        # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 '' C-m
 
 else
     # Linux, most likely
