@@ -1,7 +1,11 @@
 #!/usr/bin/env ruby
 # sayfortune - run *nix "fortune" and emit it in a ascii text speech bubble
 
-fortune = `fortune`
+fortune = if system('which fortune 2>&1 > /dev/null')
+            `fortune`
+          else
+            "Time to install fortune!"
+          end
 
 # need a better/true tabify here. The jerks who wrote the fortunes actually USE
 # tabs correctly, e.g. "Q:\tWhat has\n\tsix legs?\nA:\tA duck." All three lines
