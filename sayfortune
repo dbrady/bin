@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+# sayfortune - run *nix "fortune" and emit it in a ascii text speech bubble
+
+fortune = `fortune`
+
+# need a better/true tabify here. The jerks who wrote the fortunes actually USE
+# tabs correctly, e.g. "Q:\tWhat has\n\tsix legs?\nA:\tA duck." All three lines
+# should have their post-tag text starting at column 8. We don't need "true"
+# tabs, just something to hadle text in column 0 followed by tabs.
+#
+# detect tabs
+# find out how much text is before the tab
+# expand the tabs with " " * (tabs * 8 - leading_text.length)
+#
+fortune = fortune.gsub(/\t/, "        ")
+
+# puts "Fortune:"
+# puts "-" * 80
+# puts fortune
+
+longest_line = fortune.each_line.map {|line| line.rstrip.length }.max
+# puts "-" * longest_line
+
+# puts "longest_line: #{longest_line}"
+
+# puts "
+#   ____________________________________________________________________________
+#  /                                                                            \
+# | The camel died quite suddenly on the second day, and Selena fretted          |
+# | sullenly and, buffing her already impeccable nails -- not for the first      |
+# | time since the journey begain -- pondered snidely if this would dissolve     |
+# | into a vignette of minor inconveniences like all the other holidays spent    |
+# | with Basil.                                                                  |
+# |                 -- Winning sentence, 1983 Bulwer-Lytton bad fiction contest. |
+#  \______________________________________  ____________________________________/
+#                                         |/
+# "
+
+span = longest_line
+
+puts "  " + "_" * span
+puts " /" + " " * span + "\\"
+
+format = "| %-#{span}s |"
+
+fortune.each_line do |line|
+  puts sprintf(format, line.rstrip)
+end
+
+half_span = (span/2) - 2
+puts " \\" + "_" * half_span + "  " + "_" * ((span-half_span)-2) + "/"
+puts " " * (half_span+1) + " |/"
