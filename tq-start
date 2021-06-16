@@ -11,4 +11,4 @@
 # ps auwx | grep [t]mux && echo "Tmux is already running, sorry--shutting down." && exit 1
 # ps auwx | grep [t]mate && echo "Tmate is already running, sorry--shutting down." && exit 1
 
-TCMD=tmux tshare-start $*
+TCMD=tmux tshare-start queues
