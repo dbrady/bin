@@ -1,0 +1,8 @@
+#!/bin/sh
+echo This will migrate your local development and test databases.
+
+echo bundle exec rails db:migrate
+bundle exec rails db:migrate
+
+echo RAILS_ENV=test bundle exec rails db:migrate
+RAILS_ENV=test bundle exec rails db:migrate
