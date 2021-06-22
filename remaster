@@ -1,0 +1,65 @@
+#!/bin/bash
+# remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
+
+# If you are not on master, this will stash, go to master, pull and merge, rebundle, remigrate, stash apply, return to your branch and rebase.
+
+# If you ARE on master, this will pull and merge, rebundle, and remigrate.
+
+# If you are on master, this will
+
+# TODO: allow reset or stash option to git reset --hard beforehand to wipe
+# and abandon local changes, or to git stash changes (and potentially git stash
+# apply them afterwards)
+
+# TODO: have a way to say either "stay on master" or "come back here and rebase
+# master" afterwards
+
+BRANCH=`git branch | grep '*' | awk '{print $2}'`
+git isclean
+ISCLEAN=$?
+
+if [ "$ISCLEAN" == "0" ]; then
+    echo "Branch is clean, NOT stashing..."
+else
+    echo "Branch is dirty, stashing changes..."
+    echo "git stash"
+    git stash
+fi
+
+
+if [ "master" == "$BRANCH" ]; then
+    echo "You are on master, staying put..."
+else
+    echo "You are NOT on master, hopping to master..."
+    echo "go master"
+    go master
+fi
+
+echo git pull
+git pull
+
+echo bundle install
+bundle install
+
+echo remigrate
+remigrate
+
+if [ "master" == "$BRANCH" ]; then
+    echo "You were on master, staying put..."
+else
+    echo "You were on $BRANCH, hopping back..."
+    echo "go $BRANCH"
+    go $BRANCH
+
+    echo "Rebasing master into branch"
+    echo git rebase master
+    git rebase master
+fi
+
+if [ "$ISCLEAN" == "0" ]; then
+    echo "Branch was clean, no stash apply..."
+else
+    echo "Branch was dirty, reapplying stashed changes..."
+    echo "git stash apply"
+    git stash apply
+fi
