@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# git-isclean - programmatically return 0 (success) if there are NO changes present in the git index/working tree
+# See https://stackoverflow.com/questions/3878624/how-do-i-programmatically-determine-if-there-are-uncommitted-changes
+
+# Usage
+# git isclean
+
+# First update the index. If there are files that have been touched but whose
+# contents are the same as the index, diff-index will incorrectly report that
+# changes are present unless the index is updated.
+git update-index -q --refresh
+
+# diff-index returns 0 (success) if there are no changes.
+git diff-index --quiet HEAD --
