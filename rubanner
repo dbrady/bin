@@ -103,7 +103,13 @@ class Rubanner
     args.empty? ? ['bold', 'on_blue'] : args
   end
 
+  def ensure_figlet_installed!
+    raise NotImplementedError.new("figlet is not supported on this system -- install it maybe") unless system("which figlet > /dev/null")
+  end
+
   def run
+    ensure_figlet_installed!
+
     # render message and calculate padding
     screen_width.inspect
 
