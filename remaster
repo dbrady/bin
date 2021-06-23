@@ -13,6 +13,27 @@
 
 # TODO: have a way to say either "stay on master" or "come back here and rebase
 # master" afterwards
+QUICK="false"
+
+while getopts "hq" opt; do
+    case ${opt} in
+        h )
+            echo "remaster - pull down and rebase onto latest master"
+            echo
+            echo "Usage:"
+            echo "    remaster [-h] [-q]"
+            echo
+            echo "-h    Show this help message"
+            echo
+            echo "-q    Quick mode - do not rebundle gems or remigrate the database"
+            exit 1
+            ;;
+
+        q )
+            QUICK="true"
+            ;;
+    esac
+done
 
 BRANCH=`git branch | grep '*' | awk '{print $2}'`
 git isclean
@@ -38,11 +59,16 @@ fi
 echo git pull
 git pull
 
-echo bundle install
-bundle install
+if [ $QUICK == "false" ]; then
+    echo bundle install
+    bundle install
 
-echo remigrate
-remigrate
+    echo remigrate
+    remigrate
+else
+    echo "Quick mode - skipping bundle install"
+    echo "Quick mode - skipping remigrate"
+fi
 
 if [ "master" == "$BRANCH" ]; then
     echo "You were on master, staying put..."
