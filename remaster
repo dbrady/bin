@@ -1,5 +1,27 @@
 #!/bin/bash
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
+#
+# 1. STASH     git stash
+# 2. GO            go master
+# 3. PULL              git pull
+# 4. BUNDLE            bundle install
+# 5. MIGRATE           rails db:migrate
+# 6. RETURN        go -
+# 7. REBASE    git rebase master
+# 8. APPLY     git stash apply
+
+# TODO:
+# 1. Port this to ruby. The options are just too insane.
+# 2. add -p, --pretend option to show the remastering plan/commands
+# 3. add -m, --no-migration option to skip db:migrate
+# 4. add -r, --no-rebase to skip rebasing master into this branch
+# 5. add -b, --no-bundle to skip running bundle install
+# 6. add -d, --done option to return to master and stay there. Abandon (delete?) the current branch.
+
+# 7. Know which repos have a master branch by another name (main, develop,
+# etc). Unsure if the community has standardized on non-master names yet, but if
+# worse comes to worst I could add a .rc file that remembers the main branch
+# name for a repo or folder. Could also add -n <name_of_main_branch> option.
 
 # If you are not on master, this will stash, go to master, pull and merge, rebundle, remigrate, stash apply, return to your branch and rebase.
 
@@ -14,6 +36,7 @@
 # TODO: have a way to say either "stay on master" or "come back here and rebase
 # master" afterwards
 QUICK="false"
+DONE="false" # if true, do not return to story branch
 
 while getopts "hq" opt; do
     case ${opt} in
@@ -21,16 +44,19 @@ while getopts "hq" opt; do
             echo "remaster - pull down and rebase onto latest master"
             echo
             echo "Usage:"
-            echo "    remaster [-h] [-q]"
+            echo "    remaster [options]"
             echo
             echo "-h    Show this help message"
-            echo
             echo "-q    Quick mode - do not rebundle gems or remigrate the database"
+            echo "-d    Done mode - done with this branch, go back to master and stay there"
             exit 1
             ;;
 
         q )
             QUICK="true"
+            ;;
+        d )
+            DONE="true"
             ;;
     esac
 done
@@ -39,6 +65,7 @@ BRANCH=`git branch | grep '*' | awk '{print $2}'`
 git isclean
 ISCLEAN=$?
 
+# 1. STASH
 if [ "$ISCLEAN" == "0" ]; then
     echo "Branch is clean, NOT stashing..."
 else
@@ -47,22 +74,25 @@ else
     git stash
 fi
 
-
 if [ "master" == "$BRANCH" ]; then
     echo "You are on master, staying put..."
 else
+    # 2. GO
     echo "You are NOT on master, hopping to master..."
     echo "go master"
     go master
 fi
 
+# 3. PULL
 echo git pull
 git pull
 
 if [ $QUICK == "false" ]; then
+    # 4. BUNDLE
     echo bundle install
     bundle install
 
+    # 5. MIGRATE
     echo remigrate
     remigrate
 else
@@ -73,15 +103,23 @@ fi
 if [ "master" == "$BRANCH" ]; then
     echo "You were on master, staying put..."
 else
-    echo "You were on $BRANCH, hopping back..."
-    echo "go $BRANCH"
-    go $BRANCH
+    if [ $DONE == "false" ]; then
+        # 6. RETURN
+        echo "You were on $BRANCH, hopping back..."
+        echo "go $BRANCH"
+        go $BRANCH
 
-    echo "Rebasing master into branch"
-    echo git rebase master
-    git rebase master
+        # 7. REBASE
+        echo "Rebasing master into branch"
+        echo git rebase master
+        git rebase master
+    else
+        # 6. NO RETURN; REBASE ALREADY DONE
+        echo "Done with that branch; staying on master"
+    fi
 fi
 
+# 8. APPLY
 if [ "$ISCLEAN" == "0" ]; then
     echo "Branch was clean, no stash apply..."
 else
