@@ -22,3 +22,8 @@
 
 echo "sudo netstat -ltnp | grep -E \"$1\\\b\""
 sudo netstat -ltnp | grep -E "$1\b"
+
+# This works as of 2021-07-12 on OSX Catalina (for port 3000)
+# lsof -i tcp:3000 | awk 'NR!=1 {print $2}' | sort | uniq | while read pid; do ps auwx | grep -E "\\b$pid\\b"; done
+#
+# have to use sort | uniq because lsof -i emits each port twice
