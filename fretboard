@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# fretboard - draw the guitar fretboard more or less to scale
+#
+# Plan: make two versions: one for tty (like my piano_keyboard script) and
+# another on for PDF (like fretjam.com scale drawings for practicing writing out
+# diagrams and learning note positions)
+
+# The plan:
+
+# - assume a scale of the TTY width of the monitor minus one (for the closing |)
+# - 12.times do
+#     draw | at the current x position
+#     calculate 5% of the remaining scale length
+#     subtract 1 because you spent 1 drawing the |
+#     print that many spaces, with the centered label
+#        (centered label is only visible if its a natural note)
+
+require 'io/console'
+_,SCREEN_WIDTH = $stdout.winsize
+
+FRETBOARD_WIDTH = SCREEN_WIDTH - 2
+fretboard_size = FRETBOARD_WIDTH
+col = 0
+
+dots =
+'.  3 5 7 9  C',
+
+
+index = 0
+notes_by_string = [
+  [" ", "", "", "3", "", "5", "", "7", "", "9", "", "", "12", "", "", "15", "", "17", "", "19", "", "21", "", "", "24"],
+  'eF G A BC D E',
+  'BC D EF G A B',
+  'G A BC D EF G',
+  'D EF G A BC D',
+  'A BC D EF G A',
+  'EF G A BC D E',
+].each.with_object({}) do |note_names, hash|
+  notes = index.zero? ? note_names : note_names.split(//).map(&:strip)
+  string = notes.shift
+  hash[string] = index.zero? ? notes : notes * 2
+  index += 1
+end
+
+first_string = true
+notes_by_string.each do |string, notes|
+  print string
+  fretboard_size = FRETBOARD_WIDTH
+  notes.each do |note|
+    print first_string ? " " : "|"
+    fret_size = (0.05 * fretboard_size).round - 1
+    print note.center(fret_size) if fret_size.nonzero?
+    fretboard_size -= (fret_size + 1)
+  end
+  puts first_string ? " " : "|"
+  first_string = false
+end
