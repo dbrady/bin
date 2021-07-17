@@ -18,7 +18,7 @@
 require 'io/console'
 _,SCREEN_WIDTH = $stdout.winsize
 
-FRETBOARD_WIDTH = SCREEN_WIDTH - 2
+FRETBOARD_WIDTH = (SCREEN_WIDTH * 1.38).to_i
 fretboard_size = FRETBOARD_WIDTH
 col = 0
 
