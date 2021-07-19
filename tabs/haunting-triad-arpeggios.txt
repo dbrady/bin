@@ -1,0 +1,32 @@
+Haunting Triad Arpeggios
+
+This is my own discovery (neat!) sometime around July 10-14, 2021. I'm learning
+the major and minor triads on the top 3 strings, which are kinda hard to draw in
+ascii art. The main discovery I made is that if you play a D-shape arpeggio
+(root on the B string) and switch to the E-shape arpeggio (root on the E string)
+it makes for a haunting tension when played as a slow/medium arpeggio.
+
+The tension comes from unavoidable chromatic movement; the root of the first
+chord moves down half a step and becomes the 5th of the second chord, while the
+third moves up half a step and becomes the 3rd of the second chord. It feels
+similar to playing in natural minor, but swapping in a raised 7th to add tension
+right before the resolve. This means a key change from natural minor to harmonic
+minor takes place. I don't know my chord/scale theory well enough yet to
+identify the key change here. All I know is that there's nowhere in the diatonic
+major scale where you can move up or down a third and stay Major->Major or
+Minor->Minor.
+
+I'm not sure if moving to the Dmin, Dmaj is the right place to go next, but it
+sorta fits, and I like the pedal on the A note on the E string.
+
+Anyway, blah blah blah, music theory; here's the arpeggio:
+
+
+ | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & |
+  Fmaj               Amaj              Dmin              Dmaj
+e|-----5-------5---|-----5-------5---|-----5-------5---|-----5-------5---|
+B|---6---6---6---6-|---5---5---5---5-|---6---6---6---6-|---7---7---7---7-|
+G|-5-------5-------|-6-------6-------|-7-------7-------|-7-------7-------|
+D|-----------------|-----------------|-----------------|-----------------|
+A|-----------------|-----------------|-----------------|-----------------|
+E|-----------------|-----------------|-----------------|-----------------|
