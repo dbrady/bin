@@ -321,7 +321,8 @@ if __FILE__==$0
   Optimist.die "Chord maps are not yet implemented, sorry." if opts[:chord_map]
   Optimist.die "You must supply a key to display chord intervals" if opts[:intervals] && !opts[:key]
   Optimist.die "You must supply a root key to display chord maps" if opts[:chord_map] && !opts[:key]
-  Optimist.die "You must supply a valid key (\"#{opts[:key]}\" must be one of #{Scale.valid_scales})" if opts[:key] && !Scale.valid_key?(opts[:key])
+  # TODO: FIXME! key != scale! Gm is a valid KEY, but it's not a valid SCALE. "Minor" is a valid Scale, and so on.
+  Optimist.die "You must supply a valid key (\"#{opts[:key]}\" must be one of #{Scale.valid_scales})" if opts[:key] && !Scale.valid_scales.include?(opts[:key])
 
 
   FretMap.new(

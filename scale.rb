@@ -34,6 +34,8 @@ class Scale
     end
   end
 
+  # FIXME: These are the notes for the diatonic major / ionian mode
+  # only. There's a BUNCH of keys and scales out there, Cotton!
   NOTES_FOR_KEYS = {
       'Cb' => 'Cb Db Eb Fb Gb Ab Bb', # 7 flats
       'C' => 'C D E F G A B', # All natural, baby
@@ -64,7 +66,7 @@ class Scale
   end
 
   def self.valid_key?(key)
-    NOTES_FOR_KEYS.keys.include?(key)
+    NOTE_NAMES.include?(key)
   end
 
   def self.valid_scales
