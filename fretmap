@@ -76,13 +76,17 @@ class FretMap
 
   def initialize(naturals_only, notes_given, key, frets, intervals, tuning, chord_map, show_options)
     @naturals_only = naturals_only
-    @notes_given = notes_given
+    @notes_given = notes_given.split(/\s*,\s*/)
     @key = key
     @frets = frets
     @intervals = intervals
     @tuning = tuning.split(//)
     @chord_map = chord_map
     @show_options = show_options
+
+    if @notes_given.empty? && !@key.to_s.empty?
+      @notes_given = Scale.notes_for_key(@key)
+    end
   end
 
   def run
@@ -182,14 +186,26 @@ class FretMap
     puts str
   end
 
+  def key_has_sharps?
+    key.to_s.include?("#") || "B E A D G".include?(key)
+  end
+
+  def scale
+    @scale ||= if key_has_sharps?
+                 Scale.new(:sharp)
+               else
+                 Scale.new(:flat)
+               end
+  end
+
   # Returns name to be displayed for note at given fretboard position
   # Returns empty string if note name should not be shown
   def note_for_string_at_fret(string, fret)
-    scale = Scale::SCALE.cycle
+    notes = scale.notes.cycle
     # tune note up the scale until we reach string
-    note = scale.next until note == string
+    note = notes.next until note == string
     # now move it up until we reach the desired fret
-    fret.times { note = scale.next }
+    fret.times { note = notes.next }
     if (naturals_only && note.size > 1) || (notes_given && !notes_given.include?(note))
       ""
     else
@@ -198,11 +214,11 @@ class FretMap
   end
 
   def color_for_string_at_fret(string, fret)
-    scale = Scale::SCALE.cycle
+    notes = scale.notes.cycle
     # tune note up the scale until we reach string
-    note = scale.next until note == string
+    note = notes.next until note == string
     # now move it up until we reach the desired fret
-    fret.times { note = scale.next }
+    fret.times { note = notes.next }
 
     # intervals are marked as (interval) [semitones from root note]
 
@@ -305,7 +321,7 @@ if __FILE__==$0
   Optimist.die "Chord maps are not yet implemented, sorry." if opts[:chord_map]
   Optimist.die "You must supply a key to display chord intervals" if opts[:intervals] && !opts[:key]
   Optimist.die "You must supply a root key to display chord maps" if opts[:chord_map] && !opts[:key]
-  Optimist.die "You must supply a valid key (\"#{opts[:key]}\" must be one of #{Scale.valid_scales})" if opts[:key] && !Scale.valid?(opts[:key])
+  Optimist.die "You must supply a valid key (\"#{opts[:key]}\" must be one of #{Scale.valid_scales})" if opts[:key] && !Scale.valid_key?(opts[:key])
 
 
   FretMap.new(
