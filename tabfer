@@ -36,8 +36,12 @@ song = ARGV[0]
 
 # Be helpful, even if things aren't set up right
 if song.nil? || song == "--help"
+  ESC = 27.chr
+  ON = "#{ESC}[1;33m"
+  OFF = "#{ESC}[0m"
   puts "tabfer (<song>|--list|--help)"
-  puts "Songs are .txt files (omit the extension) in #{TAB_FOLDER}"
+  puts "Songs are .txt files (omit the extension) in #{ON}#{TAB_FOLDER}#{OFF}"
+  puts "<song> can be an exact name (minus the .txt) or a fuzzy string, e.g. tabfer codacap -> #{ON}co#{OFF}ffin-#{ON}da#{OFF}nce-#{ON}ca#{OFF}po.txt"
   exit 0 unless song.nil? # if song.nil? assume --list
 end
 
