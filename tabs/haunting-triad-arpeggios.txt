@@ -19,6 +19,9 @@ Minor->Minor.
 I'm not sure if moving to the Dmin, Dmaj is the right place to go next, but it
 sorta fits, and I like the pedal on the A note on the E string.
 
+TODO: Take a closer look at the chords to Radiohead's Creep. The opening 2
+chords have this same haunting dissonant feel to them.
+
 Anyway, blah blah blah, music theory; here's the arpeggio:
 
 
