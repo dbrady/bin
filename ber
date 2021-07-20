@@ -1,0 +1,3 @@
+#!/bin/sh
+echo bundle exec rspec $@
+bundle exec rspec $@
