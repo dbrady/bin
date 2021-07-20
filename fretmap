@@ -187,7 +187,7 @@ class FretMap
   end
 
   def key_has_sharps?
-    key.to_s.include?("#") || "B E A D G".include?(key)
+    key.to_s.include?("#") || "B E A D G".include?(key.to_s)
   end
 
   def scale
