@@ -1,0 +1,25 @@
+Not a tab per se but rather Ian Stich's tips to play 12-bar blues melodically.
+
+"The difference between melody and noodling is constraint and commitment."
+
+12-bar blues has rigorously defined rules for what chords can be played. The
+first four bars are in the I chord, and you play the minor pentatonic.
+
+| Bar | Chord | Play This         | Notes                                                                                  |
+|-----+-------+-------------------+----------------------------------------------------------------------------------------|
+|   1 | I     | Melody 1          | Can be anything. Come up with a 1-bar melodic phrase.                                  |
+|   2 | I     | Variation on 1    | Similar to the melody, but with a variation.                                           |
+|   3 | I     | Melody 1          | Commitment--play the melody from bar 1.                                                |
+|   4 | I     | Anything You Want |                                                                                        |
+|   5 | IV    | Melody 2          | Commitment. Make a new melody for the IV chord.                                        |
+|   6 | IV    | Variation on 2    | Play something similar to the melody from bar 5.                                       |
+|   7 | I     | Anything You Want | This is the moment where you shine. Total freedom!                                     |
+|   8 | I     | Anything You Want | Two bar phrase.                                                                        |
+|   9 | V     | Melody 3          | Start a new melody in a 5, play in the V minor pentatonic. Maybe try mixolydian scale. |
+|  10 | IV    | Shadow Melody 3   | Repeat the melody from bar 9, but in the IV.                                           |
+|  11 | I     | Turnaround/Finale | Finishing? Play anything but wind down to hit the 5 on the V chord in bar 12...        |
+|  12 | V     | Turnaround/Finale | ...or start your turnaround in bar 11 and ride it through here and loop back.          |
+|-----+-------+-------------------+----------------------------------------------------------------------------------------|
+
+After the turnaround, you do not have to reuse the previous melodies. Pick a new
+melody in bar 1, vary it in bar 2, repeat it in bar 3, and so on.
