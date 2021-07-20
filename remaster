@@ -79,8 +79,9 @@ if [ "master" == "$BRANCH" ]; then
 else
     # 2. GO
     echo "You are NOT on master, hopping to master..."
-    echo "go master"
-    go master
+    # this uses ~/bin/git-main to find the main/develop/master branch
+    echo "git main"
+    git main
 fi
 
 # 3. PULL
