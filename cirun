@@ -21,7 +21,8 @@ else
 fi
 rubanner --app=ci "RUNNING" bold white on_blue
 if [ -e ~/onsite.touch ]; then
-    echo "You're onsite! Skipping HUE lights."
+    # echo "You're onsite! Skipping HUE lights."
+    exit 0
 else
     for light in 4 9; do
         curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
