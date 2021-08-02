@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+# git createpr - open a browser on github to create a PR for this branch
+def osx?
+  `uname -s`.strip == "Darwin"
+end
+
+# TODO: get the real PR url for this
+ROOT_URL = 'https://github.com/acima-credit/merchant_portal/pull/new/'
+BRANCH = `git currentbranch`
+
+puts "Create a new PR by opening this url in a browsner:"
+url = File.join(ROOT_URL, BRANCH)
+puts url
+
+# TODO: Open the branch for me (perhaps after a `puts 'hit Ctrl-C to abort, otherwise hit enter'; gets`
+if osx?
+  print "Hit Ctrl-C to abort, otherwise hit enter to open this in a browser: "
+  gets
+  cmd = "open #{url}"
+  puts cmd
+  system cmd
+else
+  # next time I'm on linux, test this out with e.g., xdg-open
+end
