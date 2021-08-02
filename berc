@@ -1,0 +1,3 @@
+#!/bin/sh
+echo bundle exec rails console
+bundle exec rails console

@@ -1,0 +1,3 @@
+#!/bin/sh
+echo bundle exec rspec -f d --order=defined $@
+bundle exec rspec -f d --order=defined $@

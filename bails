@@ -1,0 +1,3 @@
+#!/bin/sh
+echo time bundle exec rails
+bundle exec rails server
