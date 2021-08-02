@@ -58,6 +58,12 @@ if [ `uname -s` == "Darwin" ]; then
             $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
         done
 
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'cd ~/acima/devel/merchant_portal' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:5 'bundle exec rails s -p 3000' # no return, wait for it
+
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:6 'cd ~/acima/devel/merchant_portal' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:6 'bundle exec sidekiq' # no return, wait for it
+
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:7 'cd ~/acima/devel/notary_public' C-m
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:7 'bundle exec rails s -p 3333' C-m
 
