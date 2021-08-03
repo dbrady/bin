@@ -1,0 +1,8 @@
+#!/bin/bash
+# zob - (zork b)ranch - use selecta to pick a branch to delete
+# CLI workaround to a GUI-fluent team who use long, semantic branch names
+echo -e '\033[1;37;41mSelect a branch to DELETE\033[0m or \033[1;37;42mhit CTRL-C to abort\033[0m:'
+branchname=$(git branch | ruby -ne 'puts $_.sub(/^\*/,"").strip' | grep -vE '^\s*(master|main|develop)$' | selecta)
+
+echo "git branch -D $branchname"
+git branch -D $branchname
