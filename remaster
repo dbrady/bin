@@ -93,6 +93,12 @@ if [ $QUICK == "false" ]; then
     echo bundle install
     bundle install
 
+    # 4.5 YARN/WEBPACK
+    if [ -e "package.json" ]; then
+        echo yarn
+        yarn
+    fi
+
     # 5. MIGRATE
     echo remigrate
     remigrate
