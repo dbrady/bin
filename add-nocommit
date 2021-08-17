@@ -6,7 +6,7 @@
 #
 # Installation:
 #     With this script in your path, cd to the root of your project
-# and run "add_nocommit". This will create the magical pre-commit
+# and run "add-nocommit". This will create the magical pre-commit
 # file.
 #
 # Usage:
@@ -25,7 +25,7 @@
 # shared with the team. Both of these are still things git doesn't yet
 # do.)
 def barf!(msg=nil)
-  puts "*** add_nocommit: %s " % msg if msg
+  puts "*** add-nocommit: %s " % msg if msg
   exit -1
 end
 
@@ -102,4 +102,3 @@ BANNER
 end
 
 exit 0
-
