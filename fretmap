@@ -84,7 +84,9 @@ class FretMap
     @chord_map = chord_map
     @show_options = show_options
 
-    if @notes_given.empty? && !@key.to_s.empty?
+    if @naturals_only
+      @notes_given = ["A", "B", "C", "D", "E", "F", "G"]
+    elsif @notes_given.empty? && !@key.to_s.empty?
       @notes_given = Scale.notes_for_key(@key)
     end
   end
@@ -190,8 +192,12 @@ class FretMap
     key.to_s.include?("#") || "B E A D G".include?(key.to_s)
   end
 
+  def notes_given_have_sharps?
+    notes_given.any? {|note| note.include?("#") }
+  end
+
   def scale
-    @scale ||= if key_has_sharps?
+    @scale ||= if (key && key_has_sharps?) || notes_given_have_sharps?
                  Scale.new(:sharp)
                else
                  Scale.new(:flat)
@@ -206,11 +212,8 @@ class FretMap
     note = notes.next until note == string
     # now move it up until we reach the desired fret
     fret.times { note = notes.next }
-    if (naturals_only && note.size > 1) || (notes_given && !notes_given.include?(note))
-      ""
-    else
-      note
-    end
+
+    notes_given.include?(note) ? note : ""
   end
 
   def color_for_string_at_fret(string, fret)
