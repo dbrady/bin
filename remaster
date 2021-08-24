@@ -1,14 +1,14 @@
 #!/bin/bash
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
 #
-# 1. STASH     git stash
-# 2. GO            go master
-# 3. PULL              git pull
-# 4. BUNDLE            bundle install
-# 5. MIGRATE           rails db:migrate
-# 6. RETURN        go -
-# 7. REBASE    git rebase master
-# 8. APPLY     git stash apply
+# 1. STASH                  : git stash
+# 2. GO                     : go master
+# 3. PULL                   : git pull
+# 4. BUNDLE                 : bundle install
+# 5. MIGRATE                : rails db:migrate
+# 6. RETURN                 : go -
+# 7. REBASE                 : git rebase master
+# 8. APPLY                  : git stash apply
 
 # TODO:
 # 1. Port this to ruby. The options are just too insane.
@@ -35,6 +35,12 @@
 
 # TODO: have a way to say either "stay on master" or "come back here and rebase
 # master" afterwards
+
+# TODO: have an option to clobber and recompile assets? NO. I've made
+# rebuild-assets in this repo instead. It takes about 80 seconds to run, and the
+# rest of this script only takes 30 seconds. Also, I only need to run it about
+# once every 3 months, so better to run it by hand as needed.
+
 QUICK="false"
 DONE="false" # if true, do not return to story branch
 
@@ -123,12 +129,6 @@ if [ $QUICK == "false" ]; then
     # 4. BUNDLE
     log bundle install
     bundle install
-
-    # 4.5 YARN/WEBPACK
-    if [ -e "package.json" ]; then
-        log yarn
-        yarn
-    fi
 
     # 5. MIGRATE
     log remigrate
