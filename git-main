@@ -1,25 +1,8 @@
 #!/usr/bin/env ruby
 # git-main - identify and check out main branch for this repo
 
-def config_filepath
-  File.join(Dir.pwd, ".git/", "config")
-end
+main_branch = `git main-branch`.strip
 
-# It's hard to know, and potentially undecidable, exactly what branch a repo
-# considers their main branch. At this point in time (July 2021) the very first
-# branch in the .git/config file seems to be a pretty good guess. Let's use this
-# as a simple first guess; if this breaks all over the place we can add a better
-# tell, or just cheat and add some kind of --set command that stores the correct
-# brach in a local .rc file or perhaps in a user-wide .rc file with a hash of
-# path => branch overrides.
-#
-# For now, let's see how far we can get with just the first merge directive.
-#
-# The home/main branch for a repo is usually the first branch identified as the merge branch.
-def first_merge
-  IO.readlines(config_filepath).detect {|line| line =~ /^\s+merge = / }.split(/ = /)[1].split(/\//).last
-end
-
-cmd = "git checkout #{first_merge}"
+cmd = "git checkout #{main_branch}"
 puts cmd
 system cmd
