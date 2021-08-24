@@ -1,17 +1,26 @@
-#!/bin/sh
+#!/bin/bash
 # redogem - rebuild and reinstall gem.
-# 
+#
 # redogem <gem>
-# 
+#
 # - run this from a folder containing your .gemspec (usually the root folder of your gem)
 # - deletes all .gem files in cur dir
 # - uninstalls the gem
 # - builds the gem
 # - installs that gem file
 
+log() {
+    echo -e "\033[32m$@\033[0m"
+}
+
+log gem uninstall -x $1
 gem uninstall -x $1
+
+log rm ${1}*.gem
 rm ${1}*.gem
+
+log gem build $1.gemspec
 gem build $1.gemspec
+
+log gem install $(ls ${1}-*.gem | tail -n 1)
 gem install $(ls ${1}-*.gem | tail -n 1)
-
-
