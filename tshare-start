@@ -100,7 +100,7 @@ if [ `uname -s` == "Darwin" ]; then
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:8 'bundle exec rails s -p 3075' C-m
 
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'cd ~/acima/devel/lease_management_system' C-m
-        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'bundle exec rails s -p 3001' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'bundle exec rails s -p 3005' C-m
 
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:10 'cd ~/acima/devel/kipper' C-m
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:10 'bundle exec rails s -p 3002' C-m
