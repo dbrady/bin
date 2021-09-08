@@ -1,8 +1,30 @@
-#!/bin/sh
+#!/bin/bash
 echo This will migrate your local development and test databases.
 
-echo bundle exec rails db:migrate
+# TODO: Invoking Rails, especially in MP, is super time-consuming, like 15-20
+# seconds or more. Is there a way to either detect that migration is
+# unnecessary, or that the dev migration didn't do anything, that could then
+# short-circuit the test migration?
+#
+# Historically testing for migrations being unnecessary usually requires
+# starting Rails, which is where the entire time budget gets wasted anyway. But
+# if we could detect that the dev migration didn't do anything, and perhaps also
+# check that test and dev have the same contents in their schema_migrations
+# tables, we could infer that db:migrate in test is going to be a no-op, too,
+# and just skip it.
+
+# --------------------------------------------------------------------------------
+# DANGER: echo needs -e on linux and on pre-Catalina OSX IN BASH BUT NOT SH.
+#
+# Remember when Apple made stuff just work instead of bragging about stuff just
+# working that didn't?
+# --------------------------------------------------------------------------------
+log() {
+    echo -e "\033[32m$@\033[0m"
+}
+
+log bundle exec rails db:migrate
 bundle exec rails db:migrate
 
-echo RAILS_ENV=test bundle exec rails db:migrate
+log RAILS_ENV=test bundle exec rails db:migrate
 RAILS_ENV=test bundle exec rails db:migrate

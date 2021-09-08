@@ -1,14 +1,14 @@
 #!/bin/bash
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
 #
-# 1. STASH     git stash
-# 2. GO            go master
-# 3. PULL              git pull
-# 4. BUNDLE            bundle install
-# 5. MIGRATE           rails db:migrate
-# 6. RETURN        go -
-# 7. REBASE    git rebase master
-# 8. APPLY     git stash apply
+# 1. STASH                  : git stash
+# 2. GO                     : go master
+# 3. PULL                   : git pull
+# 4. BUNDLE                 : bundle install
+# 5. MIGRATE                : rails db:migrate
+# 6. RETURN                 : go -
+# 7. REBASE                 : git rebase master
+# 8. APPLY                  : git stash apply
 
 # TODO:
 # 1. Port this to ruby. The options are just too insane.
@@ -35,8 +35,45 @@
 
 # TODO: have a way to say either "stay on master" or "come back here and rebase
 # master" afterwards
+
+# TODO: have an option to clobber and recompile assets? NO. I've made
+# rebuild-assets in this repo instead. It takes about 80 seconds to run, and the
+# rest of this script only takes 30 seconds. Also, I only need to run it about
+# once every 3 months, so better to run it by hand as needed.
+
 QUICK="false"
 DONE="false" # if true, do not return to story branch
+
+
+# --------------------------------------------------------------------------------
+# DANGER: echo needs -e on linux and on pre-Catalina OSX IN BASH BUT NOT SH.
+#
+# Remember when Apple made stuff just work instead of bragging about stuff just
+# working that didn't?
+#
+# echo needs -e on linux and on pre-Catalina OSX. -e is undocumented on OSX; on
+# Catalina it will silently work, EXCEPT if you use this log message and then
+# pass more than one argument from bin/sh. Then it will print the -e, followed
+# by the colorized message. But it DOES work silently, correctly, if you pass a
+# single argument by wraping the args in quotes. Bleh.
+#
+# Example:
+# log() { echo -e "${COLOR}$@${CLEAR}" }
+
+# log "this is a message"
+# => 1this is a message2 # where 1 and 2 turn color on and off
+#
+# log this is a message
+# => -e 1this is a message2 # where 1 and 2 turn color on and off
+#
+# 2021-08-23: At the time of this writing I only need this to run on Catalina,
+# not on any other OSX and not on linux. Future Me can decide if we want/need to
+# detect OS and switch between echo formats. 2021-08-23: UPDATE: just use
+# bin/bash everywhere, and -e will always be required and will always not print.
+# --------------------------------------------------------------------------------
+log() {
+    echo -e "\033[32m$@\033[0m"
+}
 
 while getopts "hq" opt; do
     case ${opt} in
@@ -67,70 +104,64 @@ ISCLEAN=$?
 
 # 1. STASH
 if [ "$ISCLEAN" == "0" ]; then
-    echo "Branch is clean, NOT stashing..."
+    log "Branch is clean, NOT stashing..."
 else
-    echo "Branch is dirty, stashing changes..."
-    echo "git stash"
+    log "Branch is dirty, stashing changes..."
+    log "git stash"
     git stash
 fi
 
 if [ "master" == "$BRANCH" ]; then
-    echo "You are on master, staying put..."
+    log "You are on master, staying put..."
 else
     # 2. GO
-    echo "You are NOT on master, hopping to master..."
+    log "You are NOT on master, hopping to master..."
     # this uses ~/bin/git-main to find the main/develop/master branch
-    echo "git main"
+    log "git main"
     git main
 fi
 
 # 3. PULL
-echo git pull
+log git pull
 git pull
 
 if [ $QUICK == "false" ]; then
     # 4. BUNDLE
-    echo bundle install
+    log bundle install
     bundle install
 
-    # 4.5 YARN/WEBPACK
-    if [ -e "package.json" ]; then
-        echo yarn
-        yarn
-    fi
-
     # 5. MIGRATE
-    echo remigrate
+    log remigrate
     remigrate
 else
-    echo "Quick mode - skipping bundle install"
-    echo "Quick mode - skipping remigrate"
+    log "Quick mode - skipping bundle install"
+    log "Quick mode - skipping remigrate"
 fi
 
 if [ "master" == "$BRANCH" ]; then
-    echo "You were on master, staying put..."
+    log "You were on master, staying put..."
 else
     if [ $DONE == "false" ]; then
         # 6. RETURN
-        echo "You were on $BRANCH, hopping back..."
-        echo "go $BRANCH"
+        log "You were on $BRANCH, hopping back..."
+        log "go $BRANCH"
         go $BRANCH
 
         # 7. REBASE
-        echo "Rebasing master into branch"
-        echo git rebase master
+        log "Rebasing master into branch"
+        log git rebase master
         git rebase master
     else
         # 6. NO RETURN; REBASE ALREADY DONE
-        echo "Done with that branch; staying on master"
+        log "Done with that branch; staying on master"
     fi
 fi
 
 # 8. APPLY
 if [ "$ISCLEAN" == "0" ]; then
-    echo "Branch was clean, no stash apply..."
+    log "Branch was clean, no stash apply..."
 else
-    echo "Branch was dirty, reapplying stashed changes..."
-    echo "git stash apply"
+    log "Branch was dirty, reapplying stashed changes..."
+    log "git stash apply"
     git stash apply
 fi

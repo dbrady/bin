@@ -4,7 +4,13 @@
 #     csv-to-table filename.csv
 #     cat filename.csv | csv-to-table
 #     curl https://example.org/somefile.csv | csv-to-table
-
+#
+# TODO:
+# Add -n option: number of lines to read
+# Add -s, -t option: number of lines offset from start or backwards from tail
+# E.g.
+# read the second batch of 10 lines from the end: -n 10 -t 20
+# read lines 1000-1100: -s 1000 -n 100
 require "csv"
 
 begin
