@@ -1,0 +1,83 @@
+#!/usr/bin/env ruby
+# daylight-sweep - change the HUE lights in my office following a daylight schedule
+
+# I've been doing this manually from bash with e.g. h1 && sleep 7200 && echo
+# 11AM && h2 && ...etc. Here's a ruby script to calculate the "seconds until
+# 5pm" which could be extrapolated into a "seconds until" function:
+#
+# ruby -e 'require "date"; now=Time.now; date,time,zone=now.to_s.split; puts now; later=DateTime.parse("#{date} 17:00:00 #{zone}"); seconds=later.strftime("%s").to_i - now.to_i; hours=seconds/3600; seconds-=hours*3600; minutes=seconds/60; seconds-=minutes*60; printf("%d hours, %d minutes, %d seconds until 5pm\n", hours,minutes,seconds)'
+
+# THAT said, now that I'm in full ruby land it's probably just easier to put in
+# a loop that sleeps for a minute and then checks the time.
+
+require 'colorize'
+
+def do_command(command)
+  puts command.green
+  system command
+end
+
+def turn_lights_off
+  do_command "h0 60"
+end
+
+def turn_lights_on_concentrate
+  do_command "h1"
+end
+
+def turn_lights_on_bright
+  do_command "h2"
+end
+
+def turn_lights_on_warm
+  do_command "h3"
+end
+
+def turn_lights_on_afternoon
+  do_command "h4"
+end
+
+def turn_lights_on_relax
+  do_command "h5"
+end
+
+def set_lights_by_time(time, workday=true)
+  case time.hour
+  when 5,6,7,8,9,10 then workday ? turn_lights_on_concentrate : turn_lights_on_bright
+  when 11,12 then turn_lights_on_bright
+  when 13,14 then turn_lights_on_warm
+  when 15,16 then turn_lights_on_afternoon
+  when 17,18,19,20 then turn_lights_on_relax
+  # full dark before 6am or after 9pm
+  when 0,1,2,3,4,21,22,23 then turn_lights_off
+  else
+    puts "Error: time.hour=#{time.hour}; should be between 0 and 23".white.bold.on_red
+  end
+end
+
+def hour_changed?(old_time, new_time)
+  return true unless old_time
+
+  # puts "Checking time; #{old_time.hour} != #{new_time.hour}?"
+  old_time.hour != new_time.hour
+end
+
+if __FILE__==$0
+  old_time = nil
+  while true
+    now = Time.now
+    workday = !(now.sunday? || now.saturday?)
+    if hour_changed?(old_time, now)
+      print "hour is now #{now.hour}"
+      if workday
+        puts
+      else
+        puts " (and it's the weekend, yay!)"
+      end
+      set_lights_by_time(now, workday)
+      old_time = now
+      break if now.hour >= 21
+    end
+    sleep 60
+  end
+end
