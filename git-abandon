@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# git abandon - abandon this branch: jump back to main branch and delete this story branch
+
+def display_what_to_do(commands)
+  commands.each do |command|
+    puts command
+  end
+end
+
+def do_what_to_do(commands)
+  commands.each do |command|
+    puts command
+    system command
+  end
+end
+
+main_branch = `git main-branch`.strip
+current_branch = `git currentbranch`.strip
+
+# Abort if we're on the main branch already
+if main_branch == current_branch
+  puts "Cowardly refusing to delete branch '#{current_branch}': git main-branch says this is the main branch!"
+  exit 1
+end
+
+checkout_command = "git checkout #{main_branch}"
+delete_command = "git branch -D #{current_branch}"
+
+commands = [checkout_command, delete_command]
+
+# You know what, paranoia is good here, let's also abort if we're on an important-sounding branch
+BRANCHES_TO_BE_PARANOID_ABOUT = %w(production staging master main develop preflight)
+
+if BRANCHES_TO_BE_PARANOID_ABOUT.include?(current_branch)
+  puts "Cowardly refusing to delete branch '#{current_branch}': this is in my list of branches to be paranoid about."
+  puts "If you are absolutely sure, you can do it manually with:"
+  display_what_to_do
+  exit 1
+end
+
+puts "\033[1;37;41m  THIS COMMAND WILL DELETE YOUR CURRENT BRANCH. IT WILL DO THE FOLLOWING:  \033[0m"
+
+display_what_to_do commands
+
+puts "\033[1;37;41mPress CTRL-C to abort, otherwise hit ENTER to continue:\033[0m"
+gets
+
+do_what_to_do commands
