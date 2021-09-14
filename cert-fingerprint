@@ -18,13 +18,17 @@ certificate = File.read ARGV.first
 
 digest = Digest::SHA1.new
 # parse the cert from PEM representation (Base64 ASCII) to its DER binary form
+
+# If we knew the certificate would always have the BEGIN/END CERTIFICATE lines
+# we could just do lines[1..-2] but in using the tool I found myself
+# occasionally omitting them, so use the longer .reject {...} version.
 cert_text = Base64
               .decode64(
                 certificate
                   .each_line
-                  .reject {|l| l.include?(" CERTIFICATE-") }
+                  .reject {|line| line.include?(" CERTIFICATE-") }
                   .map(&:strip)
-                  .join('')
+                  .join
               )
 
 # Get the sha1 hash of the certificate
