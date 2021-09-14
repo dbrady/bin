@@ -1,0 +1,12 @@
+#!/bin/bash
+# cache-routes
+if [ -e ../routes.txt ]; then
+    echo "bundle exec rails routes > ../routes.txt"
+    bundle exec rails routes > ../routes.txt
+else
+    echo "Could not find ../routes.txt, cowardly refusing to litter the file system in case you're not"
+    echo "At the root of the project. If you are, and this is the first run of cache-routes, try doing"
+    echo "touch ../routes.txt"
+    echo "and rerun this command"
+    exit 1
+fi
