@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+# cert-fingerprint - Calculate and print certificate fingerprint
+# cert-fingerprint <public_certificate.cert>
+require 'base64'
+require 'digest/md5'
+
+if ARGV.empty? || !File.exists?(ARGV.first)
+  puts <<USAGE
+cert-fingerprint - Calculate and print certificate fingerprint
+
+Usage:
+  cert-fingerprint <public_certificate.cert>
+USAGE
+  exit 1
+end
+
+certificate = File.read ARGV.first
+
+digest = Digest::SHA1.new
+# parse the cert from PEM representation (Base64 ASCII) to its DER binary form
+cert_text = Base64
+              .decode64(
+                certificate
+                  .each_line
+                  .reject {|l| l.include?(" CERTIFICATE-") }
+                  .map(&:strip)
+                  .join('')
+              )
+
+# Get the sha1 hash of the certificate
+digest << cert_text
+
+def calc_fingerprint(sha)
+  sha
+    .to_s
+    .upcase
+    .split(//)
+    .each_slice(2)
+    .map {|a,b| "#{a}#{b}" }
+    .join(':')
+end
+
+puts calc_fingerprint(digest)
