@@ -1,0 +1,25 @@
+#!/bin/bash
+# hue - in theory, a central hue api CLI script. In practice, a place I might
+# remember to look every few years when I need to set up a new machine with my
+# now-very-deprecated HUE light hub.
+#
+# Taken from https://developers.meethue.com/develop/get-started-2/ which was
+# still live as of September 2021.
+#
+# Step 1: Make sure the bride is on the network. This is probably a given but
+# tl;dr all three lights should be lit up and blue.
+#
+# Step 2: Find the HUE bridge's IP address on the LAN. It's in the phone app
+# under settings. Set this in HUE_IP. Visit http://<bridge ip
+# address>/debug/clip.html to verify you can connect to the bridge. Hint: you
+# gotta be on the wired LAN, it doesn't accept haxxorz coming in over the
+# wifi. (I mean, except for all the vulnerabilities in the bulbs themselves, but
+# that's for haxxorz only. Legitimate admins are locked out of this route
+# because security theater.)
+#
+# Step 3. Generate an API key. In the CLIP interface, put /api/newdeveloper in
+# the URL box and click the GET button. It will fail because reasons.
+#
+# Step 4. Give up and get back to work. TODO: try again after work. Gotta name
+# this device, send it to the CLIP interface, get back an ID, and then YOU HAVE
+# 30 SECONDS TO RUN DOWNSTAIRS AND PUSH THE PHYSICAL CONFIRMATION BUTTON.
