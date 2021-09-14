@@ -36,7 +36,7 @@ def calc_fingerprint(sha)
     .upcase
     .split(//)
     .each_slice(2)
-    .map {|a,b| "#{a}#{b}" }
+    .map {|pair| pair.join }
     .join(':')
 end
 
