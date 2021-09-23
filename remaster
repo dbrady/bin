@@ -1,6 +1,6 @@
 #!/bin/bash
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
-#
+
 # 1. STASH                  : git stash
 # 2. GO                     : go master
 # 3. PULL                   : git pull
@@ -11,7 +11,11 @@
 # 8. APPLY                  : git stash apply
 
 # TODO:
-# 1. Port this to ruby. The options are just too insane.
+
+# 1. Port this to ruby. The options are just too insane. Also do this, if for no
+# other reason, to give a high-level imperative script at the top like git_stash;
+# go_master; git_pull... return_to_story_branch, git_rebase, git_stash_apply,
+# etc.
 # 2. add -p, --pretend option to show the remastering plan/commands
 # 3. add -m, --no-migration option to skip db:migrate
 # 4. add -r, --no-rebase to skip rebasing master into this branch
