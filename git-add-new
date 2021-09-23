@@ -1,0 +1,4 @@
+#!/bin/bash
+echo FAVOR git addnew
+echo git addnew $@
+git addnew $@
