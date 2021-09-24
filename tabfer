@@ -73,7 +73,7 @@ def find_best_file(song)
       exit 1
     elsif matching_files.size == 1
       filename = matching_files.first
-      puts "Pattern '#{song}' matches filename '#{filename}'"
+      puts "Pattern '#{song}' matches filename #{filename}"
     else
       puts "Multiple files match pattern '#{song}':"
       puts matching_files.map { |file| "- " + File.basename(file, '.txt') }
