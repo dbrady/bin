@@ -1,7 +1,10 @@
 #!/bin/bash
 # slack_adhd_strobe_nightmare - historically relevant artifact from CMM. Ask me
 # about the story behind this sometime. (I probably won't tell you, but you can
-# ask.)
+# ask.) tl;DR when the unicorn was slain and its blood was drunk by the acolytes
+# of the beast, the startup went from paradaise to hellscape without ever
+# passing through "tolerable", but it did spend a lot of time masquerading as
+# "mostly worth it". Pip pip, old chum! Sigh.
 if [ `uname -s` != "Darwin" ]; then
     echo "Sorry, this script only runs on OSX."
     exit -1
