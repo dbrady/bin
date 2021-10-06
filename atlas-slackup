@@ -1,9 +1,42 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 
 # TODO: atlas-slackup <new|date> should create a new file for today or date
 
-FILE=$(ls ~/acima/dox/slackup/202*.md | tail -n 1)
-echo "Copying most recent slackup file to clipboard..."
-echo "cat $FILE | pbcopy"
-cat $FILE | pbcopy
-echo "Paste into atlas-slackup and hit Cmd-Shift-F to format the markdown."
+# Fields
+# ------
+# Ticket: ATL link
+# PR: GH link
+# Title
+# Deploy: This Week | Tomorrow | Today | In Progress | Done
+# Update: n/a | In Review |
+# Other: Optional, esp if off-ticket work
+require 'colorize'
+
+slackup_folder = File.expand_path("~/acima/dox/slackup")
+most_recent_file = Dir.glob(File.join(slackup_folder, "202*.md")).last
+# puts "Most recent slackup file is #{most_recent_file}"
+
+def display_file(file)
+  file = File.read(file)
+
+  file.each_line do |line|
+    puts line.rstrip.gsub(/\*(.+:)\*/, '\1'.bold.yellow )
+  end
+end
+
+# need to crush line breaks:
+#
+# *Title:* Thing thing             *Title: Thing thing
+# *Desc:* Did a thing with         *Desc:* Did a thing with the other thing
+# the other thing                  *Deploy:* Today
+# *Deploy:* Today
+
+display_file most_recent_file
+system "cat #{most_recent_file} | pbcopy"
+puts "File copied to clipboard. Paste in #atlas-slackup to report status."
+
+# FILE=$(ls ~/acima/dox/slackup/202*.md | tail -n 1)
+# echo "Copying most recent slackup file to clipboard..."
+# echo "cat $FILE | pbcopy"
+# cat $FILE | pbcopy
+# echo "Paste into atlas-slackup and hit Cmd-Shift-F to format the markdown."
