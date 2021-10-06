@@ -115,11 +115,11 @@ else
     git stash
 fi
 
-if [ "master" == "$BRANCH" ]; then
-    log "You are on master, staying put..."
+if [ `git main-branch` == "$BRANCH" ]; then
+    log "You are on master/main, staying put..."
 else
     # 2. GO
-    log "You are NOT on master, hopping to master..."
+    log "You are NOT on master/main, hopping to $(git main-branch)..."
     # this uses ~/bin/git-main to find the main/develop/master branch
     log "git main"
     git main
