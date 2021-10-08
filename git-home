@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # git-home - Open the github homepage for the current project
 puts "Opening the github homepage for this project: "
+# TODO: consider reading this directly from .git/config to avoid the 2-3s network delay?
+#       - Upside: fast, I hate waiting
+#       - Downside: breaks if they ever change the parsing structure
+#       - Downside: I'd have to write the parser
 url=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
 
 def osx?
