@@ -1,0 +1,11 @@
+#!/bin/bash
+# gopto - "git hop to" branch
+# TL;dr go master && git pull && git checkout branch
+echo git checkout master
+git checkout master
+
+echo git pull
+git pull
+
+echo git checkout $1
+git checkout $1
