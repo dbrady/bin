@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+# db-migrate-sha - emit sha hash of entire db/migrate folder
+# Hopefully useful for determining if a git branch change has changed the database
+# Or if the migrations have changed since last time I ran db:migrate etc
+
+# I've avoided writing this because I thought it would be too hard or too slow.
+# Turns out once I attempted it,
+# 1. it was basically a typing test, and
+# 2. it is PLENTY fast: under 100ms on Acima MP
+require "digest/md5"
+digest = Digest::SHA2.new
+
+Dir.glob(File.expand_path("./db/migrate/*.rb")).each do |file|
+  IO.readlines(file) do |line|
+    digest << line
+  end
+end
+
+puts digest.hexdigest
