@@ -9,3 +9,10 @@ git pull
 
 echo git checkout $1
 git checkout $1
+
+
+echo bundle install
+bundle install
+
+echo bundle exec rails db:migrate
+bundle exec rails db:migrate
