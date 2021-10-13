@@ -10,8 +10,16 @@
 # TODO: zob -e - instead of selecta, open an editor showing all the branches,
 #       commented out, with a message saying "uncomment a branch to remove it"
 
-echo -e '\033[1;37;41mSelect a branch to DELETE\033[0m or \033[1;37;42mhit CTRL-C to abort\033[0m:'
-branchname=$(git branch | ruby -ne 'puts $_.sub(/^\*/,"").strip' | grep -vE '^\s*(master|main|develop)$' | selecta)
+if [ "$1" == "" ]; then
+    echo -e '\033[1;37;41mSelect a branch to DELETE\033[0m or \033[1;37;42mhit CTRL-C to abort\033[0m:'
+    branchname=$(git branch | ruby -ne 'puts $_.sub(/^\*/,"").strip' | grep -vE '^\s*(master|main|develop)$' | selecta)
 
-echo "git branch -D $branchname"
-git branch -D $branchname
+    echo "git branch -D $branchname"
+    git branch -D $branchname
+else
+    echo -e '\033[1;37;41mThe following branches will be DELETED!\033[0m'
+    git branch | grep "$1"
+    echo -e 'Hit ENTER to continue or or CTRL-C to abort:'
+    read
+    git branch | grep "$1" | while read branch; do git branch -D $branch; done
+fi
