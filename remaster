@@ -137,6 +137,12 @@ if [ $QUICK == "false" ]; then
     # 5. MIGRATE
     log remigrate
     remigrate
+
+    # 5.5 sometimes bundle modifies Gemfile.lock and migrate alters db:seeds,
+    # and we don't care/want this.  Ideally I'd like to fix these files if they
+    # have changed, but I probably want to port this to ruby first.
+    git restore Gemfile.lock
+    git restore db/seeds.rb
 else
     log "Quick mode - skipping bundle install"
     log "Quick mode - skipping remigrate"
