@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 
+# atlas-slackup [--no-color] - Display slackup status to console and copy it to
+# the clipboard
+
 # TODO: atlas-slackup <new|date> should create a new file for today or date
+#       or, perhaps, -n is new and -e is edit most recent
 
 # Fields
 # ------
@@ -11,32 +15,97 @@
 # Update: n/a | In Review |
 # Other: Optional, esp if off-ticket work
 require 'colorize'
+require 'date'
 
-slackup_folder = File.expand_path("~/acima/dox/slackup")
-most_recent_file = Dir.glob(File.join(slackup_folder, "202*.md")).last
-# puts "Most recent slackup file is #{most_recent_file}"
+class Slackup
+  class <<self
+    def display_file(file, color=true)
+      file = File.read(file)
 
-def display_file(file)
-  file = File.read(file)
+      # This will print correct line-wrapping to stdout, but the thing sent to the
+      # clipboard is still a hot mess. Maybe open a tempfile, write it out without
+      # colors, and then cat that to pbcopy? And/or have a version of this that
+      # takes a --no-color flag and instead of "cat file" we rerun this script with
+      # the flag and capture that output to pbcopy.  (Test carefully and beware of
+      # forkbombs.)
 
-  file.each_line do |line|
-    puts line.rstrip.gsub(/\*(.+:)\*/, '\1'.bold.yellow )
+      colorize = color ? ->(text) { text.bold.yellow } : ->(text) { text }
+
+      file.each_line do |line|
+        if line.start_with? "*"
+          puts
+        end
+        print line.rstrip.gsub(/\*(.+:)\*/, colorize['\1'] )
+      end
+      puts
+      # file.each_line do |line|
+      #   puts line.rstrip.gsub(/\*(.+:)\*/, '\1'.bold.yellow )
+      # end
+    end
+
+    def new_file
+      datestamp = Date.today.strftime("%F")
+      filepath = filepath_for(datestamp)
+      if !File.exists?(filepath)
+        template = DATA.read
+        File.open(filepath, "w") { |fp| fp.puts template }
+      end
+      edit_file datestamp
+    end
+
+    def edit_file(datestamp)
+      command = [editor_command, filepath_for(datestamp)].join(' ')
+      system command
+    end
+
+    def usage
+      puts "atlas-slackup  - Display slackup status to console and copy it to the clipboard"
+      puts "atlas-slackup [options] "
+    end
+
+    def slackup_folder
+      slackup_folder = File.expand_path("~/acima/dox/slackup")
+    end
+
+    # given "2021-10-15"
+    # returns "/path/to/slackup/2021-10-15.md"
+    def filepath_for(datestamp)
+      File.join(slackup_folder, datestamp) + ".md"
+    end
+
+    def editor_command
+      "emacs -nw -q -l /Users/david.brady/.emacstiny"
+    end
+
+    def most_recent_file
+      Dir.glob(File.join(slackup_folder, "202*.md")).sort.last
+    end
   end
 end
 
-# need to crush line breaks:
-#
-# *Title:* Thing thing             *Title: Thing thing
-# *Desc:* Did a thing with         *Desc:* Did a thing with the other thing
-# the other thing                  *Deploy:* Today
-# *Deploy:* Today
+if __FILE__==$0
+  most_recent_file = Slackup.most_recent_file
+  puts "Most recent slackup file is #{most_recent_file}"
 
-display_file most_recent_file
-system "cat #{most_recent_file} | pbcopy"
-puts "File copied to clipboard. Paste in #atlas-slackup to report status."
+  nocolor = ARGV.delete "--no-color"
 
-# FILE=$(ls ~/acima/dox/slackup/202*.md | tail -n 1)
-# echo "Copying most recent slackup file to clipboard..."
-# echo "cat $FILE | pbcopy"
-# cat $FILE | pbcopy
-# echo "Paste into atlas-slackup and hit Cmd-Shift-F to format the markdown."
+  if ARGV.empty? # run
+    Slackup.display_file most_recent_file, !nocolor
+    system "cat #{most_recent_file} | pbcopy"
+    puts "File copied to clipboard. Paste in #atlas-slackup to report status."
+  elsif ARGV[0] == "-n"
+    Slackup.new_file
+  elsif ARGV[0] == "-e"
+    Slackup.edit_file ARGV[1]
+  else
+    Slackup.usage
+    exit 1
+  end
+end
+__END__
+*Ticket:* https://acima.atlassian.net/browse/ATL-????
+*PR:* https://github.com/acima-credit/merchant_portal/pull/????
+*Title:*
+*Deploy:*
+*Status:*
+*Other Time:*
