@@ -21,5 +21,5 @@ else
     git branch | grep "$1"
     echo -e 'Hit ENTER to continue or or CTRL-C to abort:'
     read
-    git branch | grep "$1" | while read branch; do git branch -D $branch; done
+    git branch | grep "$1" | while read branch; do git branch -D "$branch"; done
 fi
