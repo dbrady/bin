@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+# git branch-length [<branch-name>] - Emit branch length in chars, and warn you if your branch name is too long for Ac's deploy tooling (>= 64-ish chars)
+require 'colorize'
+
+branch = ARGV[0] || `git currentbranch`
+length = branch.size
+
+if length < 60
+  puts "Your branch is OK! (#{length} chars long) 👍".green
+elsif branch.size < 64
+  puts "Your branch is IN THE DANGER ZONE! (#{length} chars long) ⚠️".yellow
+else
+  puts "Your branch is TOO LONG! (#{length} chars long) 👎".red
+end
