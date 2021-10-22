@@ -54,7 +54,12 @@ class Slackup
     end
 
     def edit_file(datestamp)
-      command = [editor_command, filepath_for(datestamp)].join(' ')
+      filepath = if datestamp
+                   filepath_for(datestamp)
+                 else
+                   most_recent_file
+                 end
+      command = [editor_command, filepath].join(' ')
       system command
     end
 
@@ -80,6 +85,11 @@ class Slackup
     def most_recent_file
       Dir.glob(File.join(slackup_folder, "202*.md")).sort.last
     end
+
+    def copy_file
+      system "cat #{most_recent_file} | pbcopy"
+      puts "File copied to clipboard. Paste in #atlas-slackup to report status."
+    end
   end
 end
 
@@ -91,12 +101,13 @@ if __FILE__==$0
 
   if ARGV.empty? # run
     Slackup.display_file most_recent_file, !nocolor
-    system "cat #{most_recent_file} | pbcopy"
-    puts "File copied to clipboard. Paste in #atlas-slackup to report status."
+    Slackup.copy_file
   elsif ARGV[0] == "-n"
     Slackup.new_file
+    Slackup.copy_file
   elsif ARGV[0] == "-e"
     Slackup.edit_file ARGV[1]
+    Slackup.copy_file
   else
     Slackup.usage
     exit 1

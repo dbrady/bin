@@ -1,7 +1,9 @@
-#!/bin/bash
-echo This will migrate your local development and test databases.
+#!/usr/bin/env ruby
+require 'colorize'
 
-# TODO: Invoking Rails, especially in MP, is super time-consuming, like 15-20
+puts "This will migrate your local development and test databases."
+
+# TODO: Invoking Rails, especially in MP, is super time-consuming, like 15-30
 # seconds or more. Is there a way to either detect that migration is
 # unnecessary, or that the dev migration didn't do anything, that could then
 # short-circuit the test migration?
@@ -19,12 +21,56 @@ echo This will migrate your local development and test databases.
 # Remember when Apple made stuff just work instead of bragging about stuff just
 # working that didn't?
 # --------------------------------------------------------------------------------
-log() {
-    echo -e "\033[32m$@\033[0m"
-}
+def log(msg)
+    puts msg.to_s.green
+end
 
-log bundle exec rails db:migrate
-bundle exec rails db:migrate
+# TODO: always migrate and update the cached sha if ARGV.include -f or --force
+# TODO: calculate sha hash
+# TODO: load previously stored hash, if any
+# TODO: run migration
+# TODO: recalculate sha hash and save it to stored hash
 
-log RAILS_ENV=test bundle exec rails db:migrate
-RAILS_ENV=test bundle exec rails db:migrate
+# Case: Called normally, sha file does not exist
+#   - migration runs
+#   - new sha is calculated and saved
+# Case: Called normally, sha file exists but does not match
+#   - sha is calculated
+#   - sha file is loaded
+#   - migration runs
+#   - new sha is calculated and saved
+# Case: Called with -f
+#   - migration runs
+#   - new sha is calculated and saved
+# Case: Called normally, sha file exists and matches migrations
+#   - sha is calculated
+#   - sha file is loaded
+#   - script exits happily
+
+# load the cached hash
+# calculate the new hash
+# if they are the same, we need to migrate
+# migrate the file
+# update the cached hash
+
+
+# current_db_migrate_sha = `db-migrate-sha`
+
+# if ARGV.include?("-f") || ARGV.include("--force")
+#   # force reload
+# db_migrate_sha_file = File.expand_path("~/.last-db-migrate-sha")
+# if File.exists?(db_migrate_sha)
+#    last_db_migrate_sha = File.read(db_migrate_sha)
+#    if last_db_migrate_sha == current_db_migrate_sha
+#      log "Database has not changed since last run. Skipping db:migrate."
+#      exit 0
+#    end
+
+
+# generate sha
+
+# log "bundle exec rails db:migrate"
+# system "bundle exec rails db:migrate"
+
+log "RAILS_ENV=test bundle exec rails db:migrate"
+system({"RAILS_ENV" => "test"}, "bundle exec rails db:migrate")
