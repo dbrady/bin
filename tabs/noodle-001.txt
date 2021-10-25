@@ -1,0 +1,19 @@
+Random Noodle #001 
+Numbering Starting From The Day I Started Numbering: 2021-10-20
+
+A random noodle inspired by pulling the pick out from under the string with a delay pedal on.
+
+Turns out this is (or I quickly turned it into) a standard Em pentatonic noodle
+
+ | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & | 1 & 2 & 3 & 4 & |
+   Em/B |---------   Em  |----------   D                 Em
+e|-3p0-------------|-----------------|-----------------|-----------------|
+B|------0----------|-----0-----------|-3---------------|-0---------------|
+G|-----------------|---0-------------|-----2-----------|---0-------------|
+D|-----------------|-2---------------|-----------------|-----2-----------| 
+A|-----------------|-----------------|-----------------|-----------------|
+E|-----------------|-----------------|-----------------|-----------------|
+                     ^ this could maybe also be 2h5 to mirror the 3p0
+                     
+(from here, anything in E sounds good. Start a P.M. rhythm on the low E,
+like E|-0-0-0-0-etc.
