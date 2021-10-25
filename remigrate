@@ -70,7 +70,7 @@ end
 # generate sha
 
 # log "bundle exec rails db:migrate"
-# system "bundle exec rails db:migrate"
+system "bundle exec rails db:migrate"
 
 log "RAILS_ENV=test bundle exec rails db:migrate"
 system({"RAILS_ENV" => "test"}, "bundle exec rails db:migrate")
