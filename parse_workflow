@@ -1,0 +1,56 @@
+#!/usr/bin/env ruby
+# parse_workflow <file> - parse a ruby workflow graphviz dot file and emit some files:
+
+# transitions_in.txt - "<state> can be reached from <old_state> via <method>"
+# transitions_out.txt - "From <state>, <new_state> can be reached via <method>"
+# transitions.txt - "<method> method transitions from <old_state> to <new_state>"
+# transitions.csv - "from, to, method"
+
+require 'csv'
+
+class ParseWorkflow
+  def self.run(file)
+    txns = []
+
+    found_transition = false
+    from, to, method = nil, nil, nil
+    IO.readlines(file).each.with_index do |line, line_number|
+      line = line.strip
+
+      if found_transition
+        # previous line was a transition, this line sholud be a label=blah line
+        tag, method = line.split(/=/).map(&:strip)
+        puts "UH-OH: Found a weird tag on line #{line_number+1}: #{line}" unless tag == "label"
+        method = method.sub(/,$/,'')
+        found_transition = false
+        txns << {from: from, to: to, method: method}
+      end
+
+      if line =~ /^\s*(\w+) -> (\w+)/
+        from, to = $1, $2
+        found_transition = true
+      end
+    end
+
+    # ins:
+    ins = ->(txn) { "#{txn[:to]} can by reached from #{txn[:from]} via #{txn[:method]}" }
+    tos = ->(txn) { "From #{txn[:from]}, #{txn[:to]} can be reached via #{txn[:method]}" }
+    txs = ->(txn) { "The #{txn[:method]} method transitions from #{txn[:from]} to #{txn[:to]}" }
+
+    File.open("./transitions_in.txt", "w") {|file| file.puts txns.map(&ins).sort }
+    File.open("./transitions_out.txt", "w") {|file| file.puts txns.map(&tos).sort }
+    File.open("transitions.txt", "w") {|file| file.puts txns.map(&txs).sort }
+
+    CSV.open("transitions.csv", "wb") do |csv|
+      csv << ["from", "to", "method"]
+      txns.sort_by {|txn| [txn[:from], txn[:to], txn[:method]]}.each do |txn|
+        csv << [txn[:from], txn[:to], txn[:method]]
+      end
+    end
+
+  end
+end
+
+if __FILE__==$0
+  ParseWorkflow.run ARGV[0]
+end
