@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# generate-workflow-diagram [<model>] - emit a GraphViz diagram of the workflow chart for a model
+
+# <model> must be a Rails model annotated by the workflow gem
+
+# quick gemset check. Do this before calling Rails 'cuz if you forgot to put
+# ruby-graphviz in the Gemfile it sucks to wait 40 seconds to find that out
+require 'ruby-graphviz'
+require 'workflow/draw'
+
+# Rerun with rails runner if you ran this file as a ruby script
+if __FILE__==$0 && !defined?(Rails)
+  cmd = "bundle exec rails runner #{__FILE__}"
+  $stderr.puts cmd
+  system cmd
+  exit $?.to_i
+end
+
+class DrawWorkflow
+  def self.draw!(klass)
+    klass = Lease # klass.constantize
+    Workflow::Draw::workflow_diagram klass, {format: "dot"}
+  end
+end
+
+
+if __FILE__==$0
+  DrawWorkflow.draw! ARGV[0]
+end
