@@ -1,0 +1,27 @@
+#!/usr/bin/env ruby
+
+# Names full and code reviewers.
+
+# Acima uses a github randomizer that picks two teammates at random. The problem
+# is the ordering is always the same, so a bit of extra randomness is required
+# to determine who does the code review and who does the full review.
+
+# Give the whole list of candidates to pick, or just give the two picked by
+# github to determine the flip
+
+srand Time.now.to_i
+
+
+if ARGV.size == 0
+  puts "No reviewers given, assuming you have 2 and need to determine order. Flipping a coin..."
+  flip = rand(2).zero?
+  if flip
+    puts "FLIP the reviewers"
+  else
+    puts "KEEP the reviewers in the same order"
+  end
+else
+  full_reviewer, code_reviewer = ARGV.shuffle[0..1]
+  puts "Full review: #{full_reviewer}"
+  puts "Code review: #{code_reviewer}"
+end
