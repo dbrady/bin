@@ -1,76 +1,31 @@
 #!/usr/bin/env ruby
-require 'colorize'
 
 puts "This will migrate your local development and test databases."
 
-# TODO: Invoking Rails, especially in MP, is super time-consuming, like 15-30
-# seconds or more. Is there a way to either detect that migration is
-# unnecessary, or that the dev migration didn't do anything, that could then
-# short-circuit the test migration?
-#
-# Historically testing for migrations being unnecessary usually requires
-# starting Rails, which is where the entire time budget gets wasted anyway. But
-# if we could detect that the dev migration didn't do anything, and perhaps also
-# check that test and dev have the same contents in their schema_migrations
-# tables, we could infer that db:migrate in test is going to be a no-op, too,
-# and just skip it.
-
-# --------------------------------------------------------------------------------
-# DANGER: echo needs -e on linux and on pre-Catalina OSX IN BASH BUT NOT SH.
-#
-# Remember when Apple made stuff just work instead of bragging about stuff just
-# working that didn't?
-# --------------------------------------------------------------------------------
 def log(msg)
-    puts msg.to_s.green
+  puts "\033[32m#{msg}\033[0m"
 end
 
-# TODO: always migrate and update the cached sha if ARGV.include -f or --force
-# TODO: calculate sha hash
-# TODO: load previously stored hash, if any
-# TODO: run migration
-# TODO: recalculate sha hash and save it to stored hash
+db_migrate_sha_file = File.expand_path("~/.last-db-migrate-sha")
+force = ARGV.include?("-f") || ARGV.include?("--force") || !File.exists?(db_migrate_sha_file)
 
-# Case: Called normally, sha file does not exist
-#   - migration runs
-#   - new sha is calculated and saved
-# Case: Called normally, sha file exists but does not match
-#   - sha is calculated
-#   - sha file is loaded
-#   - migration runs
-#   - new sha is calculated and saved
-# Case: Called with -f
-#   - migration runs
-#   - new sha is calculated and saved
-# Case: Called normally, sha file exists and matches migrations
-#   - sha is calculated
-#   - sha file is loaded
-#   - script exits happily
+# load old sha
+old_sha = if !force
+            File.read(db_migrate_sha_file)
+          else
+            ""
+          end
 
-# load the cached hash
-# calculate the new hash
-# if they are the same, we need to migrate
-# migrate the file
-# update the cached hash
+# calculate new sha
+new_sha = `db-migrate-sha`
 
+if old_sha != new_sha
+  log "bundle exec rails db:migrate"
+  system "bundle exec rails db:migrate"
+  log "RAILS_ENV=test bundle exec rails db:migrate"
+  system({"RAILS_ENV" => "test"}, "bundle exec rails db:migrate")
 
-# current_db_migrate_sha = `db-migrate-sha`
-
-# if ARGV.include?("-f") || ARGV.include("--force")
-#   # force reload
-# db_migrate_sha_file = File.expand_path("~/.last-db-migrate-sha")
-# if File.exists?(db_migrate_sha)
-#    last_db_migrate_sha = File.read(db_migrate_sha)
-#    if last_db_migrate_sha == current_db_migrate_sha
-#      log "Database has not changed since last run. Skipping db:migrate."
-#      exit 0
-#    end
-
-
-# generate sha
-
-# log "bundle exec rails db:migrate"
-system "bundle exec rails db:migrate"
-
-log "RAILS_ENV=test bundle exec rails db:migrate"
-system({"RAILS_ENV" => "test"}, "bundle exec rails db:migrate")
+  File.open(db_migrate_sha_file, "w") {|fp| fp.puts new_sha }
+else
+  puts "Migration folder contents have not changed since last run. Rerun with -f or --force to force remigration."
+end
