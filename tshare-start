@@ -105,6 +105,8 @@ if [ `uname -s` == "Darwin" ]; then
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:10 'cd ~/acima/devel/kipper' C-m
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:10 'bin/start' C-m
 
+        # contract-funding
+
     elif [ "$SESSION" == "queues" ]; then
         # window    2    3  4
         for name in ccq bmq uwq gcq; do
@@ -122,6 +124,14 @@ if [ `uname -s` == "Darwin" ]; then
 
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'cd ~/acima/devel/global_customer' C-m
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:4 'bundle exec sidekiq' C-m
+
+        # contract-fuding sidekiq - USES A SPECIAL PORT!
+        # contract-funding/bin/besq
+
+        # contract-funding tiki - needed if we want to talk to CF
+        # contract-funding/bin/cftiki
+
+        # merchant-portal tiki - probably only needed if CF is talking back to us, but safer to have tiki running at both ends to ensure bidirectionality
     fi
         # leave window 2 (bash) alone
 
