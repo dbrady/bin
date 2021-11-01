@@ -1,0 +1,14 @@
+#!/bin/bash
+# cls-ansi - clear the screen using ANSI control code
+
+# mostly here so I can remember the stupid code; when manually operating a
+# terminal I use C-l to clear the screen and reset to clear/reset the terminal.
+#
+echo -e '\033[2J'
+
+# 2J should also home the cursor, but... doesn't? Weird. OSX problem maybe?
+# Super modern terminal difference from ancient VT100 stuff? (If so, why bother
+# trying to be backwards compatible at all tho?)
+#
+# have to use -n or it will emit a newline afterwards lol
+echo -ne '\033[0;0H'
