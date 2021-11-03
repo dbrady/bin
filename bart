@@ -1,0 +1,211 @@
+#!/usr/bin/env ruby
+
+# bart [options] - "bin start" - start up the current application. Basically a
+# poor-man's Foreman gem, but requiring no in-repo setup (e.g. Procfile).
+
+# bart is my attempt at a solution to the problem of "I have 20 apps I have to
+# run in 14 different folders". Most apps just need "bundle exec rails s" (each
+# on a different port) while others need rails, sidekiq, and tiki.
+
+# You tell bart to start up a specific app by name; if omitted, assumes
+# "default". Bart uses your current folder to determine which command to run. If
+# it can't find one, it looks in a folder called "global" for the command to
+# run. So, to illustrate: Since sidekiq mostly doesn't need a specific port,
+# that can be the "global default" as well as the "global queue" command, then
+# each folder can have their rails app be the "default". For an app that needs
+# rails, sidekiq and tiki we can open three terminals (or tmux windows) and run
+# "bart", "bart queue" and "bart tiki". The bare bart will check for a local
+# default command, which for this app turns out to be the rails startup command.
+
+# For an app that has no rails app, but does have a sidekiq queue, we can just
+# run "bart" and it will check for a local default, find none, then check the
+# global default and see "bundle exec sidekiq" and we're off to the races
+# asynchronously.
+
+# SO!
+
+# bart
+# bart <name>
+# bart -l[ist] [-g]  - list available local or global commands
+# bart -s[ave] [-g] <name> <cmd>
+# bart -e[dit] [-g] [<name>]
+# bart -d[elete] [-g] <name>
+# bart -s[how] [-g] [<name>] - show command/default
+require 'optimist'
+require 'yaml'
+
+class Bart
+  attr_reader :commands
+
+  def initialize
+    @commands = load_commands
+  end
+
+  def run(command_name=nil, global: false)
+    section_name = global ? "global": pwd
+    command_name ||= "default"
+
+    command = find_command(section_name, command_name)
+
+    if command.nil? && section_name != "global"
+      command = find_command("global", command_name)
+    end
+
+    if command
+      puts command
+      system command
+    else
+      if section_name != "global"
+        section_name += " or global"
+      end
+      puts red("No command '#{command_name}' found in section #{section_name}")
+    end
+  end
+
+  def list(global: false)
+    section_name = global ? "global": pwd
+    show_list(section_name, commands[section_name])
+  end
+
+  def save(command_name, command, global: false)
+    section_name = global ? "global": pwd
+    section = find_section!(section_name)
+    section[command_name] = command
+    save_commands
+  end
+
+  def edit
+    edit_command = ENV["EDITOR"] + " " + command_file
+    puts edit_command
+    system edit_command
+  end
+
+  def delete(command_name, global: false)
+    section_name = global ? "global": pwd
+    section = find_section!(section_name)
+    section.delete(command_name)
+    save_commands
+  end
+
+  def pretend(command_name=nil, global: false)
+    section_name = global ? "global": pwd
+    command_name ||= "default"
+
+    if section_name != "global"
+      lookup_command section_name, command_name
+    end
+    section_name = "global"
+    lookup_command section_name, command_name
+  end
+
+  private
+
+  def red(string)
+    "\033[31m#{string}\033[0m"
+  end
+
+  def green(string)
+    "\033[32m#{string}\033[0m"
+  end
+
+  def lookup_command(section_name, command_name)
+    command = find_command(section_name, command_name)
+    if command
+      puts green("command '#{command_name}' found in #{section_name}: ")
+      puts command
+    else
+      puts red("No command '#{command_name}' found in section #{section_name}")
+      section_name = "global"
+    end
+  end
+
+  def show_list(location, section)
+    puts "Commands available in #{location}:"
+    name_padding = section.keys.map(&:size).max + 2
+    section.each_pair do |name, command|
+      puts (name + ":").ljust(name_padding) + command
+    end
+  end
+
+  def pwd
+    Dir.pwd
+  end
+
+  def find_section!(section_name)
+    commands.fetch(section_name) do
+      raise "No commands available for #{section_name}"
+    end
+  end
+
+  def find_command!(section_name, command_name)
+    find_section!(section_name).fetch(command_name) do
+      raise "No command '#{command_name}' found in section #{section_name}"
+    end
+  end
+
+  def find_command(section_name, command_name)
+    return nil unless commands.has_key?(section_name)
+    return nil unless commands[section_name].has_key?(command_name)
+    commands[section_name][command_name]
+  end
+
+  def command_file
+    File.expand_path("~/.bart.yml")
+  end
+
+  def load_commands
+    YAML.load_file(command_file)
+  end
+
+  def save_commands
+    File.open(command_file, "w") do |file|
+      file.puts commands.to_yaml
+    end
+  end
+end
+
+if __FILE__==$0
+  opts = Optimist.options do
+    banner <<~EOS
+bart [<name>] - run [default] command
+EOS
+    # bart [-g] [command] [<name>]
+    # bart -l[ist] [-g]  - list available local or global commands
+    # bart -s[ave] [-g] <name> <cmd>
+    # bart -d[elete] [-g] <name>
+    # bart -e[dit]
+    # bart -p[retend] [-g] [<name>] - pretend run/show command/default
+    opt :list, "List commands for section", type: :boolean, default: false
+    opt :save, "Save commands for section", type: :boolean, default: false
+    opt :delete, "List commands for section", type: :boolean, default: false
+    opt :edit, "Edit commands file list", type: :boolean, default: false
+    opt :pretend, "Show which command would be run for section", type: :boolean, default: false
+    opt :global, "Force global section instead of local", type: :boolean, default: false
+  end
+  num_commands = [opts[:list], opts[:save], opts[:delete], opts[:edit], opts[:pretend]].map {|v| v ? 1 : 0 }.sum
+  Optimist::die "Too many commands given, choose one of -l, -s, -d, -e or -p" if num_commands > 1
+  Optimist::die "Delete requires command name" if opts[:delete] && (ARGV.size != 1)
+  Optimist::die "Save requires name and command" if opts[:save] && (ARGV.size != 2)
+
+  # puts '-' * 80
+  # puts opts.inspect
+  # puts '--'
+  # puts ARGV.inspect
+  # puts '-' * 80
+
+  bart = Bart.new
+
+  if opts[:list]
+    bart.list global: opts[:global]
+  elsif opts[:save]
+    bart.save *ARGV, global: opts[:global]
+  elsif opts[:delete]
+    bart.delete *ARGV, global: opts[:global]
+  elsif opts[:edit]
+    bart.edit
+  elsif opts[:pretend]
+    bart.pretend *ARGV, global: opts[:global]
+  else
+    bart.run *ARGV, global: opts[:global]
+  end
+end
