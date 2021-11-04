@@ -1,5 +1,24 @@
 #!/usr/bin/env ruby
 
+# THIS DOES NOT WORK RIGHT, AND POSSIBLY MAY NEVER WORK RIGHT. RETHINK.
+
+# tl;dr two problems:
+#
+# 1. the system calls appear to mangling spaces somehow, which might be debuggable
+#
+
+# 2. this program wraps the bash session in a ruby interpreter. The ruby runtime
+#    "only" takes up about 12MB of RAM but if I'm going to fire and forget a
+#    long-running service like this I really don't want anything wrapped around
+#    it except bash. TODO: Wade through
+#    https://devver.wordpress.com/2009/06/30/a-dozen-or-so-ways-to-start-sub-processes-in-ruby-part-1/
+#    and see if there isn't a spawn-child-and-die mechanism. I seem to recall
+#    investigating this very thing a decade or more ago, and coming up
+#    frustrated, but I can't remember what exactly my findings were: was it
+#    impossible or did I just discover that orphaning a child process was the
+#    wrong approach?
+
+
 # bart [options] - "bin start" - start up the current application. Basically a
 # poor-man's Foreman gem, but requiring no in-repo setup (e.g. Procfile).
 
@@ -67,9 +86,14 @@ class Bart
     show_list(section_name, commands[section_name])
   end
 
-  def save(command_name, command, global: false)
+  def save(command_name, command=nil, global: false)
+    if command.nil?
+      command = command_name
+      command_name = "default"
+    end
     section_name = global ? "global": pwd
-    section = find_section!(section_name)
+    puts "Saving '#{command_name}' as '#{command}' in #{section_name}"
+    section = find_or_create_section(section_name)
     section[command_name] = command
     save_commands
   end
@@ -143,6 +167,10 @@ class Bart
     end
   end
 
+  def find_or_create_section(section_name)
+    commands[section_name] ||= {}
+  end
+
   def find_command(section_name, command_name)
     return nil unless commands.has_key?(section_name)
     return nil unless commands[section_name].has_key?(command_name)
@@ -185,7 +213,7 @@ EOS
   num_commands = [opts[:list], opts[:save], opts[:delete], opts[:edit], opts[:pretend]].map {|v| v ? 1 : 0 }.sum
   Optimist::die "Too many commands given, choose one of -l, -s, -d, -e or -p" if num_commands > 1
   Optimist::die "Delete requires command name" if opts[:delete] && (ARGV.size != 1)
-  Optimist::die "Save requires name and command" if opts[:save] && (ARGV.size != 2)
+  Optimist::die "Save requires command or name and command" if opts[:save] && (!(1..2).cover?(ARGV.size))
 
   # puts '-' * 80
   # puts opts.inspect
