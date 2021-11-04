@@ -1,0 +1,3 @@
+#!/bin/bash
+echo bundle exec sidekiq
+bundle exec sidekiq
