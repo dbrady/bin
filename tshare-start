@@ -108,8 +108,8 @@ if [ `uname -s` == "Darwin" ]; then
         # contract-funding
 
     elif [ "$SESSION" == "queues" ]; then
-        # window    2    3  4
-        for name in ccq bmq uwq gcq; do
+        # window    2    3  4   5   6   7      8
+        for name in ccq bmq uwq gcq cfq cftiki mptiki; do
             $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
         done
 
