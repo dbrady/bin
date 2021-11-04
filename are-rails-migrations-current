@@ -1,0 +1,39 @@
+#!/usr/bin/env ruby
+# mp-migrations - examine schema_migrations table vs db/migrate/ folder, but
+# without starting rails because ugh that's so pokeyslow.
+
+require 'pg'
+
+quiet = ARGV.include?("-q") || ARGV.include?("--quiet")
+
+planned_migrations = []
+executed_migrations = []
+
+# TODO: put connection info somewhere it doesn't go into this repo but also
+# doesn't require starting rails to extract. Maybe don't use this script at all
+# if your development database creds involve secure secrets.
+conn = PG.connect( dbname: 'merchant_portal_development' )
+conn.exec( "SELECT version FROM schema_migrations" ) do |result|
+  executed_migrations = result.map {|row| row["version"].to_i}
+end
+
+migration_files = Dir.glob("./db/migrate/*.rb")
+migration_file_map = Hash[ migration_files.map {|file| [file.sub(%r|^\./db/migrate/|, '').to_i, file] }]
+planned_migrations = migration_file_map.keys
+
+unrun_migrations = planned_migrations - executed_migrations
+
+def red(string)
+  "\033[31m#{string}\033[0m"
+end
+
+if unrun_migrations.any?
+  if !quiet
+    migration_count_text = (unrun_migrations.size == 1) ? "migration has" : "#{unrun_migrations.size} migrations have"
+    puts red("The following #{migration_count_text} NOT been run:")
+    puts unrun_migrations.map {|timestamp| migration_file_map[timestamp]}
+  end
+  exit 1
+else
+  exit 0
+end
