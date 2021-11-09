@@ -6,12 +6,19 @@
 #   out of 17 (default + 16 escapes), followed by a
 #   test use of that color on all nine background
 #   colors (default + 8 escapes).
+
+# Got tired of waiting 4-7 seconds for this thing to render, let's cache it. Bam. 15ms.
+cat ~/bin/ansichart.txt
+exit 0
+
+# Here is the generator script. Comment out the above and run this instead:
+
+
 #
 #   Author: Giles Orr
 #   URL: http://gilesorr.com/bashprompt/howto/c333.html#AEN335
 #   License: GNU Free Documentation License, Version 1.1 or any later version published by the Free Software Foundation;
 #            http://gilesorr.com/bashprompt/howto/a1004.html
-
 
 FORMAT=" %8s "
 echo -ne "\nv FG \ BG >   "
