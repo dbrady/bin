@@ -1,0 +1,16 @@
+#!/bin/bash
+# stoppem - stop rails console on window 4, rails server in window 5, and
+# sidekiq in window 6
+
+# stop rails console - beware, if you don't have rails console running, this
+# will cheerfully close window 4 down completely. Create a new terminal if you
+# need to.
+tmux send-keys -twork:4 "C-c"
+tmux send-keys -twork:4 "C-d"
+
+# stop rails server
+tmux send-keys -twork:5 "C-c"
+
+
+# stop sidekiq
+tmux send-keys -twork:6 "C-c"

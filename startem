@@ -1,0 +1,16 @@
+#!/bin/bash
+# starteem - start rails console on window 4, rails server in window 5, and
+# sidekiq in window 6.
+
+# just blindly sends keys. If you got stuff already running... glhf/lol
+tmux send-keys -twork:4 "bails c"
+tmux send-keys -twork:4 "C-m"
+
+# stop rails server
+tmux send-keys -twork:5 "bin/start"
+tmux send-keys -twork:5 "C-m"
+
+
+# stop sidekiq
+tmux send-keys -twork:6 "bundle exec sidekiq"
+tmux send-keys -twork:6 "C-m"
