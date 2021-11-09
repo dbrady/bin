@@ -53,8 +53,8 @@ fi
 
 if [ `uname -s` == "Darwin" ]; then
     if [ "$SESSION" == "work" ]; then
-        # window    2    3    4       5  6   7  8  9
-        for name in bash spec console mp mpq np qr uw; do
+        # window    2    3    4       5  6   7  8
+        for name in bash spec console mp mpq np uw; do
             $TCMD -S /tmp/$SESSION new-window -n $name -t $SESSION
         done
 
@@ -67,11 +67,8 @@ if [ `uname -s` == "Darwin" ]; then
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:7 'cd ~/acima/devel/notary_public' C-m
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:7 'bin/start' C-m
 
-        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:8 'cd ~/acima/devel/qr_code_generator' C-m
+        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:8 'cd ~/acima/devel/underwriting' C-m
         $TCMD -S /tmp/$SESSION send-keys -t $SESSION:8 'bin/start' C-m
-
-        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'cd ~/acima/devel/underwriting' C-m
-        $TCMD -S /tmp/$SESSION send-keys -t $SESSION:9 'bin/start' C-m
     elif [ "$SESSION" == "services" ]; then
         # window    2   3   4   5   6   7   8   9  10
         for name in ams bas cra gc  cc  bms cls lms kipper; do
@@ -132,7 +129,9 @@ if [ `uname -s` == "Darwin" ]; then
         # contract-funding/bin/cftiki
 
         # merchant-portal tiki - probably only needed if CF is talking back to us, but safer to have tiki running at both ends to ensure bidirectionality
-    fi
+        if [ "$SESSION" == "test" ]; then
+
+        fi
         # leave window 2 (bash) alone
 
         # $TCMD -S /tmp/$SESSION send-keys -t $SESSION:3 'cd ~/cmm/vagrant/code' C-m
