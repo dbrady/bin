@@ -1,6 +1,6 @@
 #!/bin/sh
 SCRIPT=dot
-OSX_PREVIEW="false"
+OSX_PREVIEW="true"
 
 # LOLBASH: You can use -p to open in preview automatically OR you can say -f
 # neato but I'm too dumb right now to figure out how to allow "-p -f neato"
@@ -47,8 +47,8 @@ echo "Using formatter '$SCRIPT'"
 echo $SCRIPT -T png -o $(basename $1 .dot).png $1
 $SCRIPT -T png -o $(basename $1 .dot).png $1
 
-# if [ `uname -s` == "Darwin" ]; then
-#     if [ $OSX_PREVIEW == "true" ]; then
-#         open $(basename $1 .dot).png
-#     fi
-# fi
+if [ `uname -s` == "Darwin" ]; then
+    if [ $OSX_PREVIEW == "true" ]; then
+        open $(basename $1 .dot).png
+    fi
+fi
