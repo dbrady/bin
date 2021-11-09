@@ -69,7 +69,7 @@ IM_AFRAID_OF_YOUR_INPUT
   exit 1
 end
 
-target_branch = `git currentbranch`.strip
+target_branch = `git current-branch`.strip
 
 
 puts "Source Branch: #{source_branch}"

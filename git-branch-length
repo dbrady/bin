@@ -3,7 +3,7 @@
 # git branch-length [<branch-name>] - Emit branch length in chars, and warn you if your branch name is too long for Ac's deploy tooling (>= 64-ish chars)
 require 'colorize'
 
-branch = ARGV[0] || `git currentbranch`
+branch = ARGV[0] || `git current-branch`
 length = branch.size
 
 if length < 60

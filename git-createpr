@@ -6,7 +6,7 @@ end
 
 # TODO: get the real PR url for this
 ROOT_URL = 'https://github.com/acima-credit/merchant_portal/pull/new/'
-BRANCH = `git currentbranch`
+BRANCH = `git current-branch`
 
 puts "Create a new PR by opening this url in a browsner:"
 url = File.join(ROOT_URL, BRANCH)

@@ -15,7 +15,7 @@ def do_what_to_do(commands)
 end
 
 main_branch = `git main-branch`.strip
-current_branch = `git currentbranch`.strip
+current_branch = `git current-branch`.strip
 
 # Abort if we're on the main branch already
 if main_branch == current_branch
