@@ -1,39 +1,84 @@
 #!/usr/bin/env ruby
-# mp-migrations - examine schema_migrations table vs db/migrate/ folder, but
-# without starting rails because ugh that's so pokeyslow.
+# are-rails-migrations-current - examine schema_migrations table vs db/migrate/
+# folder, and potentially seed_migrations vs db/data/older, but without starting
+# rails because ain't nobody got time for that
+#
+# returns successful exit code to bash if migrations are current to allow
+# chaining this command from remigrate and other scripts
 
 require 'pg'
 
+def database_name
+  folder = Dir.pwd.split(/\//).last
+  case folder
+  when "merchant_portal" then "merchant_portal_development"
+  when "underwriting" then "underwriting_development_leases"
+  else
+  # hail mary
+    "#{folder}_developemnt"
+  end
+end
+
+def seed_migrations_tablename
+  folder = Dir.pwd.split(/\//).last
+  case folder
+  when "merchant_portal" then "seed_migrations"
+  when "underwriting" then "seed_migration_data_migrations"
+  else
+    "seed_migrations"
+  end
+end
+
 quiet = ARGV.include?("-q") || ARGV.include?("--quiet")
 
-planned_migrations = []
-executed_migrations = []
+def missing_migrations(conn, folder, table)
+  planned_migrations = []
+  executed_migrations = []
+  conn.exec( "SELECT version FROM #{table}" ) do |result|
+    executed_migrations = result.map {|row| row["version"].to_i}
+  end
+
+  migration_files = Dir.glob(File.join(folder, "*.rb"))
+  migration_file_map = Hash[ migration_files.map {|file| [file.sub(%r|^#{folder}/|, '').to_i, file] }]
+  planned_migrations = migration_file_map.keys
+
+  unrun_migrations = planned_migrations - executed_migrations
+
+  migration_file_map.keep_if {|key, value| unrun_migrations.include?(key) }
+end
 
 # TODO: put connection info somewhere it doesn't go into this repo but also
 # doesn't require starting rails to extract. Maybe don't use this script at all
 # if your development database creds involve secure secrets.
-conn = PG.connect( dbname: 'merchant_portal_development' )
-conn.exec( "SELECT version FROM schema_migrations" ) do |result|
-  executed_migrations = result.map {|row| row["version"].to_i}
-end
+conn = PG.connect( dbname: database_name )
 
-migration_files = Dir.glob("./db/migrate/*.rb")
-migration_file_map = Hash[ migration_files.map {|file| [file.sub(%r|^\./db/migrate/|, '').to_i, file] }]
-planned_migrations = migration_file_map.keys
-
-unrun_migrations = planned_migrations - executed_migrations
+unrun_migrations = missing_migrations(conn, "./db/migrate", "schema_migrations")
+unrun_seed_migrations = missing_migrations(conn, "./db/data", seed_migrations_tablename)
 
 def red(string)
   "\033[31m#{string}\033[0m"
 end
 
-if unrun_migrations.any?
+def green(string)
+  "\033[32m#{string}\033[0m"
+end
+
+if unrun_migrations.any? || unrun_seed_migrations.any?
   if !quiet
     migration_count_text = (unrun_migrations.size == 1) ? "migration has" : "#{unrun_migrations.size} migrations have"
-    puts red("The following #{migration_count_text} NOT been run:")
-    puts unrun_migrations.map {|timestamp| migration_file_map[timestamp]}
+    seed_migration_count_text = (unrun_seed_migrations.size == 1) ? "seed migration has" : "#{unrun_seed_migrations.size} seed migrations have"
+    if unrun_migrations.any?
+      puts red("The following #{migration_count_text} NOT been run:")
+      puts unrun_migrations.values
+    end
+    if unrun_seed_migrations.any?
+      puts red("The following #{seed_migration_count_text} NOT been run:")
+      puts unrun_seed_migrations.values
+    end
   end
   exit 1
 else
+  # all migrations are current, exit successfully
+  puts green("All migrations are current.") if __FILE__==$0
   exit 0
 end
