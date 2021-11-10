@@ -11,6 +11,5 @@ tmux send-keys -twork:4 "C-d"
 # stop rails server
 tmux send-keys -twork:5 "C-c"
 
-
 # stop sidekiq
 tmux send-keys -twork:6 "C-c"
