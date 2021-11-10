@@ -1,23 +1,44 @@
 #!/usr/bin/env ruby
 # git-main - identify and return the main branch for this repo
 
-def config_filepath
-  File.join(Dir.pwd, ".git/", "config")
+require 'yaml'
+
+def cache_file
+  File.expand_path("~/.git-main-branches.yml")
 end
 
-# It's hard to know, and potentially undecidable, exactly what branch a repo
-# considers their main branch. At this point in time (July 2021) the very first
-# branch in the .git/config file seems to be a pretty good guess. Let's use this
-# as a simple first guess; if this breaks all over the place we can add a better
-# tell, or just cheat and add some kind of --set command that stores the correct
-# brach in a local .rc file or perhaps in a user-wide .rc file with a hash of
-# path => branch overrides.
-#
-# For now, let's see how far we can get with just the first merge directive.
-#
-# The home/main branch for a repo is usually the first branch identified as the merge branch.
-def first_merge
-  IO.readlines(config_filepath).detect {|line| line =~ /^\s+merge = / }.split(/ = /)[1].split(/\//).last
+def cache
+  @cache ||= if !File.exists?(cache_file)
+                    {}
+                  else
+                    YAML.load_file(cache_file)
+                  end
 end
 
-puts first_merge
+def save_cache
+  File.open(cache_file, "w") do |fp|
+    fp.puts cache.to_yaml
+  end
+end
+
+def cache_lookup(dir)
+  cache[dir]
+end
+
+def cache_branch(dir, branch)
+  cache[dir] = branch
+  save_cache
+end
+
+def get_main_branch_from_remote
+  `git remote show origin`.each_line.to_a.grep(/^\s*HEAD branch:\s+/).first.split(/: /).last.strip
+end
+
+dir = Dir.pwd
+
+if ARGV.include?("-f") || !cache_lookup(dir)
+  branch = get_main_branch_from_remote
+  cache_branch dir, branch
+end
+
+puts cache_lookup(dir)
