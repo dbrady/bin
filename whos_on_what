@@ -2,7 +2,8 @@
 
 # whos_on_what - print a pretty chart of all the repos, what branch and commit
 # they are on, and if there are changes locally that might interfere with a git
-# pull on master.
+# pull on master. (Update: change hardcoded "master" to respect `git
+# main-branch`.
 
 # Dumb cwd dependency: Run this from any repo, it will go up a folder and then
 # check all child folders--i.e. run this from a repo and it will check all peer
@@ -51,7 +52,7 @@ class FormattedBranchPrinter
   def colorize_branch(text, branch)
     color = case branch
             when 'Not a git repo' then :light_black
-            when 'master' then :green
+            when 'master', 'main', 'develop' then :green # TODO: use git-main-branch?
             else
               :yellow
             end
