@@ -1,5 +1,11 @@
 #!/usr/bin/env ruby
 #
+# ABORT ABORT ABORT. This is 2020 code in every sense of the word. It was a
+# tortuous attempt to workaround a godawful technical complication, literally
+# trying to keep two branches in sync that share no common root. Ultimately the
+# problem got solved by giving up beating my head against Conway's Wall.
+
+
 # ABORT ABORT ABORT. This is all based on the asumption that the same patch
 # applied to two different branches will have the same sha. This is not
 # true. The OUTPUT after APPLYING the patch determines the sha. Which makes
@@ -10,7 +16,6 @@
 # compare the checksums of those patches?
 #
 # Parking this in "clever but futile idea: 75xp" for now.
-
 
 
 
