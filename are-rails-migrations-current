@@ -6,6 +6,13 @@
 # returns successful exit code to bash if migrations are current to allow
 # chaining this command from remigrate and other scripts
 
+# TODO: 2021-11-11 found an edge case where tests wouldn't run but migrations
+# looked current. I think I must have run migrations, and not run them in the
+# test environment. Workaround: I just ran `remigrate -f` and it forced a
+# remigrate, but if this happens again and often enough, maybe add `def
+# test_database_name`, query those migrations as well, and change `unrun =
+# (planned - executed)` to `unrun = (planned - (executed_dev + executed_test))`
+
 require 'pg'
 
 def database_name
