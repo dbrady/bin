@@ -187,8 +187,12 @@ time.downto(0).each do |seconds|
              else
                "on_blue"
              end
-#  print "#{ESC}[2J#{ESC}[0;0H"
-#  puts output.inspect
+
+  # This uses ANSI control codes to clear the screen, which in turn causes
+  # massive flicker.  It's the startup delay of system("rubanner"). Consider
+  # making rubanner take a --clear option?
+  # print "#{ESC}[2J#{ESC}[0;0H"
+
   system "rubanner --app=pom '#{display}' #{bg_color}"
   sleep 1
 end

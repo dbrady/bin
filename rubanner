@@ -37,6 +37,28 @@ class Rubanner
   DEFAULT_FONT = "electronic"
   CONFIG_FILE = File.expand_path("~/.rubanner.yml")
 
+  # Dear Past Me,
+  #
+  # I know back in December 2016 when you started this that you wanted to prove
+  # "we can write an app class that parses its own args without using the
+  # trollop/optimist gem" but it's really turned into a love letter to that
+  # gem. Refactor me to use clean args, please.
+  #
+  # Now I concede that I usually put the argument parsing down at the bottom in
+  # the "if __FILE__==$0" block and that can get super messy. If you want to try
+  # having the app class parse its own arguments, try moving it in here. Except
+  # that functionality will immediately beg to be extracted. So, okay... perhaps
+  # have an "Optimister" class that either wraps Optimist generically, or
+  # presents an interface that this app can know about.
+  #
+  # Alternately, there is value in doing `head scriptfile` and seeing the
+  # beginnings of the usage and arguments. So maybe keep `Rubanner.new.run if
+  # __FILE__==$0` down at the bottom, but have another if FILE block up at the
+  # top just for parsing args.
+  #
+  # Love, Future Me
+  # Saratoga Springs, November 2021
+
   def initialize(argv)
     @args = argv.dup
     @output = init_output
