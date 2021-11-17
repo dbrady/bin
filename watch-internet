@@ -1,0 +1,9 @@
+#!/bin/bash
+# only works on OSX for now but eh.
+if [ `uname -s` == 'Darwin' ]; then
+    watch -n 10 'ping -c 1 google.com && say "The network is up"'
+else
+    # TODO: hook into one of the audioplay apps to play a sound
+    # For now, go visual
+    watch -n 10 'ping -c 1 google.com && rubanner "The network is up"'
+fi
