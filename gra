@@ -1,0 +1,12 @@
+#!/bin/bash
+# gra - git rebase --abort
+
+if [[ -d .git/rebase-apply ]] ; then
+    echo "Press ENTER to git rebase --abort, or hit Ctrl-C to abort:"
+    read
+    echo git rebase --abort
+    git rebase --abort
+else
+    echo "\033[31;40mCannot git rebase --abort: .git/rebase-apply folder does not exist"
+    exit 1
+fi
