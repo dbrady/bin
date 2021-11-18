@@ -260,7 +260,7 @@ class Banner
   def render_command
     puts %Q|#{File.basename($0)} --font #{font_name} "#{message}"|
     puts %Q|figlet -w #{screen_width} -d ~/bin/figlet-fonts -f #{font_name} "#{message}"|
-    puts %Q|rubanner -f #{font_name} "#{message}" bold white on_light_blue|
+    puts %Q|rubanner --font=#{font_name} --bold --fg=white --bg=light_blue "#{message}"|
     puts
   end
 

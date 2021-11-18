@@ -11,12 +11,12 @@ if [ `uname -s` != "Darwin" ]; then
 fi
 
 while true; do
-    echo 'sleep 600; say "Check Slack"; seq 10 | while read i; do rubanner "CHECK SLACK" bold yellow on_black && rubanner "CHECK SLACK" bold on_yellow; done; say "Check Slack"'
+    echo 'sleep 600; say "Check Slack"; seq 10 | while read i; do rubanner -B -g yellow -b black "CHECK SLACK" && rubanner -B -b yellow "CHECK SLACK"; done; say "Check Slack"'
     sleep 600
     say "Check Slack"
     seq 10 | while read i; do
-        rubanner "CHECK SLACK" bold on_yellow
-        rubanner "CHECK SLACK" bold yellow on_black
+        rubanner -B -b on_yellow "CHECK SLACK"
+        rubanner -B -b on_black -g yellow "CHECK SLACK"
     done
     say "Check Slack"
 done

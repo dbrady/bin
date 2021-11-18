@@ -193,10 +193,10 @@ time.downto(0).each do |seconds|
   # making rubanner take a --clear option?
   # print "#{ESC}[2J#{ESC}[0;0H"
 
-  system "rubanner --app=pom '#{display}' #{bg_color}"
+  system "rubanner --font=dos-rebel --bg=#{bg_color} '#{display}'"
   sleep 1
 end
-system "rubanner --app=pom 'DONE' white on_green"
+system "rubanner --font=dos-rebel --fg=white --bg=green 'DONE'"
 
 say "Timer is done"
 __END__

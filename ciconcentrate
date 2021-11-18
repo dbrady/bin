@@ -7,6 +7,6 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-rubanner --app=ci "THINKY" light_cyan on_white
+rubanner --fg=light_cyan --bg=on_white "THINKY"
 # From the concentrate recipe
 curl -X PUT "http://192.168.0.66/api/$HUE/lights/9/state" -d  '{"on": true, "bri": 254, "hue": 33862, "sat": 50, "transitiontime":0}' 2>/dev/null > /dev/null
