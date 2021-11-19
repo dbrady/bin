@@ -62,6 +62,10 @@ conn = PG.connect( dbname: database_name )
 unrun_migrations = missing_migrations(conn, "./db/migrate", "schema_migrations")
 unrun_seed_migrations = missing_migrations(conn, "./db/data", seed_migrations_tablename)
 
+def bright(string)
+  "\033[1;37m#{string}\033[0m"
+end
+
 def red(string)
   "\033[31m#{string}\033[0m"
 end
@@ -75,11 +79,11 @@ if unrun_migrations.any? || unrun_seed_migrations.any?
     migration_count_text = (unrun_migrations.size == 1) ? "migration has" : "#{unrun_migrations.size} migrations have"
     seed_migration_count_text = (unrun_seed_migrations.size == 1) ? "seed migration has" : "#{unrun_seed_migrations.size} seed migrations have"
     if unrun_migrations.any?
-      puts red("The following #{migration_count_text} NOT been run:")
+      puts bright("The following #{migration_count_text} NOT been run:")
       puts unrun_migrations.values
     end
     if unrun_seed_migrations.any?
-      puts red("The following #{seed_migration_count_text} NOT been run:")
+      puts bright("The following #{seed_migration_count_text} NOT been run:")
       puts unrun_seed_migrations.values
     end
   end
