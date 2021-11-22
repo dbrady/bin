@@ -1,0 +1,133 @@
+#!/usr/bin/env ruby
+# rubanner - print a message with color
+# (This is a straight port of rubanner to the optimist gem)
+# rubanner [options] "message" [color [color2]]
+#
+# Example:
+# rubanner "Cool Banner"
+# rubanner -B "To Boldly Go" # bold white on blue
+# rubanner -g light_white -b red "This is bad" # bg color can be e.g. "red" or "on_red"
+# rubanner --font=nancyj-improved "Pants"
+#
+# TODO:
+# rubanner [options] "message" [options] --extra ["message2" [options]] [--extra [...]]
+#
+# e.g. the CoverMyMeds logo could be approximated with:
+# rubanner "Cover" on_light_white --font=nancyj-improved bold light_yellow \
+#          --extra "My" bold light_red \
+#          --extra "Meds" bold light_yellow
+
+# TODO: fiddle with colors inline. Would love to be able to say --left-background=light_yellow --right-background=light_red
+# TODO: composed messages. Would LOVE to be able to say
+#     rubanner Cover bold light_yellow on_light_white \
+#              My bold light_red on_light_white \
+#              Meds bold light_yellow on_light_white
+
+require 'colorize'
+require 'io/console'
+require 'optimist'
+require 'yaml'
+
+
+def usage
+  puts <<~USAGE
+  rubanner "Cool Banner"
+  rubanner "To Boldly Go" bold # black on white
+  rubanner "This is bad" light_white on_red # light_white == bold
+  rubanner "CoverMyMeds" --font=nancyj-improved bold red on_light_yellow # any colorize color string
+  USAGE
+end
+
+class Rubanner
+  attr_reader :message, :colors, :output, :screen_width, :font, :clear_screen
+
+  def initialize(message, colors, output, screen_width, font, clear_screen)
+    @output = output
+    @screen_width = screen_width
+    @font = font
+    @message = message
+    @colors = colors
+    @clear_screen = clear_screen
+  end
+
+  def run
+    ensure_figlet_installed!
+
+    # render message and calculate padding
+    screen_width.inspect
+
+    banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
+    banner_width = banner.each_line.to_a.first.chomp.length
+    left_size = (screen_width - banner_width) / 2
+    right_size = screen_width - (banner_width + left_size)
+
+    lpad = ' ' * left_size
+    rpad = ' ' * right_size
+
+    # Okay, calculations done, here comes the output!
+    blank_line
+    banner.each_line do |line|
+      output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
+    end
+  end
+
+  def ensure_figlet_installed!
+    raise NotImplementedError.new("figlet is not supported on this system -- please install it and try again") unless system("which figlet > /dev/null")
+  end
+
+  # double-dispatch from command-line args to colorize gem, e.g.
+  # colorize("pants", ["bold", "red", "on_blue"]) -> "pants".bold.red.on_blue
+  def colorize(text, colors)
+    colors.reduce(text) {|t, color| t.send color }
+  end
+
+  def blank_line
+    output.puts colorize("#{' ' * screen_width}", colors)
+  end
+
+  # I live to debug.
+  def dump_args_and_die
+    puts "output: #{output.inspect}"
+    puts "screen_width: #{screen_width.inspect}"
+    puts "font: #{font.inspect}"
+    puts "message: #{message.inspect}"
+    puts "colors: #{colors.inspect}"
+    puts "clear_screen: #{clear_screen.inspect}"
+    exit 0
+  end
+end
+
+# class Rubanner
+
+# end
+
+if __FILE__==$0
+  font_folder = File.join(File.dirname(__FILE__), "figlet-fonts")
+
+  opts = Optimist.options do
+    banner <<-BANNER
+rubanner - print a banner message with color
+
+rubanner [<options>] message
+
+Options:
+    BANNER
+    opt :font, "Font (must be installed in #{font_folder})", type: :string, default: "dos-rebel"
+    opt :fg, "Foreground color", short: "g", type: :string, default: "white"
+    opt :bg, "Background color", type: :string, default: "on_blue"
+    opt :bold, "bold", short: "B", type: :boolean, default: false
+    opt :output, "Output File", type: :string, default: nil
+    opt :screen_width, "Screen Width (specify when using --output)", type: :integer, default: nil
+    opt :clear_screen, "Clear Screen before printing banner", type: :boolean, default: false
+  end
+
+  opts[:output] ||= $stdout
+  opts[:screen_width] ||= $stdout.winsize[1]
+
+  message = ARGV.join(' ')
+  opts[:bg] = opts[:bg].start_with?("on_") ? opts[:bg] : "on_" + opts[:bg]
+  colors = [opts[:fg], opts[:bg]]
+  colors << "bold" if opts[:bold]
+
+  Rubanner.new(message, colors, opts[:output], opts[:screen_width], opts[:font], opts[:clear_screen]).run
+end
