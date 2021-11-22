@@ -13,12 +13,8 @@
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
-# roman font needs bold, electronic font does not
-if [ -e .rfg_project_name ]; then
-    rubanner --font=electronic --bold --fg=white --bg=blue "$(cat .rfg_project_name)"
-else
-    rubanner --font=electronic --bold --fg=white --bg=blue "$(pwd | sed -e 's/^.*\///')"
-fi
+# roman font needs bold, electronic font does not, but it doesn't hurt
+rubanner --font=electronic --bold --fg=white --bg=blue "$(pwd | sed -e 's/^.*\///')"
 rubanner --font=electronic --bold --fg=white --bg=blue "RUNNING"
 if [ -e ~/onsite.touch ]; then
     # echo "You're onsite! Skipping HUE lights."
