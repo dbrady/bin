@@ -13,7 +13,7 @@
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
-rubanner --font=dos-rebel --bold --fg=white --bg=red "FAIL"
+rubanner --font=electronic --bold --fg=white --bg=red "FAIL"
 if [ -e ~/onsite.touch ]; then
     # echo "You're onsite! Skipping HUE lights."
     exit 0
