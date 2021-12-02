@@ -1,0 +1,28 @@
+#!/bin/bash
+# git reset-branch - jump to master, nuke the story branch, and check it out fresh
+CURRENT_BRANCH=`git current-branch`
+
+# safety check: bail if $CURRENT_BRANCH == `git main-branch`
+if [ `git main-branch` == "$CURRENT_BRANCH" ]; then
+   echo -e '\033[1;37;41m *** Cowardly refusing to reset the main branch. ***\033[0m'
+   echo -e '\033[93;40m If you really mean to do this, you can do it manually with:\033[0m'
+   echo "git branch -D $CURRENT_BRANCH"
+   echo "git checkout $CURRENT_BRANCH"
+   echo "git track"
+   exit 1
+fi
+
+echo -e "\033[93;40mWARNING:\033[0m This will nuke and reset this branch. Are you sure? Hit Ctrl-C to abort, otherwise press enter to continue:"
+read
+
+echo git main
+git main
+
+echo git branch -D $CURRENT_BRANCH
+git branch -D $CURRENT_BRANCH
+
+echo go $CURRENT_BRANCH
+go $CURRENT_BRANCH
+
+echo git track
+git track
