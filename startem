@@ -3,17 +3,17 @@
 # sidekiq in window 6.
 
 # just blindly sends keys. If you got stuff already running... glhf/lol
-echo "Starting rails console in work:4 (console)"
+echo -e "\033[32mStarting rails console in work:4 (console)\033[0m"
 tmux send-keys -twork:4 "bails c"
 tmux send-keys -twork:4 "C-m"
 
 # start rails server
-echo "Starting rails server in work:5 (mp)"
+echo -e "\033[32mStarting rails server in work:5 (mp)\033[0m"
 tmux send-keys -twork:5 "bin/start"
 tmux send-keys -twork:5 "C-m"
 
 
 # start sidekiq
-echo "Starting sidekiq in work:6 (mpq)"
+echo -e "\033[32mStarting sidekiq in work:6 (mpq)\033[0m"
 tmux send-keys -twork:6 "bundle exec sidekiq"
 tmux send-keys -twork:6 "C-m"

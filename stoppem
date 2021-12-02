@@ -5,11 +5,16 @@
 # stop rails console - beware, if you don't have rails console running, this
 # will cheerfully close window 4 down completely. Create a new terminal if you
 # need to.
+echo -e "\033[31mStopping rails console in work:4 (console) with C-c C-d\033[0m"
 tmux send-keys -twork:4 "C-c"
 tmux send-keys -twork:4 "C-d"
 
 # stop rails server
+echo -e "\033[31mStopping rails server in work:5 (mp) with C-c\033[0m"
 tmux send-keys -twork:5 "C-c"
 
 # stop sidekiq
+echo -e "\033[31mStopping sidekiq in work:6 (mpq) with C-c\033[0m"
 tmux send-keys -twork:6 "C-c"
+
+exit 0
