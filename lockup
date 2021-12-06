@@ -1,0 +1,71 @@
+#!/usr/bin/env ruby
+class Locker
+  attr_reader :sides, :last_roll
+
+  def initialize(sides)
+    @sides = sides
+  end
+
+  def roll
+    @last_roll = rand(sides) + 1
+  end
+
+  def lock?
+    last_roll == sides
+  end
+
+  def strike?
+    last_roll == 1
+  end
+
+  def to_s
+    "#{sides}"
+  end
+end
+
+class Lockup
+  MAX_STRIKES = 4
+  def self.go
+    unlocked = [4,6,8,10,10,12,20].map {|sides| Locker.new(sides)}
+    locked = []
+    strikes = 0
+    rolls = 0
+
+    while unlocked.any? && strikes < MAX_STRIKES
+      rolls += 1
+      unlocked.each(&:roll)
+      to_roll = unlocked.map {|u| "d#{u}"}.join(' ')
+      puts "Rolling: #{to_roll}"
+      rolled = unlocked.map(&:last_roll).join(' ')
+      puts "Rolled: #{rolled}"
+      new_locks, unlocked = unlocked.partition(&:lock?)
+
+      if new_locks.any?
+        locked += new_locks
+        new_locks.each do |locker|
+          puts "Locked the #{locker}!"
+        end
+      elsif unlocked.any?(&:strike?)
+
+        strikes += 1
+      end
+    end
+
+    puts '-' * 80
+    puts "Rolls: #{rolls}"
+    puts "Strikes: #{strikes}"
+    puts "Locked: #{locked.map(&:to_s).join(' ')}"
+    puts "Unlocked: #{unlocked.map(&:to_s).join(' ')}"
+    puts '-' * 80
+    return strikes < MAX_STRIKES
+  end
+end
+
+if __FILE__==$0
+  wins = 0
+  attempts = 10000
+  attempts.times do
+    wins += 1 if Lockup.go
+  end
+  puts "wins: #{wins}/#{attempts} (%5.2f%%)" % ((wins*100.0)/attempts)
+end
