@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+# tservices-start - hack to workaround my crippled tshare-start script
+
+# TODO: We can run `tmux list-services` to see if services is running and has
+# exactly 1 window. This means it's running and ready to have all the services
+# started up.
+
+$logging = true
+
+def execute(command)
+  puts command if $logging
+  system command
+end
+
+# this returns truthy if the named session has the specified number of windows open
+def tmux_ready?(session, window_count)
+  execute "tmux list-sessions | grep -E '^#{session}: #{window_count} windows '"
+end
+
+if tmux_ready?('services', 10)
+  puts "tmux looks ready to start up the services!"
+else
+  puts "tmux is either not running a services session, or has the wrong number of windows open."
+  puts "Before running this script, stop any existing services tmux session, open a new terminal and run:"
+  puts "  tmux new-session"
+  puts "Then go into that session and run:"
+  puts "  tmux rename-session services"
+  puts "Then, hit 'C-j c' 9 times so you have a grand total of 10 windows open."
+  puts "Then rerun this script."
+  exit 0
+end
+
+# Sadly this script needs to be run OUTSIDE the tmux session, so this
+# is prerequisite work: open a new terminal and run new-session,
+# rename-session.
+
+# execute "tmux new-session"
+# execute "tmux rename-session services"
+
+# this leaves you with 1 window open, yay.
+
+class Settings
+  ACIMA_DIR = File.expand_path("~/acima/devel")
+
+  attr_reader :name, :folder, :command
+  def initialize(name, folder, command=nil)
+    @name = name
+    @folder = File.join(ACIMA_DIR, folder)
+    @command = command || 'bin/start'
+  end
+end
+
+settingses = [
+    Settings.new("ams", "application_management_system"),
+    Settings.new("bas", "bank_account_service"),
+    Settings.new("cra", "cra_products_emulator"),
+    Settings.new("gc",  "global_customer"),
+    Settings.new("cc",  "credit_card_service"),
+    Settings.new("bms", "benefits_management_service"),
+    Settings.new("cls", "cash_ledger_service"),
+    Settings.new("lms", "lease_management_system"),
+    Settings.new("cf",  "contract-funding"),
+    Settings.new("kipper", "kipper"),
+]
+
+settingses.each.with_index do |settings, index|
+  pane = index + 1
+
+  # FIXME: Window creation is problematic. Have to wait for bash to start up and
+  # run all my crap before tmux can find the stupid window.
+
+  # if index > 1
+  #   # window 1 is already open
+  #   execute "tmux new-window -tservices"
+  #   sleep(1) until tmux_ready?('services', index)
+  # end
+
+  window = "services:#{pane}"
+  execute %Q|tmux rename-window -t#{window} "#{settings.name}"|
+
+  # Dono why C-m has to be sent on its own line but it does
+  execute %Q|tmux send-keys -t#{window} "cd #{settings.folder}"|
+  execute %Q|tmux send-keys -t#{window} "C-m"|
+
+  execute %Q|tmux send-keys -t#{window} "#{settings.command}"|
+  execute %Q|tmux send-keys -t#{window} "C-m"|
+end
