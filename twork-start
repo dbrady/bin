@@ -1,92 +1,20 @@
 #!/usr/bin/env ruby
 # twork-start - hack to workaround my crippled tshare-start script
 
-# TODO: This shares almost all of its code with tservices-start. I'm busy and I
-# need this working asap so I'll leave that extraction/refactoring for
-# later. I'm probably on my way to writing my own poor-man's tmuxinator.
+require_relative 'tmuxinatrix/tmux_settings'
+require_relative 'tmuxinatrix/tmuxinatrix'
 
-# TODO: We can run `tmux list-services` to see if work is running and has
-# exactly 1 window. This means it's running and ready to have all the work
-# started up.
-
-class Settings
-  ACIMA_DIR = File.expand_path("~/acima/devel")
-
-  attr_reader :name, :folder, :command
-  def initialize(name, folder, command=nil)
-    @name = name
-    @folder = File.join(ACIMA_DIR, folder)
-    @command = command || 'bin/start'
-  end
-end
-
-SESSION_NAME='work'
 settingses = [
-  Settings.new("emacs", "merchant_portal", "emacs"),
-  Settings.new("bash", "merchant_portal", ""),
-  Settings.new("spec", "merchant_portal", ""),
-  Settings.new("console", "merchant_portal", ""),
+  TmuxSettings.new("emacs", "merchant_portal", "emacs"),
+  TmuxSettings.new("bash", "merchant_portal", ""),
+  TmuxSettings.new("spec", "merchant_portal", ""),
+  TmuxSettings.new("console", "merchant_portal", ""),
 
-  Settings.new("mp", "merchant_portal"),
-  Settings.new("mpq", "merchant_portal", "besq"),
-  Settings.new("np", "notary_public"),
-  Settings.new("uw", "underwriting"),
+  TmuxSettings.new("mp", "merchant_portal"),
+  TmuxSettings.new("mpq", "merchant_portal", "besq"),
+  TmuxSettings.new("np", "notary_public"),
+  TmuxSettings.new("uw", "underwriting"),
 ]
-
-
 $logging = true
 
-def execute(command)
-  puts command if $logging
-  system command
-end
-
-# this returns truthy if the named session has the specified number of windows open
-def tmux_ready?(session, window_count)
-  execute "tmux list-sessions | grep -E '^#{session}: #{window_count} windows '"
-end
-
-if tmux_ready?(SESSION_NAME, settingses.size)
-  puts "tmux looks ready to start up the #{SESSION_NAME} session!"
-else
-  puts "tmux is either not running a #{SESSION_NAME} session, or has the wrong number of windows open."
-  puts "Before running this script, stop any existing #{SESSION_NAME} tmux session, open a new terminal and run:"
-  puts "  tmux new-session"
-  puts "Then go into that session and run:"
-  puts "  tmux rename-session #{SESSION_NAME}"
-  puts "Then, hit 'C-j c' #{settingses.size-1} times so you have a grand total of #{settingses.size} windows open."
-  puts "Then rerun this script."
-  exit 0
-end
-
-# Sadly this script needs to be run OUTSIDE the tmux session, so this
-# is prerequisite work: open a new terminal and run new-session,
-# rename-session.
-
-# execute "tmux new-session"
-# execute "tmux rename-session #{SESSION_NAME}"
-
-# this leaves you with 1 window open, yay.
-
-settingses.each.with_index do |settings, index|
-  pane = index + 1
-
-  # FIXME: Window creation is problematic. Have to wait for bash to start up and
-  # run all my crap before tmux can find the stupid window.
-
-  # if index > 1
-  #   # window 1 is already open
-  #   execute "tmux new-window -t#{SESSION_NAME}"
-  #   sleep(1) until tmux_ready?(SESSION_NAME, index)
-  # end
-
-  target = "#{SESSION_NAME}:#{pane}"
-  execute %Q|tmux rename-window -t#{target} "#{settings.name}"|
-
-  # Dono why C-m has to be sent on its own line but it does
-  execute %Q|tmux send-keys -t#{target} "cd #{settings.folder}"|
-  execute %Q|tmux send-keys -t#{target} "C-m"|
-
-  execute %Q|tmux send-keys -t#{target} "#{settings.command}"|
-  execute %Q|tmux send-keys -t#{target} "C-m"|
-end
+Tmuxinatrix.run('work', settingses)
