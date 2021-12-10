@@ -1,6 +1,6 @@
 #!/bin/bash
 # grc - git rebase --continue
--
+
 if [[ -d .git/rebase-apply ]] ; then
     echo "Press ENTER to git rebase --continue, or hit Ctrl-C to abort:"
     read
