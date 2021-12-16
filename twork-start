@@ -8,7 +8,7 @@ settingses = [
   TmuxSettings.new("emacs", "merchant_portal", "emacs"),
   TmuxSettings.new("bash", "merchant_portal", ""),
   TmuxSettings.new("spec", "merchant_portal", ""),
-  TmuxSettings.new("console", "merchant_portal", ""),
+  TmuxSettings.new("console", "merchant_portal", "bails c"),
 
   TmuxSettings.new("mp", "merchant_portal"),
   TmuxSettings.new("mpq", "merchant_portal", "besq"),
