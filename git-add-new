@@ -1,4 +1,8 @@
 #!/bin/bash
-echo FAVOR git addnew
-echo git addnew $@
-git addnew $@
+echo TODO: Check to make sure nothing else is currently staged
+
+echo git add $1
+git add $1
+
+echo git commit -m "Add $1"
+git commit -m "Add $1"
