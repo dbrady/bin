@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+# twork-start - hack to workaround my crippled tshare-start script
+
+require_relative 'tmuxinatrix/tmux_settings'
+require_relative 'tmuxinatrix/tmuxinatrix'
+
+settingses = [
+  TmuxSettings.new("ccq", "credit_card_service", "bundle exec sidekiq"),
+  TmuxSettings.new("bmq", "benefits_management_service", "bundle exec sidekiq"),
+  TmuxSettings.new("uwq", "underwriting", "bundle exec sidekiq"),
+  TmuxSettings.new("gcq", "global_customer", "bundle exec sidekiq"),
+  TmuxSettings.new("cfq", "contract-funding", "bin/besq"),
+  TmuxSettings.new("cftiki", "contract-funding", "bin/cftiki"),
+  TmuxSettings.new("mptiki", "merchant_portal", "bin/tiki_torch start"),
+]
+$logging = true
+
+Tmuxinatrix.run('queues', settingses)
