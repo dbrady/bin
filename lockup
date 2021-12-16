@@ -24,7 +24,7 @@ class Locker
 end
 
 class Lockup
-  MAX_STRIKES = 4
+  MAX_STRIKES = 5
   def self.go
     unlocked = [4,6,8,10,10,12,20].map {|sides| Locker.new(sides)}
     locked = []

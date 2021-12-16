@@ -12,8 +12,6 @@
 
 # TODO:
 
-# - [ ] BUG: if you were on main, RETURN should not proc, but it does
-
 # 1. Port this to ruby. The options are just too insane. Also do this, if for no
 # other reason, to give a high-level imperative script at the top like git_stash;
 # go_master; git_pull... return_to_story_branch, git_rebase, git_stash_apply,
