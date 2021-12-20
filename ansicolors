@@ -76,4 +76,4 @@ echo
 echo "NOTE: -e is required to turn on extended colors. It is undocumented on OSX, and does"
 echo "not work under /bin/sh on Catalina. Use /bin/bash"
 echo
-echo "In the wild, you may also see \x1b; it is the hex equivalent of octal \033."
+echo "\033 works in bash and ruby. In the wild, you may also see \x1b, chr(27) or \e; these are all equivalent to octal \033."
