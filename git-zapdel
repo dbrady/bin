@@ -1,4 +1,7 @@
 #!/bin/sh
+# git zapdel - git rm's any tracked files that have been deleted from
+# the file system. See also git jedi-mind-trick if you want to delete
+# it from all space and time
 git status | grep -E '^#[[:space:]]+deleted:[[:space:]]+' | awk '{print $3}' | while read f; do echo "Deleting missing file $f..."; git rm $f; done
 
 
