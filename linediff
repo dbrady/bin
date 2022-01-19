@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+require "io/console"
+
+file1, file2 = ARGV.map {|filename| File.readlines(filename).map(&:rstrip) }
+
+puts "Diffing #{ARGV[0]} and #{ARGV[1]}..."
+
+differences_found = false
+
+file1.zip(file2).each.with_index do |pair, index|
+  line1, line2 = *pair
+  if line1 != line2
+    differences_found = true
+    puts "Line #{index+1}:"
+    puts line1
+    puts line2
+    char = $stdin.getch
+    exit(0) if char == "\u0003"
+  end
+end
+
+puts "No differences found" unless differences_found
