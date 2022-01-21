@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# nokogirify - Parse incoming xml (from file or $stdin) and spit it back out somewhat pretty-printed.
+#
+# TODO: nokogiri and I disagree on how a lot of xml should be formatted (it's
+# especially bad at newlines), and I'm unsure if I should write a trivial xml
+# reformatter, try to find something like tidy but for generic xml rather than
+# html, or use nokogiri to parse but then write an indenting document emitter
+# that knows to ignore empty/whitespace text nodes in between "real" nodes. Hrm.
+require "nokogiri"
+
+text = ARGF.each_line.to_a.join
+puts ::Nokogiri::XML(text).root.to_xml
