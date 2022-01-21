@@ -1,0 +1,15 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+    DELAY=5
+else
+    DELAY=$1
+fi
+
+echo stoppem
+stoppem
+
+echo sleep $DELAY
+sleep $DELAY
+
+echo startem
+startem
