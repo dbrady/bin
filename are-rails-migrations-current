@@ -12,16 +12,20 @@
 # remigrate, but if this happens again and often enough, maybe add `def
 # test_database_name`, query those migrations as well, and change `unrun =
 # (planned - executed)` to `unrun = (planned - (executed_dev + executed_test))`
-
+#
+# UPDATE: The edge case is that the development migrations are up-to-date but
+# the test migrations are out of sync. This script only checks the dev
+# database. Can get into this state by testing a migration PR in development and
+# not running the rollback after testing.
 require 'pg'
 
-def database_name
+def database_name(env: "development")
   folder = Dir.pwd.split(/\//).last
   case folder
   when "merchant_portal" then "merchant_portal_development"
   when "underwriting" then "underwriting_development_leases"
   else
-  # hail mary
+    # hail mary
     "#{folder}_developemnt"
   end
 end
