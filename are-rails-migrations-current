@@ -24,6 +24,7 @@ def database_name(env: "development")
   case folder
   when "merchant_portal" then "merchant_portal_development"
   when "underwriting" then "underwriting_development_leases"
+  when "credit_card_service" then "credit_card_development"
   else
     # hail mary
     "#{folder}_developemnt"
@@ -35,6 +36,7 @@ def seed_migrations_tablename
   case folder
   when "merchant_portal" then "seed_migrations"
   when "underwriting" then "seed_migration_data_migrations"
+  when "credit_card_service" then nil
   else
     "seed_migrations"
   end
@@ -43,6 +45,8 @@ end
 quiet = ARGV.include?("-q") || ARGV.include?("--quiet")
 
 def missing_migrations(conn, folder, table)
+  return [] unless table # some projects don't have a seed migrations table
+
   planned_migrations = []
   executed_migrations = []
   conn.exec( "SELECT version FROM #{table}" ) do |result|
