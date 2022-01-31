@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+# explain-acronym <ACRONYM> - Pick words at random. Probably without making any sense.
+
+exit(-1) if ARGV[0].nil?
+
+words = IO.readlines("/usr/share/dict/words").map(&:strip)
+
+explanation = []
+ARGV[0].downcase.chars.each do |char|
+  explanation << words.grep(/^#{char}/).sample
+end
+
+puts explanation * " "
