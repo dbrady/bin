@@ -1,0 +1,10 @@
+#!/bin/bash
+target=services
+count=10
+
+for i in $(seq $count); do
+    echo $i
+    echo "tmux send-keys -t${target}:$i C-c"
+    tmux send-keys -t${target}:$i "C-c"
+    tmux send-keys -t${target}:$i "C-d"
+done
