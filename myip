@@ -1,8 +1,12 @@
 #!/bin/sh
+echo "ifconfig:"
 ifconfig | ruby -n -e '$line=$_.chomp; $iface=$1 if $line=~/^([\S]+):?/; puts "%8s: %s" % [$iface, $2] if $line =~ /(inet | inet addr:)(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/'
 #echo External: `dig +short myip.opendns.com @resolver1.opendns.com`
+echo "external ip:"
 external=`curl -s checkip.dyndns.org | sed -e 's/.*Current IP Address: //' -e 's/<.*$//'`
-echo External: $external
+echo $external
+
+echo "GeoIP Lookip:"
 # Scripted access is against the TOS of most free geoip services; to be fair
 # they make their money selling that sort of access.
 echo "Click here for location lookup: https://whatismyipaddress.com/ip/$external"
