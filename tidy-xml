@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+# tidy-xml - Parse incoming xml (from file or $stdin) and spit it back out with
+# best-effort indentation
+
+TAB = '    '
+
+def log(msg)
+  puts msg
+end
+
+text = ARGF.each_line.map(&:strip).join("").gsub(/></, ">\n<")
+indent = 0
+text.each_line do |line|
+  line = line.strip
+
+  if line.start_with?("</")
+    indent -= 1
+  end
+
+  puts"#{TAB * indent}#{line}"
+
+  # Line types:
+  # <foo x="y">           - indent
+  # </foo>                - outdent
+  # <foo x="y">blah</foo> - no change
+  # <foo x="y"/>          - no change
+
+  if line.start_with?("<")
+    tag = line.split.first[1..]
+    tag = tag.split(">").first
+    # log "tag is #{tag}"
+
+    if line.end_with?("/>")
+      # log "tag is single, no pair - no change in indent"
+    else
+      if line.end_with?("</#{tag}>")
+        # log "tag begins and ends on this line - no change in indent"
+      else
+        if line[1] == "/"
+          # log "<< outdent"
+        else
+          # log ">> indent"
+          indent += 1
+        end
+      end
+    end
+  else
+    # no a tag on this line, skip
+  end
+end
+# puts ::Nokogiri::XML(text).root.to_xml
