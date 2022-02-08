@@ -1,3 +1,3 @@
 #!/bin/sh
-echo bundle exec rspec -f d --order=defined $@
-bundle exec rspec -f d --order=defined $@
+echo bundle exec rspec --format=documentation --order=defined $@
+bundle exec rspec --format=documentation --order=defined $@
