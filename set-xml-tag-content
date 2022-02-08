@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# set-xml-tag-content <tag> <value> <file.xml>
+#
+
+# Stabs a value quickly into an XML document. I wrote this because I was working
+# with SAML and every edit changed the DigestValue and SignatureValue.
+#
+
+# ONLY WORKS when the tag content is all on one line like <tag>content</tag>,
+# and the opening tag has no attributes. This tool is meant to be VERY small and
+# VERY sharp (read: stupid).
+#
+# Dear Future Me,
+#   If you need this tool to be smarter, I've left it simple for you.
+# Love,
+# Past Me
+
+#
+# $ grep DigestValue saml.xml
+# => <ds:DigestValue>123</dsDigestValue>
+# $ set-xml-tag-content 'ds:DigestValue' 456 saml.xml
+# $ grep DigestValue saml.xml
+# => <ds:DigestValue>456</dsDigestValue>
+
+tag = ARGV[0]
+new_value = ARGV[1]
+filename = ARGV[2]
+
+tag_pattern = "%r[<#{tag}>.*</#{tag}>]"
+new_tag = "<#{tag}>#{new_value}</#{tag}>"
+filename = File.expand_path(filename)
+
+command = %Q|ruby -i -n -e 'puts $_.gsub(#{tag_pattern}, "#{new_tag}")' #{filename}|
+
+puts command
+puts `#{command}`
