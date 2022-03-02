@@ -16,9 +16,7 @@ class Tmuxinatrix
       else
         puts "tmux is either not running a #{session_name} session, or has the wrong number of windows open."
         puts "Before running this script, stop any existing #{session_name} tmux session, open a new terminal and run:"
-        puts "  tmux new-session"
-        puts "Then go into that session and run:"
-        puts "  tmux rename-session #{session_name}"
+        puts "  tmux new-session -s #{session_name}"
         puts "Then, hit 'C-j c' #{settingses.size-1} times so you have a grand total of #{settingses.size} windows open."
         puts "Then rerun this script."
         exit 0
