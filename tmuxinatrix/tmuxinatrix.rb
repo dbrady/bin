@@ -26,6 +26,10 @@ class Tmuxinatrix
       # is prerequisite work: open a new terminal and run new-session,
       # rename-session.
 
+      # TODO: It works! Updated command: tmux new-session -s <session-name>
+      # Remove the above guard clause, and add it a tmux new-session -s #{session_name}
+      # Maybe KEEP the above guard clause, but if it DOES find the session, assume it's created and has all the right windows, and just do tmux attach instead.
+
       # execute "tmux new-session"
       # execute "tmux rename-session #{session_name}"
 
