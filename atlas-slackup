@@ -43,9 +43,13 @@ class Slackup
       # end
     end
 
-    def new_file
+    def new_filename_for_today
       datestamp = Date.today.strftime("%F")
-      filepath = filepath_for(datestamp)
+      filepath_for(datestamp)
+    end
+
+    def new_file
+      filepath = new_filename_for_today
       if !File.exists?(filepath)
         template = DATA.read
         File.open(filepath, "w") { |fp| fp.puts template }
@@ -86,7 +90,11 @@ class Slackup
       Dir.glob(File.join(slackup_folder, "202*.md")).sort.last
     end
 
-    def copy_file
+    def copy_most_recent_file_to_today
+      system "cp #{most_recent_file} #{new_filename_for_today}"
+    end
+
+    def copy_file_to_clipboard
       system "cat #{most_recent_file} | pbcopy"
       puts "File copied to clipboard. Paste in #atlas-slackup to report status."
     end
@@ -101,13 +109,17 @@ if __FILE__==$0
 
   if ARGV.empty? # run
     Slackup.display_file most_recent_file, !nocolor
-    Slackup.copy_file
+    Slackup.copy_file_to_clipboard
   elsif ARGV[0] == "-n"
     Slackup.new_file
-    Slackup.copy_file
+    Slackup.copy_file_to_clipboard
   elsif ARGV[0] == "-e"
     Slackup.edit_file ARGV[1]
-    Slackup.copy_file
+    Slackup.copy_file_to_clipboard
+  elsif ARGV[0] == "-ne"
+    Slackup.copy_most_recent_file_to_today
+    Slackup.edit_file Date.today.strftime("%F")
+    Slackup.copy_file_to_clipboard
   else
     Slackup.usage
     exit 1
