@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "convert -delay 2 $1 -loop 0 `basename $1`.gif"
+convert -delay 2 $1 -loop 0 `basename $1`.gif
