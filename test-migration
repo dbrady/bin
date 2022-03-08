@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# test-migration - test a migration to see that it's working correctly
+
+# Assuming the migration is to add a column to a table
+# test-migration <table> <column>
+
+# TODO: Look at are-rails-migrations-current for database stuff without waiting on rails?
+
+# Before migration
+# Test: Table must not have column
+
+# Test: Run migration, it must not crash
+
+# After migration
+# Test: table must have column
+
+# Idempotency: connect to database and secretly remove the migration from schema_migrations
+
+# Test: Run migration, it must not crash
+# Test: table must have column
+
+# Rollback
+
+# Test: table must not have column
+
+# Remigrate
+
+# Test: Run migration, it must not crash
+# Test: table must have column
