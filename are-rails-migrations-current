@@ -17,6 +17,10 @@
 # the test migrations are out of sync. This script only checks the dev
 # database. Can get into this state by testing a migration PR in development and
 # not running the rollback after testing.
+
+# TODO: 2022-03-08 I just found a great alternative use for this generic notion
+# of "connect to the rails database but without loading rails". Extract this out
+# to common/shareable code?
 require 'pg'
 
 def database_name(env: "development")
