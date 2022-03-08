@@ -1,0 +1,27 @@
+#!/bin/bash
+# rc - run rubocop on desired folder and/or with desired args
+
+# TODO: Lots of ways this could go:
+
+# 1. Make this a fully-fledged clone of rfg, which rcg, rcload, etc. I
+# think I don't run rubocop often enough to merit this approach. rfg
+# gets run many times per hour, rubocop gets run a few times a day
+# except for when I am drilling into a file with a lot of violations. This
+# highly kurtotic usage pattern means that 99% of the time I don't
+# need any kind of rubocop script and 1% of the time I am desperate
+# for one.
+
+# 2. Interpret the rfg command and generate an appropriate rc
+# command. It's probably somewhat easy to extract folders and
+# filenames from an rfg command, but much harder to intuit if we want
+# to run just a certain cop.
+
+# 3. Perhaps A hybrid of both approaches? Just enough interpretation
+# to figure out files and folders, and then a manual addendum file
+# where custom operations can be added?
+
+
+
+echo "rubocop runner - COME WRITE ME"
+echo 'rubocop app/domains/support/vintage/'
+rubocop app/domains/support/vintage/
