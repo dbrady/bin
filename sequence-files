@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+# sequence-files - Rename a bunch of files on disk with a sequence
+
+# Because I keep grabbing screenshots of lectures and naming them, and then
+# viewing them back in alphabetical order rather than time order jumbles my
+# notes.
+
+# Usage:
+
+# Assuming I saved off four files in this order: carol.gif bob.gif dave.gif alice.gif
+
+# Omitting extra details
+
+# $ ls -la
+# alice.gif
+# bob.gif
+# carol.gif
+# dave.gif
+# # ^^^ sadness
+
+# $ ls -lart
+# carol.gif
+# bob.gif
+# dave.gif
+# alice.gif
+# # ^^^ happinessY
+
+
+# TODO: use oniguruma matched fields? Like %03d/sequence and %T/time ?
+
+# $ sequence-files --format="20220310-%03d-%s"
+# mv "carol.gif" "20220310-001-carol.gif"
+# mv "bob.gif" "20220310-002-bob.gif"
+# mv "dave.gif" "20220310-003-dave.gif"
+# mv "alice.gif" "20220310-004-alice.gif"
+
+# and then:
+
+# $ ls -la
+# 20220310-001-carol.gif
+# 20220310-002-bob.gif
+# 20220310-003-dave.gif
+# 20220310-004-alice.gif
+# ^^^ JOYYYYY
