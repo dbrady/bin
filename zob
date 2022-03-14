@@ -2,13 +2,17 @@
 # zob - (zork b)ranch - use selecta to pick a branch to delete
 # CLI workaround to a GUI-fluent team who use long, semantic branch names
 
-# TODO: zob <pattern> - instead of selecta, grep for all branches matching
+# DONE: zob <pattern> - instead of selecta, grep for all branches matching
 #       pattern. Show the pattern with a dire warning that they're ALL about to
 #       be removed, then remove them en masse. Most of the time when I run zob
 #       I'm doing a batch operation cleaning up all my old branches.
 #
 # TODO: zob -e - instead of selecta, open an editor showing all the branches,
 #       commented out, with a message saying "uncomment a branch to remove it"
+#
+# TODO: zob -i - interactive. Like the editor version but iterates
+#       through each branch to delete and prompts to see if you want
+#       to delete each branch with a [y/N] prompt
 
 if [ "$1" == "" ]; then
     echo -e '\033[1;37;41mSelect a branch to DELETE\033[0m or \033[1;37;42mhit CTRL-C to abort\033[0m:'
