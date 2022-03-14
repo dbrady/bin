@@ -18,8 +18,8 @@ if [ "$1" == "" ]; then
     git branch -D $branchname
 else
     echo -e '\033[1;37;41mThe following branches will be DELETED!\033[0m'
-    git branch | grep "$1"
+    git branch | grep -E "$1"
     echo -e 'Hit ENTER to continue or or CTRL-C to abort:'
     read
-    git branch | grep "$1" | while read branch; do git branch -D "$branch"; done
+    git branch | grep -E "$1" | while read branch; do git branch -D "$branch"; done
 fi
