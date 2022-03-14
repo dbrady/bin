@@ -1,6 +1,14 @@
 #!/usr/bin/env ruby
 # test-migration - test a migration to see that it's working correctly
 
+# TODO: Test that migration works/does not crash if the table is
+# missing. (I.e. ALTER TABLE to rename it to something else.)
+#
+# ALTER TABLE <table> RENAME TO <table>_backup_<datestamp>
+#
+# ...don't forget to rename it back later, especially for violently important
+# tables like leases or merchants.
+
 # Assuming the migration is to add a column to a table
 # test-migration <table> <column>
 
@@ -27,3 +35,10 @@
 
 # Test: Run migration, it must not crash
 # Test: table must have column
+
+# BONUS FEATURE: Emit github-friendly checklist:
+# - [x] Premigration column does not exist
+# - [x] Migration adds column
+# - [x] Migration is idempotent
+# - [x] Rollback removes column
+# - [x] Remigration succeeds
