@@ -1,0 +1,14 @@
+#!/bin/bash
+if which chafa; then
+    echo 'chafa ~/Documents/refdox/windows_xp_bliss.jpg'
+    chafa ~/Documents/refdox/windows_xp_bliss.jpg
+else
+    echo "Chafa does not appear to be installed. You can remedy this with:"
+    if [ `uname -s` == "Darwin" ]; then
+        echo "brew install chafa"
+    elif [ `uname -s` == "Linux" ]; then
+        echo "sudo apt install chafa"
+    else
+        echo "getting a computer with a real operating system (unrecognized OS: `uname -s`)"
+    fi
+fi
