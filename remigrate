@@ -6,34 +6,18 @@ def log(msg)
   puts "\033[32m#{msg}\033[0m"
 end
 
-# TODO: keep this stuff on the off chance that (shudder) I ever need to stay on
-# top of developers retroactively changing the contents of schema files. I know,
-# I know, it shouldn't ever happen, but then again I never thought my schema
-# contents cache could be updated without migrations getting run.
-
-# db_migrate_sha_file = File.expand_path("~/.last-db-migrate-sha")
-# force = ARGV.include?("-f") || ARGV.include?("--force") || !File.exists?(db_migrate_sha_file)
-
-# # load old sha
-# old_sha = if !force
-#             File.read(db_migrate_sha_file)
-#           else
-#             ""
-#           end
-
-# # calculate new sha
-# new_sha = `db-migrate-sha`
-
-# if old_sha != new_sha
-#   log "bundle exec rails db:migrate"
-#   system "bundle exec rails db:migrate"
-#   log "RAILS_ENV=test bundle exec rails db:migrate"
-#   system({"RAILS_ENV" => "test"}, "bundle exec rails db:migrate")
-
-#   File.open(db_migrate_sha_file, "w") {|fp| fp.puts new_sha }
-# else
-#   puts "Migration folder contents have not changed since last run. Rerun with -f or --force to force remigration."
-# end
+# TODO: If I have just a seed migration or just a data migration, don't waste my
+# time running the other one. I could run the are-migrations-current script
+# twice; that would make this script take an extra 850ms on every no-op in order
+# to save 7-9sec once a year or so. Yeah, I'm being stupid here.
+#
+# Okay, it could be a win if are-rails-migrations-current could exit with a
+# status code, like 0 for success, 1 for schema migrations needed, 2 for seed
+# migrations, 3 for both, etc. Then it would only need to run once and would
+# save me that 7 seconds once a year. Given that dicking with my ops scripts is
+# fun enough to make me completely discount the hours and hours of development
+# cost, this is almost certainly going to be another one of my "terrible ideas,
+# enthusiastically pursued".
 
 force = ARGV.include?("-f") || ARGV.include?("--force")
 
