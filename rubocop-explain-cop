@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+# rubocop-explain-cop <cop> - Open docco page for a cop in the hopes of seeing
+# why it fails and what the indicated fix is. This is a LOT less transparent
+# than you think it is, guys.
+
+# Doing this in ruby instead of simple bash because some cops are in other gems,
+# like rubocop-rspec, and some cops are documented in docs.rubocop.org and some
+# JUST AREN'T.
+
+
+cop = ARGV.first
+
+url = if cop.start_with? "RSpec/"
+        # Alternative: go straight to rubocop-rspec gem
+        # page = cop.split(/\//).tap(&:shift).join("/")
+        # "https://www.rubydoc.info/gems/rubocop-rspec/RuboCop/Cop/RSpec/#{page}"
+
+        # RSpec/FilePath => /rubocop-rspec/cops_rspec.html#rspecfilepath
+        prefix = cop.split(/\//).first.downcase
+        anchor = cop.gsub(/\//, '').downcase
+        "https://docs.rubocop.org/rubocop-rspec/cops_rspec.html##{anchor}"
+      else
+        # => Metrics/BlockLength /rubocop/metrics_metrics.html#metricsblocklength
+        prefix = cop.split(/\//).first.downcase
+        anchor = cop.gsub(/\//, '').downcase
+        "https://docs.rubocop.org/rubocop/cops_#{prefix}.html##{anchor}"
+      end
+
+browser_command = if [ `uname -s` == "Darwin" ]
+                    "open"
+                  else
+                    "xdg-open"
+                  end
+
+command = [browser_command, url].join(" ")
+puts command
+system command
