@@ -22,6 +22,19 @@
 
 
 
-echo "rubocop runner - COME WRITE ME"
-echo 'rubocop app/domains/support/vintage/'
-rubocop app/domains/support/vintage/
+# Credit to Matt Hardy for posting a simpler version of this:
+
+# rc <folder> will cd into the folder, rc with no args runs in .
+
+# finds modified ruby files and runs rubocop on them.
+
+# in a perfect world this would find files modified since the start of
+# the branch...
+
+# Matt gives it with -A which will violently fix everything. I just
+# want to run it and fix things myself
+
+if [ "$1" ]; then
+  cd $1
+fi
+git ls-files -m | xargs ls -1 2>/dev/null | grep '\.rb$' | xargs rubocop 
