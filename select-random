@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# select-random - take a list of things from stdin and emit one at random
+
+pic=''
+
+# $stdin.each_line.with_index do |line, index|
+#   pic=line if rand(index+1).zero?
+# end
+
+# puts pic
+
+puts $stdin.each_line.with_index.to_a.inject {|best, line| best_line = best[0]; index = line[1]; rand(index+1).zero? ? line : best}[0]
