@@ -1,4 +1,6 @@
 #!/usr/bin/env ruby
+# term-birb - show a birb on the terminal
+
 
 # TODO: port this to ruby, maybe? We want to select a birb pic at random and
 # grind it to ascii-art using chafa. BUT! It would be lovely if there were a
@@ -16,11 +18,26 @@
 #   write variable to cache
 # end
 # print image from variable
-
 srand(ARGV.empty? ? Time.now.to_i : ARGV.first.to_i)
 
-filez = Dir.glob(File.join(File.expand_path('~'), "Pictures", "birb*"))
-puts filez.shuffle.first
+require 'io/console'
+y,x = $stdout.winsize
+
+PICTURES_FOLDER = File.join(File.expand_path('~'), "Pictures")
+BIRBS_CACHE_FOLDER = File.join(File.expand_path('~'), "Documents", "refdox", "birbs_cache")
+
+
+birb_file = Dir.glob(File.join(PICTURES_FOLDER, "birb*")).shuffle.first
+
+birb_filename = birb_file.split("/").last
+cache_filename = "#{birb_filename}.#{y}x#{x}.ansi"
+
+cache_file = File.join(BIRBS_CACHE_FOLDER, cache_filename)
+
+puts birb_file
+puts birb_filename
+puts cache_filename
+puts cache_file
 
 # the cache file:
 # - is in the cache folder instead of the birbs folder
