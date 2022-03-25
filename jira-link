@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+# jira-link - Build Jira link in markdown. Optionally also build link to pull request.
+#
+# default jira project, jira host, and (per-project) github PR url stored in a
+# settings/config file.
+#
+# Examples:
+#
+# Give me link to ticket 111 on my default board:
+# jira-link 111     # => [DEFAULT-111](https://<jirahost>/browse/DEFAULT-111)
+#
+# Give me link to ticket 222 on the OTHER board
+# jira-link other-222 # => [ATD-222](https://<jirahost>/browse/OTHER-222)
+#
+# Give me link to ticket 333, which is handled by PR#4444
+# jira-link 333 4444 # => [DEFAULT-333](https://<jirahost>/browse/DEFAULT-111) [PR#4444](https://<github-server-and-org>/<repo>/pull/4444)
+#
+# github_server_and_org would be e.g. github.com/dbrady, so this server and org
+# plus this repo works out to "https://github.com/dbrady/bin"
+
+class JiraLinkApp
+end
+
+if __FILE__ == $0
+  # where do args?
+
+  JiraLinkApp.run
+end
