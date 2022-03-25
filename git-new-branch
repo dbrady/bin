@@ -1,23 +1,24 @@
 #!/usr/bin/env ruby
-# git newbranch <jira_id> <branch_name>
+# git new-branch <jira_id> <branch_name>
 #
 # Usage:
-# git newbranch 5658 set_default_epot_in_merchant_settings
+# git new-branch 5658 set_default_epot_in_merchant_settings
 # => git co -b dbrady/ATL-5658/set_default_epot_in_merchant_settings
 
 def usage
-    puts "git newbranch <jira_id> <branch_name>"
+    puts "git new-branch <jira_id> <branch_name>"
     puts "Usage:"
-    puts "git newbranch 5658 set-default-epot-in-merchant-settings"
+    puts "git new-branch 5658 set-default-epot-in-merchant-settings"
     puts "=> git co -b dbrady/ATL-5658/set-default-epot-in-merchant-settings"
 end
 
 # TODO: Google harder. Read https://git-scm.com/docs/git-help more
-# thoroughly. All the blogs on custom git commands boil down to "git-foo will
-# give you the 'git foo' command, aren't I clever!" and exactly ZERO of them
-# show how to write a custom HELP command for them. I want to know if 'git help
-# newbranch' could ever work, and if so if it's a simple git-help-newbranch or
-# githelp-newbranch or more involved like installing a custom manpage.
+# thoroughly. All the blogs on custom git commands boil down to
+# "git-foo will give you the 'git foo' command, aren't I clever!" and
+# exactly ZERO of them show how to write a custom HELP command for
+# them. I want to know if 'git help new-branch' could ever work, and
+# if so if it's a simple git-help-new-branch or githelp-new-branch or
+# more involved like installing a custom manpage.
 
 
 if ARGV.size == 0 # || ARGV.first == "--help" - this doesn't work, 'git <cmd> --help' makes git check its manpages, not call the script.
@@ -30,14 +31,15 @@ end
 ticket=ARGV[0]
 branch=ARGV[1]
 
-full_branch_name = "dbrady/ATL-#{ticket}/#{branch}"
+ticket = "ATL-#{ticket}" if ticket =~ /^\d+$/
 
-command = "git co -b #{full_branch_name}"
-puts command
+full_branch_name = "dbrady/#{ticket}/#{branch}"
 
 if full_branch_name.size > 60
   puts "ERROR: branch name is too long (length = #{full_branch_name.size}, must be <= 60)"
   exit 2
 end
 
+command = "git co -b #{full_branch_name}"
+puts command
 puts `#{command}`
