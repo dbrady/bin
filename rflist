@@ -1,0 +1,8 @@
+#!/bin/bash
+
+# rflist - list the saved rpsec foci. Does the same thing as rfload without a
+# name, but I keep reaching for rflist so I'm just gonna make it exist.
+
+# Usage:
+# rflist
+rfload
