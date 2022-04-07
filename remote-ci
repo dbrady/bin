@@ -1,0 +1,25 @@
+#!/usr/bin/env ruby
+# remote-ci - perform ci functions via external connection broker
+#
+# The Situation: On my personal laptop, the ci{run,pass,warn,fail} scripts all
+# just curl the HUE wifi controller in my house, which is on my LAN at
+# 192.168.0.42. It works great. Yay.
+
+# On my work laptop (Ac/2022), the 192.168 network is locked out. It can't talk
+# to the HUE controller at all. Sadness.
+
+# In 2017 or so I wrote a hackathon project to distribute control of the lights
+# so that multiple developers could remotely trigger each other's lights when
+# pairing. We could be pairing on my machine, I could run the specs, and the
+# lights in both our offices would change. Nice! Since the origin of this idea
+# was to have one deveolper in Utah and one in Ohio, it necessarily went over
+# the internet to do its thing.
+
+# And the internet is not locked out on my work laptop. So I could run the specs
+# on my work laptop, have it push control messages up to a queue on the
+# internet, and then have a light controller machine running locally that would
+# listen to the queue and control the lights. This second machine would be very
+# low CPU and could run in the backrgound on any of the machines in the house,
+# OR could be run from a dedicated Raspberry PI without difficulty.
+
+#
