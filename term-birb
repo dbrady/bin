@@ -1,12 +1,12 @@
 #!/usr/bin/env ruby
 # term-birb - show a birb on the terminal
+#
+# term-birb 32 - show 32nd birb file in folder (will change when more birbs are saved)
 
+# term-birb red - show birb file with "red" in the title. If more than one,
+# chooses at random.
 
-# TODO: port this to ruby, maybe? We want to select a birb pic at random and
-# grind it to ascii-art using chafa. BUT! It would be lovely if there were a
-# caching scheme that would cache the chafa generation to save on compute
-# cycles. When firing up 20 terminals at the start of a massive SOA session you
-# can watch the birbs render at about 300 baud.
+# term-birb red 3 - show 3rd birb file with "red" in the title
 
 
 # Select image at random from directory
@@ -18,31 +18,63 @@
 #   write variable to cache
 # end
 # print image from variable
-if ARGV.first =~ /^\d+$/
-  srand(ARGV.first.to_i)
-else
-  srand(Time.now.to_i)
-end
-
-require 'io/console'
-y,x = $stdout.winsize
 
 PICTURES_FOLDER = File.join(File.expand_path('~'), "Pictures")
 BIRBS_CACHE_FOLDER = File.join(File.expand_path('~'), "Documents", "refdox", "birbs_cache")
 
-# TODO: let me pick a file maybe if ARGV.first isn't a number?
-birb_filepath = Dir.glob(File.join(PICTURES_FOLDER, "birb*")).shuffle.first
+def available_birbs(filter=nil)
+  if filter
+    Dir.glob(File.join(PICTURES_FOLDER, "birb*#{filter}*"))
+  else
+    Dir.glob(File.join(PICTURES_FOLDER, "birb*"))
+  end
+end
+
+def pick_a_birb(filter=nil, index=nil)
+  birb_files = available_birbs(filter)
+
+  if index
+    birb_files.at((index-1) % birb_files.size)
+  else
+    birb_files.sample
+  end
+end
+
+# term-birb list
+# term-birb list owl
+if ARGV.size > 0 && ARGV.first == "list"
+  available_birbs(ARGV[1]).each.with_index do |birb, index|
+    puts "#{index+1}. #{birb}"
+  end
+  exit 0
+end
+
+filter, index = if ARGV.size == 2
+                  [ARGV.first, ARGV.last.to_i]
+                elsif ARGV.size == 1 && ARGV.first =~ /^\d+$/
+                  [nil, ARGV.first.to_i]
+                elsif ARGV.size == 1
+                  [ARGV.first, nil]
+                else
+                  [nil, nil]
+                end
+
+srand(Time.now.to_i)
+require 'io/console'
+y,x = $stdout.winsize
+
+birb_filepath = pick_a_birb(filter, index)
+
+if birb_filepath.nil?
+  puts "Could not find a birb matching filter \"#{filter}\"."
+  exit 1
+end
 
 birb_filename = birb_filepath.split("/").last
 cache_filename = "#{birb_filename}.#{y}x#{x}.ansi"
 
 cache_filepath = File.join(BIRBS_CACHE_FOLDER, cache_filename)
 
-# puts birb_filepath
-# puts birb_filename
-# puts cache_filename
-# puts cache_filepath
-# exit 0
 if File.exists?(cache_filepath)
   puts File.read(cache_filepath)
 else
