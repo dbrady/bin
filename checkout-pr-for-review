@@ -1,0 +1,14 @@
+#!/bin/bash
+# checkout-pr-for-review <branch>
+
+git isclean
+ISCLEAN=$?
+
+if ["$ISCLEAN" == "0"]; then
+    echo -e "\033[1;37mBranch is not clean; stash or commit your changes first!\033[0m"
+    say "Stash or commit your changes first"
+    exit -1
+fi
+
+echo 'git main && remaster && go "$1" && say "Branch is ready, lets go"'
+git main && remaster && go "$1" && say "Branch is ready, let's go"
