@@ -73,7 +73,8 @@ echo "Example: print '(color)' in bold underlined green on red background:"
 echo "echo -e \\033[41;1;4;32m(color)\\033[0m"
 echo -e "\033[1;4;32;41m(color)\033[0m"
 echo
-echo "NOTE: -e is required to turn on extended colors. It is undocumented on OSX, and does"
-echo "not work under /bin/sh on Catalina. Use /bin/bash"
+echo "NOTE: -e is required to turn on extended colors in bash, but this is neither needed nor"
+echo "allowed in sh. It just prints the -e with the rest of the text."
+
 echo
 echo "\033 works in bash and ruby. In the wild, you may also see \x1b, chr(27) or \e; these are all equivalent to octal \033."
