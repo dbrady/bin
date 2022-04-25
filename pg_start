@@ -1,12 +1,19 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ `uname -s` == 'Darwin' ]; then
     # OSX - GOK which folder homebrew is stuffing databases this week :-/
     # pg_ctl -D /usr/local/homebrew/var/postgres start
-    echo pg_ctl -D /usr/local/var/postgres start
-    pg_ctl -D /usr/local/var/postgres start
+    # echo pg_ctl -D /usr/local/var/postgres start
+    # pg_ctl -D /usr/local/var/postgres start
+    if [ `hostname` == 'MAC0825PRO.local' ]; then
+        echo -e '\033[1;37;41mAcima laptop detected! You installed postgres with the .dmg app instead of homebrew. Use CMD-<SPC> postgres <RET> to launch the PostgreSQL app instead. You monster.\033[0m'
+        if [ -e ~/Documents/acima_postgres_config.txt ]; then
+            echo "cat ~/Documents/acima_postgres_config.txt for more settings"
+        fi
+    fi
 else
     # linux - current as of Ubuntu 16.04 LTS
+    # 2022-04-25 - I've been on 20.04 LTS for a few months now. I assume this works?
     echo pg_ctl -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log start
     pg_ctl -D /usr/local/var/postgres -l /usr/local/var/postgres/server.log start
 fi

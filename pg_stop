@@ -1,10 +1,17 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ `uname -s` == 'Darwin' ]; then
     # OSX - GOK which folder homebrew is stuffing databases this week :-/
     # pg_ctl -D /usr/local/homebrew/var/postgres stop -s -m fast
-    echo pg_ctl -D /usr/local/var/postgres stop -s -m fast
-    pg_ctl -D /usr/local/var/postgres stop -s -m fast
+    # echo pg_ctl -D /usr/local/var/postgres stop -s -m fast
+    # pg_ctl -D /usr/local/var/postgres stop -s -m fast
+    if [ `hostname` == 'MAC0825PRO.local' ]; then
+        MESSAGE="I see you're on your Acima machine. That's not gonna work. CMD-Space <postgres> to launch the PostgreSQL server instead."
+        echo -e '\033[1;37;41mAcima laptop detected! You installed postgres with the .dmg app instead of homebrew. YOU MONSTER. Use CMD-<SPC> postgres <RET> to launch the PostgreSQL app\033[0m'
+        if [ -e ~/Documents/acima_postgres_config.txt ]; then
+            echo "cat ~/Documents/acima_postgres_config.txt for more settings"
+        fi
+    fi
 else
     # linux - current as of Ubuntu 16.04 LTS
     echo pg_ctl -D /usr/local/var/postgres stop -s -m fast
