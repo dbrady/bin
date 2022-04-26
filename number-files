@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# number-files - rename all files in a folder with a prefix giving their
+# number. Sorts files by timestamp and numbers them accordingly.
+#
+# e.g.
+# $ ls
+# alpha-3rd.png
+# beta-1st.png
+# delta-4th.jpg
+# gamma-2nd.png
+#
+# $ number-files
+# $ ls
+# 1-beta-1st.png
+# 2-gamma-2nd.png
+# 3-alpha-3rd.png
+# 4-delta-4th.jpg
+#
+# File numbers are zero-padded with the minimum number of zeroes to make the
+# largest file number sort correctly.
+
+file_list = `ls -rt`.each_line.map(&:strip).to_a
+
+file_list.delete_if { |file_name| File.directory?(file_name) }
+
+digits = 1 + (Math.log(file_list.size)/Math.log(10)).floor
+
+format = "%0#{digits}d-%s"
+
+file_list.each.with_index(1) do |file_name, index|
+  new_name = format % [index, file_name]
+  puts "%s -> %s" % [file_name, new_name]
+end
