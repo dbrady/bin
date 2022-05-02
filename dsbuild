@@ -1,0 +1,3 @@
+#!/bin/bash
+echo docker build -t data_services:latest -f ~/develop/data_services/config/docker/Dockerfile ~/develop/.
+docker build -t data_services:latest -f ~/develop/data_services/config/docker/Dockerfile ~/develop/.
