@@ -1,0 +1,3 @@
+#!/bin/bash
+echo docker run -it -v ~/develop/data_services:/root/data_services -v ~/develop/data_services_package:/root/data_services_package -v ~/develop/data_services_workflows:/root/data_services_workflows  --name data_services data_services:latest /bin/bash
+docker run -it -v ~/develop/data_services:/root/data_services -v ~/develop/data_services_package:/root/data_services_package -v ~/develop/data_services_workflows:/root/data_services_workflows  --name data_services data_services:latest /bin/bash
