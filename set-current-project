@@ -169,4 +169,5 @@ EOF
 end
 
 puts "Current project has been set to #{target}. You will automatically cd to this folder on login."
-puts "If plan to keep working this terminal session, you should source ~/.current-project"
+puts "If plan to keep working this terminal session, you should run:"
+puts "\e[1;37;40msource ~/.current-project\e[0m"
