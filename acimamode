@@ -1,0 +1,10 @@
+#!/bin/bash
+# C.f. this with vpnon() and vpnoff() in ~/dotfiles/dotvpn
+echo -e "\033[1;37;41mROFLCOPTERS, I AM NOT PUTTING CREDENTIALS INTO THIS SCRIPT\033[0m"
+
+
+echo 'echo "Turning Acima mode ON";'
+echo '(echo "yourLDAPpass"; echo "push") | sudo openconnect --passwd-on-stdin --user=your.username --authgroup=Outside-Contractors --script=/usr/local/etc/vpnc-script-split-traffic vpndev.acimacredit.com'
+
+
+exit 0
