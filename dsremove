@@ -1,0 +1,3 @@
+#!/bin/bash
+echo docker container rm data_services
+docker container rm data_services
