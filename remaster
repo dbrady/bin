@@ -5,76 +5,32 @@
 # 2. GO                     : go master
 # 3. PULL                   : git pull
 # 4. BUNDLE                 : bundle install
-# 5. MIGRATE                : rails db:migrate
-# 6. RETURN                 : go -
+# 5. MIGRATE                : rails db:migrate (only if schema has changed)
+# 6. RETURN                 : go - (only if we were on a story branch)
 # 7. REBASE                 : git rebase master
-# 8. APPLY                  : git stash apply
+# 8. APPLY                  : git stash apply (only if we stashed changes)
 
 # TODO:
 
-# 1. Port this to ruby. The options are just too insane. Also do this, if for no
-# other reason, to give a high-level imperative script at the top like git_stash;
-# go_master; git_pull... return_to_story_branch, git_rebase, git_stash_apply,
-# etc.
-# 2. add -p, --pretend option to show the remastering plan/commands
-# 3. add -m, --no-migration option to skip db:migrate
-# 4. add -r, --no-rebase to skip rebasing master into this branch
-# 5. add -b, --no-bundle to skip running bundle install
-# 6. add -d, --done option to return to master and stay there. Abandon (delete?) the current branch.
-
-# 7. Know which repos have a master branch by another name (main, develop,
-# etc). Unsure if the community has standardized on non-master names yet, but if
-# worse comes to worst I could add a .rc file that remembers the main branch
-# name for a repo or folder. Could also add -n <name_of_main_branch> option.
-
-# If you are not on master, this will stash, go to master, pull and merge, rebundle, remigrate, stash apply, return to your branch and rebase.
-
-# If you ARE on master, this will pull and merge, rebundle, and remigrate.
-
-# If you are on master, this will
-
-# TODO: allow reset or stash option to git reset --hard beforehand to wipe
-# and abandon local changes, or to git stash changes (and potentially git stash
-# apply them afterwards)
-
-# TODO: have a way to say either "stay on master" or "come back here and rebase
-# master" afterwards
-
-# TODO: have an option to clobber and recompile assets? NO. I've made
-# rebuild-assets in this repo instead. It takes about 80 seconds to run, and the
-# rest of this script only takes 30 seconds. Also, I only need to run it about
-# once every 3 months, so better to run it by hand as needed.
+# 1. [TODO] Port this to ruby. The options are just too insane. Also do this, if
+# for no other reason, to give a high-level imperative script at the top like
+# git_stash; go_master; git_pull... return_to_story_branch, git_rebase,
+# git_stash_apply, etc.
+# 2. [TODO] add -p, --pretend option to show the remastering plan/commands
+# 3. [DONE] add -q, --quick mode to skip bundling and migrations
+# 4. [DONE] add -d, --done option to return to master and stay there. Abandon (delete?) the current branch.
+# 5. [DONE] (Done: Use git-main, which uses git-main-branch.) Know which repos
+# have a master branch by another name (main, develop, etc). Unsure if the
+# community has standardized on non-master names yet, but if worse comes to
+# worst I could add a .rc file that remembers the main branch name for a repo or
+# folder. Could also add -n <name_of_main_branch> option.
 
 QUICK="false"
 DONE="false" # if true, do not return to story branch
 
-# --------------------------------------------------------------------------------
-# DANGER: echo needs -e on linux and on pre-Catalina OSX IN BASH BUT NOT SH.
-#
-# Remember when Apple made stuff just work instead of bragging about stuff just
-# working that didn't?
-#
-# echo needs -e on linux and on pre-Catalina OSX. -e is undocumented on OSX; on
-# Catalina it will silently work, EXCEPT if you use this log message and then
-# pass more than one argument from bin/sh. Then it will print the -e, followed
-# by the colorized message. But it DOES work silently, correctly, if you pass a
-# single argument by wraping the args in quotes. Bleh.
-#
-# Example:
-# log() { echo -e "${COLOR}$@${CLEAR}" }
-
-# log "this is a message"
-# => 1this is a message2 # where 1 and 2 turn color on and off
-#
-# log this is a message
-# => -e 1this is a message2 # where 1 and 2 turn color on and off
-#
-# 2021-08-23: At the time of this writing I only need this to run on Catalina,
-# not on any other OSX and not on linux. Future Me can decide if we want/need to
-# detect OS and switch between echo formats. 2021-08-23: UPDATE: just use
-# bin/bash everywhere, and -e will always be required and will always not print.
-# --------------------------------------------------------------------------------
 log() {
+    # Need -e to show colors in bash
+    # must be omitted in sh (will print a literal "-e")
     echo -e "\033[32m$@\033[0m"
 }
 
