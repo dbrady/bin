@@ -1,32 +1,8 @@
 #!/bin/bash
 
-# --------------------------------------------------------------------------------
-# DANGER: echo needs -e on linux and on pre-Catalina OSX IN BASH BUT NOT SH.
-#
-# Remember when Apple made stuff just work instead of bragging about stuff just
-# working that didn't?
-#
-# echo needs -e on linux and on pre-Catalina OSX. -e is undocumented on OSX; on
-# Catalina it will silently work, EXCEPT if you use this log message and then
-# pass more than one argument from bin/sh. Then it will print the -e, followed
-# by the colorized message. But it DOES work silently, correctly, if you pass a
-# single argument by wraping the args in quotes. Bleh.
-#
-# Example:
-# log() { echo -e "${COLOR}$@${CLEAR}" }
-
-# log "this is a message"
-# => 1this is a message2 # where 1 and 2 turn color on and off
-#
-# log this is a message
-# => -e 1this is a message2 # where 1 and 2 turn color on and off
-#
-# 2021-08-23: At the time of this writing I only need this to run on Catalina,
-# not on any other OSX and not on linux. Future Me can decide if we want/need to
-# detect OS and switch between echo formats. 2021-08-23: UPDATE: just use
-# bin/bash everywhere, and -e will always be required and will always not print.
-# --------------------------------------------------------------------------------
 log() {
+    # Need -e to show colors in bash
+    # must be omitted in sh (will print a literal "-e")
     echo -e "\033[32m$@\033[0m"
 }
 

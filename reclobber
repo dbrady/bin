@@ -1,4 +1,5 @@
 #!/bin/bash
 # reclobber - clobber and precompile assets
-echo bundle exec rails assets:clobber assets:precompile
-bundle exec rails assets:clobber assets:precompile
+
+echo reclobber is an alter for rebuild-assets
+./rebuild-assets
