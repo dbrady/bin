@@ -2,12 +2,12 @@
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
 
 # 1. STASH                  : git stash
-# 2. GO                     : go master
+# 2. GO                     : go main
 # 3. PULL                   : git pull
 # 4. BUNDLE                 : bundle install
 # 5. MIGRATE                : rails db:migrate (only if schema has changed)
 # 6. RETURN                 : go - (only if we were on a story branch)
-# 7. REBASE                 : git rebase master
+# 7. REBASE                 : git rebase main
 # 8. APPLY                  : git stash apply (only if we stashed changes)
 
 # TODO:
@@ -37,14 +37,14 @@ log() {
 while getopts "hq" opt; do
     case ${opt} in
         h )
-            echo "remaster - pull down and rebase onto latest master"
+            echo "remaster - pull down and rebase onto latest main branch"
             echo
             echo "Usage:"
             echo "    remaster [options]"
             echo
             echo "-h    Show this help message"
             echo "-q    Quick mode - do not rebundle gems or remigrate the database"
-            echo "-d    Done mode - done with this branch, go back to master and stay there"
+            echo "-d    Done mode - done with this branch, go back to main and stay there"
             exit 1
             ;;
 
@@ -58,6 +58,7 @@ while getopts "hq" opt; do
 done
 
 BRANCH=`git branch | grep '*' | awk '{print $2}'`
+MAIN_BRANCH=`git main-branch`
 git isclean
 ISCLEAN=$?
 
@@ -70,15 +71,14 @@ else
     git stash
 fi
 
-if [ `git main-branch` == "$BRANCH" ]; then
-    log "You are on master/main, staying put..."
+if [ "$MAIN_BRANCH" == "$BRANCH" ]; then
+    log "You are already on main branch '$BRANCH', staying put..."
     DONE="true"
 else
     # 2. GO
-    log "You are NOT on master/main, hopping to $(git main-branch)..."
-    # this uses ~/bin/git-main to find the main/develop/master branch
-    log "git main"
-    git main
+    log "You are NOT on main branch, hopping to $MAIN_BRANCH..."
+    log "go $MAIN_BRANCH"
+    go $MAIN_BRANCH
 fi
 
 # 3. PULL
@@ -108,8 +108,8 @@ else
     log "Quick mode - skipping remigrate"
 fi
 
-if [ "master" == "$BRANCH" ]; then
-    log "You were on master, staying put..."
+if [ "$MAIN_BRANCH" == "$BRANCH" ]; then
+    log "You were on main branch, staying put..."
 else
     if [ $DONE == "false" ]; then
         # 6. RETURN
@@ -118,12 +118,12 @@ else
         go $BRANCH
 
         # 7. REBASE
-        log "Rebasing master into branch"
-        log git rebase master
-        git rebase master
+        log "Rebasing branch onto tip of main branch '$MAIN_BRANCH'..."
+        log git rebase $MAIN_BRANCH
+        git rebase $MAIN_BRANCH
     else
         # 6. NO RETURN; REBASE ALREADY DONE
-        log "Done with that branch; staying on master"
+        log "Done with that branch; staying on main branch"
     fi
 fi
 
