@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# OSX or Linux? (This won't save you if you're worknig from a linux
+# laptop, but I'm not, so I'm throwing a SEP field over this.)
+if [ `uname -s` == 'Linux' ]; then
+    echo 'cd ~/data_services/utilities'
+    cd ~/data_services/utilities
+
+    echo 'python redshiftutil.py --load_errors --table d_rac_customers_load_load'
+    python redshiftutil.py --load_errors --table d_rac_customers_load_load
+else
+    echo 'Run this script from inside your docker container'
+fi

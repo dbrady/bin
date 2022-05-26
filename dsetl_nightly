@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "time python etl_nightly.py --job rac/d_rac_customers.py"
+time python etl_nightly.py --job rac/d_rac_customers.py

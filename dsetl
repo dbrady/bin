@@ -1,0 +1,6 @@
+#!/bin/bash
+pushd ~/data_services/etl/warehouse
+JOB=`find . -name '*.py' | selecta | sed -e 's|^[/.]*||'`
+echo python etl_nightly.py --job "$JOB"
+python etl_nightly.py --job "$JOB"
+popd
