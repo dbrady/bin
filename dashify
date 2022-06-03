@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+require 'fileutils'
+
+ARGV.each do |filename|
+  unless File.exists?(filename)
+    puts "Skipping '#{filename}': file does not exist."
+  end
+
+  if filename =~ /_/
+    new_filename = filename.gsub(/_/, "-")
+
+    puts "mv #{filename} #{new_filename}"
+
+    FileUtils.mv filename, new_filename
+  end
+end
