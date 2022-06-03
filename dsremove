@@ -1,3 +1,15 @@
 #!/bin/bash
+# dsremove - remove existing container
+# See Also:
+# dsbuild
+# dsrun
+# dsstart
+# dsexec
+# dsremove
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Must be run from OSX, outside the docker container."
+    exit
+fi
+
 echo docker container rm data_services
 docker container rm data_services
