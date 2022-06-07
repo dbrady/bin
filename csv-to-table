@@ -12,6 +12,12 @@
 # TODO:
 # Add -n option: number of lines to read
 # Add -s, -t option: number of lines offset from start or backwards from tail
+#
+# Add an option to pull in multiple csv files and emit a single table (and if
+# both files have header rows, match them up and suppress one row). What to call
+#     this? -j --join ? I.e.
+#     csv-to-table file1.csv -j file2.csv --join=file3.csv ?
+#
 # E.g.
 # read the second batch of 10 lines from the end: -n 10 -t 20
 # read lines 1000-1100: -s 1000 -n 100
