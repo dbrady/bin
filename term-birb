@@ -87,7 +87,7 @@ if birb_filepath.nil?
 end
 
 birb_filename = birb_filepath.split("/").last
-cache_filename = "#{birb_filename}.#{y}x#{x}.ansi"
+cache_filename = "#{birb_filename}.#{x}x#{y}.ansi"
 
 cache_filepath = File.join(BIRBS_CACHE_FOLDER, cache_filename)
 

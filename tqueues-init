@@ -1,0 +1,10 @@
+#!/bin/bash
+# tqueues-init - Initialize queues session.
+
+# TODO: This is the beginning of updating my tmux crap to 3.whatever.broke.everything,
+# Ideally I'd rather have tqueues-start create the session, crack open
+# all of its windows and then kick off their various commands. Once I gaet it
+# working queues, port it to work/services
+
+echo tmux new-session -s queues
+tmux new-session -s queues

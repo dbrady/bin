@@ -1,3 +1,15 @@
 #!/bin/bash
+# dsstart - Start the existing container
+# See Also:
+# dsbuild
+# dsrun
+# dsstart
+# dsexec
+# dsremove
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Must be run from OSX, outside the docker container."
+    exit
+fi
+
 echo docker start -i data_services
 docker start -i data_services

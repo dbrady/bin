@@ -1,3 +1,15 @@
 #!/bin/bash
+# dsrun - run container for the first time (container doesn't exist yet)
+# See Also:
+# dsbuild
+# dsrun
+# dsstart
+# dsexec
+# dsremove
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Must be run from OSX, outside the docker container."
+    exit
+fi
+
 echo docker run -it -v ~/develop/data_services:/root/data_services -v ~/develop/data_services_package:/root/data_services_package -v ~/develop/data_services_workflows:/root/data_services_workflows  --name data_services data_services:latest /bin/bash
 docker run -it -v ~/develop/data_services:/root/data_services -v ~/develop/data_services_package:/root/data_services_package -v ~/develop/data_services_workflows:/root/data_services_workflows  --name data_services data_services:latest /bin/bash

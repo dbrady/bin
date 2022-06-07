@@ -1,3 +1,13 @@
 #!/bin/bash
+# dsinstall - run python setup of dataservices package
+# See Also: (ds* scripts for inside the docker container)
+# dsinstall
+# dsetl
+# dsetl_nightly
+if [ `uname -s` != 'Linux' ]; then
+    echo "Must be run from inside the docker container."
+    exit
+fi
+
 echo "(cd ~/data_services_package && python setup.py clean && python setup.py install)"
 (cd ~/data_services_package && python setup.py clean && python setup.py install)

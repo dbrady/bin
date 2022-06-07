@@ -1,3 +1,15 @@
 #!/bin/bash
+# dsbuild - build the docker image
+# See Also:
+# dsbuild
+# dsrun
+# dsstart
+# dsexec
+# dsremove
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Must be run from OSX, outside the docker container."
+    exit
+fi
+
 echo docker build -t data_services:latest -f ~/develop/data_services/config/docker/Dockerfile ~/develop/.
 docker build -t data_services:latest -f ~/develop/data_services/config/docker/Dockerfile ~/develop/.

@@ -1,3 +1,15 @@
 #!/bin/bash
+# dsexec - open another ssh tunnel to an already-running container
+# See Also:
+# dsbuild
+# dsrun
+# dsstart
+# dsexec
+# dsremove
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Must be run from OSX, outside the docker container."
+    exit
+fi
+
 echo docker exec -it data_services /bin/bash
 docker exec -it data_services /bin/bash

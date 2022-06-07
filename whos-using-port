@@ -1,2 +1,7 @@
 #!/bin/sh
-what-port-are-you-on $@
+
+# on Catalina:
+sudo lsof -i -P | grep LISTEN | grep $1
+
+# For a linux hopework, see:
+# what-port-are-you-on $@

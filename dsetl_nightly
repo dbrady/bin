@@ -1,3 +1,13 @@
 #!/bin/bash
+# dsetl_nightly - run specific job (TEMP: currently hardcoded to d_rac_customers lol)
+# See Also: (ds* scripts for inside the docker container)
+# dsinstall
+# dsetl
+# dsetl_nightly
+if [ `uname -s` != 'Linux' ]; then
+    echo "Must be run from inside the docker container."
+    exit
+fi
+
 echo "time python etl_nightly.py --job rac/d_rac_customers.py"
 time python etl_nightly.py --job rac/d_rac_customers.py

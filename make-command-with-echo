@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+# make-command-with-echo filename '<command>' - create filename with echo command; command
+#
+# TODO:
+# cat script | make-command-with-echo filename - duplicate every command line with an echo
+
+require 'fileutils' # don't use system("chmod"), we're not savages
+
+filename = ARGV[0]
+command_string = ARGV[1]
+
+if File.exists?(ARGV[0])
+  puts "Cowardly refusing to overwrite '#{ARGV[0]}': file already exists"
+  exit 1
+end
+
+File.open(filename, "w") do |fp|
+  fp.puts '#!/bin/bash'
+  fp.puts
+
+  command_string.each_line do |line|
+    line = line.strip
+
+    # TODO: detect quotes and variables that need expanding
+    fp.puts "echo \"#{line}\""
+    fp.puts line
+  end
+end
+
+# system "chmod a+x \"#{filename}\""
+FileUtils.chmod("a+x", filename)
