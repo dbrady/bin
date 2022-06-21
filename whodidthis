@@ -1,12 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 # whodidthis - Who is responsible for a given line of code? Wrapper
 # for git blame that targets a specific line and extracts author name.
 #
 # usage:
 #   whodidthis <file> <line>
-NAME=$(git blame $1 | head -n $2 | tail -n 1 | ruby -ne 'puts $1 if $_=~/\((.*?) 20\d\d-\d\d-\d\d/')
-echo $NAME hath done this terrible thing unto us
 
-if [ `uname -s` == "Darwin" ] ; then
-    say $NAME hath done this terrible thing unto us
-fi
+file, line = *ARGV
+blame = `git blame #{file} | head -n #{line} | tail -n 1` # | ruby -ne 'puts $1 if $_=~/\((.*?) 20\d\d-\d\d-\d\d/'`
+name, date = if blame =~ /\((.*?) (20\d\d-\d\d-\d\d) /
+               [$1, $2]
+             end
+
+if name
+  puts "#{name} hath done this terrible thing unto us (on #{date})"
+  if `uname -s`.strip == "Darwin"
+    system('say', "#{name} hath done this terrible thing unto us")
+  end
+else
+  puts blame
+end
+# echo $NAME hath done this terrible thing unto us
