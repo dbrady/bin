@@ -1,0 +1,7 @@
+#!/bin/bash
+echo "dataservices is all gorbled up lol"
+echo "so here's how to do it as of 2022-06-22:"
+echo "1. Open Docker Desktop and click on |> to start the data_services container/image/whatevs."
+echo "2. Fire up your console (iTerm & tmux)."
+echo "3. Run dsstart ONCE, this will shell you into the dataservices container the FIRST time."
+echo "4. Run dsexec for all subsequent sessions."
