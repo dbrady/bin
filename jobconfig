@@ -1,0 +1,10 @@
+# set these
+export CASE=1276
+export JOB=etl_d_salesforce_account_team_member
+export BRANCH=feature/DS-${CASE}-${JOB}-snowflake
+
+# to get these
+export SCRIPT=/root/data_services/etl/warehouse/${JOB}.py
+alias runjob="echo python etl_nightly.py --job ${JOB}.py && time python etl_nightly.py --job ${JOB}.py"
+alias jobconfig="echo grep -A 20 ${JOB} etl_nightly_config.json && grep -A 20 ${JOB} etl_nightly_config.json"
+alias showjob="reset && echo 'root@e4ecac526fec:~/data_services/etl/warehouse# python etl_nightly.py --job $JOB' && python etl_nightly.py --job $JOB"
