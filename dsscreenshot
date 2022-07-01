@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+require 'fileutils'
+
+if !ENV.has_key?('CASE')
+  puts "$CASE is not set. Source in jobconfig to ensure you have the correct JOB and CASE."
+  exit -1
+end
+
+most_recent_screenshot = Dir.glob(File.expand_path("~/Desktop/Screen*(3).png")).last
+
+if !File.exists?(most_recent_screenshot || "")
+  puts "Couldn't find a screenshot to copy out."
+  exit -1
+end
+
+output_file = File.expand_path("~/Desktop/DS-#{ENV['CASE']}-screenshot.png")
+
+puts "Input File: #{most_recent_screenshot}"
+puts "Output File: #{output_file}"
+
+FileUtils.cp most_recent_screenshot, output_file
