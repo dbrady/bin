@@ -1,0 +1,112 @@
+#!/usr/bin/env ruby
+# snow-check - Automatically check a file for known snowflake migration problems
+
+# TODO: Autofix problems if possible?
+
+
+def section_title(title)
+  "====%s" % " #{title} ".ljust(80, "=")
+end
+
+def detect_and_print_lines(lines, title, regex)
+  if lines.any? { |line| line =~ regex }
+    puts section_title title
+    lines.each.with_index do |line, index|
+      puts "%4d: %s" % [index, line] if line =~ regex
+    end
+  end
+end
+
+
+lines = IO.readlines(ENV['SCRIPT']).map(&:rstrip)
+
+# show pep8 violations
+system "pep-check #{ENV['SCRIPT']}"
+
+# ----------------------------------------------------------------------
+# Things Snowflake Can't Be Told To Do
+# ----------------------------------------------------------------------
+# DISTKEY, SORTKEY: just remove, it's fine
+detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/
+
+
+# ----------------------------------------------------------------------
+# Interval Arithmetic
+# ----------------------------------------------------------------------
+#
+# Don't use postgresql date interval arithmetic. Instead of
+#
+# Instead of
+# WHERE timestamp::DATE >= CURRENT_DATE - INTERVAL '2 days'
+#
+# We have to use DATEADD or DATEDIFF:
+#
+# WHERE timestamp >= DATEADD(day, -2, CURRENT_DATE)
+# WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
+detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/
+
+
+# ----------------------------------------------------------------------
+# NPM-style Lists
+# ----------------------------------------------------------------------
+# This one's not set in stone. It's a style I deeply dislike, but I
+# won't pull it if the entire file is consistent.
+detect_and_print_lines lines, "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/
+
+# ----------------------------------------------------------------------
+# Update Python String Formatting
+# ----------------------------------------------------------------------
+detect_and_print_lines lines, "Python 2 String Formatting", /%[\d\.]*[sdf]/
+
+# ----------------------------------------------------------------------
+# os.chdir to self: remove
+# ----------------------------------------------------------------------
+# If we see this exact line, just remove it:
+# os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# If we see another os.chdir, flag it as a warning.
+detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
+
+# ----------------------------------------------------------------------
+# except Exception
+
+# ----
+# TODO: Detect this exact block:
+#     except Exception as e:
+#       etl_client.close()
+#       raise
+#
+#     and replace with:
+#
+#     finally:
+#       etl_client.close()
+# ----
+
+detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
+
+
+# ======================================================================
+# WISH LIST : Put edits here that we wish we could detect and/or fix
+# ======================================================================
+
+# Outdented SQL
+
+# Find e.g.
+# SELECT
+# id,
+# name,
+# FROM table1
+# JOIN table2 ON x=y
+# WHERE a>b
+# AND pants is not null
+
+# And suggest an edit/refactor of
+# SELECT
+#     id,
+#     name,
+# FROM table1
+# JOIN table2 ON x=y
+# WHERE a>b
+#     AND pants is not null
+
+# TODO: see if there's a sql tidy out there? GOTTA be. Maybe?
