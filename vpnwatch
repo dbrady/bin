@@ -1,0 +1,83 @@
+#!/usr/bin/env ruby
+
+# vpnwatch: Know when the vpn is down
+# Can do this in a one-off bash command as:
+# ping -c 1 -t 10 google.com && echo "Network is up" || echo "Network is DOWN"
+#
+# -c 1 exits after sending 1 packet
+# -t 10 exits with failure code if no response received in 10 seconds
+
+# TODO:
+
+# - [ ] Add a happy alert when network is up / comes back up
+
+# - [ ] Cmd-line options:
+#   - do/don't truncate log at startup
+#   - Play/don't play sad alert when network is down: never, once, always
+#   - Play/don't play happy alert when network is up: never, once, always
+#
+#   - "once" means "this is different than the previous event", i.e. an edge
+#     trigger. Plays the sound unless the previous event was the same.
+
+# - [ ] Change logfile to database maybe, and instead of truncating, have a
+#   session list. Be interesting to chart uptime/downtime vs. time of day, since
+#   the perception is that the vpn goes down a lot in the afternoons and almost
+#   never in the mornings.
+
+$logfile = File.expand_path(File.join(File.dirname(__FILE__), "vpnwatch.#{Time.now.strftime('%F.%H%M')}.log"))
+
+def truncate_log
+  File.open($logfile, "w") do |fp|
+  end
+end
+
+def log_to_file(msg)
+  File.open($logfile, "a") do |fp|
+    fp.print msg
+  end
+end
+
+def log_start
+  time = Time.now
+  msg = time.strftime("%F %T ")
+  print msg
+  $stdout.flush
+  log_to_file msg
+end
+
+def log_finish(success)
+  time = Time.now
+  msg = time.strftime("(%F %T): ")
+  msg += if success
+           "\033[1;37;42mNetwork is UP\033[0m"
+         else
+           "\033[1;37;41mNetwork is DOWN\033[0m"
+         end
+  puts msg
+  log_to_file "#{msg}\n"
+  play_alert_sound unless success
+end
+
+def play_alert_sound
+  sound_file = File.expand_path(File.join(File.dirname(__FILE__), "thunderclap.mp3"))
+  system "afplay #{sound_file}"
+end
+
+truncate_log
+print "SOUND TEST: "
+play_alert_sound
+puts "Done."
+
+while true do
+  log_start
+  network_ok = system("ping -c 1 -t 1 google.com 2>&1 >/dev/null")
+
+  log_finish(network_ok)
+
+  # Try to fire off every minute at the top of the minute
+  sec_until_next_minute = 60 - Time.now.sec
+
+  # In theory, Time.now.sec can be 60 or even 61 if we're in a leap second.
+  # If that happens, I'd love to see this program crash!
+  sleep sec_until_next_minute
+end
