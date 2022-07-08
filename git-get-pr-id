@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+# git get-pr - display pull request (previously set with git-set-pr)
+
+require 'yaml'
+
+settings_file = File.expand_path("~/.git-set-pr.yml")
+
+puts YAML.load_file(settings_file).fetch(Dir.pwd)
