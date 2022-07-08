@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# git set-pr <number>
+require 'yaml'
+
+settings_file = File.expand_path("~/.git-set-pr.yml")
+
+settings = if File.exists? settings_file
+             YAML.load_file(settings_file)
+           else
+             {}
+           end
+
+settings[Dir.pwd] = ARGV.first.to_i
+
+File.open(settings_file, "w") do |fp|
+  fp.puts settings.to_yaml
+end
