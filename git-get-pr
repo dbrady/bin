@@ -5,7 +5,13 @@ require 'yaml'
 
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
-pr = YAML.load_file(settings_file).fetch(Dir.pwd)
+dir = Dir.pwd
+pr = YAML.load_file(settings_file)[dir]
+
+if pr.nil?
+  $stderr.puts "No PR for #{dir}"
+  exit -1
+end
 
 path = `git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
     .sub(/^.+@.+:/, '')
