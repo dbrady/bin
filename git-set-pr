@@ -2,15 +2,24 @@
 # git set-pr <number>
 require 'yaml'
 
+unless ARGV.size == 1 && ARGV.first.to_i > 0
+  puts "PR number '#{ARGV.first}' does not look like a PR number"
+  exit -1
+end
+
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
 settings = if File.exists? settings_file
              YAML.load_file(settings_file)
-           else
-             {}
            end
+settings ||= {}
 
-settings[Dir.pwd] = ARGV.first.to_i
+pwd = Dir.pwd
+current_branch = `git current-branch`.strip
+
+settings[pwd] ||= {}
+
+settings[pwd][current_branch] = ARGV.first.to_i
 
 File.open(settings_file, "w") do |fp|
   fp.puts settings.to_yaml
