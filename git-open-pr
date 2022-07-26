@@ -1,11 +1,13 @@
 #!/usr/bin/env ruby
 # git open-pr - open pull request previously set with git-set-pr
-
 require 'yaml'
 
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
-pr = YAML.load_file(settings_file)[Dir.pwd]
+pwd = Dir.pwd
+current_branch = `git current-branch`.strip
+
+pr = YAML.load_file(settings_file).fetch(pwd, {}).fetch(current_branch)
 
 path = `git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
     .sub(/^.+@.+:/, '')

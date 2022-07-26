@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+# git get-pr-id - display pull request (previously set with git-set-pr)
+#
+# TODO:
+# [x] Follow current branch, not just current directory.
+
+# [ ] Follow repo location, instead of current directory. Otherwise it only
+# works for whichever folder you were in when you ran git-set-pr. Bleh. Perhaps
+# a `git config-location` or `git repo-pwd`? Former would just tell you where
+# the .git/config file is for this repo, etc.
+
+# [ ] Make a git set-pr --clobber [<number>] or similar that lets me delete
+# associated PRs
+
+# [ ] Really want this to be able to run from inside docker. Maybe take a fresh
+# look at my old haxx to watch pipes between host and guest OS?
+
+require 'yaml'
+
+settings_file = File.expand_path("~/.git-set-pr.yml")
+
+pwd = Dir.pwd
+current_branch = `git current-branch`.strip
+pr = YAML.load_file(settings_file).fetch(pwd,{}).fetch(current_branch,'')
+
+if pr
+  puts pr
+else
+  exit -1
+end

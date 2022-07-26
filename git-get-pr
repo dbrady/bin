@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+# git get-pr - display pull request (previously set with git-set-pr)
+
+require 'yaml'
+
+settings_file = File.expand_path("~/.git-set-pr.yml")
+
+dir = Dir.pwd
+pr = YAML.load_file(settings_file)[dir]
+
+if pr.nil?
+  $stderr.puts "No PR for #{dir}"
+  exit -1
+end
+
+path = `git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
+    .sub(/^.+@.+:/, '')
+    .sub(/\.git$/, '')
+    .strip
+
+puts "https://github.com/#{path}/pull/#{pr}"
