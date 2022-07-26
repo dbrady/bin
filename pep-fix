@@ -1,0 +1,4 @@
+#!/bin/bash
+# E501 is line-length, so
+echo autopep8 -i --ignore E501 $@
+autopep8 -i --ignore E501 $@
