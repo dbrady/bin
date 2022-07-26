@@ -1,37 +1,134 @@
 #!/usr/bin/env ruby
 # snow-check - Automatically check a file for known snowflake migration problems
 
+# TODO: --essential flag maybe? It would flag things that HAVE to be fixed to
+# even see if Snowflake will work. Then --all (or omit --essential) would let me
+# do code cleanup for the PR.
+
 # TODO: Autofix problems if possible?
 
+# TODO: This is an app now. Grow up, put on some pants, and get some class
+
+def checklist
+  return <<THE_LIST
+1. Claim the ticket and move it to In Progress
+2. Make sure you're on latest feature/snowflake-moveover
+   2.1 (cd /root/data_services/etl/warehouse && git co feature/snowflake-moveover && git pull)
+   2.2 (cd /root/data_services/etl/warehouse/finance && git co feature/snowflake-moveover && git pull)
+3. Cut a new feature branch as feature/DS-{ticket}/{job_name} IN BOTH REPOS
+   3.1 (cd /root/data_services/etl/warehouse && git new-branch NUM JOB_NAME)
+   3.2 (cd /root/data_services/etl/warehouse/finance && git new-branch NUM JOB_NAME)
+4. Run the job in redshift because who knows if it even works
+5. Run snow-check --essential to fix stuff that CAN'T work in Snowflake
+  - Remove DIST/SORT keys
+  - Change INTERVAL arithmetic to DATEADD or DATEDIFF
+6. Change the nightly config from redshift to snowflake
+7. Ensure job runs in Snowflake
+8. Run snow-check and clean up style things:
+   1. get rid of all dist keys and sort keys
+   2. get rid of interval date arithmetic
+   3. check for npm-style lists (only change if style is mixed or other changes are already happening)
+   4. pep8 check
+   5. useless os.chdir(warehouse)
+   6. global exception handler
+   7. outdented sql
+9. Give the code a read-over for any other can't-live-with-this style issues
+   9.1 Put any new ones in snow-check, even if just "(Check by hand)"
+10. Ensure job STILL runs in Snowflake
+11. Screenshot it and attach it to the JIRA ticket
+12. Open a PR in warehouse to merge it into feature/snowflake-moveover
+13. Open a PR in finance to merge the redshift->snowflake change into its
+    feature/snowflake-moveover branch
+14. Fix Up All The Links
+    1. Put the JIRA ticket into the PRs.
+    2. In JIRA: Put PR numbers in the JIRA ticket.
+    3. In OSX.bash, Call set-pr on the warehouse and finance branches
+    TODO: Make a script to do this AND emit the link text for JIRA and Zack?
+    Like "fix-links 1785 2455 134" that emits
+    """
+    **DS-1785:**
+    Jira Ticket: http/aoeusntho/DS-1785
+    Warehouse PR: hpttaoeu/pulls/2455
+    Finance PR: http/.aoeu/pulls/134
+    """
+    To be pasted directly to Zack (and the second lines into the JIRA ticket).
+    Bonus: Automatically copy to clipboard via pbcopy
+    Bonus: Autamatically call set-pr on the two folders (UNLESS ALREADY SET?)
+15. Move JIRA ticket to IN REVIEW
+16. DELEGATE: Notify Zack by sending him links to the case and both PRs
+15. If Zack has concerns: fix and resubmit to him until he's :+1:
+16. WAITING ON: Watch ticket for being merged into snowflake branch by Zack
+17. Move Jira ticket to Closed
+THE_LIST
+end
+
+# Was this script invoked with --essential?
+def essential?
+  ARGV.include?('--essential') || ARGV.include?('-e')
+end
+
+# Was this script invoked with --list?
+def list?
+  ARGV.include?('--list') || ARGV.include?('-l')
+end
+
+if list?
+  puts checklist
+  exit 0
+end
 
 def section_title(title)
   "====%s" % " #{title} ".ljust(80, "=")
 end
 
-def detect_and_print_lines(lines, title, regex)
+def detect_and_print_lines(lines, title, regex, essential: false)
+  return if essential? && !essential
   if lines.any? { |line| line =~ regex }
     puts section_title title
     lines.each.with_index do |line, index|
-      puts "%4d: %s" % [index, line] if line =~ regex
+      puts "%4d: %s" % [index+1, line] if line =~ regex
     end
   end
 end
 
+def usage
+  puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing allagaddam time. Sorry not sorry, you're welcome."
+  puts "Try doing this, and maybe put it in .bashrc while you're at it:"
+  puts "export SCRIPT=#{ARGV.join(' ')}"
+end
+
+if !ARGV.empty? && File.exists?(ARGV.first) && ENV.has_key?("SCRIPT") && ENV["SCRIPT"] != ARGV.first
+  puts "HEY! You gave me an ARGV to run on #{ARGV.first.inspect}"
+  puts "But I use the SCRIPT var, which is #{ENV['SCRIPT'].inspect}"
+  usage
+  exit -1
+end
+
+unless ENV.has_key?("SCRIPT")
+  puts "You must set SCRIPT=<filename> first."
+  if !ARGV.empty?
+    usage
+  end
+  exit -1
+end
 
 lines = IO.readlines(ENV['SCRIPT']).map(&:rstrip)
 
 # show pep8 violations
-system "pep-check #{ENV['SCRIPT']}"
+if !essential?
+  puts section_title("PEP8 CONFORMANCE")
+  system "pep-check #{ENV['SCRIPT']}"
+end
 
 # ----------------------------------------------------------------------
-# Things Snowflake Can't Be Told To Do
+# Illegal Snowflake Syntax: DISTKEY, SORTKEY
 # ----------------------------------------------------------------------
 # DISTKEY, SORTKEY: just remove, it's fine
-detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/
+detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/, essential: true
 
 
 # ----------------------------------------------------------------------
-# Interval Arithmetic
+# Illegal Snowflake Syntax:  INTERVAL
 # ----------------------------------------------------------------------
 #
 # Don't use postgresql date interval arithmetic. Instead of
@@ -43,33 +140,38 @@ detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/
 #
 # WHERE timestamp >= DATEADD(day, -2, CURRENT_DATE)
 # WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
-detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/
+detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/, essential: true
 
 
 # ----------------------------------------------------------------------
 # NPM-style Lists
 # ----------------------------------------------------------------------
 # This one's not set in stone. It's a style I deeply dislike, but I
-# won't pull it if the entire file is consistent.
+# won't pull it if the entire file is consistent. If there are multiple
+# blocks and they're ALL in NPM style, I'll leave it alone. If there's a mix or
+# if there's only one block, change it.
 detect_and_print_lines lines, "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/
+
 
 # ----------------------------------------------------------------------
 # Update Python String Formatting
 # ----------------------------------------------------------------------
-detect_and_print_lines lines, "Python 2 String Formatting", /%[\d\.]*[sdf]/
+detect_and_print_lines lines, "Python 2 String Formatting", /%[\d\.]*[sdf].*['"]\s*%/
+
 
 # ----------------------------------------------------------------------
 # os.chdir to self: remove
 # ----------------------------------------------------------------------
 # If we see this exact line, just remove it:
 # os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
+#
 # If we see another os.chdir, flag it as a warning.
 detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
 
+
 # ----------------------------------------------------------------------
 # except Exception
-
+#
 # ----
 # TODO: Detect this exact block:
 #     except Exception as e:
@@ -85,11 +187,13 @@ detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
 detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
 
 
-# ======================================================================
-# WISH LIST : Put edits here that we wish we could detect and/or fix
-# ======================================================================
-
+# ----------------------------------------------------------------------
 # Outdented SQL
+detect_and_print_lines lines, "Outdented SQL (Not Fully Implemented - Check By Hand)", /^(FROM|WHERE|JOIN) /
+
+# ----------------------------------------------------------------------
+# Long lines
+detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{120,}$/
 
 # Find e.g.
 # SELECT
@@ -108,5 +212,14 @@ detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b
 # JOIN table2 ON x=y
 # WHERE a>b
 #     AND pants is not null
+#
+# TODO: see if there's a sql tidy out there? GOTTA be... right? Right? ...Maybe?
 
-# TODO: see if there's a sql tidy out there? GOTTA be. Maybe?
+
+# ----
+# Fix NPM-style commas
+#
+# Something like if line 9 matches /^\s+,/ then do
+#
+# line[9].sub(/,/, "")
+# line[8] += ","
