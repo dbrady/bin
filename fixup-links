@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+# fixup-links - generate all the links for everybody across the board
+
+def usage
+  str = <<USAGE
+#{File.basename(__FILE__)} <JIRA_TICKET_ID> <WAREHOUSE_PR_ID> <FINANCE_PR_ID>
+USAGE
+end
+
+if ARGV.size != 3 || ARGV.include?('-h') || ARGV.include?('--help')
+  puts usage
+  exit -1
+end
+
+
+TICKET_ID=ARGV[0]
+WAREHOUSE_PR_ID=ARGV[1]
+FINANCE_PR_ID=ARGV[2]
+
+blurb =<<TEMPLATE
+**DS-#{TICKET_ID}:**
+Jira Ticket: https://acima.atlassian.net/browse/DS-#{TICKET_ID}
+Dataservices PR: https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}
+Finance PR: https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}
+TEMPLATE
+
+puts blurb
+puts
+puts "1. Copy this to the clipboard"
+puts "2. Update JIRA ticket with PR info"
+puts "3. Update PRs with JIRA tickets"
+puts "4. Paste this blurb to Zack"
