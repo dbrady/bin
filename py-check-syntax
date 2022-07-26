@@ -1,0 +1,4 @@
+#!/bin/bash
+# because remembering this is fucking ridiculous.
+echo python -m py_compile $@
+python -m py_compile $@
