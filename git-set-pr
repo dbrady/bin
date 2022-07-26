@@ -2,6 +2,10 @@
 # git set-pr <number>
 require 'yaml'
 
+if `hostname`.strip != 'MAC0825PRO.local'
+  raise "Can't access settings file from Docker. Run on OSX, please."
+end
+
 unless ARGV.size == 1 && ARGV.first.to_i > 0
   puts "PR number '#{ARGV.first}' does not look like a PR number"
   exit -1
