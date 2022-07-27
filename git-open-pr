@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 # git open-pr - open pull request previously set with git-set-pr
+
+if `hostname`.strip != 'MAC0825PRO.local'
+  raise "Can't access settings file from Docker. Run on OSX, please."
+end
+
 require 'yaml'
 
 settings_file = File.expand_path("~/.git-set-pr.yml")
