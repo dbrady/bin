@@ -59,7 +59,8 @@ def log_finish(success)
 end
 
 def play_alert_sound
-  sound_file = File.expand_path(File.join(File.dirname(__FILE__), "thunderclap.mp3"))
+  sound_file = '/System/Library/Sounds/Basso.aiff'
+  # File.expand_path(File.join(File.dirname(__FILE__), "thunderclap.mp3"))
   system "afplay #{sound_file}"
 end
 

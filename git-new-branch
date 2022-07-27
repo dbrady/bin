@@ -31,10 +31,11 @@ end
 ticket=ARGV[0]
 branch=ARGV[1]
 
-ticket = "ATL-#{ticket}" if ticket =~ /^\d+$/
+# ticket = "ATL-#{ticket}" if ticket =~ /^\d+$/
+ticket = "DS-#{ticket}" if ticket =~ /^\d+$/
 
 # full_branch_name = "dbrady/#{ticket}/#{branch}"
-full_branch_name = "feature/DS-#{ticket}/#{branch}"
+full_branch_name = "feature/#{ticket}/#{branch}"
 
 if full_branch_name.size > 60
   puts "ERROR: branch name is too long (length = #{full_branch_name.size}, must be <= 60)"
