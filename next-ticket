@@ -1,2 +1,2 @@
 #!/bin/bash
-(cd ~/data_services/utilities && python jira.py --ready_for_dev)
+python ~/bin/jira.py --ready_for_dev

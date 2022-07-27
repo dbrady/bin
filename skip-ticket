@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+# bad-ticket - add a ticket to the "bad" list so jira.py --ready_for_development will skip it
+import json
+import sys
+import os
+
+def ticket_file():
+    return os.path.expanduser("~/jira-bad-tickets.json")
+
+def get_bad_tickets():
+    try:
+        with open(ticket_file()) as file:
+            return json.loads(file.read())
+    except FileNotFoundError:
+        return []
+
+def write_bad_tickets(tickets):
+    # dafuq this ain't work with a new file???
+    #
+    # ANSWER: It does, but if the PATH makes no sense, it returns
+    # FileNotFoundError. Goddammit Python. Explicit isn't better than implicit
+    # if you're LYING.
+    #
+    # with open(ticket_file(), "w") as file:
+    #     file.write(json.dumps(tickets))
+    #
+    # Outputs:
+    #
+    # Traceback (most recent call last):
+    #   File "/root/bin/bad-ticket", line 28, in <module>
+    #     write_bad_tickets(tickets)
+    #   File "/root/bin/bad-ticket", line 17, in write_bad_tickets
+    #     with open(ticket_file(), "w") as file:
+    # FileNotFoundError: [Errno 2] No such file or directory: '~/jira-bad-tickets.json'
+    with open(ticket_file(), "w") as file:
+        file.write(json.dumps(tickets))
+
+if __name__ == '__main__':
+    tickets = get_bad_tickets()
+    new_ticket = int(sys.argv[1])
+    print(f"Existing tickets: {tickets}")
+    print(f"New ticket: {new_ticket}")
+
+    if new_ticket not in tickets:
+        tickets.append(new_ticket)
+        write_bad_tickets(tickets)
