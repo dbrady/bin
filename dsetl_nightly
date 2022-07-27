@@ -4,10 +4,15 @@
 # dsinstall
 # dsetl
 # dsetl_nightly
-if [ `uname -s` != 'Linux' ]; then
+if [ `hostname` != 'e4ecac526fec' ]; then
     echo "Must be run from inside the docker container."
     exit
 fi
 
-echo "time python etl_nightly.py --job rac/d_rac_customers.py"
-time python etl_nightly.py --job rac/d_rac_customers.py
+if [ -z "$JOB" ]; then
+    echo 'ERROR: $JOB is not set.'
+    exit
+fi
+
+echo "# time python etl_nightly.py --job $JOB"
+time python etl_nightly.py --job $JOB

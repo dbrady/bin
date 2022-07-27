@@ -4,13 +4,14 @@
 # dsinstall
 # dsetl
 # dsetl_nightly
-if [ `uname -s` != 'Linux' ]; then
+
+if [ `hostname` != 'e4ecac526fec' ]; then
     echo "Must be run from inside the docker container."
     exit
 fi
 
 pushd ~/data_services/etl/warehouse
 JOB=`find . -name '*.py' | selecta | sed -e 's|^[/.]*||'`
-echo python etl_nightly.py --job "$JOB"
+echo '#' python etl_nightly.py --job "$JOB"
 python etl_nightly.py --job "$JOB"
 popd
