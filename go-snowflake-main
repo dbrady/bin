@@ -1,0 +1,26 @@
+#!/bin/bash
+# go-snow
+echo WARNING! This will reset your warehouse and finance repos to the snowflake main branch.
+echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
+read
+echo starting... &&
+
+    echo "(cd ~/data_services/etl/warehouse/ &&" &&
+    (cd ~/data_services/etl/warehouse/ &&
+
+         echo "git co feature/snowflake-moveover &&" &&
+         git co feature/snowflake-moveover &&
+
+         echo "git pull) &&" &&
+         git pull) &&
+
+    echo "(cd ~/data_services/etl/warehouse/finance &&" &&
+    (cd ~/data_services/etl/warehouse/finance &&
+
+         echo "git co feature/snowflake-moveover &&" &&
+         git co feature/snowflake-moveover &&
+
+         echo "git pull) &&" &&
+         git pull) &&
+
+    echo done.
