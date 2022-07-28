@@ -17,13 +17,17 @@ TICKET_ID=ARGV[0]
 WAREHOUSE_PR_ID=ARGV[1]
 FINANCE_PR_ID=ARGV[2]
 
+proposed_branch_name = `git current-branch`.strip.sub(%r|^feature/|,'')
+
 blurb =<<TEMPLATE
-**DS-#{TICKET_ID}:**
+*DS-#{TICKET_ID}:*
 Jira Ticket: https://acima.atlassian.net/browse/DS-#{TICKET_ID}
 Dataservices PR: https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}
 Finance PR: https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}
 TEMPLATE
 
+puts "Branch Name: #{proposed_branch_name}"
+puts
 puts blurb
 puts
 puts "1. Copy this to the clipboard"
