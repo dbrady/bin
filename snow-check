@@ -1,38 +1,102 @@
 #!/usr/bin/env ruby
 # snow-check - Automatically check a file for known snowflake migration problems
 
-# TODO: --essential flag maybe? It would flag things that HAVE to be fixed to
+require 'colorize'
+require 'optimist'
+
+# DONE: --essential flag maybe? It would flag things that HAVE to be fixed to
 # even see if Snowflake will work. Then --all (or omit --essential) would let me
 # do code cleanup for the PR.
 
-# TODO: Autofix problems if possible?
+# DEFERRED: Autofix problems if possible? Let's wait on this one for a bit, I
+# need to get super-comfortable with fixing by hand first. Never automate
+# something you don't understand well enough to debug. Or when we add it, mark
+# some tasks as automatable and others as not. There's a bit of a matrix here:
 #
-# e.g. if we see ^\s*(DISTKEY|(COMPOUND\s+)?SORTKEY)<rest of expression>\s*$, so
-# we know there's NOTHING else on the line, we can just fix it by removing that
-# line from the array. Maybe if we did -i,--interactive to say "show me the
-# problem, show me the intended fix, and then let me pick". Then it could remove
-# the line, rewrite the file, present for git commit, add it and commit with
-# standard message. BOOM.
+#                        | Confidence it | Difficulty of       |
+#                        | needs doing   | Automating fix    | Decision
+# -----------------------+---------------+-------------------+-----------
+# Remove DISTKEY/SORTKEY | Very High     | Easy              | Automate
+# Fix Python2 formats    | Very High     | Easy to Insane[1] | Automate SOME
+# Reflexive format()     | Low           | Easy              | By Hand Only
+# Wrap very long lines   | Unknowable[1] | Insane            | Do not attempt[2]
+#
+# [1] Hard to do confidently without a python parser to know when the string is
+# properly finished
+#
+# [2] That would be a pretty fatalistic statement if left unqualified. I mean
+# this in the sense that this project will be long finished before this becomes
+# worth doing.
+#
+# We could also do this in baby steps: start with ONLY the High Confidence +
+# Easy tasks, and always PROPOSE the change and ask for confirmation. Then if
+# yes, we apply the change, show the git diff, and then git commit the change
+# with the static/fixed message.
 
-# TODO: Long/slow jobs. Think some on how to make use of the time during the
-# "test redshift", "test snowflake", and "confirm snowflake" steps.
+# TODO: Change the way we get the script into this file. See next item; perhaps
+# generalizing git-set-pr to git-set-branch-var to track per-branch
+# variables. Instead of yaml[folder][branch] => pr_id, we could have
+# yaml[folder][branch][key] => value
 
 # TODO: Parallel work. Right now (2022-07-27) I wouldn't dare try to start a new
 # ticket with the old one waiting for Zack to want changes all over
 # it. Hopefully that will happen naturally with time and experience. Right now I
-# would get CRAZY lost in the checklist.
+# would get CRAZY lost in the checklist. This is also a really good argument for
+# parallel workspaces - like having ~/work1/data_services and
+# ~/work2/data_services so they can be in different branches working different
+# tickets. Or at the very least, a really good reason to have the script be
+# based off the working branch, like git-set-pr.
 
-# TODO: Interactive/tracking checklist. Sthg like reset the checklist, check off
-# the checklist, show the checklist in progress. Supercool if it could be
-# hot/interactive, like just keep a screen up with the checklist, and type
-# "snow-check done 3" and have item 3 tick off the list, etc. Probably not worth
-# the effort but man that does sound cool.
+# TODO: Interactive/tracking checklist. Something like reset the checklist,
+# check items off the checklist, show the current checklist in
+# progress. Supercool if it could be hot/interactive, like just keep a screen up
+# with the checklist, and type "snow-check done 3" and have item 3 tick off the
+# list, etc. Probably not worth the effort but man that does sound cool. Reminds
+# me a bit of todogroove.
 
-# TODO: This is an app now. Grow up, put on some pants, and get some class
+# DONE: This is an app now. Grow up, put on some pants, and get some class
 
-def checklist
-  i=0
-  return <<THE_LIST
+# TODO: Also start using optimist to process args
+
+# TODO: SCRIPT and current_branch should be checked for equality, and
+# current_branch must NOT be master or feature/snowflake-moveover.  TODO: Change
+# this. SCRIPT is super unwieldy. Maybe use a setting file, or store it in yaml
+# like ~/.git-set-pr.yml (perhaps even store it IN that file?)
+
+# DONE: Change the check/output scheme. Instead of "output errors only, so no
+# output means success", let's change to "checking
+# #{name}...<green>OK</green>\n" vs "checking
+# {name}...<red>FAILED</red>\n#{error_output}"
+
+# TODO: Checking PEP8 requires running a system command, while all the others
+# (currently) go through detect_and_print_lines. I'm thinking of some new checks
+# that don't go through there, so maybe a different way to abstract these
+# out. E.g. 1. ensure current_branch is NOT master or
+# feature/snowflake-moveover, 2. ensure script name matches current branch. The
+# Simplest Thing(TM) I can think of is to push these into command methods (that
+# do a thing, like print the checklist or set the script id) and check methods
+# (that have names, success, erorrs, etc).
+
+# TODO: Upgrade this to a centralized command suite, like how git <cmd> will
+# check for git-cmd. Now we can show the checklist with "snow list", run a
+# full check with "snow check", jump to the feature/snowflake-moveover branch
+# with "snow main", create new story branches (in both repos!) with "snow
+# new-branch", etc.
+
+# TODO: NEW CHECK: look for tabs instead of spaces
+
+# ABANDONED: Remove reflexive format statements. (Maybe not--Kyn and Rikki use
+# these for syntax highlighting support in SQL strings in Sublime Text Remove
+# reflexive formats, e.g. "{var}".format(var=var). This task COULD be done with
+# Oniguruma and that might be worth researching, but I'm punting this for now.
+
+# END TODO SECTION - New TODOS go above here
+# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+class SnowflakeManglerApp
+  def checklist
+    i=0
+    return <<THE_LIST
 #{i=i+1}. Claim the ticket and move it to In Development
 #{i=i+1}. export SCRIPT=job_filename.py; export JOB=$(echo $SCRIPT | sed -e 's/\.py//')
 #{i=i+1}. Make sure you're on latest feature/snowflake-moveover
@@ -57,177 +121,182 @@ def checklist
     feature/snowflake-moveover branch
 #{i=i+1}. Sanity-check the PRs
    #{i}.1. Ensure you are merging into feature/snowflake-moveover, NOT MASTER
-   #{i}.2. Ensure the commit stream has JUST the commits you made for this PR
-   #{i}.3. Inspect the PR file changes on GitHub
+   #{i}.2. Ensure just 1 file changed and JUST the commits you made for this PR
+   #{i}.3. Inspect the file changes on GitHub
    #{i}.4. Check the PR titles, it will probably grab the first commit comment
-#{i=i+1}. Fix Up All The Links
-    #{i}.1. Put the JIRA ticket into the PRs.
-    #{i}.2. In JIRA: Put PR numbers in the JIRA ticket.
-    #{i}.3. In OSX.bash, Call set-pr on the warehouse and finance branches
-    TODO: Make a script to do this AND emit the link text for JIRA and Zack?
-    Like "fix-links 1785 2455 134" that emits
-    """
-    **DS-1785:**
-    Jira Ticket: http/aoeusntho/DS-1785
-    Warehouse PR: hpttaoeu/pulls/2455
-    Finance PR: http/.aoeu/pulls/134
-    """
-    Paste lines where needed. (Slack: CMD-V SHIFT+CMD+F to paste and format)
-    Bonus: Automatically copy to clipboard via pbcopy
-    Bonus: Autamatically call set-pr on the two folders (UNLESS ALREADY SET?)
+#{i=i+1}. Fix Up All The Links: fixup-links <jira> <warehouse_pr> <finance_pr>
 #{i=i+1}. Move JIRA ticket to IN REVIEW
 #{i=i+1}. DELEGATE: Notify Zack by sending him links to the case and both PRs
 #{i=i+1}. If Zack has concerns: fix and resubmit to him until he's :+1:
-#{i=i+1}. WAITING ON: Watch ticket for being merged into snowflake branch by Zack
+#{i=i+1}. WAIT ON: Watch ticket for being merged into snowflake branch by Zack
 #{i=i+1}. Move Jira ticket to Closed
 THE_LIST
-end
+  end
 
-# Was this script invoked with --essential?
-def essential?
-  ARGV.include?('--essential') || ARGV.include?('-e')
-end
+  # Was this script invoked with --essential?
+  def essential?
+    ARGV.include?('--essential') || ARGV.include?('-e')
+  end
 
-# Was this script invoked with --list?
-def list?
-  ARGV.include?('--list') || ARGV.include?('-l')
-end
+  # Was this script invoked with --list?
+  def list?
+    ARGV.include?('--list') || ARGV.include?('-l')
+  end
 
-if list?
-  puts checklist
-  exit 0
-end
+  def section_title(title)
+    "====%s" % " #{title} ".ljust(80, "=").cyan
+  end
 
-def section_title(title)
-  "====%s" % " #{title} ".ljust(80, "=")
-end
+  def log_ok
+    puts " OK ".bold.light_white.on_green
+  end
 
-def detect_and_print_lines(lines, title, regex, essential: false, disabled: false)
-  return if disabled
-  return if essential? && !essential
-  if lines.any? { |line| line =~ regex }
+  def detect_and_print_lines(lines, title, regex, essential: false, disabled: false)
+    return if disabled
+    return if essential? && !essential
     puts section_title title
-    lines.each.with_index do |line, index|
-      puts "%4d: %s" % [index+1, line] if line =~ regex
+    if lines.any? { |line| line =~ regex }
+      lines.each.with_index do |line, index|
+        puts "%4d: %s" % [index+1, line] if line =~ regex
+      end
+    else
+      log_ok
     end
   end
-end
 
-def usage
-  puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing allagaddam time. Sorry not sorry, you're welcome."
-  puts "Try doing this, and maybe put it in .bashrc while you're at it:"
-  puts "export SCRIPT=#{ARGV.join(' ')}"
-end
-
-if !ARGV.empty? && File.exists?(ARGV.first) && ENV.has_key?("SCRIPT") && ENV["SCRIPT"] != ARGV.first
-  puts "HEY! You gave me an ARGV to run on #{ARGV.first.inspect}"
-  puts "But I use the SCRIPT var, which is #{ENV['SCRIPT'].inspect}"
-  usage
-  exit -1
-end
-
-unless ENV.has_key?("SCRIPT")
-  puts "You must set SCRIPT=<filename> first."
-  if !ARGV.empty?
-    usage
+  def usage
+    puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing allagaddam time. Sorry not sorry, you're welcome."
+    puts "Try doing this, and maybe put it in .bashrc while you're at it:"
+    puts "export SCRIPT=#{ARGV.join(' ')}"
   end
-  exit -1
+
+  # THE MAIN APP METHOD, LET'S GO
+  def run
+    # ----------------------------------------------------------------------
+    # 1. Check for --list
+    # ----------------------------------------------------------------------
+    # if -l or --list, show checklist and exit
+    if list?
+      puts checklist
+      exit 0
+    end
+
+    # ----------------------------------------------------------------------
+    # 2. Check $SCRIPT
+    # ----------------------------------------------------------------------
+    # 2.1 If you gave me an filename as ARGV[0], I point you at $SCRIPT and exit
+    if !ARGV.empty? && File.exists?(ARGV.first) && ENV.has_key?("SCRIPT") && ENV["SCRIPT"] != ARGV.first
+      puts "HEY! You gave me an ARGV to run on #{ARGV.first.inspect}"
+      puts "But I use the SCRIPT var, which is #{ENV['SCRIPT'].inspect}"
+      usage
+      exit -1
+    end
+
+    # 2.2 If you do not have $SCRIPT set, I tell you about $SCRIPT and exit
+    unless ENV.has_key?("SCRIPT")
+      puts "You must set SCRIPT=<filename> first."
+      if !ARGV.empty?
+        usage
+      end
+      exit -1
+    end
+
+    # report the current script
+    puts "SCRIPT: #{ENV['SCRIPT']}"
+
+    # ----------------------------------------------------------------------
+    # Start the actual checking process
+    # ----------------------------------------------------------------------
+
+    # load file
+    lines = IO.readlines(ENV['SCRIPT']).map(&:rstrip)
+
+    # ----------------------------------------------------------------------
+    # Check for PEP8 Conformance
+    # ----------------------------------------------------------------------
+    if !essential?
+      puts section_title("PEP8 CONFORMANCE")
+      system "pep-check #{ENV['SCRIPT']}"
+    end
+
+    # ----------------------------------------------------------------------
+    # Pre-check the file
+    # ----------------------------------------------------------------------
+    # check for test, skip upload, etc.
+
+    # ----------------------------------------------------------------------
+    # Illegal Snowflake Syntax: DISTKEY, SORTKEY
+    # ----------------------------------------------------------------------
+    # DISTKEY, SORTKEY: just remove, it's fine
+    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true
+
+
+    # ----------------------------------------------------------------------
+    # Illegal Snowflake Syntax:  INTERVAL
+    # ----------------------------------------------------------------------
+    #
+    # Don't use postgresq2l date interval arithmetic. Instead of
+    #
+    # Instead of
+    # WHERE timestamp::DATE >= CURRENT_DATE - INTERVAL '2 days'
+    #
+    # We have to use DATEADD or DATEDIFF:
+    #
+    # WHERE timestamp >= DATEADD(day, -2, CURRENT_DATE)
+    # WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
+    detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true
+
+    detect_and_print_lines lines, "Postgresql integer extension types", /\bINT(2|4|8)\b/i, essential: true
+
+
+    # ----------------------------------------------------------------------
+    # NPM-style Lists
+    # ----------------------------------------------------------------------
+    # This one's not set in stone. It's a style I deeply dislike, but I
+    # won't pull it if the entire file is consistent. If there are multiple
+    # blocks and they're ALL in NPM style, I'll leave it alone. If there's a mix or
+    # if there's only one block, change it.
+    detect_and_print_lines lines, "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/, disabled: true
+
+
+    # ----------------------------------------------------------------------
+    # Update Python String Formatting
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Python 2 String Formatting", %r|%[\d\.]*[sdf].*['"]\s*%|
+
+    # ----------------------------------------------------------------------
+    # os.chdir to self: remove
+    # ----------------------------------------------------------------------
+    # If we see this exact line, just remove it:
+    # os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    #
+    # If we see another os.chdir, flag it as a warning.
+    detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
+
+
+    # ----------------------------------------------------------------------
+    # except Exception
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
+
+
+    # ----------------------------------------------------------------------
+    # Outdented SQL
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Outdented SQL (Not Fully Implemented - Check By Hand)", /^(FROM|WHERE|JOIN) /
+
+    # ----------------------------------------------------------------------
+    # Long lines
+    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{120,}$/
+
+    # ----------------------------------------------------------------------
+    # Overcomplicated format() calls
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Overly short format() calls (Check by hand)", /\.format\([^){,20}]\)/
+  end
 end
 
-lines = IO.readlines(ENV['SCRIPT']).map(&:rstrip)
 
-# show pep8 violations
-if !essential?
-  puts section_title("PEP8 CONFORMANCE")
-  system "pep-check #{ENV['SCRIPT']}"
+if __FILE__ == $0
+  SnowflakeManglerApp.new.run
 end
-
-# ----------------------------------------------------------------------
-# Illegal Snowflake Syntax: DISTKEY, SORTKEY
-# ----------------------------------------------------------------------
-# DISTKEY, SORTKEY: just remove, it's fine
-detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true
-
-
-# ----------------------------------------------------------------------
-# Illegal Snowflake Syntax:  INTERVAL
-# ----------------------------------------------------------------------
-#
-# Don't use postgresq2l date interval arithmetic. Instead of
-#
-# Instead of
-# WHERE timestamp::DATE >= CURRENT_DATE - INTERVAL '2 days'
-#
-# We have to use DATEADD or DATEDIFF:
-#
-# WHERE timestamp >= DATEADD(day, -2, CURRENT_DATE)
-# WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
-detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true
-
-detect_and_print_lines lines, "Postgresql integer extension types", /\bINT(2|4|8)\b/i, essential: true
-
-
-# ----------------------------------------------------------------------
-# NPM-style Lists
-# ----------------------------------------------------------------------
-# This one's not set in stone. It's a style I deeply dislike, but I
-# won't pull it if the entire file is consistent. If there are multiple
-# blocks and they're ALL in NPM style, I'll leave it alone. If there's a mix or
-# if there's only one block, change it.
-detect_and_print_lines lines, "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/, disabled: true
-
-
-# ----------------------------------------------------------------------
-# Update Python String Formatting
-# ----------------------------------------------------------------------
-detect_and_print_lines lines, "Python 2 String Formatting", /%[\d\.]*[sdf].*['"]\s*%/
-
-
-# ----------------------------------------------------------------------
-# os.chdir to self: remove
-# ----------------------------------------------------------------------
-# If we see this exact line, just remove it:
-# os.chdir(os.path.dirname(os.path.abspath(__file__)))
-#
-# If we see another os.chdir, flag it as a warning.
-detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
-
-
-# ----------------------------------------------------------------------
-# except Exception
-#
-# ----
-# TODO: Detect this exact block:
-#     except Exception as e:
-#       etl_client.close()
-#       raise
-#
-#     and replace with:
-#
-#     finally:
-#       etl_client.close()
-# ----
-
-detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
-
-
-# ----------------------------------------------------------------------
-# Outdented SQL
-detect_and_print_lines lines, "Outdented SQL (Not Fully Implemented - Check By Hand)", /^(FROM|WHERE|JOIN) /
-
-# ----------------------------------------------------------------------
-# Long lines
-detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{120,}$/
-
-# ----------------------------------------------------------------------
-# Overcomplicated format() calls
-detect_and_print_lines lines, "Overly short format() calls (Check by hand)", /\.format\([^){,20}]\)/
-
-# ----------------------------------------------------------------------
-# Remove reflexive formats, e.g. "{var}".format(var=var)
-#
-# DON'T do this in SQL statements. SublimeText can't grok SQL in f"" strings, so
-# Kym and Rikki favor the explicit format() call instead.
-#
-# Research this, I know it can be done with Oniguruma with sth like /\.format\(.*<?foo:[\w_]+>=<foo>.*\)/
-# detect_and_print_lines lines, "Reflexive format() calls (Check by hand - DON'T REMOVE FROM SQL STATEMENTS)", /\.format\([^){,20}]\)/
