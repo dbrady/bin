@@ -82,6 +82,11 @@ require 'optimist'
 # full check with "snow check", jump to the feature/snowflake-moveover branch
 # with "snow main", create new story branches (in both repos!) with "snow
 # new-branch", etc.
+#
+# Proposed commands:
+#
+# snow run - dsetl_nightly (with check for script in current_branch)
+# snow new-branch <pr> <job> - runs git new-branch in both repos
 
 # TODO: NEW CHECK: look for tabs instead of spaces
 
@@ -203,6 +208,14 @@ THE_LIST
 
     # report the current script
     puts "SCRIPT: #{ENV['SCRIPT']}"
+
+    # ----------------------------------------------------------------------
+    # 3. snow run -> dsetl_nightly $SCRIPT
+    # ----------------------------------------------------------------------
+    if ARGV.include?("-r") || ARGV.include?("run")
+      system "dsetl_nightly"
+      exit $?.exitstatus
+    end
 
     # ----------------------------------------------------------------------
     # Start the actual checking process
