@@ -1,18 +1,28 @@
-#!/bin/bash
-# dsetl_nightly - run specific job (TEMP: currently hardcoded to d_rac_customers lol)
-# See Also: (ds* scripts for inside the docker container)
-# dsinstall
-# dsetl
-# dsetl_nightly
-if [ `hostname` != 'e4ecac526fec' ]; then
-    echo "Must be run from inside the docker container."
-    exit
-fi
+#!/usr/bin/env ruby
+# dsetl_nightly <script> - run specific job
+# TODO: Because snowflake, check for script in current branch!
+require 'colorize'
 
-if [ -z "$JOB" ]; then
-    echo 'ERROR: $JOB is not set.'
-    exit
-fi
+if `hostname`.strip != 'e4ecac526fec'
+    puts "Must be run from inside the docker container."
+    exit -1
+end
 
-echo "# time python etl_nightly.py --job $JOB"
-time python etl_nightly.py --job $JOB
+if !ENV.has_key?("SCRIPT")
+    echo 'ERROR: $SCRIPT is not set.'
+    exit -1
+end
+
+job_name = ENV["SCRIPT"].sub(%r|^.*/|, '').sub(/\.py$/, '')
+branch_name = `git current-branch`.strip
+
+
+if !branch_name.include?(job_name)
+  puts "*** SNOWFLAKE WARNING: BRANCH DOES NOT CONTAIN JOB NAME ***".bold.light_white.on_red
+  puts "job_name: #{job_name}"
+  puts "branch_name: #{branch_name}"
+  exit -1
+end
+
+puts "# python etl_nightly.py --job #{ENV['SCRIPT']}"
+system "python etl_nightly.py --job #{ENV['SCRIPT']}"
