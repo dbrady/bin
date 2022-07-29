@@ -54,6 +54,10 @@ require 'optimist'
 # list, etc. Probably not worth the effort but man that does sound cool. Reminds
 # me a bit of todogroove.
 
+# TODO: emit my usual inspection queries for checking the data. Basically just
+# copy/pasteable "SELECT COUNT(*) FROM #{table}", "SELECT * FROM #{table} LIMIT
+# 3", and "SELECT * FROM #{table} ORDER BY xxxx DESC LIMIT 3"
+
 # DONE: This is an app now. Grow up, put on some pants, and get some class
 
 # TODO: Also start using optimist to process args
@@ -175,6 +179,10 @@ THE_LIST
     puts "export SCRIPT=#{ARGV.join(' ')}"
   end
 
+  def skippable?
+    IO.readlines(ENV["SCRIPT"]).any? { |line| line =~ /--skip_upload/ }
+  end
+
   # THE MAIN APP METHOD, LET'S GO
   def run
     # ----------------------------------------------------------------------
@@ -206,14 +214,16 @@ THE_LIST
       exit -1
     end
 
-    # report the current script
-    puts "SCRIPT: #{ENV['SCRIPT']}"
-
     # ----------------------------------------------------------------------
     # 3. snow run -> dsetl_nightly $SCRIPT
     # ----------------------------------------------------------------------
     if ARGV.include?("-r") || ARGV.include?("run")
-      system "dsetl_nightly"
+      command = if skippable?
+                  "dsetl_nightly --skip_upload"
+                else
+                  "dsetl_nightly"
+                end
+      system command
       exit $?.exitstatus
     end
 
@@ -235,7 +245,8 @@ THE_LIST
     # ----------------------------------------------------------------------
     # Pre-check the file
     # ----------------------------------------------------------------------
-    # check for test, skip upload, etc.
+    # check for --skip_upload
+    detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: DISTKEY, SORTKEY
