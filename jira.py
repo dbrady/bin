@@ -14,9 +14,10 @@ def get_bad_tickets():
         return []
 
 def find_ready_for_dev():
-    ticket_number = input('Epic ticket number with children tickets (ex: DS-879): ')
-    if ticket_number == '':
-        ticket_number = 'DS-879'
+    # ticket_number = input('Epic ticket number with children tickets (ex: DS-879): ')
+    # if ticket_number == '':
+    #     ticket_number = 'DS-879'
+    ticket_number = 'DS-879'
 
     jira_client = jira.Jira()
     fields = 'issuelinks,status'
