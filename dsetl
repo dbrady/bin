@@ -5,7 +5,7 @@
 # dsetl
 # dsetl_nightly
 
-if [ `hostname` != 'e4ecac526fec' ]; then
+if [ "$IS_DOCKER_LOCAL" != "1" ]; then
     echo "Must be run from inside the docker container."
     exit
 fi
