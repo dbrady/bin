@@ -1,5 +1,5 @@
 #!/bin/bash
-# go-snow
+# snow-go-main
 echo WARNING! This will reset your warehouse and finance repos to the snowflake main branch.
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
