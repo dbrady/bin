@@ -183,6 +183,11 @@ THE_LIST
     IO.readlines(ENV["SCRIPT"]).any? { |line| line =~ /--skip_upload/ }
   end
 
+  def run_and_exit!(command)
+    system command
+    exit $?.exitstatus
+  end
+
   # THE MAIN APP METHOD, LET'S GO
   def run
     # ----------------------------------------------------------------------
@@ -215,16 +220,23 @@ THE_LIST
     end
 
     # ----------------------------------------------------------------------
-    # 3. snow run -> dsetl_nightly $SCRIPT
+    # 3. dispatch/handle commands
     # ----------------------------------------------------------------------
-    if ARGV.include?("-r") || ARGV.include?("run")
-      command = if skippable?
-                  "dsetl_nightly --skip_upload"
-                else
-                  "dsetl_nightly"
-                end
-      system command
-      exit $?.exitstatus
+
+    # ----------------------------------------------------------------------
+    # snow run -> dsetl_nightly $SCRIPT
+    # ----------------------------------------------------------------------
+    if ARGV.first == "run"
+      command = "dsetl_nightly"
+      comand += " --skip_upload" if skippable?
+      run_and_exit! command
+    end
+
+    # ----------------------------------------------------------------------
+    # snow main -> snow-go-main
+    # ----------------------------------------------------------------------
+    if ARGV.first == "main"
+      run_and_exit! "snow-go-main"
     end
 
     # ----------------------------------------------------------------------
@@ -317,6 +329,17 @@ THE_LIST
     # Overcomplicated format() calls
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Overly short format() calls (Check by hand)", /\.format\([^){,20}]\)/
+
+    # ----------------------------------------------------------------------
+    # job_config must not be optional
+    # ----------------------------------------------------------------------
+    # this is a sweeping grep, should work 95% of the time. SOME false positives
+    # will occur that COULD be avoided by checking etl_nightly for the
+    # run_method and grepping only for THAT method but that will probably take
+    # more time than just weeding the falses out by hand. Looks like there are
+    # only 2 that take config=None while all the other true positives are
+    # job_config=None, so.
+    detect_and_print_lines lines, "Optional job_config", /def (run|main)\(.*config=/
   end
 end
 
