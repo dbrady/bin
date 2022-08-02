@@ -241,6 +241,13 @@ THE_LIST
     end
 
     # ----------------------------------------------------------------------
+    # snow new <ticket> <script> -> run snow-new-branch, which runs git new-branch in both repos
+    # ----------------------------------------------------------------------
+    if ARGV.first == "new"
+      run_and_exit! "snow-new-branch #{ARGV[1..].join(' ')}"
+    end
+
+    # ----------------------------------------------------------------------
     # Start the actual checking process
     # ----------------------------------------------------------------------
 
@@ -267,7 +274,6 @@ THE_LIST
     # DISTKEY, SORTKEY: just remove, it's fine
     detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true
 
-
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax:  INTERVAL
     # ----------------------------------------------------------------------
@@ -283,8 +289,21 @@ THE_LIST
     # WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
     detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true
 
+    # ----------------------------------------------------------------------
+    # Illegal Snowflake Syntax: Postgres INT2, INT4, INT8
+    # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Postgresql integer extension types", /\bINT(2|4|8)\b/i, essential: true
 
+    # ----------------------------------------------------------------------
+    # Illegal Snowflake Syntax: GEOMETRY, ST_GEOMFROMTEXT
+    # ----------------------------------------------------------------------
+    # GEOMETRY data type: change to GEOGRAPHY data type
+    # https://docs.snowflake.com/en/sql-reference/data-types-geospatial.html
+    detect_and_print_lines lines, "GEOMETRY", /\bGEOMETRY\b/i, essential: true
+
+    # ST_GEOMFROMTEXT function: change to TO_GEOGRAPHY
+    # https://docs.snowflake.com/en/sql-reference/functions/to_geography.html
+    detect_and_print_lines lines, "ST_GEOMFROMTEXT", /\bST_GEOMFROMTEXT\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # NPM-style Lists
