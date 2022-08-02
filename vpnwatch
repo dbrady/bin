@@ -45,6 +45,20 @@ def log_start
   log_to_file msg
 end
 
+STATUS_FILE = File.expand_path("~/.vpnwatch_is_currently_down")
+
+def was_down?
+  File.exist?(STATUS_FILE)
+end
+
+def log_down_status
+  File.open(STATUS_FILE,"w") { |fp| fp.puts time.strftime("%F %T ") }
+end
+
+def clear_down_status
+  FileUtils.rm(STATUS_FILE)
+end
+
 def log_finish(success)
   time = Time.now
   msg = time.strftime("(%F %T): ")
@@ -55,7 +69,15 @@ def log_finish(success)
          end
   puts msg
   log_to_file "#{msg}\n"
-  play_alert_sound unless success
+  if success
+    if was_down?
+      clear_down_status
+      play_happy_sound
+    else
+      log_down_status
+      play_alert_sound unless success
+    end
+  end
 end
 
 def play_alert_sound
@@ -64,9 +86,19 @@ def play_alert_sound
   system "afplay #{sound_file}"
 end
 
+def play_happy_sound
+  sound_file = '/System/Library/Sounds/Purr.aiff'
+  # File.expand_path(File.join(File.dirname(__FILE__), "thunderclap.mp3"))
+  system "afplay #{sound_file}"
+end
+
 truncate_log
-print "SOUND TEST: "
+puts "SOUND CHECK!"
+print "When network is down: "
 play_alert_sound
+puts "Done."
+print "When network comes back up: "
+play_happy_sound
 puts "Done."
 
 while true do
