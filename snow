@@ -108,26 +108,21 @@ class SnowflakeManglerApp
     return <<THE_LIST
 #{i=i+1}. Claim the ticket and move it to In Development
 #{i=i+1}. export SCRIPT=job_filename.py; export JOB=$(echo $SCRIPT | sed -e 's/\.py//')
-#{i=i+1}. Make sure you're on latest feature/snowflake-moveover
-   #{i}.1 (cd /root/data_services/etl/warehouse && git co feature/snowflake-moveover && git pull)
-   #{i}.2 (cd /root/data_services/etl/warehouse/finance && git co feature/snowflake-moveover && git pull)
-#{i=i+1}. Cut a new feature branch as feature/DS-{ticket}/{job_name} IN BOTH REPOS
-   #{i}.1 (cd /root/data_services/etl/warehouse && git new-branch NUM JOB_NAME)
-   #{i}.2 (cd /root/data_services/etl/warehouse/finance && git new-branch NUM JOB_NAME)
-#{i=i+1}. PRECHECK THE JOB! See if it has a --test or --skip_upload, and always use them
+#{i=i+1}. Make sure you're on latest feature/snowflake-moveover: snow main
+#{i=i+1}. Cut a new feature branch in both repos: git new-branch <ID> $SCRIPT; cd finance && !!
+#{i=i+1}. Precheck the job! See if it has a --skip_upload (handled automatically by snow run)
 #{i=i+1}. Run the job in redshift because who knows if it even works
 #{i=i+1}. Run snow-check --essential to fix stuff that CAN'T work in Snowflake
 #{i=i+1}. Change the nightly config from redshift to snowflake
 #{i=i+1}. Ensure job runs in Snowflake (compare data in both databases)
 #{i=i+1}. Run snow-check and clean up style things
 #{i=i+1}. Inspect the code for any other egregious style concerns
-   #{i}.1. Don't stomp another maintainer's style (egregious concerns only)
-   #{i}.2. Put any new ones in snow-check, even if just "(Check by hand)"
+#{i=i+1}. Put any new ones in snow-check, even if just "(Check by hand)"
 #{i=i+1}. Ensure job STILL runs in Snowflake
 #{i=i+1}. Screenshot it and attach it to the JIRA ticket
-#{i=i+1}. Open a PR in warehouse to merge it into feature/snowflake-moveover
+#{i=i+1}. Open a PR in warehouse to merge it into feature/snowflake-moveover: git cram && snow-create-pr-warehouse
 #{i=i+1}. Open a PR in finance to merge the redshift->snowflake change into its
-    feature/snowflake-moveover branch
+    feature/snowflake-moveover branch: git cram && snow-create-pr-finance
 #{i=i+1}. Sanity-check the PRs
    #{i}.1. Ensure you are merging into feature/snowflake-moveover, NOT MASTER
    #{i}.2. Ensure just 1 file changed and JUST the commits you made for this PR
