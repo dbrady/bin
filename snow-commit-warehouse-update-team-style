@@ -1,0 +1,6 @@
+#!/bin/bash
+echo git add $SCRIPT
+git add $SCRIPT
+
+echo git commit -m "Update job to team style"
+git commit -m "Update job to team style"

@@ -1,0 +1,6 @@
+#!/bin/bash
+echo git add config/etl_nightly_config.json
+git add config/etl_nightly_config.json
+
+echo git commit -m "Cut job over to Snowflake"
+git commit -m "Cut job over to Snowflake"

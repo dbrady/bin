@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# snow-create-pr-finance - emit the url for creating a PR against the snowflake branch in the finance repo
+
+
+# TODO: look into adapting git-home to get the pull request url?
+home = "https://github.com/acima-credit/data_services_finance"
+
+branch = `git current-branch`.strip
+pr_name = branch.sub(%r|^feature/|, '')
+ticket_id = $1 if branch =~ /(\d+)/
+
+puts "#{home}/compare/feature/snowflake-moveover...#{branch}?expand=1"
+puts pr_name
+puts "Jira Ticket: https://acima.atlassian.net/browse/DS-#{ticket_id}"
