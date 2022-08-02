@@ -123,7 +123,7 @@ class SnowflakeManglerApp
 #{i=i+1}. Ensure job runs in Snowflake (compare data in both databases)
 #{i=i+1}. Run snow-check and clean up style things
 #{i=i+1}. Inspect the code for any other egregious style concerns
-#{i=i+1}. Put any new ones in snow check"
+#{i=i+1}. Put any new ones in snow check
 #{i=i+1}. Ensure job STILL runs in Snowflake
 #{i=i+1}. Screenshot it and attach it to the JIRA ticket
 #{i=i+1}. Open a PR in warehouse to merge it into feature/snowflake-moveover: git cram && snow-create-pr-warehouse
