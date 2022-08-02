@@ -1,0 +1,14 @@
+#!/bin/bash
+# snow-commit - Commit $SCRIPT with specific message
+echo "Committing $SCRIPT..."
+
+git add $SCRIPT
+
+echo "Here are the changes you are about to commit:"
+git diff --staged
+
+echo "DOES THIS LOOK CORRECT? Hit ENTER to proceed, otherwise CTRL-C to abort"
+read
+
+echo git commit -m \"$@\"
+git commit -m "$@"
