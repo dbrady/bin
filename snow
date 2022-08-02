@@ -89,12 +89,18 @@ require 'optimist'
 #
 # Proposed commands:
 #
+# snow check - runs the main check (runs this if no other commands found)
 # snow run - dsetl_nightly (with check for script in current_branch)
 # snow new-branch <pr> <job> - runs git new-branch in both repos
 
 # TODO: NEW CHECK: look for tabs instead of spaces
 
-# ABANDONED: Remove reflexive format statements. (Maybe not--Kyn and Rikki use
+# TODO: Abstract concept of locating, displaying, and resolving problems. It
+# would be lovely to have snow check know that 'if __name__ == "main": followed
+# by a method call, probably main() or run(), and then EOF, should be completely
+# removed.
+
+# ABANDONED: Remove reflexive format statements. (Maybe not--Kym and Rikki use
 # these for syntax highlighting support in SQL strings in Sublime Text Remove
 # reflexive formats, e.g. "{var}".format(var=var). This task COULD be done with
 # Oniguruma and that might be worth researching, but I'm punting this for now.
@@ -335,6 +341,11 @@ THE_LIST
     # only 2 that take config=None while all the other true positives are
     # job_config=None, so.
     detect_and_print_lines lines, "Optional job_config", /def (run|main)\(.*config=/
+
+    # ----------------------------------------------------------------------
+    # main() bootstrapper
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "main() bootstapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
   end
 end
 
