@@ -16,6 +16,7 @@ end
 
 job_name = ENV["SCRIPT"].sub(%r|^.*/|, '').sub(/\.py$/, '')
 branch_name = `git current-branch`.strip
+finance_branch_name = `(cd ~/data_services/etl/warehouse/finance && git current-branch)`.strip
 
 if Dir.pwd !~ %r|data_services/etl/warehouse$|
   puts "*** SNOWFLAKE WARNING: YOU ARE NOT IN THE WAREHOUSE ***".bold.light_white.on_red
@@ -27,6 +28,15 @@ if !branch_name.include?(job_name)
   puts "job_name: #{job_name}"
   puts "branch_name: #{branch_name}"
   exit -1
+end
+
+if branch_name != finance_branch_name
+  str =<<BRANCH_WARNING
+WARNING: warehouse and finance branches do not match. Is that OK?
+Warehouse: #{branch_name}
+Finance: #{finance_branch_name}
+BRANCH_WARNING
+  puts str.yellow
 end
 
 # Overwrite previous line so the command screenshots correctly
