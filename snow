@@ -105,6 +105,24 @@ require 'optimist'
 # reflexive formats, e.g. "{var}".format(var=var). This task COULD be done with
 # Oniguruma and that might be worth researching, but I'm punting this for now.
 
+# TODO: Remove false positives where we have `except Exception as e:` but
+# followed by more than 2 lines of code and/or something other than
+# `etl_client.close()`, `pass`, or `raise`.
+#
+# sthg like "okay, we found 'except Exception' on line 90, where is the next
+# blank line, it's on line 96, okay that's a false positive. Or the blank
+# line is on line 93 but line 91 has a code snippit we don't recognize,
+# maybe check that one by hand but it's probably a false positive. On the
+# other hand, if we see _just_ 91:`etl_client.close()`, 92:`raise` then we
+# know we want to replace this one with a `finally: etl_client.close()` (and
+# look for `etl_client.close()` in lines 85-89).
+
+# TODO: If we broke the detect lines thing into [line_number, line] pairs we
+# could separate detection and action, so we could detect_and_print_lines, or
+# detect_and_propose_fix, and we could do lines = detect_lines() followed by
+# "look for etl_client() in the 5 lines _before_ the detection", "get all the
+# lines from the detection to the next blank line", etc.
+
 # END TODO SECTION - New TODOS go above here
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -334,7 +352,6 @@ THE_LIST
     # except Exception
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
-
 
     # ----------------------------------------------------------------------
     # Outdented SQL
