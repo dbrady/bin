@@ -1,0 +1,35 @@
+#!/bin/bash
+# snow-go-master
+echo WARNING! This will reset your warehouse and finance repos to the MASTER branch, NOT SNOWFLAKE.
+echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
+read
+echo starting... &&
+
+    echo "(cd ~/data_services/etl/warehouse/ &&" &&
+    (cd ~/data_services/etl/warehouse/ &&
+
+         echo "git checkout master finance &&" &&
+         git checkout master finance &&
+
+         echo "git main &&" &&
+         git main &&
+
+         echo "git pull) &&" &&
+         git pull) &&
+
+    echo "(cd ~/data_services/etl/warehouse/finance/ &&" &&
+    (cd ~/data_services/etl/warehouse/finance/ &&
+
+         echo "git main &&" &&
+         git main &&
+
+         echo "git pull) &&" &&
+         git pull) &&
+
+    echo "(cd ~/data_services/etl/warehouse/ &&" &&
+    (cd ~/data_services/etl/warehouse/ &&
+
+         echo "git checkout master finance)" &&
+         git checkout master finance) &&
+
+    echo done.

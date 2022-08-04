@@ -259,6 +259,13 @@ THE_LIST
     end
 
     # ----------------------------------------------------------------------
+    # snow master -> snow-go-master
+    # ----------------------------------------------------------------------
+    if ARGV.first == "master"
+      run_and_exit! "snow-go-master"
+    end
+
+    # ----------------------------------------------------------------------
     # snow new <ticket> <script> -> run snow-new-branch, which runs git new-branch in both repos
     # ----------------------------------------------------------------------
     if ARGV.first == "new"
