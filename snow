@@ -266,6 +266,13 @@ THE_LIST
     end
 
     # ----------------------------------------------------------------------
+    # snow job -> snow-show-job-config
+    # ----------------------------------------------------------------------
+    if ARGV.first == "job"
+      run_and_exit! "snow-job-show-config"
+    end
+
+    # ----------------------------------------------------------------------
     # snow new <ticket> <script> -> run snow-new-branch, which runs git new-branch in both repos
     # ----------------------------------------------------------------------
     if ARGV.first == "new"

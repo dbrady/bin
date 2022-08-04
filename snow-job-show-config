@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+require 'json'
+
+script = ENV["SCRIPT"].sub(%r|/|, '.').sub(/\.py$/, '')
+
+config = File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json"))
+
+json = JSON.parse(config)
+
+puts JSON.pretty_generate(json["jobs"][script])
