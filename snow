@@ -269,7 +269,7 @@ THE_LIST
     # snow job -> snow-show-job-config
     # ----------------------------------------------------------------------
     if ARGV.first == "job"
-      run_and_exit! "snow-job-show-config"
+      run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------

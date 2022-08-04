@@ -1,10 +1,15 @@
 #!/usr/bin/env ruby
+# snow-job-show-config - Dump the config for a job (defaults to $SCRIPT)
 require 'json'
 
-script = ENV["SCRIPT"].sub(%r|/|, '.').sub(/\.py$/, '')
+script = (ARGV.first || ENV["SCRIPT"]).sub(%r|/|, '.').sub(/\.py$/, '')
 
 config = File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json"))
 
 json = JSON.parse(config)
 
-puts JSON.pretty_generate(json["jobs"][script])
+body = json["jobs"][script]
+
+block = { script => body }
+
+puts JSON.pretty_generate(block)
