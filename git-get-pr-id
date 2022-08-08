@@ -17,14 +17,23 @@
 
 require 'yaml'
 
-settings_file = File.expand_path("~/.git-set-pr.yml")
+if ENV['IS_DOCKER_LOCAL'] == "1"
+  # can only be run on OSX
+  exit 0
+end
 
-pwd = Dir.pwd
-current_branch = `git current-branch`.strip
-pr = YAML.load_file(settings_file).fetch(pwd,{}).fetch(current_branch,'')
+begin
+  settings_file = File.expand_path("~/.git-set-pr.yml")
 
-if pr
-  puts pr
-else
+  pwd = Dir.pwd
+  current_branch = `git current-branch`.strip
+  pr = YAML.load_file(settings_file).fetch(pwd,{}).fetch(current_branch,'')
+
+  if pr
+    puts pr
+  else
+    exit -1
+  end
+rescue
   exit -1
 end
