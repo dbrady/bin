@@ -1,0 +1,5 @@
+#!/bin/bash
+# pytest - wrapper for "python -m unittest $@"
+
+echo "python -m unittest $@"
+python -m unittest $@
