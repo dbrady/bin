@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# tdata-start - hack to workaround my crippled tshare-start script
+
+require_relative 'tmuxinatrix/tmux_settings'
+require_relative 'tmuxinatrix/tmuxinatrix'
+
+settingses = [
+  TmuxSettings.new("ds.emacs", "data_services/etl/warehouse/", "dsexec"),
+  TmuxSettings.new("ds.bash", "data_services/etl/warehouse/", "dsexec"),
+  TmuxSettings.new("osx.emacs", "data_services/etl/warehouse/", "emacs"),
+  TmuxSettings.new("osx.bash", "data_services/etl/warehouse/", ""),
+  TmuxSettings.new("bash", "data_services/etl/warehouse/", ""),
+]
+$logging = true
+
+Tmuxinatrix.run('data', settingses)
