@@ -38,4 +38,4 @@ puts
 puts "1. Copy this to the clipboard"
 puts "2. Update JIRA ticket with PR info"
 puts "3. Update PRs with JIRA tickets"
-puts "4. Paste this blurb to Zack (s-V s-S-F)"
+puts "4. Paste this blurb to Zack (CMD-v CMD-SHIFT-f)"
