@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+require 'fileutils'
 
 # vpnwatch: Know when the vpn is down
 # Can do this in a one-off bash command as:
@@ -52,7 +53,7 @@ def was_down?
 end
 
 def log_down_status
-  File.open(STATUS_FILE,"w") { |fp| fp.puts time.strftime("%F %T ") }
+  File.open(STATUS_FILE,"w") { |fp| fp.puts Time.now.strftime("%F %T") }
 end
 
 def clear_down_status
@@ -69,15 +70,21 @@ def log_finish(success)
          end
   puts msg
   log_to_file "#{msg}\n"
-  if success
-    if was_down?
-      clear_down_status
-      play_happy_sound
-    else
-      log_down_status
-      play_alert_sound unless success
-    end
+  if success && was_down?
+    clear_down_status
+    play_happy_sound
+  elsif !success
+    log_down_status
+    play_alert_sound
   end
+end
+
+def log_no_vpn
+  time = Time.now
+  msg = time.strftime("(%F %T): ")
+  msg += "\033[2;37mNO VPN RUNNING\033[0m"
+  puts msg
+  log_to_file "#{msg}\n"
 end
 
 def play_alert_sound
@@ -103,9 +110,15 @@ puts "Done."
 
 while true do
   log_start
-  network_ok = system("ping -c 1 -t 1 google.com 2>&1 >/dev/null")
+  # if [[ $(ifconfig | grep "mtu 1406" ) ]] <-- check to see if vpn THINKS it is running
+  vpn_running = system('ifconfig | grep "mtu 1406"')
+  if vpn_running
+    network_ok = system("ping -c 1 -t 1 google.com 2>&1 >/dev/null")
 
-  log_finish(network_ok)
+    log_finish(network_ok)
+  else
+    log_no_vpn
+  end
 
   # Try to fire off every minute at the top of the minute
   sec_until_next_minute = 60 - Time.now.sec
