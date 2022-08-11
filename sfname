@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+words = IO.readlines("/usr/share/dict/words").map(&:strip)
+
+sn_words = words.grep(/^sn[aoeuy].{,5}/)
+fl_words = words.grep(/^fl[aoeuy].{,5}/)
+
+puts sn_words.sample(10).zip(fl_words.sample(10)).map {|a,b| "#{a}#{b}"}
