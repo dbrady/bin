@@ -1,0 +1,12 @@
+#!/bin/bash
+# dsvpn - start CLI vpn client and ssh into dataservices
+# TODO: bail out if vpnon
+
+echo reset &&
+reset &&
+
+echo vpnon &&
+vpnon &&
+
+echo ssh dataservices &&
+ssh dataservices"
