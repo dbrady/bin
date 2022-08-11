@@ -1,0 +1,14 @@
+#!/bin/bash
+# git unfsck-submodule [submodule=finance]
+
+echo "cat how2unborksubmodules"
+cat how2unborksubmodules
+
+SUBMODULE=finance
+if [ "$1" != "" ]; then
+    SUBMODULE=$1
+fi
+
+
+echo git checkout master "$SUBMODULE"
+git checkout master "$SUBMODULE"
