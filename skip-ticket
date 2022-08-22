@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 # bad-ticket - add a ticket to the "bad" list so jira.py --ready_for_development will skip it
+# Usage:
+
+# bad-ticket <id> [comment]
+
 import json
 import sys
 import os
@@ -37,10 +41,11 @@ def write_bad_tickets(tickets):
 
 if __name__ == '__main__':
     tickets = get_bad_tickets()
-    new_ticket = int(sys.argv[1])
-    print(f"Existing tickets: {tickets}")
+    new_ticket = {"id": int(sys.argv[1]), "comment": ' '.join(sys.argv[2:])}
+
+    print(f"Existing tickets: {tickets['tickets']}")
     print(f"New ticket: {new_ticket}")
 
-    if new_ticket not in tickets:
-        tickets.append(new_ticket)
+    if new_ticket not in [ticket["id"] for ticket in tickets["tickets"]]:
+        tickets["tickets"].append(new_ticket)
         write_bad_tickets(tickets)
