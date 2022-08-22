@@ -1,2 +1,3 @@
 #!/bin/sh
-git status $*
+echo git status $@
+git status $@

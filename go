@@ -1,5 +1,6 @@
 #!/bin/bash
-if git checkout $* 2>/dev/null; then
+
+if git checkout $@ 2>/dev/null; then
   exit 0
 else
   if [ "x" = "x$(git branch | grep $1 | sed -e 's/\*//' | awk '{ print $1 }')" ]; then
