@@ -20,9 +20,11 @@ class BadTicket:
         self.id = id
         self.comment = comment
         self.ticket_id = f"DS-{id}"
+        self.url = f"\033[2;37mhttps://acima.atlassian.net/browse/{self.ticket_id}\033[0m"
 
     def __str__(self):
-        f"DS-{self.id}"
+        return self.ticket_id
+
 
 
 class BadTickets:
@@ -39,3 +41,9 @@ class BadTickets:
 
     def ticket_exists(self, number):
         return number in [ticket.id for ticket in self.tickets]
+
+    def find_ticket(self, ticket_id):
+        # I guess we could do some shiz like return ticket for ticket in tickets if ticket["id"] == blah
+        for ticket in self.tickets:
+            if ticket_id == f'DS-{ticket.id}':
+                return ticket

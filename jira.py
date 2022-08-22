@@ -3,7 +3,7 @@
 # RUN THIS WITH next-ticket (or don't, I'm not your real Dad)
 import argparse
 
-import bad_tickets
+from bad_tickets import BadTicket, BadTickets
 from dataservices import jira
 import json
 import os
@@ -30,11 +30,11 @@ def find_ready_for_dev():
     dave_max = 10
     bad_tickets = BadTickets()
     bad_ticket_ids = bad_tickets.ids()
-    print(bad_ticket_ids)
+    # print(bad_ticket_ids)
 
     while not finished:
         tickets = jira_client.find_issue_by_epic_id(ticket_number, fields=fields, start_at=start_at)
-        print(f"FOUND {len(tickets)} TICKETS!")
+        # print(f"FOUND {len(tickets)} TICKETS!")
         for ticket in tickets['issues']:
             # print(ticket['key'])
             ready = True
@@ -49,9 +49,11 @@ def find_ready_for_dev():
             # bad_ticket = bad_tickets.find(ticket["key"])
             # if bad_ticket is not None:
             #     print(f"skipping ticket {bad_ticket.id} because {bad_ticket.reason}")
-            if ticket["key"] in bad_ticket_ids:
-                # ticket = find_ticket(ticket["key"], bad_tickets)
-                print(f'Skipping {ticket["key"]}: \033[2;37mhttps://acima.atlassian.net/browse/{ticket["key"]}\033[0m')
+            bad_ticket = bad_tickets.find_ticket(ticket["key"])
+            #if ticket["key"] in bad_ticket_ids:
+            if bad_ticket is not None:
+                #print(f'Skipping {ticket["key"]}: \033[2;37mhttps://acima.atlassian.net/browse/{ticket["key"]}\033[0m')
+                print(f'Skipping {bad_ticket.id} {bad_ticket.url} ({bad_ticket.comment})')
                 continue
 
             if ready:
