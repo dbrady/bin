@@ -27,6 +27,9 @@ if !branch_name.include?(job_name)
   puts "*** SNOWFLAKE WARNING: BRANCH DOES NOT CONTAIN JOB NAME ***".bold.light_white.on_red
   puts "job_name: #{job_name}"
   puts "branch_name: #{branch_name}"
+  puts
+  puts "If you are sure you meant to do this, fire it off manually with"
+  puts "python etl_nightly.py --job #{ENV['SCRIPT']}"
   exit -1
 end
 
