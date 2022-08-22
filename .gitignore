@@ -1,3 +1,4 @@
 .wattrc
 breakglass.log
 .byebug_history
+__pycache__/bad_tickets.cpython-37.pyc
