@@ -1,0 +1,3 @@
+#!/bin/bash
+# quick hack I wrote to find some data that was eluding me, but I ended up "making a pretty".
+ps auwx | ruby -rcolorize -ne 'colors=%w|red green yellow blue magenta cyan white|; colors += colors.map {|c| "light_#{c}"}; puts $_.split.zip(colors).map {|word, color| "#{word}".send(color || "light_black")} * " "'
