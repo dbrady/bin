@@ -1,46 +1,31 @@
-#!/usr/bin/env python
-# bad-ticket - add a ticket to the "bad" list so jira.py --ready_for_development will skip it
-import json
-import sys
-import os
+#!/usr/bin/env ruby
+# skip-ticket <id> [reason] - Add a new ticket to skip in jira.py
+require 'json'
 
-def ticket_file():
-    return os.path.expanduser("~/jira-bad-tickets.json")
+id, *comment = ARGV
 
-def get_bad_tickets():
-    try:
-        with open(ticket_file()) as file:
-            return json.loads(file.read())
-    except FileNotFoundError:
-        return []
+id = id.to_i
+comment = comment * ' '
 
-def write_bad_tickets(tickets):
-    # dafuq this ain't work with a new file???
-    #
-    # ANSWER: It does, but if the PATH makes no sense, it returns
-    # FileNotFoundError. Goddammit Python. Explicit isn't better than implicit
-    # if you're LYING.
-    #
-    # with open(ticket_file(), "w") as file:
-    #     file.write(json.dumps(tickets))
-    #
-    # Outputs:
-    #
-    # Traceback (most recent call last):
-    #   File "/root/bin/bad-ticket", line 28, in <module>
-    #     write_bad_tickets(tickets)
-    #   File "/root/bin/bad-ticket", line 17, in write_bad_tickets
-    #     with open(ticket_file(), "w") as file:
-    # FileNotFoundError: [Errno 2] No such file or directory: '~/jira-bad-tickets.json'
-    with open(ticket_file(), "w") as file:
-        file.write(json.dumps(tickets))
+puts "id:      #{id}"
+puts "comment: #{comment}"
 
-if __name__ == '__main__':
-    tickets = get_bad_tickets()
-    new_ticket = int(sys.argv[1])
-    print(f"Existing tickets: {tickets}")
-    print(f"New ticket: {new_ticket}")
+FILENAME = File.expand_path("~/jira-bad-tickets.json")
 
-    if new_ticket not in tickets:
-        tickets.append(new_ticket)
-        write_bad_tickets(tickets)
+tickets = JSON.parse(File.read(FILENAME))
+
+new_ticket = { "id": id, "comment": comment }
+
+puts tickets
+
+# if ticket already exists, update the comment.
+if tickets["tickets"].map {|ticket| ticket["id"] }.include?(id)
+  index = tickets["tickets"].index {|ticket| ticket["id"] == id }
+  tickets["tickets"][index] = new_ticket
+else
+  tickets << new_ticket
+end
+
+File.open(FILENAME, "w") do |file|
+  file.puts JSON.pretty_generate(tickets)
+end

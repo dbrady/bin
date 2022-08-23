@@ -1,35 +1,35 @@
 #!/bin/bash
 # snow-go-master
-echo WARNING! This will reset your warehouse and finance repos to the MASTER branch, NOT SNOWFLAKE.
+echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41mMASTER\033[0m branch, NOT SNOWFLAKE."
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
 echo starting... &&
 
-    echo "(cd ~/data_services/etl/warehouse/ &&" &&
+    echo -e "\033[36mcd ~/data_services/etl/warehouse/\033[0m" &&
     (cd ~/data_services/etl/warehouse/ &&
 
-         echo "git checkout master finance &&" &&
+         echo -e "\033[36mgit checkout master finance\033[0m" &&
          git checkout master finance &&
 
-         echo "git main &&" &&
+         echo -e "\033[36mgit main\033[0m" &&
          git main &&
 
-         echo "git pull) &&" &&
+         echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    echo "(cd ~/data_services/etl/warehouse/finance/ &&" &&
+    echo -e "\033[36mcd ~/data_services/etl/warehouse/finance/\033[0m" &&
     (cd ~/data_services/etl/warehouse/finance/ &&
 
-         echo "git main &&" &&
+         echo -e "\033[36mgit main\033[0m" &&
          git main &&
 
-         echo "git pull) &&" &&
+         echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    echo "(cd ~/data_services/etl/warehouse/ &&" &&
+    echo -e "\033[36mcd ~/data_services/etl/warehouse/\033[0m" &&
     (cd ~/data_services/etl/warehouse/ &&
 
-         echo "git checkout master finance)" &&
+         echo -e "\033[36mgit checkout master finance\033[0m" &&
          git checkout master finance) &&
 
     echo done.

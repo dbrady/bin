@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo git add-script "\"$SCRIPT\""
+git add-script $SCRIPT

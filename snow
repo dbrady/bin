@@ -247,7 +247,7 @@ THE_LIST
     # ----------------------------------------------------------------------
     if ARGV.first == "run"
       command = "dsetl_nightly"
-      comand += " --skip_upload" if skippable?
+      command += " --skip_upload" if skippable?
       run_and_exit! command
     end
 

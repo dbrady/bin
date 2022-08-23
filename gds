@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo git diff --staged $@
+git diff --staged $@

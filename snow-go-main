@@ -1,8 +1,9 @@
 #!/bin/bash
 # snow-go-main
-echo WARNING! This will reset your warehouse and finance repos to the snowflake main branch.
+echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;104m❄️ ❄️ ❄️  SNOWFLAKE ❄️ ❄️ ❄️ \033[0m main branch, feature/snowflake-moveover."
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
+
 echo starting... &&
 
     echo -e "\033[36mcd ~/data_services/etl/warehouse/\033[0m" &&

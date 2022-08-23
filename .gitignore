@@ -2,3 +2,4 @@
 breakglass.log
 .byebug_history
 vpnwatch_logs/*
+__pycache__/*

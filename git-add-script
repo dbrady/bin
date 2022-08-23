@@ -1,0 +1,8 @@
+#!/bin/bash
+
+if [ "$SCRIPT" == "" ]; then
+    echo 'No $SCRIPT var found. Please export SCRIPT=<script> before running this script.'
+else
+    echo git add $SCRIPT
+    git add $SCRIPT
+fi

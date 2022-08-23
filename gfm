@@ -1,4 +1,5 @@
 #!/bin/bash
+# gfm <file.md> - style document with github-flavored markdown and open it in browser
 HTML_PATH=/tmp/$(basename $1 .md).html
 
 echo "flavor $1 > $HTML_PATH"
