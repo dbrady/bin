@@ -25,7 +25,7 @@ require 'fileutils'
 #   the perception is that the vpn goes down a lot in the afternoons and almost
 #   never in the mornings.
 
-$logfile = File.expand_path(File.join(File.dirname(__FILE__), "vpnwatch.#{Time.now.strftime('%F.%H%M')}.log"))
+$logfile = File.expand_path(File.join(File.dirname(__FILE__), "vpnwatch_logs/vpnwatch.#{Time.now.strftime('%F.%H%M')}.log"))
 
 def truncate_log
   File.open($logfile, "w") do |fp|
@@ -111,7 +111,19 @@ puts "Done."
 while true do
   log_start
   # if [[ $(ifconfig | grep "mtu 1406" ) ]] <-- check to see if vpn THINKS it is running
-  vpn_running = system('ifconfig | grep "mtu 1406"')
+  # ^^^ mtu 1406 is the old AnyConnect. Need to diff the new vpn, it's not 1406.
+  #
+  # Perhaps this might be better: on the new vpn, an entirely new network
+  # connection appears, "utun2". It may also be telling that this is the only
+  # 10.x.x.x connection in my network.
+  #
+  # utun2: flags=80d1<UP,POINTOPOINT,RUNNING,NOARP,MULTICAST> mtu 1390
+  #        inet 10.1.40.204 --> 10.1.40.204 netmask 0xffffffff
+  #        inet6 fe80::8a66:5aff:fe03:c480%utun2 prefixlen 64 scopeid 0x12
+  #        inet6 fe80::33e6:36c4:883a:37b1%utun2 prefixlen 128 scopeid 0x12
+  #        nd6 options=201<PERFORMNUD,DAD>
+
+  vpn_running = system('ifconfig | grep -E "^utun2:" 2>&1 >/dev/null')
   if vpn_running
     network_ok = system("ping -c 1 -t 1 google.com 2>&1 >/dev/null")
 

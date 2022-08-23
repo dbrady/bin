@@ -1,3 +1,4 @@
 .wattrc
 breakglass.log
 .byebug_history
+vpnwatch_logs/*
