@@ -132,7 +132,7 @@ while true do
   # The best way to catch this is to look for an utun that runs on a 10.x.x.x
   # ip4 network.
 
-  vpn_running = system('ifconfig | grep -A 1 -E "^utun:" | grep "inet 10.1.40" 2>&1 >/dev/null')
+  vpn_running = system('ifconfig | grep -A 1 -E "^utun" | grep "inet 10.1.40" 2>&1 >/dev/null')
   if vpn_running
     network_ok = system("ping -c 1 -t 1 google.com 2>&1 >/dev/null")
 
