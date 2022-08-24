@@ -25,15 +25,17 @@ require 'fileutils'
 #   the perception is that the vpn goes down a lot in the afternoons and almost
 #   never in the mornings.
 
-$logfile = File.expand_path(File.join(File.dirname(__FILE__), "vpnwatch_logs/vpnwatch.#{Time.now.strftime('%F.%H%M')}.log"))
+def logfile
+  File.expand_path(File.join(File.dirname(__FILE__), "vpnwatch_logs/vpnwatch.#{Time.now.strftime('%F.%H%M')}.log"))
+end
 
 def truncate_log
-  File.open($logfile, "w") do |fp|
+  File.open(logfile, "w") do |fp|
   end
 end
 
 def log_to_file(msg)
-  File.open($logfile, "a") do |fp|
+  File.open(logfile, "a") do |fp|
     fp.print msg
   end
 end
@@ -122,8 +124,15 @@ while true do
   #        inet6 fe80::8a66:5aff:fe03:c480%utun2 prefixlen 64 scopeid 0x12
   #        inet6 fe80::33e6:36c4:883a:37b1%utun2 prefixlen 128 scopeid 0x12
   #        nd6 options=201<PERFORMNUD,DAD>
+  #
+  # Okay, checking for utun doesn't work either. mtu is the "Maximum
+  # Transmission Unit" and UTUN is how Catalina (and later) describes any
+  # virtual network, including Docker talking to itself.
+  #
+  # The best way to catch this is to look for an utun that runs on a 10.x.x.x
+  # ip4 network.
 
-  vpn_running = system('ifconfig | grep -E "^utun2:" 2>&1 >/dev/null')
+  vpn_running = system('ifconfig | grep -A 1 -E "^utun:" | grep "inet 10.1.40" 2>&1 >/dev/null')
   if vpn_running
     network_ok = system("ping -c 1 -t 1 google.com 2>&1 >/dev/null")
 
