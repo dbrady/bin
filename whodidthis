@@ -9,7 +9,7 @@ file, line = *ARGV
 blame = `git blame #{file} | head -n #{line} | tail -n 1` # | ruby -ne 'puts $1 if $_=~/\((.*?) 20\d\d-\d\d-\d\d/'`
 name, date = if blame =~ /\((.*?) (20\d\d-\d\d-\d\d) /
                [$1, $2]
-             end
+             end.map(&:strip)
 
 if name
   puts "#{name} hath done this terrible thing unto us (on #{date})"
