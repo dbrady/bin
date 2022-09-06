@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# sed-lines - list start..stop lines in a file
+#
+# TL;DR:
+# sed -ne '100,150p' file.txt              # without line numbers
+# cat -n file.txt | sed -ne '100,150p'     # with line numbers
+#
+# Usage:
+#     sed-lines [-n] <start> <stop> <file>
+#     -n - show line numbers
+#
+
+# 2022-09-06 dbrady notes: I have wanted a thing to print lines x-y since
+# forever. I've done it for years with `head -n y file | tail -n x-y`.
+#
+# The command to "do it right" is `sed -ne 'x,yp' file`.
+#
+# -n       - Like ruby/perl's -n vs -p. Suppresses printing the whole file.
+# -e       - Tells sed to execute the following command snippet
+# {2addr}p - print any line that falls inside {2addr}, which is how `man sed`
+#            says "x,y"
+
+argv = ARGV.dup
+
+show_line_numbers = argv.delete("-n")
+
+start, stop, file = *argv
+
+command = if show_line_numbers
+            "cat -n #{file} | sed -ne '#{start},#{stop}p'"
+          else
+            "sed -ne '#{start},#{stop}p' #{file}"
+          end
+
+puts "\033[92m#{command}\033[0m"
+system command
