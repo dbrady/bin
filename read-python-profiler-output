@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+# read-python-profiler-output <profile.dat> [-s <sort_by>] [-f <filter>]
+# sort and filter can be compounded, e.g. -s cumulative,file -f init,50
+# beacuse ruby is a better python than python
+require "optimist"
+
+# Stuff you can sort on:
+# calls      - number of calls
+# cumulative - cumulative time
+# cumtime    - cumulative time, only dirtier
+# file       - filename
+# filename   - filename
+# module     - filename
+# ncalls     - number of calls
+# pcalls     - primitive (non-recursion) calls
+# line       - line number
+# name       - function name
+# nfl        - name, file, line
+# stdname    - standard name
+# time       - internal time
+# tottime    - internal time
+
+# These can be combined to sort in order, e.g. sort_stats('cumulative', 'name')
+
+# Stuff you can filter on
+# <integer> - show at most n items
+# <float> - (0.0-1.0] - show this much of the list, e.g. 0.5 means show half
+# <string> - show methods with this string in their name, e.g. 'init' would show calls to  __init__ and set_trinity, run_infinite_loop, and so on.
+#
+# These can be combined as well:
+# print_stats(0.5, 'init')
+
+
+# TODO: add sort and filter options to this script.
+
+opts = Optimist.options do
+  banner <<-EOS
+This script tells python to crack open a profile dump (made with "python -m cProfile -o profile.dat <script>") and sort and filter the renults. Sort and filter options can be compounded, e.g. -s cumulative,calls -f init,10
+
+Sort Can be any combination of:
+    calls      - number of calls
+    cumulative - cumulative time
+    cumtime    - cumulative time, only dirtier
+    file       - filename
+    filename   - filename
+    module     - filename
+    ncalls     - number of calls
+    pcalls     - primitive (non-recursion) calls
+    line       - line number
+    name       - function name
+    nfl        - name, file, line
+    stdname    - standard name
+    time       - internal time
+    tottime    - internal time
+
+Filter can be any combination of:
+    <integer>       - Show at most this many items
+    <float:0.0-1.0> - Show this fraction, e.g. 0.1 shows the top 10%
+    <string>        - Show only functions whose names include this string
+
+Usage:
+       #{File.basename(__FILE__)} [options] <profile.dat>
+where [options] are:
+EOS
+
+  opt :sort, "Sort", type: :string, default: 'cumulative'
+  opt :filter, "Filter", type: :string, default: '50'
+end
+
+profile_file_name = ARGV.first
+sort_by = opts[:sort].split(",").map {|term| "'#{term}'"}.join(",")
+filter = opts[:filter].split(",").map {|item| item =~ /^[\d\.]+$/ ? item : "'#{item}'" }.join(",")
+command = <<COMMAND
+python -c "import pstats; pstats.Stats('#{profile_file_name}').sort_stats(#{sort_by}).print_stats(#{filter})"
+COMMAND
+
+puts command
+system command
