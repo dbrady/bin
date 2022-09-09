@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+# make-testit <filename> - create/update testit command script
+#
+# because ruby is a better python than python
+
+# BONUS: If you run testit <filename>, save the <filename> to ~/.testit, and then testit with no args can rerun that file again.
+
+test_file = ARGV.first
+module_path = test_file.gsub(%r|/|, '.').sub(/\.py$/, '')
+class_name = File.readlines(test_file).grep(/^\s*class /).first.sub(/^\s*class /, '').sub(/\(.*$/,'').strip
+script_file = File.expand_path("~/bin/testit")
+root = '~/data_services_package/'
+command = "cd #{root} && time python -m unittest #{module_path}.#{class_name}"
+
+File.open(script_file, "w") do |fp|
+  fp.puts <<SCRIPT
+#!/bin/bash
+# testit - run test script.
+# This file was automatically created by make-testit. Do not edit. Or do; I'm not your real dad.
+
+# rewrite the current command line so screenshots for coworkers don't have cryptic script names
+echo -ne "\\033[1F# "
+
+echo '#{command}'
+#{command}
+SCRIPT
+end
+
+puts "Generated ~/bin/testit as:"
+puts command
