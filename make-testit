@@ -2,6 +2,7 @@
 # make-testit <filename> - create/update testit command script
 #
 # because ruby is a better python than python
+require "fileutils"
 
 # BONUS: If you run testit <filename>, save the <filename> to ~/.testit, and then testit with no args can rerun that file again.
 
@@ -15,6 +16,7 @@ command = "cd #{root} && time python -m unittest #{module_path}.#{class_name}"
 File.open(script_file, "w") do |fp|
   fp.puts <<SCRIPT
 #!/bin/bash
+
 # testit - run test script.
 # This file was automatically created by make-testit. Do not edit. Or do; I'm not your real dad.
 
@@ -25,6 +27,7 @@ echo '#{command}'
 #{command}
 SCRIPT
 end
+FileUtils.chmod("u+x", script_file)
 
 puts "Generated ~/bin/testit as:"
 puts command
