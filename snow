@@ -13,16 +13,17 @@ require 'optimist'
 # something you don't understand well enough to debug. Or when we add it, mark
 # some tasks as automatable and others as not. There's a bit of a matrix here:
 #
-#                        | Confidence it | Difficulty of       |
+#                        | Confidence it | Difficulty of     |
 #                        | needs doing   | Automating fix    | Decision
 # -----------------------+---------------+-------------------+-----------
 # Remove DISTKEY/SORTKEY | Very High     | Easy              | Automate
 # Fix Python2 formats    | Very High     | Easy to Insane[1] | Automate SOME
 # Reflexive format()     | Low           | Easy              | By Hand Only
-# Wrap very long lines   | Unknowable[1] | Insane            | Do not attempt[2]
+# Wrap very long lines   | Unknowable    | Insane            | Do not attempt[2]
 #
 # [1] Hard to do confidently without a python parser to know when the string is
-# properly finished
+# properly finished. Super easy if the format string has no escape quotes and
+# the arglist exactly matches the given format tags.
 #
 # [2] That would be a pretty fatalistic statement if left unqualified. I mean
 # this in the sense that this project will be long finished before this becomes
@@ -45,7 +46,11 @@ require 'optimist'
 # parallel workspaces - like having ~/work1/data_services and
 # ~/work2/data_services so they can be in different branches working different
 # tickets. Or at the very least, a really good reason to have the script be
-# based off the working branch, like git-set-pr.
+# based off the working branch, like git-set-pr. Update 2022-09-12: Don't even
+# bother. I've gotten into a workflow where these jobs get knocked out
+# sequentially and it's more of a feature than a defect to Force Me To Think
+# About What I Am Doing. We want no evil wizards, and this has no benevolent
+# ones.
 
 # TODO: Interactive/tracking checklist. Something like reset the checklist,
 # check items off the checklist, show the current checklist in
@@ -168,7 +173,11 @@ THE_LIST
 
   # Was this script invoked with --list?
   def list?
-    ARGV.include?('--list') || ARGV.include?('-l')
+    ARGV.include?('--list') || ARGV.include?('-l') || ARGV.include?('list')
+  end
+
+  def help?
+    ARGV.include?('--help') || ARGV.include?('-h') || ARGV.include?('help')
   end
 
   def section_title(title)
@@ -207,11 +216,45 @@ THE_LIST
     exit $?.exitstatus
   end
 
+
+  def usage
+    str = <<~USAGE
+snow - master control script for snowflake job migration
+
+snow [<command> [<options>]]
+
+Most commands check for an env variable called SCRIPT. It should point to the
+job file relative from the warehous directory. E.g. for
+~/dataservices/etl/warehouse/rac/rac_job1.py, do export SCRIPT=rac/rac_job1.py
+
+Many jobs check that the current branch matches the SCRIPT file. This puts an
+extra bit of bookkeeping on you, but it's actually there to ensure that you're
+not accidentally merging to master or snowflake-moveover. Again.
+
+Commands/options:
+help, -h, --help              Show this message
+list, -l, --list              Print out the migration checklist
+job [job]                     Show current [or specified] job's configuration
+run                           Run the current job
+main                          Checkout the snowflake main branch in both repos
+master                        Checkout master in both repos
+new [ticket] [jobfile]        Create a new feature branch in both repos
+
+If no commands are given, snow will check the current job for coding violations.
+    USAGE
+
+  end
+
   # THE MAIN APP METHOD, LET'S GO
   def run
     # ----------------------------------------------------------------------
-    # 1. Check for --list
+    # 1. Check for --help and --list
     # ----------------------------------------------------------------------
+    if help?
+      puts usage
+      exit 0
+    end
+
     # if -l or --list, show checklist and exit
     if list?
       puts checklist
