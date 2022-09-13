@@ -34,6 +34,19 @@ require 'optimist'
 # yes, we apply the change, show the git diff, and then git commit the change
 # with the static/fixed message.
 
+# TODO: sed powerup: sed will take a line number AND can be told to make changes
+# in-place. This means that we can use snow job to find the exact line numbers
+# where the connections are set to redshift, and tell set to change them
+# in-place. The command should look something like:
+#
+# sed -i '2400,2410s/redshift/snowflake/' etl_nightly_config.json
+#
+# TEST THIS, this is awesome. Note: FINDING these line numbers may be a lot
+# trickier. snow-job-show-config parses the JSON and selects the key from a
+# hash. There is no line-by-line searching. Could maybe get the key after the
+# desired one, and explicitly search line by line with index from current job to
+# next job?
+
 # TODO: Change the way we get the script into this file. See next item; perhaps
 # generalizing git-set-pr to git-set-branch-var to track per-branch
 # variables. Instead of yaml[folder][branch] => pr_id, we could have
@@ -376,19 +389,58 @@ If no commands are given, snow will check the current job for coding violations.
     # https://docs.snowflake.com/en/sql-reference/data-types-geospatial.html
     detect_and_print_lines lines, "GEOMETRY", /\bGEOMETRY\b/i, essential: true
 
+    # ----------------------------------------------------------------------
+    # Illegal Snowflake Syntax: ST_GEOMFROMTEXT
+    # ----------------------------------------------------------------------
     # ST_GEOMFROMTEXT function: change to TO_GEOGRAPHY
     # https://docs.snowflake.com/en/sql-reference/functions/to_geography.html
     detect_and_print_lines lines, "ST_GEOMFROMTEXT", /\bST_GEOMFROMTEXT\b/i, essential: true
 
     # ----------------------------------------------------------------------
+    # Illegal Snowflake Syntax: AT TIME ZONE
+    # ----------------------------------------------------------------------
+    # AT TIME ZONE '<zone>': change to CONVERT_TIMEZONE('<to_zone>', source_timestamp)
+    #
+    # Can this be automated? NO, this is some serious bullshit.
+    #
+    # DANGER DANGER DANGER:  Investigate. My snowflake sessions in DataGrip are
+    # set to MST timezone. I fixed this (for how long? Guessing for the length
+    # of "the session") with ALTER SESSION SET TIMEZONE = 'UTC'.
+    #
+    # let's say time = TO_TIMESTAMP('2022-09-13 09:00:00 +00:00'). That works in
+    # both databases.
+    #
+    # Redshift's TO_TIMESTAMP will return a timestamp WITH TIMEZONE, so later on
+    # doing time AT TIME ZONE 'MST' convert TO MST, subtract 7 hours, and drop
+    # the TZ part. BUT!  Snowflake's TO_TIMESTAMP will return a timestamp
+    # WITHOUT a timezone, which means doing CONVERT_TIMEZONE('MST', time) is
+    # telling the database "hey!  This timestamp is already in MST, please tack
+    # a timezone on it and convert it to UTC". That means Snowflake will ADD
+    # seven hours, not subtract. UGH.
+
+    # Okay. Okay. Okay. I found a thing that works.
+    # First, we need to send "ALTER SESSION SET TIMEZONE = 'UTC' as often as we
+    # need to. I'm guessing every script should start off that way.
+
+    # TEST THIS: It might be DataGrip that was messing that up by "helpfully"
+    # reading my laptop's local settings. So when we run a script, it might
+    # already be in UTC. Nope. Maybe? The server appears to be in the US/Los
+    # Angeles time zone, which is PT with DST. UGH.
+
+    # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
+    # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
+    detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true
+
+    # ----------------------------------------------------------------------
     # NPM-style Lists
     # ----------------------------------------------------------------------
-    # This one's not set in stone. It's a style I deeply dislike, but I
-    # won't pull it if the entire file is consistent. If there are multiple
-    # blocks and they're ALL in NPM style, I'll leave it alone. If there's a mix or
-    # if there's only one block, change it.
+    # I deeply dislike NPM-style leading-commas. Casey loves them. Be kind to
+    # the maintainer. If there's a motherhuge query that only Casey can debug,
+    # or the entire file is consistently in NPM-style, leave it in his preferred
+    # style. If there's a mix of styles or it's something I have to maintain,
+    # change it. Unless there's already a good reason to be editing a query,
+    # don't change its style.
     detect_and_print_lines lines, "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/, disabled: true
-
 
     # ----------------------------------------------------------------------
     # Update Python String Formatting
@@ -403,7 +455,6 @@ If no commands are given, snow will check the current job for coding violations.
     #
     # If we see another os.chdir, flag it as a warning.
     detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
-
 
     # ----------------------------------------------------------------------
     # except Exception
@@ -438,7 +489,7 @@ If no commands are given, snow will check the current job for coding violations.
     # ----------------------------------------------------------------------
     # main() bootstrapper
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "main() bootstapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
+    detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
   end
 end
 
