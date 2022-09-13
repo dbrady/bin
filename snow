@@ -325,7 +325,13 @@ If no commands are given, snow will check the current job for coding violations.
     # snow job -> snow-show-job-config
     # ----------------------------------------------------------------------
     if ARGV.first == "job"
-      run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
+      if ARGV.size == 1
+        run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
+      elsif ARGV[1] == "redshift" || ARGV[1] == "r"
+        run_and_exit! "snow-job-convert-to-redshift #{ENV['SCRIPT']}"
+      elsif ARGV[1] == "snowflake" || ARGV[1] == "s"
+        run_and_exit! "snow-job-convert-to-snowflake #{ENV['SCRIPT']}"
+      end
     end
 
     # ----------------------------------------------------------------------
