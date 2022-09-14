@@ -6,8 +6,8 @@ require_relative 'tmuxinatrix/tmuxinatrix'
 
 settingses = [
   TmuxSettings.new("ds.emacs", "data_services/etl/warehouse/", "dsstart"),
-  TmuxSettings.new("ds.bash", "data_services/etl/warehouse/", "dsexec"),
-  TmuxSettings.new("ds.bash2", "data_services/etl/warehouse/", "dsexec"),
+  TmuxSettings.new("ds.bash", "data_services/etl/warehouse/", "sleep 30 && dsexec"),
+  TmuxSettings.new("ds.bash2", "data_services/etl/warehouse/", "sleep 30 && dsexec"),
   TmuxSettings.new("osx.emacs", "data_services/etl/warehouse/", "emacs"),
   TmuxSettings.new("osx.bash", "data_services/etl/warehouse/", ""),
 ]

@@ -247,15 +247,17 @@ not accidentally merging to master or snowflake-moveover. Again.
 Commands/options:
 help, -h, --help              Show this message
 list, -l, --list              Print out the migration checklist
+check [-e|--essential]        Check the current job for [only essential] coding violations
 job [job]                     Show current [or specified] job's configuration
+job s[nowflake]               Convert job configuration to snowflake
+job r[edshift]                Convert job configuration back to redshift
 run                           Run the current job
 main                          Checkout the snowflake main branch in both repos
 master                        Checkout master in both repos
 new [ticket] [jobfile]        Create a new feature branch in both repos
 
-If no commands are given, snow will check the current job for coding violations.
+If no commands are given, snow will run check.
     USAGE
-
   end
 
   # THE MAIN APP METHOD, LET'S GO
