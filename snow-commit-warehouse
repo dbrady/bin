@@ -1,0 +1,6 @@
+#!/bin/bash
+echo git add $SCRIPT
+git add $SCRIPT
+
+echo git commit -m "Update $SCRIPT to be compatible with Snowflake"
+git commit -m "Update $SCRIPT to be compatible with Snowflake"
