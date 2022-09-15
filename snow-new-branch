@@ -1,12 +1,41 @@
 #!/usr/bin/env ruby
-# post export SCRIPT=<script>, then git new-branch in both repos
-# snow-new-branch <ticket> <file> - git new-branch in both repos
+# snow-new-branch <ticket> - git new-branch in both repos
+# SET SCRIPT FIRST
 require "colorize"
 
 def usage
   puts <<USAGE
-snow-new-branch <ticket> <file> - create new snowflake branches in both repos
+snow-new-branch <ticket> <file> - create new snowflake branches in both repos.
+
+Set the SCRIPT variable FIRST. This script will try to detect if it is missing or out of date.
 USAGE
+end
+
+def get_script
+  # ENV['SCRIPT'] until/unless we move this to an .rc file
+  ENV['SCRIPT']
+end
+
+def job_name
+  get_script.gsub('/', '.').sub(/.py$/, '')
+end
+
+def get_all_branches
+  `git branch -a`.each_line.to_a.map { |branch| branch.gsub(/^\s*\*\s*/, '').strip }
+end
+
+# If I forget to update SCRIPT and it's set to the previous job's work, there
+# will already be a branch for it in github. I check for this here and make
+# myself fix it by hand--usually just involving updating SCRIPT.
+def make_sure_script_is_current!(ticket_id)
+  # tl;dr if script is set but git branch -a contains the ticket id or job name, raise a warning
+  return unless get_script
+
+  branches = get_all_branches
+
+  if problem_branch = branches.detect {|branch| branch.include?(ticket_id) || branch.include?(job_name) }
+    raise "ERROR: Cowardly refusing to create new snowflake tickets for #{job_name} because I found an existing branch called #{problem_branch}."
+  end
 end
 
 if ARGV.include?("-h") || ARGV.include?("--help")
@@ -15,19 +44,21 @@ if ARGV.include?("-h") || ARGV.include?("--help")
 end
 
 if ARGV.first.to_i.zero?
-  puts "First argument must be a ticket id"
+  puts "Argument must be a ticket id"
   usage
   exit -1
 end
 
-if ARGV.size != 2
-  puts "Expected 2 arguments, got #{ARGV.size}"
+if ARGV.size != 1
+  puts "Expected 1 arguments, got #{ARGV.size}"
   usage
   exit -1
 end
 
-ticket, filename = *ARGV
+ticket = ARGV.first
+filename = get_script
 warehouse_dir = File.expand_path("~/data_services/etl/warehouse")
+make_sure_script_is_current! ticket
 
 if Dir.pwd != warehouse_dir
   puts "ERROR: Must be run from the warehouse dir."
