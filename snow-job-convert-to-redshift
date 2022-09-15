@@ -46,7 +46,7 @@ end_line = `#{end_line_command}`.strip
 # 6. Build the sed commands
 
 # 7. Run the sed command and exit.
-sed_print_command = "sed -ne '#{start_line},#{end_line}p' #{config_file}"
+# sed_print_command = "sed -ne '#{start_line},#{end_line}p' #{config_file}"
 # puts "sed_print_command: #{sed_print_command.inspect}"
 # puts "BEFORE:"
 # puts `#{sed_print_command}`
@@ -64,7 +64,8 @@ find_replace.each do |find, replace|
 end
 
 # puts "AFTER:"
-system sed_print_command
+# system sed_print_command
+system "snow job"
 # puts `#{sed_print_command}`
 
 # The sister script, snow-job-convert-to-redshift, does exactly the same thing
