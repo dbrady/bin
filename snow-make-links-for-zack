@@ -1,27 +1,32 @@
 #!/usr/bin/env ruby
-# fixup-links - generate all the links for everybody across the board
+# snow-make-links-for-zack - generate all the PR links for a job's migrations
 
 def usage
   str = <<USAGE
-#{File.basename(__FILE__)} <JIRA_TICKET_ID> <WAREHOUSE_PR_ID> <FINANCE_PR_ID>
+#{File.basename(__FILE__)} <WAREHOUSE_PR_ID> <FINANCE_PR_ID> [<PACKAGE_PR_ID>]
 USAGE
 end
 
-if ARGV.size < 3 || ARGV.size > 4 || ARGV.include?('-h') || ARGV.include?('--help')
+if ARGV.size < 2 || ARGV.size > 3 || ARGV.include?('-h') || ARGV.include?('--help')
   puts usage
   exit -1
 end
 
 
-TICKET_ID=ARGV[0]
-WAREHOUSE_PR_ID=ARGV[1]
-FINANCE_PR_ID=ARGV[2]
-PACKAGE_PR_ID=ARGV[3]
+def get_ticket_from_branch
+  `git current-branch`.gsub(/^\D*/, '').to_i
+end
+
+TICKET_ID=get_ticket_from_branch
+WAREHOUSE_PR_ID=ARGV[0]
+FINANCE_PR_ID=ARGV[1]
+PACKAGE_PR_ID=ARGV[2]
 
 proposed_branch_name = `git current-branch`.strip.sub(%r|^feature/|,'')
+job_name = proposed_branch_name.sub(%r|^\w+-\d+/|, '')
 
 blurb =<<TEMPLATE
-*DS-#{TICKET_ID}:*
+*DS-#{TICKET_ID}: #{job_name}*
 Jira Ticket: https://acima.atlassian.net/browse/DS-#{TICKET_ID}
 Dataservices PR: https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}
 Finance PR: https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}
