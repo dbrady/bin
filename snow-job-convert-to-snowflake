@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # snow-job-convert-to-snowflake <job_name_or_file>
 #
-# Change all mentions of redshift to snowflake in a job's config.
+# Change all mentions of redshift to/from snowflake in a job's config.
 require 'json'
 
 config_file = File.expand_path("./finance/config/etl_nightly_config.json")
@@ -13,7 +13,7 @@ job = job.gsub(%r|/|, '.').sub(/.py$/, '')
 #   order.
 config = JSON.parse(File.read(config_file))
 
-puts config["jobs"].keys
+# puts config["jobs"].keys
 
 # 2. Get name of the job AFTER the desired job with keys.index(job) and
 #    keys[index+1].
@@ -22,15 +22,15 @@ next_job = config["jobs"].keys[next_job_index]
 
 # 3. If the desired job was the last job in the keys array, set the next_job to
 #    nil
-puts "job was found at index #{next_job_index}"
-puts "next job is #{next_job.inspect}"
+# puts "job was found at index #{next_job_index}"
+# puts "next job is #{next_job.inspect}"
 
 # 4. Get the starting line number of the job with grep -n job config | awk
 #    '{print $1}' | sed 's/://'
 start_line_command = "grep -n #{job} #{config_file} | awk '{ print $1 }' | sed 's/://'"
-puts start_line_command
+# puts start_line_command
 start_line = `#{start_line_command}`.strip
-puts "start_line: #{start_line.inspect}"
+# puts "start_line: #{start_line.inspect}"
 
 # 5. Get the ending next_line number. If end_job is nil, use wc -l, otherwise
 #    use the grep chain above with the end_job name.
@@ -39,31 +39,33 @@ end_line_command = if next_job
                    else
                      "wc -l #{config_file} | awk '{ print $1 }'"
                    end
-puts end_line_command
+# puts end_line_command
 end_line = `#{end_line_command}`.strip
-puts "end_line: #{end_line.inspect}"
+# puts "end_line: #{end_line.inspect}"
 
 # 6. Build the sed commands
 
 # 7. Run the sed command and exit.
 sed_print_command = "sed -ne '#{start_line},#{end_line}p' #{config_file}"
-puts "sed_print_command: #{sed_print_command.inspect}"
-puts "BEFORE:"
-puts `#{sed_print_command}`
+# puts "sed_print_command: #{sed_print_command.inspect}"
+# puts "BEFORE:"
+# puts `#{sed_print_command}`
 
-# this is the only difference between this script and snow-job-convert-to-redshift
+# this is the only difference between snow-job-convert-to-redshift and snow-job-convert-to-snowflake
 find_replace = [
   ["redshift", "snowflake"],
   ["Redshift", "Snowflake"]
 ]
 find_replace.each do |find, replace|
   sed_edit_command =  "sed -i '#{start_line},#{end_line}s/#{find}/#{replace}/' #{config_file}"
-  puts "sed_edit_command: #{sed_edit_command}"
-  puts `#{sed_edit_command}`
+  # puts "sed_edit_command: #{sed_edit_command}"
+  system sed_edit_command
+  # puts `#{sed_edit_command}`
 end
 
-puts "AFTER:"
-puts `#{sed_print_command}`
+# puts "AFTER:"
+system sed_print_command
+# puts `#{sed_print_command}`
 
 # The sister script, snow-job-convert-to-redshift, does exactly the same thing
 # except s/...snowflake/redshift/ at the end. Perhaps write a single thing that,
