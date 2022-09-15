@@ -510,6 +510,23 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/
 
     # ----------------------------------------------------------------------
+    # TODO: CREATE TABLE ( LIKE )
+    # ----------------------------------------------------------------------
+    # change CREATE TABLE foo ( LIKE bar ) -> CREATE TABLE foo LIKE bar
+    #
+    # The problem is I found this in the wild in
+    # etl_f_delighted_survey_responses.py which broke it up across multiple
+    # lines. Ruby can do multiline regexes but my current detect_and_print_lines
+    # method locks it into a one-line-per-check approach.
+    #
+    # Could maybe pass in a multiple lines flag telling detect to batch up lines
+    # in pairs, or in groups of <n>, and then instead of iterating over line 1,
+    # 2, 3, 4, I could iterate over [1,2], [2,3], [3,4], or [1,2,3], [2,3,4],
+    # etc.
+    # ----------------------------------------------------------------------
+    # detect_and_print_lines lines, "", /regex/, multilines: 2
+
+    # ----------------------------------------------------------------------
     # except Exception
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
@@ -521,7 +538,7 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # Long lines
-    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{120,}$/
+    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{180,}$/
 
     # ----------------------------------------------------------------------
     # Overcomplicated format() calls
