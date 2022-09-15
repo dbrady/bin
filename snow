@@ -254,16 +254,17 @@ extra bit of bookkeeping on you, but it's actually there to ensure that you're
 not accidentally merging to master or snowflake-moveover. Again.
 
 Commands/options:
-help, -h, --help              Show this message
-list, -l, --list              Print out the migration checklist
-check [-e|--essential]        Check the current job for [only essential] coding violations
-job [job]                     Show current [or specified] job's configuration
-job s[nowflake]               Convert job configuration to snowflake
-job r[edshift]                Convert job configuration back to redshift
-run                           Run the current job
-main                          Checkout the snowflake main branch in both repos
-master                        Checkout master in both repos
-new [ticket] [jobfile]        Create a new feature branch in both repos
+help, -h, --help                 Show this message
+list, -l, --list                 Print out the migration checklist
+check [-e|--essential]           Check the current job for [only essential] coding violations
+job [job]                        Show current [or specified] job's configuration
+job s[nowflake]                  Convert job configuration to snowflake
+job r[edshift]                   Convert job configuration back to redshift
+run                              Run the current job
+main                             Checkout the snowflake main branch in both repos
+master                           Checkout master in both repos
+new <ticket> <job.py>            Create a new feature branch in both repos
+link <pr> <finance_pr> [pkg_pr]  Create links template for Zack
 
 If no commands are given, snow will run check.
     USAGE
@@ -358,6 +359,13 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     if ARGV.first == "new"
       run_and_exit! "snow-new-branch #{ARGV[1..].join(' ')}"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow link <pr> <finance_pr> [package_pr] -> Create Slackable links for Zack
+    # ----------------------------------------------------------------------
+    if ARGV.first == "link"
+      run_and_exit! "snow-make-links-for-zack #{ARGV[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
