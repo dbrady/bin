@@ -12,4 +12,5 @@ body = json["jobs"][script]
 
 block = { script => body }
 
-puts JSON.pretty_generate(block)
+# colorize redshift red on black, colorize snowflake icy white on light blue
+puts JSON.pretty_generate(block).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
