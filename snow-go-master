@@ -1,6 +1,6 @@
 #!/bin/bash
 # snow-go-master
-echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41mMASTER\033[0m branch, NOT SNOWFLAKE."
+echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41m!!!  MASTER  !!! \033[0m branch, NOT SNOWFLAKE."
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
 echo starting... &&
