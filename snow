@@ -179,6 +179,11 @@ class SnowflakeManglerApp
 THE_LIST
   end
 
+  def get_script
+    # until/unless we port this to an .rc file
+    @script ||= ENV['SCRIPT']
+  end
+
   # Was this script invoked with --essential?
   def essential?
     ARGV.include?('--essential') || ARGV.include?('-e')
@@ -201,13 +206,17 @@ THE_LIST
     puts " OK ".bold.light_white.on_green
   end
 
-  def detect_and_print_lines(lines, title, regex, essential: false, disabled: false)
+  def detect_and_print_lines(lines, title, regex, essential: false, disabled: false, autofix: nil, suggest: nil)
     return if disabled
     return if essential? && !essential
     puts section_title title
     if lines.any? { |line| line =~ regex }
+      puts "Autofix with: #{autofix}" if autofix
       lines.each.with_index do |line, index|
         puts "%4d: %s" % [index+1, line] if line =~ regex
+        if suggest && suggestion = send(suggest, line)
+          puts "Replacement: #{suggestion}"
+        end
       end
     else
       log_ok
@@ -215,7 +224,7 @@ THE_LIST
   end
 
   def usage
-    puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing allagaddam time. Sorry not sorry, you're welcome."
+    puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing alagadam time. Sorry not sorry, you're welcome."
     puts "Try doing this, and maybe put it in .bashrc while you're at it:"
     puts "export SCRIPT=#{ARGV.join(' ')}"
   end
@@ -258,6 +267,14 @@ new [ticket] [jobfile]        Create a new feature branch in both repos
 
 If no commands are given, snow will run check.
     USAGE
+  end
+
+  def replace_at_time_zone(line)
+    # AND contact_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' >= '2021-01-23'
+    regex = /(\w+) AT TIME ZONE '(.+?)' AT TIME ZONE '([^']+)'/
+    return unless line =~ regex
+
+    line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
   end
 
   # THE MAIN APP METHOD, LET'S GO
@@ -330,9 +347,9 @@ If no commands are given, snow will run check.
       if ARGV.size == 1
         run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
       elsif ARGV[1] == "redshift" || ARGV[1] == "r"
-        run_and_exit! "snow-job-convert-to-redshift #{ENV['SCRIPT']}"
+        run_and_exit! "snow-job-convert-to-redshift #{get_script}"
       elsif ARGV[1] == "snowflake" || ARGV[1] == "s"
-        run_and_exit! "snow-job-convert-to-snowflake #{ENV['SCRIPT']}"
+        run_and_exit! "snow-job-convert-to-snowflake #{get_script}"
       end
     end
 
@@ -348,14 +365,14 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
 
     # load file
-    lines = IO.readlines(ENV['SCRIPT']).map(&:rstrip)
+    lines = IO.readlines(get_script).map(&:rstrip)
 
     # ----------------------------------------------------------------------
     # Check for PEP8 Conformance
     # ----------------------------------------------------------------------
     if !essential?
       puts section_title("PEP8 CONFORMANCE")
-      system "pep-check #{ENV['SCRIPT']}"
+      system "pep-check #{get_script}"
     end
 
     # ----------------------------------------------------------------------
@@ -368,7 +385,8 @@ If no commands are given, snow will run check.
     # Illegal Snowflake Syntax: DISTKEY, SORTKEY
     # ----------------------------------------------------------------------
     # DISTKEY, SORTKEY: just remove, it's fine
-    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true
+    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/\\b(DIS|SOR)TKEY\\b/d' #{get_script}"
+    # if no conflicts found, this can be autofixed with sed -E -i '/\b(DIS|SOR)TKEY\b/d
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax:  INTERVAL
@@ -437,7 +455,7 @@ If no commands are given, snow will run check.
 
     # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
     # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
-    detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true
+    detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
 
     # ----------------------------------------------------------------------
     # NPM-style Lists
@@ -453,14 +471,21 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # Redshift S3 buckets
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Redshift S3 Buckets", %r|s3.*redshift|, essential: true
+    detect_and_print_lines lines, "Redshift S3 Buckets", %r|s3.*redshift|i, essential: true
 
     # ----------------------------------------------------------------------
     # Redshift mentioned anywhere
     # ----------------------------------------------------------------------
     # (<!s3) is "negative lookbehind". It means find redshift, but not if it was
     # preceded by s3 (which is found by Redshift S3 buckets above)
-    detect_and_print_lines lines, "Redshift mentioned anywhere", %r|(<!s3).*redshift|
+    detect_and_print_lines lines, "Redshift mentioned anywhere", %r|(<!s3).*redshift|i
+
+    # ----------------------------------------------------------------------
+    # Secretly blocked by DS-1704: d_team_list_rac_cs_gsheet
+    #  AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Secretly blocked by DS-1704", %r|D_TEAM_LIST_RAC_CS_GSHEET|i, essential: true
+    detect_and_print_lines lines, "Secretly blocked by DS-????", %r|D_TEAM_LIST_RAC_GSHEET|i, essential: true
 
     # ----------------------------------------------------------------------
     # Update Python String Formatting
