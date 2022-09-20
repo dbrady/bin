@@ -1,0 +1,4 @@
+#!/bin/bash
+# tdata-new - create new session for tdata. Run this, jump into window 1 and run tdata-start
+echo "tmux new-session -s data"
+tmux new-session -s data

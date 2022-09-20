@@ -5,9 +5,13 @@ require_relative 'tmuxinatrix/tmux_settings'
 require_relative 'tmuxinatrix/tmuxinatrix'
 
 settingses = [
+  # first session of the day needs to start the container
   TmuxSettings.new("ds.emacs", "data_services/etl/warehouse/", "dsstart"),
-  TmuxSettings.new("ds.bash", "data_services/etl/warehouse/", "sleep 30 && dsexec"),
-  TmuxSettings.new("ds.bash2", "data_services/etl/warehouse/", "sleep 30 && dsexec"),
+
+  # all subsequent sessions connect with dsexec, but we need to give dsstart enough time to fire up
+  TmuxSettings.new("ds.bash", "data_services/etl/warehouse/", "sleep 10 && dsexec"),
+  TmuxSettings.new("ds.bash2", "data_services/etl/warehouse/", "sleep 10 && dsexec"),
+
   TmuxSettings.new("osx.emacs", "data_services/etl/warehouse/", "emacs"),
   TmuxSettings.new("osx.bash", "data_services/etl/warehouse/", ""),
 ]
