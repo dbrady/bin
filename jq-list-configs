@@ -1,0 +1,7 @@
+#!/bin/bash
+# just a scratchpad example.
+#
+# config contains a hash at the root level, get the job key with:     .job
+# that contains an array, so get all of them with:                    []
+# each element is a hash, get its src_conn with:                      .src_conn
+cat etl_nightly_config.json | jq .jobs[].src_conn
