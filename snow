@@ -298,12 +298,12 @@ If no commands are given, snow will run check.
     # 2. Check $SCRIPT
     # ----------------------------------------------------------------------
     # 2.1 If you gave me an filename as ARGV[0], I point you at $SCRIPT and exit
-    if !ARGV.empty? && File.exists?(ARGV.first) && ENV.has_key?("SCRIPT") && ENV["SCRIPT"] != ARGV.first
-      puts "HEY! You gave me an ARGV to run on #{ARGV.first.inspect}"
-      puts "But I use the SCRIPT var, which is #{ENV['SCRIPT'].inspect}"
-      usage
-      exit -1
-    end
+    # if !ARGV.empty? && File.exists?(ARGV.first) && ENV.has_key?("SCRIPT") && ENV["SCRIPT"] != ARGV.first
+    #   puts "HEY! You gave me an ARGV to run on #{ARGV.first.inspect}"
+    #   puts "But I use the SCRIPT var, which is #{ENV['SCRIPT'].inspect}"
+    #   usage
+    #   exit -1
+    # end
 
     # 2.2 If you do not have $SCRIPT set, I tell you about $SCRIPT and exit
     unless ENV.has_key?("SCRIPT")
@@ -339,6 +339,13 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     if ARGV.first == "master"
       run_and_exit! "snow-go-master"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow go <id> -> snow-go-branch
+    # ----------------------------------------------------------------------
+    if ARGV.first == "go"
+      run_and_exit! "snow-go-branch #{ARGV[1]}"
     end
 
     # ----------------------------------------------------------------------
@@ -555,6 +562,16 @@ If no commands are given, snow will run check.
     # only 2 that take config=None while all the other true positives are
     # job_config=None, so.
     detect_and_print_lines lines, "Optional job_config", /def (run|main)\(.*config=/
+
+    # ----------------------------------------------------------------------
+    # testing for job_config == None or job_config is None
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Testing for presence of job_config", /\bjob_config\s+(is|==)\s+None\b/
+
+    # ----------------------------------------------------------------------
+    # except Exception:
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
 
     # ----------------------------------------------------------------------
     # main() bootstrapper
