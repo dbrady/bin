@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# 2022-09-14 Yes it is finally time
+# snow-set-script path/to/job.py
+# snow-set-script -c --clear
+# snow-set-script -r --run <custom_run_command>
+require "yaml"
+require "optimist"
+
+config_file = File.expand_path("~/.snow.yml")
+
+opts = Optimist.options do
+  opt :run, "Custom run command", type: :string
+  opt :clear, "Clear config", type: :boolean, default: false
+  opt :show, "Show config", type: :boolean, default: false
+end
+
+
+if opts[:clear]
+  File.open(config_file, "w") { |fp| fp.puts {}.to_yaml }
+  exit
+end
+
+config = if File.exist? config_file
+           YAML.load_file(config_file)
+         else
+           {}
+         end
+
+if opts[:show]
+  puts config.inspect
+  exit
+end
+
+puts opts.inspect
+puts ARGV.inspect
+puts config.inspect
+exit
+
+if opts[:run]
+  config["run"] = ARGV.first
+else
+  config["script"] = ARGV.first
+end
+
+File.open(config_file, "w") { |fp| fp.puts config.to_yaml }

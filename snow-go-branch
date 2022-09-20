@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+require "colorize"
+
+# Find exactly one branch matching ARGV.first, and find the same branch in both
+# the warehouse and finance repo. If found, check out those branches.
+
+pattern = ARGV.first
+warehouse_path = File.expand_path("~/data_services/etl/warehouse")
+finance_path = File.expand_path("~/data_services/etl/warehouse/finance")
+
+Dir.chdir warehouse_path
+branches = `git branch -a`.each_line.grep_v(%r|^\s*remotes/|).find_all {|line| line.include? pattern }
+
+if branches.size.zero?
+  puts "No branch found matching #{pattern}."
+  exit -1
+end
+
+if branches.size > 1
+  puts "Found multiple branches matching #{pattern}:"
+  puts branches
+  exit -1
+end
+
+branch = branches.first.strip.sub(/^\s*\*\s*/, '')
+puts "WARNING! This will change your warehouse and finance repos to the \033[1;32;40m'#{branch}'\033[0m branch."
+puts "HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:"
+$stdin.gets
+
+Dir.chdir finance_path
+
+# This can fail if we have /remote/blah tracked by a local branch with a
+# different name, but that's outside the use case for this tool. Consult the
+# operator's manual for correct procedure when stepping on a land mine.
+if !`git branch -a`.include?(branch)
+  puts "Found a branch #{branch} in the warehouse repo, but a matching branch for it in the finance repo does not exist."
+  exit -1
+end
+
+command = "git checkout #{branch}"
+
+[warehouse_path, finance_path].each do |path|
+  puts "cd #{path}".cyan
+  Dir.chdir path
+
+  puts command.cyan
+  system command
+end
