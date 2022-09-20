@@ -1,5 +1,18 @@
 #!/usr/bin/env ruby
 # snow-make-links-for-zack - generate all the PR links for a job's migrations
+#
+# IMPORTANT TODO: WRITE DOWN ALL THE LINKS WE MAKE. If Zack gets way behind and
+# then has multiple feedback issues, I need to be able to find my open PRs and
+# tickets. This needs to be omnidirectional, if I forget to put the jira ticket on
+# the github PR or Jira can't find the PRs, I am likely to have one number and
+# not the others.
+#
+# So if I'm on ticket 1533 and say snow link 2723 428, I need to be able to take
+# any of those numbers and find the others.
+#
+# Look at git-set-pr and git-get-pr, I think I had part of the idea going
+# there. If I run get-set-pr with no arguments it should get the ticket from the
+# branch and the repo from the cwd.
 
 def usage
   str = <<USAGE
