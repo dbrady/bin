@@ -1,6 +1,13 @@
 #!/usr/bin/env ruby
-# snow-job-show-config - Dump the config for a job (defaults to $SCRIPT)
+# snow-job-show-config [script [-d|--defaults]] - Dump the config for a job (defaults to $SCRIPT)
 require 'json'
+require 'colorize'
+require 'optimist'
+
+
+opts = Optimist.options do
+  opt :defaults, "Include defaults", type: :boolean
+end
 
 script = (ARGV.first || ENV["SCRIPT"]).sub(%r|/|, '.').sub(/\.py$/, '')
 
@@ -8,9 +15,40 @@ config = File.read(File.expand_path("~/data_services/etl/warehouse/finance/confi
 
 json = JSON.parse(config)
 
-body = json["jobs"][script]
+# TODO: Make default a flag. Show defaults.merge(job_config), and highlight each line based on where it's coming from:
 
-block = { script => body }
+default_config = json["job_defaults"]
+job_config = json["jobs"][script] || {}
+merged_config = if opts[:defaults]
+                  default_config.merge(job_config)
+                else
+                  job_config
+                end
 
-# colorize redshift red on black, colorize snowflake icy white on light blue
-puts JSON.pretty_generate(block).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+default_lines = JSON.pretty_generate(default_config).each_line.to_a
+job_lines = JSON.pretty_generate(job_config).each_line.to_a
+merged_lines = JSON.pretty_generate(merged_config).each_line.to_a
+
+puts script
+
+merged_lines.each do |line|
+  # puts "line: #{line.rstrip}"
+  key = line[/^\s*"[^"]+?"/]
+  key = key.gsub(/"/, '').strip if key
+
+  in_default = key && default_lines.any? { |l| l.include? key }
+  in_job = key && job_lines.any? { |l| l.include? key }
+
+  color = if in_default && in_job     # overridden by job
+            :light_yellow
+          elsif in_default && !in_job # use default
+            :light_black
+          elsif !in_default && in_job # new field defined by job
+            :light_green
+          else                        # json punctuation
+            :light_black
+          end
+
+
+  puts line.rstrip.send(color).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+end
