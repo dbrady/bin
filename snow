@@ -345,7 +345,14 @@ If no commands are given, snow will run check.
     # snow go <id> -> snow-go-branch
     # ----------------------------------------------------------------------
     if ARGV.first == "go"
-      run_and_exit! "snow-go-branch #{ARGV[1]}"
+      run_and_exit! "snow-go-branch #{ARGV[1..] * ' '}"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow rebase [parent_branch] -> snow-rebase
+    # ----------------------------------------------------------------------
+    if ARGV.first == "rebase"
+      run_and_exit! "snow-rebase #{ARGV[1..] * ' '}"
     end
 
     # ----------------------------------------------------------------------
@@ -354,6 +361,8 @@ If no commands are given, snow will run check.
     if ARGV.first == "job"
       if ARGV.size == 1
         run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
+      elsif ARGV[1] == "defaults" || ARGV[1] == "d"
+        run_and_exit! "snow-job-show-config --defaults"
       elsif ARGV[1] == "redshift" || ARGV[1] == "r"
         run_and_exit! "snow-job-convert-to-redshift #{get_script}"
       elsif ARGV[1] == "snowflake" || ARGV[1] == "s"
