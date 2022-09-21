@@ -2,6 +2,12 @@
 # skip-ticket <id> [reason] - Add a new ticket to skip in jira.py
 require 'json'
 
+if ARGV.empty? || ARGV.include?("--help") || ARGV.include?("-h")
+  puts "skip-ticket <jira_id> [reason message here]"
+  puts "E.g. skip-ticket 1695 Ignore script but need to manually import its table"
+  exit 0
+end
+
 id, *comment = ARGV
 
 id = id.to_i
@@ -23,7 +29,7 @@ if tickets["tickets"].map {|ticket| ticket["id"] }.include?(id)
   index = tickets["tickets"].index {|ticket| ticket["id"] == id }
   tickets["tickets"][index] = new_ticket
 else
-  tickets << new_ticket
+  tickets["tickets"] << new_ticket
 end
 
 File.open(FILENAME, "w") do |file|
