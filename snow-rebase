@@ -1,0 +1,11 @@
+#!/bin/bash
+# snow-rebase - rebase snowflake branch. With no args, this is just a lazy way
+# for me to avaid typing 'feature/snowflake-moveover'
+
+branch='feature/snowflake-moveover'
+if [ ! -z "$1" ]; then
+    branch="$1"
+fi
+
+echo "git rebase $branch"
+git rebase $branch
