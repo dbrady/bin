@@ -278,6 +278,21 @@ If no commands are given, snow will run check.
     line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
   end
 
+  def replace_epoch_timestamp_with_interal_1_second(line)
+    regex = /timestamp\s+'epoch'\s*\+\s*(.*?)\*\s*interval\s+'1 second'/i
+
+    return unless line =~ regex
+
+    replacement = $1.strip
+    replacement = replacement[1..] if replacement.start_with? "("
+    replacement = replacement[..-2] if replacement.end_with? ")"
+    replacement = replacement.strip
+
+    replacement = "TO_TIMESTAMP(#{replacement})"
+
+    line.gsub(regex, replacement)
+  end
+
   # THE MAIN APP METHOD, LET'S GO
   def run
     # ----------------------------------------------------------------------
@@ -425,7 +440,10 @@ If no commands are given, snow will run check.
     #
     # WHERE timestamp >= DATEADD(day, -2, CURRENT_DATE)
     # WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
-    detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true
+    #
+    # Watch for Spencer's epoch + seconds * interval '1 second', it specifally
+    # converts easilly to just TO_TIMESTAMP(seconds)
+    detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true, suggest: :replace_epoch_timestamp_with_interal_1_second
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: Postgres INT2, INT4, INT8
