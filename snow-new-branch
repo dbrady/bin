@@ -5,7 +5,7 @@ require "colorize"
 
 def usage
   puts <<USAGE
-snow-new-branch <ticket> <file> - create new snowflake branches in both repos.
+snow-new-branch <ticket> - create new snowflake branches in both repos.
 
 Set the SCRIPT variable FIRST. This script will try to detect if it is missing or out of date.
 USAGE
