@@ -3,8 +3,10 @@ require "colorize"
 
 # Find exactly one branch matching ARGV.first, and find the same branch in both
 # the warehouse and finance repo. If found, check out those branches.
+argv = ARGV
+force = argv.delete('-f') || argv.delete('--force')
+pattern = argv.first
 
-pattern = ARGV.first
 warehouse_path = File.expand_path("~/data_services/etl/warehouse")
 finance_path = File.expand_path("~/data_services/etl/warehouse/finance")
 
@@ -37,7 +39,7 @@ if !`git branch -a`.include?(branch)
   exit -1
 end
 
-command = "git checkout #{branch}"
+command = "git checkout #{force ? '-f ' : ''}#{branch}"
 
 [warehouse_path, finance_path].each do |path|
   puts "cd #{path}".cyan
