@@ -1,5 +1,8 @@
 #!/usr/bin/env ruby
 # snow-job-show-config [script [-d|--defaults]] - Dump the config for a job (defaults to $SCRIPT)
+
+# TODO: snow job default should show me just the default job. snow job -d should
+# show me the job overlaid on defaults.
 require 'json'
 require 'colorize'
 require 'optimist'
@@ -40,15 +43,14 @@ merged_lines.each do |line|
   in_job = key && job_lines.any? { |l| l.include? key }
 
   color = if in_default && in_job     # overridden by job
-            :light_yellow
+            :light_green
           elsif in_default && !in_job # use default
             :light_black
           elsif !in_default && in_job # new field defined by job
-            :light_green
+            :light_yellow
           else                        # json punctuation
             :light_black
           end
-
 
   puts line.rstrip.send(color).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
 end
