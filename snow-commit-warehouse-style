@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
 echo git add $SCRIPT
 git add $SCRIPT
 
