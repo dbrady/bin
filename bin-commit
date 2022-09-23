@@ -1,0 +1,12 @@
+#!/bin/bash
+# add, and commit a file from the bin folder
+# TODO: git status and abort if there are any staged files!
+file=$1
+shift
+message=$@
+
+echo "This will commit and push file '$file' with commit message '$message'"
+echo "Hit CTRL-C to abort, otherwise press ENTER to continue"
+read
+echo "(" cd ~/bin/ && echo git add $file && echo git commit -m "$message" ")"
+(cd ~/bin/ && git add $file && git commit -m "$message")
