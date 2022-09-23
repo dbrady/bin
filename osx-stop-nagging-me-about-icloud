@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# osx-stop-nagging-me-about-icloud - If you don't use icloud and want OSX to
+# take the stupid "but you're not signed in!" alert badge off of System
+# Preferences, this will permanently disable icloud nags.
+#
+# Dear Reader And/Or Future Me:
+#
+# Right now I use my personal iTunes account on my work machine because I want
+# my music. I do NOT want work files backing up to my personal space, nor do I
+# want my personal files being offered for restore on my work machine.
+#
+# UPDATE: This may not work on Monterey. :(
+#
+# https://osxdaily.com/2021/10/30/dont-use-icloud-how-to-remove-start-using-icloud-notifications-on-mac/
+
+echo -e "\033[31mThis will permanently disable iCloud warning nags on this computer.\033[0m"
+echo -e "\033[1;37;41m !!! WARNING !!! DO NOT USE THIS if you ever plan on using iCloud on this machine in the future.\033[0m"
+echo -e "\033[93mThis disables the followupd service, which may affect AirDrop or other services. YMMV, glhf.\033[0m"
+
+if [ "$1" != "--force" ]; then
+    echo "Cowardly refusing to automagiccidentally bork your system for you."
+    echo "If you're absolutely sure about this, rerun this script with --force."
+    exit 0
+else
+    # She chose DOOOOOoooown...!
+    echo "Proceeding."
+fi
+
+# echo -e "\033[36msudo launchctl bootout gui/501/com.apple.followupd\033[0m"
+# sudo launchctl bootout gui/501/com.apple.followupd
+
+# echo -e "\033[36msudo launchctl disable gui/501/com.apple.followupd\033[0m"
+# sudo launchctl disable gui/501/com.apple.followupd
+
+# UPDATE: This DID work on Monterey. I think it may be reversible with a write
+# command. Note: It removes the alert from the top of the system preferences but
+# does not remove the red (1) badge from the dock. Maybe after next reboot.
+
+# $ defaults read com.apple.systempreferences AttentionPrefBundleIDs
+# {
+#     "com.apple.preferences.AppleIDPrefPane" = 1;
+# }
+
+echo -e '\033[36mdefaults read com.apple.systempreferences AttentionPrefBundleIDs\033[0m'
+defaults delete com.apple.systempreferences AttentionPrefBundleIDs
