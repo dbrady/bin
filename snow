@@ -474,7 +474,7 @@ If no commands are given, snow will run check.
     # Illegal Snowflake Syntax:  INTERVAL
     # ----------------------------------------------------------------------
     #
-    # Don't use postgresq2l date interval arithmetic. Instead of
+    # Don't use postgresq2l date interval arithmetic.
     #
     # Instead of
     # WHERE timestamp::DATE >= CURRENT_DATE - INTERVAL '2 days'
@@ -484,8 +484,14 @@ If no commands are given, snow will run check.
     # WHERE timestamp >= DATEADD(day, -2, CURRENT_DATE)
     # WHERE DATEDIFF(day, timestamp, CURRENT_DATE) <= 2
     #
-    # Watch for Spencer's epoch + seconds * interval '1 second', it specifally
-    # converts easilly to just TO_TIMESTAMP(seconds)
+    # Or
+    #
+    # But watch out: This is an ok conversion:
+    # contact_start - interval '6 hour'
+    # DATEADD(contact_start, -6, 'hour')
+    #
+    # Watch for Spencer's `timestamp 'epoch' + seconds * interval '1 second'`,
+    # it specifally converts easilly to just `TO_TIMESTAMP(seconds)`
     detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true, suggest: :replace_epoch_timestamp_with_interal_1_second
 
     # ----------------------------------------------------------------------
