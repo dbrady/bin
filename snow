@@ -179,9 +179,13 @@ class SnowflakeManglerApp
 THE_LIST
   end
 
+  def set_script(script)
+    $script = script
+  end
+
   def get_script
     # until/unless we port this to an .rc file
-    @script ||= ENV['SCRIPT']
+    $script || ENV['SCRIPT']
   end
 
   # Was this script invoked with --essential?
@@ -235,6 +239,9 @@ THE_LIST
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       puts "Autofix with: #{autofix}" if autofix
+      # Yeah, turn this into lines_with_indexes = finder_method, we can
+      # write a generic version to do what this regex does, and then we can
+      # pass in custom finder methods for multiline and trickier stuff
       lines.each.with_index do |line, index|
         if line =~ regex && (unmatch.nil? || line !~ unmatch)
           puts "%4d: %s" % [index+1, line]
@@ -281,7 +288,7 @@ not accidentally merging to master or snowflake-moveover. Again.
 Commands/options:
 help, -h, --help                 Show this message
 list, -l, --list                 Print out the migration checklist
-check [-e|--essential]           Check the current job for [only essential] coding violations
+check [-e|--essential] [job.py]  Check the [current] job for [only essential] coding violations
 job [job]                        Show current [or specified] job's configuration
 job s[nowflake]                  Convert job configuration to snowflake
 job r[edshift]                   Convert job configuration back to redshift
@@ -422,9 +429,23 @@ If no commands are given, snow will run check.
       run_and_exit! "snow-make-links-for-zack #{ARGV[1..].join(' ')}"
     end
 
+    if ARGV.first == "check"
+      args = ARGV.dup
+      args.delete('-e')
+      args.delete('--essential')
+      puts "args.size: #{args.size}"
+      puts "args: #{args}"
+
+      if args.size > 1
+        set_script args.last
+      end
+    end
+
     # ----------------------------------------------------------------------
     # Start the actual checking process
     # ----------------------------------------------------------------------
+
+    puts "Checking #{get_script}..."
 
     # load file
     lines = IO.readlines(get_script).map(&:rstrip)
@@ -572,17 +593,25 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # change CREATE TABLE foo ( LIKE bar ) -> CREATE TABLE foo LIKE bar
     #
-    # The problem is I found this in the wild in
-    # etl_f_delighted_survey_responses.py which broke it up across multiple
-    # lines. Ruby can do multiline regexes but my current detect_and_print_lines
-    # method locks it into a one-line-per-check approach.
+    # Needs multiline search to find "create table" on one line and "( like" on
+    # the next
     #
-    # Could maybe pass in a multiple lines flag telling detect to batch up lines
-    # in pairs, or in groups of <n>, and then instead of iterating over line 1,
-    # 2, 3, 4, I could iterate over [1,2], [2,3], [3,4], or [1,2,3], [2,3,4],
-    # etc.
+    # Originally found in etl_f_delighted_survey_responses.py
     # ----------------------------------------------------------------------
-    # detect_and_print_lines lines, "", /regex/, multilines: 2
+    # detect_and_print_lines lines, "", finder: :find_create_table_foo_paren_like_bar
+
+    # ----------------------------------------------------------------------
+    # Excessive globals in main
+    # ----------------------------------------------------------------------
+    # Needs custom finder. Count up lines after def main that contain "global"
+
+    # ----------------------------------------------------------------------
+    # Mutual globals
+    # ----------------------------------------------------------------------
+    # Look for globals in other methods. Don't overautoanalyze the code (not
+    # worth the time to write it) but maybe a note of "here we have global
+    # start_date, see where it is used and maybe upgrade it to a parameter
+    # instead of a global".
 
     # ----------------------------------------------------------------------
     # except Exception
