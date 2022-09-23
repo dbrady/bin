@@ -153,7 +153,6 @@ class SnowflakeManglerApp
 #{i=i+1}. Make sure you're on latest feature/snowflake-moveover: snow main
 #{i=i+1}. Cut a new feature branch in both repos: git new-branch <ID> $SCRIPT; cd finance && !!
 #{i=i+1}. Precheck the job! See if it has a --skip_upload (handled automatically by snow run)
-#{i=i+1}. Run the job in redshift because who knows if it even works
 #{i=i+1}. Run snow check --essential to fix stuff that CAN'T work in Snowflake
 #{i=i+1}. Change the nightly config from redshift to snowflake
 #{i=i+1}. Ensure job runs in Snowflake (compare data in both databases)
