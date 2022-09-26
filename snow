@@ -151,7 +151,7 @@ class SnowflakeManglerApp
 #{i=i+1}. Claim the ticket and move it to IN DEVELOPMENT
 #{i=i+1}. Set the SCRIPT var (export SCRIPT=<job.py>)
 #{i=i+1}. Go to latest feature/snowflake-moveover: snow main
-#{i=i+1}. Cut a new feature branch in both repos: snow new <job>
+#{i=i+1}. Cut a new feature branch in both repos: snow new <jira_id>
 #{i=i+1}. Run snow check --essential to fix stuff that CAN'T work in Snowflake
 #{i=i+1}. Cut the config over to snowflake snow job s
 #{i=i+1}. Ensure job runs in Snowflake (check db if needed)
@@ -299,7 +299,7 @@ If no commands are given, snow will run check.
 
   def replace_at_time_zone(line)
     # AND contact_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' >= '2021-01-23'
-    regex = /(\w+) AT TIME ZONE '(.+?)' AT TIME ZONE '([^']+)'/
+    regex = /([\w\.]+) AT TIME ZONE '(.+?)' AT TIME ZONE '([^']+)'/
     return unless line =~ regex
 
     line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
@@ -571,10 +571,8 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # Secretly blocked by DS-1704: d_team_list_rac_cs_gsheet
-    #  AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Secretly blocked by DS-1704", %r|D_TEAM_LIST_RAC_CS_GSHEET|i, essential: true
-    detect_and_print_lines lines, "Secretly blocked by DS-????", %r|D_TEAM_LIST_RAC_GSHEET|i, essential: true
+    # detect_and_print_lines lines, "Secretly blocked by DS-1704", %r|D_TEAM_LIST_RAC_CS_GSHEET|i, essential: true
 
     # ----------------------------------------------------------------------
     # Update Python String Formatting
