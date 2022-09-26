@@ -29,7 +29,7 @@ if !branch_name.include?(job_name)
   puts "branch_name: #{branch_name}"
   puts
   puts "If you are sure you meant to do this, fire it off manually with"
-  puts "python etl_nightly.py --job #{ENV['SCRIPT']}"
+  puts "python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']}"
   exit -1
 end
 
@@ -44,6 +44,6 @@ end
 
 # Overwrite previous line so the command screenshots correctly
 print "\033[1F"
-puts "# python etl_nightly.py --job #{ENV['SCRIPT']} #{ARGV.join(' ')}"
+puts "# python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']} #{ARGV.join(' ')}"
 
-system "python etl_nightly.py --job #{ENV['SCRIPT']} $@"
+system "python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']} $@"
