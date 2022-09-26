@@ -13,18 +13,52 @@
 # Look at git-set-pr and git-get-pr, I think I had part of the idea going
 # there. If I run get-set-pr with no arguments it should get the ticket from the
 # branch and the repo from the cwd.
+require 'yaml'
+require 'date'
 
 def usage
   str = <<USAGE
 #{File.basename(__FILE__)} <WAREHOUSE_PR_ID> <FINANCE_PR_ID> [<PACKAGE_PR_ID>]
+#{File.basename(__FILE__)} show [<ticket>|last]
 USAGE
+end
+
+HISTORY_FILENAME = File.expand_path("~/.branch-history-warehouse.yml")
+# rescue is only needed on first run when the history file doesn't exist
+branch_history = branch_history = YAML.load_file(HISTORY_FILENAME) rescue {}
+
+if ARGV[0] == "show"
+  if ARGV[1] == "last"
+    latest_ticket = branch_history.keys.first
+    latest = branch_history.values.first
+    latest_date = DateTime.strptime(latest["created_at"], "%F %T")
+
+    branch_history.each do |ticket, info|
+      created_at = DateTime.strptime(info["created_at"], "%F %T")
+      if created_at > latest_date
+        latest_date = created_at
+        latest = { ticket => info }
+        latest_ticket = ticket
+      end
+    end
+    puts({latest_ticket => latest}.to_yaml)
+
+  elsif ARGV[1].to_i > 0
+    puts({ARGV[1].to_i => branch_history[ARGV[1].to_i]}.to_yaml)
+#
+  else
+    # show whole file
+    puts branch_history.to_yaml
+
+  end
+
+  exit 0
 end
 
 if ARGV.size < 2 || ARGV.size > 3 || ARGV.include?('-h') || ARGV.include?('--help')
   puts usage
   exit -1
 end
-
 
 def get_ticket_from_branch
   `git current-branch`.gsub(/^\D*/, '').to_i
@@ -35,18 +69,37 @@ WAREHOUSE_PR_ID=ARGV[0]
 FINANCE_PR_ID=ARGV[1]
 PACKAGE_PR_ID=ARGV[2]
 
+JIRA_LINK = "https://acima.atlassian.net/browse/DS-#{TICKET_ID}"
+WAREHOUSE_LINK = "https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}"
+FINANCE_LINK = "https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}"
+PACKAGE_LINK = "https://github.com/acima-credit/data_services_package/pull/#{PACKAGE_PR_ID}"
+
+# update yaml
+branch_history[TICKET_ID] = {
+  "created_at" => Time.now.strftime("%F %T"),
+  "jira_link" => JIRA_LINK,
+  "warehouse_link" => WAREHOUSE_LINK,
+  "finance_link" => FINANCE_LINK
+}
+
+if PACKAGE_PR_ID
+  branch_history[TICKET_ID]["package_link"] = PACKAGE_LINK
+end
+
+File.open(HISTORY_FILENAME, "w") { |fp| fp.puts branch_history.to_yaml }
+
 proposed_branch_name = `git current-branch`.strip.sub(%r|^feature/|,'')
 job_name = proposed_branch_name.sub(%r|^\w+-\d+/|, '')
 
 blurb =<<TEMPLATE
 *DS-#{TICKET_ID}: #{job_name}*
-Jira Ticket: https://acima.atlassian.net/browse/DS-#{TICKET_ID}
-Dataservices PR: https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}
-Finance PR: https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}
+Jira Ticket: #{JIRA_LINK}
+Dataservices PR: #{WAREHOUSE_LINK}
+Finance PR: #{FINANCE_LINK}
 TEMPLATE
 
 if PACKAGE_PR_ID
-  blurb += "Package PR: https://github.com/acima-credit/data_services_package/pull/#{PACKAGE_PR_ID}\n"
+  blurb += "Package PR: #{PACKAGE_LINK}\n"
 end
 
 puts "Branch Name: #{proposed_branch_name}"
