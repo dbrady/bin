@@ -19,9 +19,29 @@ require 'date'
 def usage
   str = <<USAGE
 #{File.basename(__FILE__)} <WAREHOUSE_PR_ID> <FINANCE_PR_ID> [<PACKAGE_PR_ID>]
-#{File.basename(__FILE__)} show [<ticket>|last]
+#{File.basename(__FILE__)} show - show links for current branch
+#{File.basename(__FILE__)} show <ticket>|last - show links for specific or most recent branch
+#{File.basename(__FILE__)} show all - show links for all known branches
 USAGE
 end
+
+def current_branch
+  @current_branch ||= `git current-branch`.strip
+end
+
+# Given a branch like 'feature/DS-4269/etl_do_a_thing2', returns 4269
+def get_ticket_from_branch
+  current_branch.split(/\D+/)[1].to_i
+end
+
+# If we are doing a snowflake moveover, branch names will be of the form
+# 'feature/DS-<jira>/<job><version>'. This returns the job portion.
+
+# Clips off any leading 'feature/DS-nnnn/' portion of a branch and any trailing version number. What's left should be the job name.
+def get_job_from_branch
+  current_branch.sub(%r|^feature/DS-\d+/|, '').sub(%r|/?\d+$|, '')
+end
+
 
 HISTORY_FILENAME = File.expand_path("~/.branch-history-warehouse.yml")
 # rescue is only needed on first run when the history file doesn't exist
@@ -46,9 +66,14 @@ if ARGV[0] == "show"
   elsif ARGV[1].to_i > 0
     puts({ARGV[1].to_i => branch_history[ARGV[1].to_i]}.to_yaml)
 #
-  else
+  elsif ARGV[1] == "all"
     # show whole file
     puts branch_history.to_yaml
+
+  else
+    # show for current branch only
+    ticket_id = current_branch.split(/\D+/)[1].to_i
+    puts({ticket_id => branch_history[ticket_id]}.to_yaml)
 
   end
 
@@ -58,10 +83,6 @@ end
 if ARGV.size < 2 || ARGV.size > 3 || ARGV.include?('-h') || ARGV.include?('--help')
   puts usage
   exit -1
-end
-
-def get_ticket_from_branch
-  `git current-branch`.gsub(/^\D*/, '').to_i
 end
 
 TICKET_ID=get_ticket_from_branch
@@ -76,10 +97,11 @@ PACKAGE_LINK = "https://github.com/acima-credit/data_services_package/pull/#{PAC
 
 # update yaml
 branch_history[TICKET_ID] = {
+  "job" => get_job_from_branch,
   "created_at" => Time.now.strftime("%F %T"),
   "jira_link" => JIRA_LINK,
   "warehouse_link" => WAREHOUSE_LINK,
-  "finance_link" => FINANCE_LINK
+  "finance_link" => FINANCE_LINK,
 }
 
 if PACKAGE_PR_ID
@@ -88,7 +110,7 @@ end
 
 File.open(HISTORY_FILENAME, "w") { |fp| fp.puts branch_history.to_yaml }
 
-proposed_branch_name = `git current-branch`.strip.sub(%r|^feature/|,'')
+proposed_branch_name = current_branch.sub(%r|^feature/|,'')
 job_name = proposed_branch_name.sub(%r|^\w+-\d+/|, '')
 
 blurb =<<TEMPLATE
