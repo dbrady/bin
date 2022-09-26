@@ -640,7 +640,7 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # Long lines
-    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{180,}$/
+    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{220,}$/
 
     # ----------------------------------------------------------------------
     # Overcomplicated format() calls
