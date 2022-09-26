@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# query-csv Import csv for querying, then run queries against it
+require "csv"
+require "fileutils"
+require "sqlite3"
+require "optimist"
+require "text-table"
+
+# TODO: Consider trying to analyze or parse column values. CSV will import
+# integers and I think dates. Would be nice to be able to query against
+# timestamps using time manipulation functions rather than strings.
+
+def usage
+  <<USAGE
+query-csv [options] <file> "query"
+
+Options:
+
+-k, --keep Keep the sqlite3 file
+-d <filename.db>, --database=<filename.db>
+USAGE
+end
+
+
+# 1. import csv file to a sqlite database, adding a row_number column
+
+
+
+# 2. run ARGV[2] provided query against said database
+
+
+# Parse options
+opts = Optimist.options do
+  banner "query-csv - query a csv file with SQL"
+  opt :database, "Name database file", type: :string, default: "csv.db"
+  opt :keep, "Keep sqlite3 database file after run", type: :boolean, default: false
+  opt :input, "Input file. If omitted, reads from stdin", type: :string
+  opt :query, "Sql query to run", type: :string
+  opt :table, "Name of table", type: :string, default: "csv"
+end
+
+db = SQLite3::Database.new opts[:database]
+
+db.execute "DROP TABLE IF EXISTS #{opts[:table]}"
+
+csv = if opts[:input]
+        CSV.parse(File.read(opts[:input]), headers: true)
+      else
+        CSV.parse($stdin.readlines.join, headers: true)
+      end
+
+create_sql = "CREATE TABLE #{opts[:table]} (\n"
+create_sql += csv.first.headers.map {|col| "    #{col.gsub(/\s+/, "_")} TEXT" }.join(",\n")
+create_sql += "\n)"
+
+db.execute create_sql
+
+csv.each do |row|
+  # puts row.methods.sort * ', '
+  #  exit
+  insert_sql = "INSERT INTO #{opts[:table]} VALUES(" +
+               row.to_hash.values.map {|val| "\"#{val}\""} * ',' +
+               + ")"
+  db.execute insert_sql
+end
+
+if opts[:query]
+  # And finally, run our query
+  puts db.execute(opts[:query]).to_a.to_table
+end
+
+# oh and then clean up
+unless opts[:keep]
+  FileUtils.rm opts[:database]
+end
