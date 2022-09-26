@@ -298,7 +298,7 @@ If no commands are given, snow will run check.
   end
 
   def replace_at_time_zone(line)
-    # AND contact_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' >= '2021-01-23'
+    # AND t.contact_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' >= '2021-01-23'
     regex = /([\w\.]+) AT TIME ZONE '(.+?)' AT TIME ZONE '([^']+)'/
     return unless line =~ regex
 
@@ -587,7 +587,7 @@ If no commands are given, snow will run check.
     #
     # If we see another os.chdir, flag it as a warning.
     # the autofix here is sed -E -i 's/\bos.chdir\b/d'
-    detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i 's/\bos.chdir\b/d' #{get_script}"
+    detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i '/\\bos.chdir\\b/d' #{get_script}"
 
     # ----------------------------------------------------------------------
     # TODO: CREATE TABLE ( LIKE )
