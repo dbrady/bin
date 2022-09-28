@@ -1,0 +1,9 @@
+#!/bin/bash
+# get-ds-script <script> - return scriptfile (mostly just a helper to remind me where I parked $SCRIPTFILE)
+SCRIPTFILE=~/.ds_script
+
+if [ -e $SCRIPTFILE ]; then
+    tail -n 1 $SCRIPTFILE
+else
+    exit -1
+fi

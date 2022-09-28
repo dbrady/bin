@@ -1,0 +1,6 @@
+#!/bin/bash
+# clear-ds-script <script> - erase scriptfile
+SCRIPTFILE=~/.ds_script
+
+echo "rm -f $SCRIPTFILE"
+rm -f $SCRIPTFILE
