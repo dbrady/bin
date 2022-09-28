@@ -1,0 +1,43 @@
+#!/usr/bin/env ruby
+# jiratool - ruby test access to Jira REST API
+
+# ----------------------------------------------------------------------
+# RDD - Readme-Driven Development
+#
+# Desired Features:
+#
+# - show a specific ticket by case id (e.g. "DS-1695")
+#
+# - show top available tickets on the Kanban board (that aren't already
+#   assigned)
+#
+# - search jira for open tickets assigned to me -- Check
+#   etl_nightly.py:find_issue_by_summary for jql/search examples
+#
+# - snowflake conversion workflow
+#   - find child tickets under DS-879
+#   - change assignment / assign to ticket me
+#   - change ticket state (move ticket to IN DEVELOPMENT, IN REVIEW, DONE)
+#   - complete the "move to done" questionnaire
+#   - attach a screenshot to a ticket
+#
+#
+# ----------------------------------------------------------------------
+
+require 'json'
+require 'jira-ruby'
+
+config = JSON.parse(File.read(File.expand_path("~/.jira-ds-config.json")), symbolize_names: true)
+config[:auth][:auth_type] = config[:auth][:auth_type].to_sym
+
+client = JIRA::Client.new(config[:auth])
+
+project = client.Project.find("DS")
+
+project.issues.first(1).each do |issue|
+  # puts "#{issue.id} - #{issue.summary}"
+  # puts '--'
+  # puts issue.inspect
+  # puts '--'
+  puts issue.to_json
+end
