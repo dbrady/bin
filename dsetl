@@ -13,6 +13,10 @@ fi
 pushd ~/data_services/etl/warehouse
 
 JOB=`find . -name '*.py' | grep "$1" | selecta | sed -e 's|^[/.]*||'`
-echo '#' python etl_nightly.py --job "$JOB"
-python etl_nightly.py --job "$JOB"
+shift
+
+# Always echo the shell command
+# No need for \033[1F, or rather it won't help: selecta messes up the screenshot
+echo '#' python etl_nightly.py --retry_count 1 --job "$JOB" $@
+python etl_nightly.py --retry_count 1 --job "$JOB" $@
 popd

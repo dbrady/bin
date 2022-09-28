@@ -44,6 +44,7 @@ end
 
 # Overwrite previous line so the command screenshots correctly
 print "\033[1F"
-puts "# python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']} #{ARGV.join(' ')}"
+command = "python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']} #{ARGV.join(' ')}"
+puts "# #{command}"
 
-system "python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']} $@"
+system command
