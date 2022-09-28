@@ -24,6 +24,16 @@ if branches.size > 1
   exit -1
 end
 
+# any uncommitted changes?
+if !system("git isclean")
+  puts "Branch is not clean; commit or restore changes and try again."
+  `git status`.each_line do |line|
+    break if line =~ /^Untracked files:$/
+    puts line
+  end
+  exit -1
+end
+
 branch = branches.first.strip.sub(/^\s*\*\s*/, '')
 puts "WARNING! This will change your warehouse and finance repos to the \033[1;32;40m'#{branch}'\033[0m branch."
 puts "HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:"
@@ -32,8 +42,9 @@ $stdin.gets
 Dir.chdir finance_path
 
 # This can fail if we have /remote/blah tracked by a local branch with a
-# different name, but that's outside the use case for this tool. Consult the
-# operator's manual for correct procedure when stepping on a land mine.
+# different name. That's outside the use case for this tool; exploding is the
+# prescribed behavior. Consult the operator's manual for correct procedure when
+# stepping on a land mine.
 if !`git branch -a`.include?(branch)
   puts "Found a branch #{branch} in the warehouse repo, but a matching branch for it in the finance repo does not exist."
   exit -1
