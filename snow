@@ -206,17 +206,17 @@ THE_LIST
   end
 
   # This is turning into a bit of a swiss army kitchen sink...
-  # lines: array of lines to check
-  # title: section title to print if matches are found
-  # regex: use this to detect matching lines
-  # disabled: this check is turned off. Do not run, even if marked essential
+  # lines:     array of lines to check
+  # title:     section title to print if matches are found
+  # regex:     use this to detect matching lines
+  # disabled:  this check is turned off. Do not run, even if marked essential
   # essential: this check is essential. If we're running snow -e, skip
   #            inessential checks
-  # autofix: text containing an autofix. Usually a bash command applied to the
-  #           whole file
-  # suggest: a method that receives the matching line, and returns a suggested
-  #           fix.
-  # unmatch: ignore lines that match regex but ALSO match this regex.
+  # autofix:   text containing an autofix. Usually a bash command applied to the
+  #            whole file
+  # suggest:   a method that receives the matching line, and returns a suggested
+  #            fix.
+  # unmatch:   ignore lines that match regex but ALSO match this regex.
   def detect_and_print_lines(
         lines,
         title,
@@ -667,6 +667,14 @@ If no commands are given, snow will run check.
     # except Exception:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
+
+    # ----------------------------------------------------------------------
+    # case and paste help messages for arparse
+    # search for different options but same help messages, e.g.
+    #     parser.add_argument('--files', help='Start Date', required=True)
+    #     parser.add_argument('--start_date', help='Start Date', required=False)
+    #     parser.add_argument('--end_date', help='Start Date', required=False)
+    # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
     # main() bootstrapper
