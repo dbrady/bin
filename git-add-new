@@ -1,8 +1,15 @@
 #!/bin/bash
 echo TODO: Check to make sure nothing else is currently staged
 
-echo git add $1
-git add $1
+# commify args. `git add-new a b c d` -> "a, b, c, d"
+# first time through loop, files and c expand to empty string.
+for i in $@; do
+    files="$files$glue$i"
+    glue=', '
+done
 
-echo git commit -m "Add $1"
-git commit -m "Add $1"
+echo git add $@
+git add $@
+
+echo git commit -m "Add $files"
+git commit -m "Add $files"
