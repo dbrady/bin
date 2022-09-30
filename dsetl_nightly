@@ -9,12 +9,20 @@ if ENV['IS_DOCKER_LOCAL'].to_i.zero?
     exit -1
 end
 
-if !ENV.has_key?("SCRIPT")
-    echo 'ERROR: $SCRIPT is not set.'
+def get_script
+  return $get_script if $get_script
+
+  $get_script = `get-ds-script`.strip
+  $get_script = ENV['SCRIPT'] if $get_script.empty?
+  $get_script
+end
+
+if get_script.empty?
+    echo 'ERROR: SCRIPT is not set; run set-ds-script <path/to/job.py>'
     exit -1
 end
 
-job_name = ENV["SCRIPT"].sub(%r|^.*/|, '').sub(/\.py$/, '')
+job_name = get_script.sub(%r|^.*/|, '').sub(/\.py$/, '')
 branch_name = `git current-branch`.strip
 finance_branch_name = `(cd ~/data_services/etl/warehouse/finance && git current-branch)`.strip
 
@@ -29,7 +37,7 @@ if !branch_name.include?(job_name)
   puts "branch_name: #{branch_name}"
   puts
   puts "If you are sure you meant to do this, fire it off manually with"
-  puts "python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']}"
+  puts "python etl_nightly.py --retry_count 1 --job #{get_script}"
   exit -1
 end
 
@@ -44,7 +52,7 @@ end
 
 # Overwrite previous line so the command screenshots correctly
 print "\033[1F"
-command = "python etl_nightly.py --retry_count 1 --job #{ENV['SCRIPT']} #{ARGV.join(' ')}"
+command = "python etl_nightly.py --retry_count 1 --job #{get_script} #{ARGV.join(' ')}"
 puts "# #{command}"
 
 system command

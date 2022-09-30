@@ -7,12 +7,20 @@ require 'json'
 require 'colorize'
 require 'optimist'
 
+def get_script
+  return $get_script if $get_script
+
+  # until/unless we port this to an .rc file
+  $get_script = `get-ds-script`.strip
+  $get_script = ENV['SCRIPT'] if $get_script.empty?
+  $get_script
+end
 
 opts = Optimist.options do
   opt :defaults, "Include defaults", type: :boolean
 end
 
-script = (ARGV.first || ENV["SCRIPT"]).sub(%r|/|, '.').sub(/\.py$/, '')
+script = (ARGV.first || get_script).sub(%r|/|, '.').sub(/\.py$/, '')
 
 config = File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json"))
 

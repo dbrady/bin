@@ -1,5 +1,12 @@
 #!/bin/bash
 # snow-commit - Commit $SCRIPT with specific message
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first; run set-ds-script <path/to/job.py>"
+    exit -1
+fi
+
 echo "Committing $SCRIPT..."
 
 git add $SCRIPT

@@ -6,14 +6,15 @@ require "colorize"
 def usage
   puts <<USAGE
 snow-new-branch <ticket> - create new snowflake branches in both repos.
-
-Set the SCRIPT variable FIRST. This script will try to detect if it is missing or out of date.
 USAGE
 end
 
 def get_script
-  # ENV['SCRIPT'] until/unless we move this to an .rc file
-  ENV['SCRIPT']
+  return $get_script if $get_script
+
+  $get_script = `get-ds-script`.strip
+  $get_script = ENV['SCRIPT'] if $get_script.empty?
+  $get_script
 end
 
 def job_name
@@ -58,6 +59,11 @@ end
 ticket = ARGV.first
 filename = get_script
 warehouse_dir = File.expand_path("~/data_services/etl/warehouse")
+
+puts "This will create new branches in the warehouse and finance called feature/DS-#{ticket}/#{job_name}"
+puts "Are you sure? Hit Ctrl-C to abort, ENTER to continue:"
+$stdin.gets
+
 make_sure_script_is_current! ticket
 
 if Dir.pwd != warehouse_dir

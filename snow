@@ -149,7 +149,7 @@ class SnowflakeManglerApp
     i=0
     return <<THE_LIST
 #{i=i+1}. Claim the ticket and move it to IN DEVELOPMENT
-#{i=i+1}. Set the SCRIPT var (export SCRIPT=<job.py>)
+#{i=i+1}. Set the ds SCRIPT (export SCRIPT=<job.py>; set-ds-script <job.py>)
 #{i=i+1}. Go to latest feature/snowflake-moveover: snow main
 #{i=i+1}. Cut a new feature branch in both repos: snow new <jira_id>
 #{i=i+1}. Run snow check --essential to fix stuff that CAN'T work in Snowflake
@@ -179,8 +179,11 @@ THE_LIST
   end
 
   def get_script
-    # until/unless we port this to an .rc file
-    $script || ENV['SCRIPT']
+    return @get_script if @get_script
+
+    @get_script = `get-ds-script`.strip
+    @get_script = ENV['SCRIPT'] if @get_script.empty?
+    @get_script
   end
 
   # Was this script invoked with --essential?
@@ -251,13 +254,14 @@ THE_LIST
   end
 
   def usage
-    puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing alagadam time. Sorry not sorry, you're welcome."
+    puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing all the time. Sorry not sorry, you're welcome."
     puts "Try doing this, and maybe put it in .bashrc while you're at it:"
     puts "export SCRIPT=#{ARGV.join(' ')}"
+    puts "^^^ DEPRECATED. Use set-ds-script instead!"
   end
 
   def skippable?
-    IO.readlines(ENV["SCRIPT"]).any? { |line| line =~ /--skip_upload/ }
+    IO.readlines(get_script).any? { |line| line =~ /--skip_upload/ }
   end
 
   def run_and_exit!(command)
@@ -272,9 +276,11 @@ snow - master control script for snowflake job migration
 
 snow [<command> [<options>]]
 
-Most commands check for an env variable called SCRIPT. It should point to the
-job file relative from the warehous directory. E.g. for
-~/dataservices/etl/warehouse/rac/rac_job1.py, do export SCRIPT=rac/rac_job1.py
+Most commands use get-ds-script, and/or check the last line of ~/.ds_script for
+the name of the script filename. For legacy reasons this is called the SCRIPT
+file. It should point to the job file relative from the warehouse
+directory. E.g. for ~/dataservices/etl/warehouse/rac/rac_job1.py, do
+set-ds-script rac/rac_job1.py
 
 Many jobs check that the current branch matches the SCRIPT file. This puts an
 extra bit of bookkeeping on you, but it's actually there to ensure that you're
@@ -338,20 +344,9 @@ If no commands are given, snow will run check.
       exit 0
     end
 
-    # ----------------------------------------------------------------------
-    # 2. Check $SCRIPT
-    # ----------------------------------------------------------------------
-    # 2.1 If you gave me an filename as ARGV[0], I point you at $SCRIPT and exit
-    # if !ARGV.empty? && File.exists?(ARGV.first) && ENV.has_key?("SCRIPT") && ENV["SCRIPT"] != ARGV.first
-    #   puts "HEY! You gave me an ARGV to run on #{ARGV.first.inspect}"
-    #   puts "But I use the SCRIPT var, which is #{ENV['SCRIPT'].inspect}"
-    #   usage
-    #   exit -1
-    # end
-
-    # 2.2 If you do not have $SCRIPT set, I tell you about $SCRIPT and exit
-    unless ENV.has_key?("SCRIPT")
-      puts "You must set SCRIPT=<filename> first."
+    # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
+    if get_script.empty?
+      puts "You must run set-ds-script <path/to/job.py> first."
       usage
       exit -1
     end
@@ -361,7 +356,8 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    # snow run -> dsetl_nightly $SCRIPT
+    # snow run -> dsetl_nightly
+    # dsetl_nightly reads SCRIPT from rc file; Use dsetl to specify from CLI
     # ----------------------------------------------------------------------
     if ARGV.first == "run"
       command = "dsetl_nightly"
