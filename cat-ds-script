@@ -1,0 +1,9 @@
+#!/bin/bash
+# cat-ds-script <script> - cat the scriptfile (mostly just a helper to remind me where I parked $SCRIPTFILE)
+SCRIPTFILE=~/.ds_script
+
+if [ -e $SCRIPTFILE ]; then
+    cat $SCRIPTFILE
+else
+    exit -1
+fi
