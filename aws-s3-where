@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "aws s3 ls \"s3://sf-data-service/$1\""
+aws s3 ls "s3://sf-data-service/$1"
