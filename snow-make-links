@@ -65,10 +65,13 @@ if ARGV[0] == "show"
 
   elsif ARGV[1].to_i > 0
     puts({ARGV[1].to_i => branch_history[ARGV[1].to_i]}.to_yaml)
-#
+  #
   elsif ARGV[1] == "all"
     # show whole file
     puts branch_history.to_yaml
+
+  elsif ARGV[1]
+    puts branch_history.values().detect {|job| job.values.detect {|value| value.include?(ARGV[1])}}.to_yaml
 
   else
     # show for current branch only

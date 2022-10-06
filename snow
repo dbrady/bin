@@ -201,8 +201,8 @@ THE_LIST
     ARGV.include?('--help') || ARGV.include?('-h') || ARGV.include?('help')
   end
 
-  def section_title(title)
-    "====%s" % " #{title} ".ljust(80, "=").cyan
+  def section_title(code, title)
+    "====%s" % " #{code}: #{title} ".ljust(80, "=").cyan
   end
 
   def log_ok
@@ -223,6 +223,7 @@ THE_LIST
   # unmatch:   ignore lines that match regex but ALSO match this regex.
   def detect_and_print_lines(
         lines,
+        code,
         title,
         regex,
         essential: false,
@@ -233,7 +234,7 @@ THE_LIST
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title
+    puts section_title code, title
     # OOF.
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
@@ -421,7 +422,7 @@ If no commands are given, snow will run check.
     # snow link <pr> <finance_pr> [package_pr] -> Create Slackable links for Zack
     # ----------------------------------------------------------------------
     if ARGV.first == "link"
-      run_and_exit! "snow-make-links-for-zack #{ARGV[1..].join(' ')}"
+      run_and_exit! "snow-make-links #{ARGV[1..].join(' ')}"
     end
 
     if ARGV.first == "check"
@@ -449,21 +450,22 @@ If no commands are given, snow will run check.
     # Check for PEP8 Conformance
     # ----------------------------------------------------------------------
     if !essential?
-      puts section_title("PEP8 CONFORMANCE")
+      puts section_title("PEP8", "PEP8 CONFORMANCE")
       system "pep-check #{get_script}"
     end
 
     # ----------------------------------------------------------------------
-    # Pre-check the file
+    # Pre-check the file -- this has no fix, it's just a warning to be aware
+    # that whenever we run the job we must include --skip_upload
     # ----------------------------------------------------------------------
     # check for --skip_upload
-    detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
+    detect_and_print_lines lines, "SKIPUPLOAD", "skip_upload", /--skip_upload/, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: DISTKEY, SORTKEY
     # ----------------------------------------------------------------------
     # DISTKEY, SORTKEY: just remove, it's fine
-    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/\\b(DIS|SOR)TKEY\\b/d' #{get_script}"
+    detect_and_print_lines lines, "DISTKEY", "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/\\b(DIS|SOR)TKEY\\b/d' #{get_script}"
     # if no conflicts found, this can be autofixed with sed -E -i '/\b(DIS|SOR)TKEY\b/d
 
     # ----------------------------------------------------------------------
@@ -488,26 +490,26 @@ If no commands are given, snow will run check.
     #
     # Watch for Spencer's `timestamp 'epoch' + seconds * interval '1 second'`,
     # it specifally converts easilly to just `TO_TIMESTAMP(seconds)`
-    detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true, suggest: :replace_epoch_timestamp_with_interal_1_second
+    detect_and_print_lines lines, "INTERVAL", "Interval Arithmetic", /\bINTERVAL\b/i, essential: true, suggest: :replace_epoch_timestamp_with_interal_1_second
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: Postgres INT2, INT4, INT8
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Postgresql integer extension types", /\bINT(2|4|8)\b/i, essential: true
+    detect_and_print_lines lines, "INTN", "Postgresql integer extension types", /\bINT(2|4|8)\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: GEOMETRY, ST_GEOMFROMTEXT
     # ----------------------------------------------------------------------
     # GEOMETRY data type: change to GEOGRAPHY data type
     # https://docs.snowflake.com/en/sql-reference/data-types-geospatial.html
-    detect_and_print_lines lines, "GEOMETRY", /\bGEOMETRY\b/i, essential: true
+    detect_and_print_lines lines, "GEOM", "GEOMETRY", /\bGEOMETRY\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: ST_GEOMFROMTEXT
     # ----------------------------------------------------------------------
     # ST_GEOMFROMTEXT function: change to TO_GEOGRAPHY
     # https://docs.snowflake.com/en/sql-reference/functions/to_geography.html
-    detect_and_print_lines lines, "ST_GEOMFROMTEXT", /\bST_GEOMFROMTEXT\b/i, essential: true
+    detect_and_print_lines lines, "STGEOM", "ST_GEOMFROMTEXT", /\bST_GEOMFROMTEXT\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: AT TIME ZONE
@@ -542,7 +544,7 @@ If no commands are given, snow will run check.
 
     # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
     # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
-    detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
+    detect_and_print_lines lines, "ATZ", "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
 
     # ----------------------------------------------------------------------
     # NPM-style Lists
@@ -553,29 +555,29 @@ If no commands are given, snow will run check.
     # style. If there's a mix of styles or it's something I have to maintain,
     # change it. Unless there's already a good reason to be editing a query,
     # don't change its style.
-    detect_and_print_lines lines, "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/, disabled: true
+    detect_and_print_lines lines, "NPM", "NPM-style Lists (Leading Commas)", /^\s*,\s*\S+/, disabled: true
 
     # ----------------------------------------------------------------------
     # Redshift S3 buckets
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Redshift S3 Buckets", %r|s3.*redshift|i, essential: true
+    detect_and_print_lines lines, "RSS3", "Redshift S3 Buckets", %r|s3.*redshift|i, essential: true
 
     # ----------------------------------------------------------------------
     # Redshift mentioned anywhere
     # ----------------------------------------------------------------------
     # (<!s3) is "negative lookbehind". It means find redshift, but not if it was
     # preceded by s3 (which is found by Redshift S3 buckets above)
-    detect_and_print_lines lines, "Redshift mentioned anywhere", %r|(<!s3).*redshift|i
+    detect_and_print_lines lines, "REDSHIFT", "Redshift mentioned anywhere", %r|(<!s3).*redshift|i
 
     # ----------------------------------------------------------------------
     # Secretly blocked by DS-1704: d_team_list_rac_cs_gsheet
     # ----------------------------------------------------------------------
-    # detect_and_print_lines lines, "Secretly blocked by DS-1704", %r|D_TEAM_LIST_RAC_CS_GSHEET|i, essential: true
+    # detect_and_print_lines lines, "1704", "Secretly blocked by DS-1704", %r|D_TEAM_LIST_RAC_CS_GSHEET|i, essential: true
 
     # ----------------------------------------------------------------------
     # Update Python String Formatting
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Python 2 String Formatting", %r|%[\d\.]*[sdf].*|, unmatch: %r|str[pf]time|
+    detect_and_print_lines lines, "PY2", "Python 2 String Formatting", %r|%[\d\.]*[sdf].*|, unmatch: %r|str[pf]time|
 
     # ----------------------------------------------------------------------
     # os.chdir to self: remove
@@ -585,7 +587,7 @@ If no commands are given, snow will run check.
     #
     # If we see another os.chdir, flag it as a warning.
     # the autofix here is sed -E -i 's/\bos.chdir\b/d'
-    detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i '/\\bos.chdir\\b/d' #{get_script}"
+    detect_and_print_lines lines, "CHDIR", "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i '/\\bos.chdir\\b/d' #{get_script}"
 
     # ----------------------------------------------------------------------
     # TODO: CREATE TABLE ( LIKE )
@@ -597,7 +599,7 @@ If no commands are given, snow will run check.
     #
     # Originally found in etl_f_delighted_survey_responses.py
     # ----------------------------------------------------------------------
-    # detect_and_print_lines lines, "", finder: :find_create_table_foo_paren_like_bar
+    # detect_and_print_lines lines, "code?", "name?", finder: :find_create_table_foo_paren_like_bar
 
     # ----------------------------------------------------------------------
     # Excessive globals in main
@@ -615,7 +617,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # except Exception
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
+    detect_and_print_lines lines, "EXCEPTION", "Global Exception Handling", /\bexcept Exception\b/
 
     # egregious exception handling -- wait, what if instead of a regex we pass
     # a detector symbol?  and detector method receives ALL of lines. Then it can
@@ -634,16 +636,16 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # Outdented SQL
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Outdented SQL (Not Fully Implemented - Check By Hand)", /^(FROM|WHERE|JOIN) /
+    detect_and_print_lines lines, "OUTSQL", "Outdented SQL (Not Fully Implemented - Check By Hand)", /^(FROM|WHERE|JOIN) /, disabled: true
 
     # ----------------------------------------------------------------------
     # Long lines
-    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{220,}$/
+    detect_and_print_lines lines, "LONG", "Egregiously Long Lines (Check by hand)", /^.{220,}$/, disabled: true
 
     # ----------------------------------------------------------------------
     # Overcomplicated format() calls
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Overly short format() calls (Check by hand)", /\.format\([^){,20}]\)/
+    detect_and_print_lines lines, "SHORTFORMAT", "Overly short format() calls (Check by hand)", /\.format\([^){,20}]\)/, disabled: true
 
     # ----------------------------------------------------------------------
     # job_config must not be optional
@@ -654,17 +656,17 @@ If no commands are given, snow will run check.
     # more time than just weeding the falses out by hand. Looks like there are
     # only 2 that take config=None while all the other true positives are
     # job_config=None, so.
-    detect_and_print_lines lines, "Optional job_config", /def (run|main)\(.*config=/
+    detect_and_print_lines lines, "OPTCONFIG", "Optional job_config", /def (run|main)\(.*config=/
 
     # ----------------------------------------------------------------------
     # testing for job_config == None or job_config is None
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Testing for presence of job_config", /\bjob_config\s+(is|==)\s+None\b/
+    detect_and_print_lines lines, "IFCONFIG", "Testing for presence of job_config", /\bjob_config\s+(is|==)\s+None\b/
 
     # ----------------------------------------------------------------------
     # except Exception:
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
+    detect_and_print_lines lines, "EXCEPT", "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
 
     # ----------------------------------------------------------------------
     # case and paste help messages for arparse
@@ -677,7 +679,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # main() bootstrapper
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
+    detect_and_print_lines lines, "MAIN", "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
   end
 end
 
