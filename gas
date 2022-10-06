@@ -1,4 +1,4 @@
 #!/bin/bash
-
-echo git add-script "\"$SCRIPT\""
-git add-script $SCRIPT
+SCRIPT=`get-ds-script`
+echo git add-script
+git add-script

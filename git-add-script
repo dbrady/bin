@@ -1,4 +1,5 @@
 #!/bin/bash
+SCRIPT=`get-ds-script`
 
 if [ "$SCRIPT" == "" ]; then
     echo 'No $SCRIPT var found. Please export SCRIPT=<script> before running this script.'
