@@ -1,18 +1,18 @@
 #!/usr/bin/env ruby
-# snow-make-links-for-zack - generate all the PR links for a job's migrations
+# snow-make-links - generate all the PR links for a job's migrations
 #
-# IMPORTANT TODO: WRITE DOWN ALL THE LINKS WE MAKE. If Zack gets way behind and
-# then has multiple feedback issues, I need to be able to find my open PRs and
-# tickets. This needs to be omnidirectional, if I forget to put the jira ticket on
-# the github PR or Jira can't find the PRs, I am likely to have one number and
-# not the others.
+# snow-make-links <WAREHOUSE_PR_ID> <FINANCE_PR_ID> [<PACKAGE_PR_ID>]
 #
-# So if I'm on ticket 1533 and say snow link 2723 428, I need to be able to take
-# any of those numbers and find the others.
+# Given 2-3 integers, generates and prints the link template.
 #
-# Look at git-set-pr and git-get-pr, I think I had part of the idea going
-# there. If I run get-set-pr with no arguments it should get the ticket from the
-# branch and the repo from the cwd.
+# This script also records PRs as you make them, supporting looking back to find
+# which PRs went with what ticket.
+#
+# snow-make-links show                      - show links for current git branch (if already recorded)
+# snow-make-links show <ticket|search_term> - search for ticket or branch name
+# snow-make-links show last                 - show last set of links recorded
+# snow-make-links show all                  - show all the recorded PRs.
+
 require 'yaml'
 require 'date'
 
@@ -34,14 +34,10 @@ def get_ticket_from_branch
   current_branch.split(/\D+/)[1].to_i
 end
 
-# If we are doing a snowflake moveover, branch names will be of the form
-# 'feature/DS-<jira>/<job><version>'. This returns the job portion.
-
-# Clips off any leading 'feature/DS-nnnn/' portion of a branch and any trailing version number. What's left should be the job name.
+# Given a branch like 'feature/DS-5555/etl_thing2', returns etl_thing
 def get_job_from_branch
   current_branch.sub(%r|^feature/DS-\d+/|, '').sub(%r|/?\d+$|, '')
 end
-
 
 HISTORY_FILENAME = File.expand_path("~/.branch-history-warehouse.yml")
 # rescue is only needed on first run when the history file doesn't exist
@@ -111,7 +107,9 @@ if PACKAGE_PR_ID
   branch_history[TICKET_ID]["package_link"] = PACKAGE_LINK
 end
 
-File.open(HISTORY_FILENAME, "w") { |fp| fp.puts branch_history.to_yaml }
+if !TICKET_ID.zero?
+  File.open(HISTORY_FILENAME, "w") { |fp| fp.puts branch_history.to_yaml }
+end
 
 proposed_branch_name = current_branch.sub(%r|^feature/|,'')
 job_name = proposed_branch_name.sub(%r|^\w+-\d+/|, '')
