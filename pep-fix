@@ -1,4 +1,9 @@
 #!/bin/bash
 # E501 is line-length, so
-echo autopep8 -i --ignore E501 $@
-autopep8 -i --ignore E501 $@
+SCRIPT=$1
+if [ "$SCRIPT" == "" ]; then
+    SCRIPT=`get-ds-script`
+fi
+
+echo autopep8 -i --ignore E501 $SCRIPT
+autopep8 -i --ignore E501 $SCRIPT
