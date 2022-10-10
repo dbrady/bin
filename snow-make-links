@@ -79,7 +79,7 @@ if ARGV[0] == "show"
   exit 0
 end
 
-if ARGV.size < 2 || ARGV.size > 3 || ARGV.include?('-h') || ARGV.include?('--help')
+if ARGV.size < 1 || ARGV.size > 3 || ARGV.include?('-h') || ARGV.include?('--help')
   puts usage
   exit -1
 end
@@ -100,8 +100,11 @@ branch_history[TICKET_ID] = {
   "created_at" => Time.now.strftime("%F %T"),
   "jira_link" => JIRA_LINK,
   "warehouse_link" => WAREHOUSE_LINK,
-  "finance_link" => FINANCE_LINK,
 }
+
+if FINANCE_PR_ID
+  branch_history[TICKET_ID]["finance_link"] = FINANCE_LINK
+end
 
 if PACKAGE_PR_ID
   branch_history[TICKET_ID]["package_link"] = PACKAGE_LINK
@@ -118,8 +121,11 @@ blurb =<<TEMPLATE
 *DS-#{TICKET_ID}: #{job_name}*
 Jira Ticket: #{JIRA_LINK}
 Dataservices PR: #{WAREHOUSE_LINK}
-Finance PR: #{FINANCE_LINK}
 TEMPLATE
+
+if FINANCE_PR_ID
+  blurb += "Finance PR: #{FINANCE_LINK}\n"
+end
 
 if PACKAGE_PR_ID
   blurb += "Package PR: #{PACKAGE_LINK}\n"
