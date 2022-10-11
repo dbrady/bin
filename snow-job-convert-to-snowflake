@@ -7,6 +7,8 @@ require 'json'
 config_file = File.expand_path("./finance/config/etl_nightly_config.json")
 job = ARGV.first
 
+puts "Configuring job to run in snowflake"
+
 job = job.gsub(%r|/|, '.').sub(/.py$/, '')
 
 # 1. parse the config file and read the jobs hash to get all of its keys in
