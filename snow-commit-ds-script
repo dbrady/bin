@@ -1,0 +1,15 @@
+#!/bin/bash
+# snow-commit-ds-script "<commit_message>" - add and commit current ds script with message
+SCRIPT=`get-ds-script`
+COMMIT_MESSAGE=$1
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo -e "\033[36mgit add $SCRIPT\033[0m"
+git add $SCRIPT
+
+echo -e "\033[36mgit commit -m \"$COMMIT_MESSAGE\"\033[0m"
+git commit -m "$COMMIT_MESSAGE"
