@@ -1,13 +1,2 @@
 #!/bin/bash
-SCRIPT=`get-ds-script`
-
-if [ -z "$SCRIPT" ]; then
-    echo "You must set the SCRIPT variable first."
-    exit -1
-fi
-
-echo git add $SCRIPT
-git add $SCRIPT
-
-echo git commit -m "PEP8 comformance"
-git commit -m "PEP8 comformance"
+snow-commit-ds-script "PEP8 comformance"
