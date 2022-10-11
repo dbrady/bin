@@ -1,0 +1,6 @@
+#!/bin/bash
+# TODO: Ensure no other changes in branch
+# TODO: Ensure git diff returns results (changes present in script)
+# TODO: Ensure git diff -b does not (no non-whitespace changes present in script)
+
+snow-commit-ds-script "Whitespace"

@@ -1,0 +1,2 @@
+#!/bin/bash
+snow-commit-ds-script "Remove unnecessary os.chdir"

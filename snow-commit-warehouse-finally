@@ -1,0 +1,2 @@
+#!/bin/bash
+snow-commit-ds-script "Convert exception to finally clause"
