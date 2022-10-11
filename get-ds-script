@@ -1,9 +1,15 @@
 #!/bin/bash
-# get-ds-script <script> - return scriptfile (mostly just a helper to remind me where I parked $SCRIPTFILE)
+# get-ds-script [-f] - return scriptfile (mostly just a helper to remind me where I parked $SCRIPTFILE)
+# -f = show full path
 SCRIPTFILE=~/.ds_script
 
 if [ -e $SCRIPTFILE ]; then
-    tail -n 1 $SCRIPTFILE
+    SCRIPT=`tail -n 1 $SCRIPTFILE`
+    if [ "$1" == "-f" ]; then
+        echo "/root/data_services/etl/warehouse/$SCRIPT"
+    else
+        echo $SCRIPT
+    fi
 else
     exit -1
 fi
