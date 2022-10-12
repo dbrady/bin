@@ -1,4 +1,4 @@
 #!/bin/bash
 # E501 is line-length, so
 # autopep8 -d --exit-code --ignore E501 $* && echo "PEP8 OK" || echo '*** PEP8 VIOLATIONS DETECTED ***'
-autopep8 -d --exit-code --ignore E501 $* && echo "PEP8 OK" || echo '*** PEP8 VIOLATIONS DETECTED ***'
+autopep8 -d --exit-code --ignore E501 $* && echo -e "\033[1;37;42m OK \033[0m" || echo '*** PEP8 VIOLATIONS DETECTED ***'
