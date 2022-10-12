@@ -147,12 +147,13 @@ require 'optimist'
 class SnowflakeManglerApp
   def checklist
     i=0
-    return <<THE_LIST
-#{i=i+1}. Claim the ticket and move it to IN DEVELOPMENT
-#{i=i+1}. Set the ds SCRIPT (export SCRIPT=<job.py>; set-ds-script <job.py>)
+    return <<CHECKLIST
 #{i=i+1}. Go to latest feature/snowflake-moveover: snow main
+#{i=i+1}. Find next ticket (next-ticket)
+#{i=i+1}. Claim the ticket in Jira and move it to IN DEVELOPMENT
+#{i=i+1}. Set the ds SCRIPT (set-ds-script <job.py>)
 #{i=i+1}. Cut a new feature branch in both repos: snow new <jira_id>
-#{i=i+1}. Run snow check --essential to fix stuff that CAN'T work in Snowflake
+#{i=i+1}. Run snow check --essential and fix stuff that CAN'T work in Snowflake
 #{i=i+1}. Cut the config over to snowflake snow job s
 #{i=i+1}. Ensure job runs in Snowflake (check db if needed)
 #{i=i+1}. Run snow check and clean up style things
@@ -167,13 +168,12 @@ class SnowflakeManglerApp
    #{i}.1. Ensure you are merging into sf-moveover, NOT MASTER
    #{i}.2. Ensure PR has no extra commits
    #{i}.3. Inspect the file changes on GitHub
-   #{i}.4. Add Zack as a reviewer
 #{i=i+1}. Make links: snow link <warehouse> <finance> [<pkg>]
 #{i=i+1}. Move JIRA ticket to IN REVIEW
 #{i=i+1}. DELEGATE: Notify Zack by sending him links
 #{i=i+1}. WAIT ON: Watch PR for being merged
 #{i=i+1}. Move Jira ticket to CLOSED
-THE_LIST
+CHECKLIST
   end
 
   def set_script(script)
@@ -670,6 +670,17 @@ If no commands are given, snow will run check.
     # unsize varchars
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Unsize VARCHAR", /varchar\(\d+\)/i, autofix: %Q|ruby -i -n -e 'puts $_.gsub(/varchar\\(\\d+\\)/, "varchar").gsub(/VARCHAR\\(\\d+\\)/, "VARCHAR")' #{get_script}|
+
+    # ----------------------------------------------------------------------
+    # TODO: no-op reraise in exception
+    # marketing_device_traffic.py
+    #
+    # <blank line(s)>
+    # except.*:
+    #     raise
+    #
+    # Fix: delete those lines
+    # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
     # case and paste help messages for arparse
