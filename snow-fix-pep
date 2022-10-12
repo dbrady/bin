@@ -8,3 +8,5 @@ fi
 
 echo -e "\033[36mpep-fix $SCRIPT\033[0m"
 pep-fix $SCRIPT
+
+snow-commit-warehouse-pep8-conformance
