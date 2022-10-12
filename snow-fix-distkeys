@@ -1,0 +1,12 @@
+#!/bin/bash
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo "sed -E -i '/\b(DIS|SOR)TKEY\b/d' $SCRIPT"
+sed -E -i '/\b(DIS|SOR)TKEY\b/d' $SCRIPT
+
+snow-commit-ds-script "Remove distkey/sortkey"
