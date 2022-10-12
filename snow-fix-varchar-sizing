@@ -1,0 +1,14 @@
+#!/bin/bash
+# snow-fix-chdir
+
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo -e "\033[36mruby -i -n -e puts $_.gsub(/varchar\(\d+\)/, \"varchar\").gsub(/VARCHAR\(\d+\)/, \"VARCHAR\")' $SCRIPT\033[0m"
+ruby -i -n -e 'puts $_.gsub(/varchar\(\d+\)/, "varchar").gsub(/VARCHAR\(\d+\)/, "VARCHAR")' etl_d_customer_details_gcrs.py
+
+snow-commit-ds-script "Unsize varchar columns"

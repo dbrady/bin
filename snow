@@ -670,6 +670,11 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "EXCEPT", "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
 
     # ----------------------------------------------------------------------
+    # unsize varchars
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "VARCHAR", "Unsize VARCHAR", /varchar\(\d+\)/i, autofix: %Q|ruby -i -n -e 'puts $_.gsub(/varchar\\(\\d+\\)/, "varchar").gsub(/VARCHAR\\(\\d+\\)/, "VARCHAR")' #{get_script}|
+
+    # ----------------------------------------------------------------------
     # case and paste help messages for arparse
     # search for different options but same help messages, e.g.
     #     parser.add_argument('--files', help='Start Date', required=True)
