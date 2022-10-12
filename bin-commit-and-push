@@ -8,5 +8,5 @@ message=$@
 echo "This will commit and push file '$file' with commit message '$message'"
 echo "Hit CTRL-C to abort, otherwise press ENTER to continue"
 read
-echo "(" cd ~/bin/ && echo git add $file && echo git commit -m "$message" && echo git push ")"
+echo "(" cd ~/bin/ && echo git add $file && echo "git commit -m \"$message\"" && echo git push ")"
 (cd ~/bin/ && git add $file && git commit -m "$message" && git push)
