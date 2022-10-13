@@ -7,6 +7,6 @@ if [[ -d .git/rebase-apply ]] ; then
     echo git rebase --abort
     git rebase --abort
 else
-    echo "\033[31;40mCannot git rebase --abort: .git/rebase-apply folder does not exist"
+    echo -e "\033[31;40mCannot git rebase --abort: .git/rebase-apply folder does not exist"
     exit 1
 fi
