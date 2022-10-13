@@ -1,11 +1,12 @@
 #!/usr/bin/env ruby
-# snow-new-branch <ticket> - git new-branch in both repos
-# SET SCRIPT FIRST
+# snow-new-branch <ticket> <path/to/job.py> - git new-branch in both repos
 require "colorize"
 
 def usage
   puts <<USAGE
-snow-new-branch <ticket> - create new snowflake branches in both repos.
+snow-new-branch <ticket> [path/to/job.py] - create new snowflake branches in both repos.
+
+If given a job filename, sets ~/.ds-script first.
 USAGE
 end
 
@@ -39,6 +40,11 @@ def make_sure_script_is_current!(ticket_id)
   end
 end
 
+
+# ----------------------------------------------------------------------
+# Start of main script
+# ----------------------------------------------------------------------
+
 if ARGV.include?("-h") || ARGV.include?("--help")
   usage
   exit 0
@@ -50,11 +56,17 @@ if ARGV.first.to_i.zero?
   exit -1
 end
 
-if ARGV.size != 1
-  puts "Expected 1 arguments, got #{ARGV.size}"
+if ARGV.size != 1 && ARGV.size != 2
+  puts "Expected 1-2 arguments, got #{ARGV.size}"
   usage
   exit -1
 end
+
+filename = if ARGV.size == 2
+             system "set-ds-script", ARGV[1]
+           else
+             get_script
+           end
 
 ticket = ARGV.first
 filename = get_script
