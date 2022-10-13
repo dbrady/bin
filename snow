@@ -151,8 +151,7 @@ class SnowflakeManglerApp
 #{i=i+1}. Go to latest feature/snowflake-moveover: snow main
 #{i=i+1}. Find next ticket (next-ticket)
 #{i=i+1}. Claim the ticket in Jira and move it to IN DEVELOPMENT
-#{i=i+1}. Set the ds SCRIPT (set-ds-script <job.py>)
-#{i=i+1}. Cut a new feature branch in both repos: snow new <jira_id>
+#{i=i+1}. Set ds script and cut feature branches: snow new <jira_id> <job.py>
 #{i=i+1}. Run snow check --essential and fix stuff that CAN'T work in Snowflake
 #{i=i+1}. Cut the config over to snowflake snow job s
 #{i=i+1}. Ensure job runs in Snowflake (check db if needed)
@@ -575,7 +574,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # Update Python String Formatting
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Python 2 String Formatting", %r|%[\d\.]*[sdf].*|, unmatch: %r|str[pf]time|
+    detect_and_print_lines lines, "Python 2 String Formatting", %r|(?<!%)%[\d\.]*[sdf].*|, unmatch: %r{(str[pf]time|%Y-%m-%d)}
 
     # ----------------------------------------------------------------------
     # os.chdir to self: remove
