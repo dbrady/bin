@@ -5,9 +5,10 @@
 # Use git zapdel if you just want to git rm a file you deleted from
 # the fs.
 
-# May require the hardest force push you've ever done. If the file was
-# in the main branch, you may literally have to ask your teammates to
-# re-clone the entire repository.
+# This rewrites the repo history, which in turn will require the hardest force
+# push you've ever done. If the file was in the main branch, you will literally
+# have to ask your teammates to re-clone the entire repository. You've been
+# warned.
 
 cat $0
 exit
