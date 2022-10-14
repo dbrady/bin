@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# unskip-ticket <id> - Remove ticket from ~/jira-bad-tickets.json
+require 'json'
+FILENAME = File.expand_path("~/jira-bad-tickets.json")
+
+if ARGV.empty? || ARGV.include?("--help") || ARGV.include?("-h")
+  puts "unskip-ticket <jira_id> - remove ticket from #{FILENAME}"
+  exit 0
+end
+
+id = ARGV.first
+
+id = id.to_i
+tickets = JSON.parse(File.read(FILENAME))
+
+if ticket = tickets["tickets"].detect { |ticket| ticket["id"] == id }
+  puts ticket
+  tickets["tickets"].delete_if { |ticket| ticket["id"] == id }
+
+  File.open(FILENAME, "w") do |file|
+    file.puts JSON.pretty_generate(tickets)
+  end
+end
