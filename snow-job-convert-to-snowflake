@@ -29,7 +29,7 @@ next_job = config["jobs"].keys[next_job_index]
 
 # 4. Get the starting line number of the job with grep -n job config | awk
 #    '{print $1}' | sed 's/://'
-start_line_command = "grep -n #{job} #{config_file} | awk '{ print $1 }' | sed 's/://'"
+start_line_command = "grep -n '\"#{job}\"' #{config_file} | awk '{ print $1 }' | sed 's/://'"
 # puts start_line_command
 start_line = `#{start_line_command}`.strip
 # puts "start_line: #{start_line.inspect}"
@@ -37,7 +37,7 @@ start_line = `#{start_line_command}`.strip
 # 5. Get the ending next_line number. If end_job is nil, use wc -l, otherwise
 #    use the grep chain above with the end_job name.
 end_line_command = if next_job
-                     "grep -n #{next_job} #{config_file} | awk '{ print $1 }' | sed 's/://'"
+                     "grep -n '\"#{next_job}\"' #{config_file} | awk '{ print $1 }' | sed 's/://'"
                    else
                      "wc -l #{config_file} | awk '{ print $1 }'"
                    end
