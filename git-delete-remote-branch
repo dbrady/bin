@@ -1,0 +1,17 @@
+#!/bin/bash
+# git-delete-remote-branch <branch> [<remote>] - Because I forget how to do this
+# all the time.
+
+# tl;dr the command is:
+# git push origin --delete feature/DS-1595/etl_f_resolutions
+
+
+BRANCH=$1
+REMOTE=$2
+
+if [ "$REMOTE" == "" ]; then
+    REMOTE="origin"
+fi
+
+echo -e "\033[36mgit push $REMOTE --delete $BRANCH\033[0m"
+git push $REMOTE --delete $BRANCH
