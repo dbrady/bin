@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+
+SCRIPT = `get-ds-script`.strip
+
+if SCRIPT == ""
+  puts "You must set the SCRIPT variable first."
+  exit -1
+end
+
+SCRIPT_FULLPATH = `get-ds-script -f`.strip
+JOB = SCRIPT.gsub(/\//, ".").gsub(/\.py$/, "")
+
+
+# 273:         ,b.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS updated_at_local
+# Replacement:         ,CONVERT_TIMEZONE('UTC', 'America/Denver', b.updated_at) AS updated_at_local
+
+regex = /([\w\.]+) AT TIME ZONE '(.+?)' AT TIME ZONE '([^']+)'/
+
+lines = IO.readlines(File.expand_path(SCRIPT_FULLPATH)).map do |line|
+  if line =~ regex
+    line = line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
+  end
+  line
+end
+
+File.open(SCRIPT_FULLPATH, "w") do |fp|
+  fp.puts lines
+end
+
+# TODO: If the file still has AT TIME ZONE, print commit messages, but
+# if file does NOT contain any ATZs, just go ahead and commit it
+puts "Fixed what timezones I could. You can commit this with:"
+puts "git add #{SCRIPT}"
+puts "git commit -m \"Fix timezones in #{JOB}\""
