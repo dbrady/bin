@@ -312,6 +312,14 @@ If no commands are given, snow will run check.
     line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
   end
 
+  # This doesn't get all the cases, but it does get the ones that are inline.
+  def replace_inline_create_table_like(line)
+    regex = /\(LIKE (.+?)\)/
+    return unless line =~ regex
+
+    line.gsub(regex, "LIKE #{$1}")
+  end
+
   def replace_epoch_timestamp_with_interal_1_second(line)
     regex = /timestamp\s+'epoch'\s*\+\s*(.*?)\*\s*interval\s+'1 second'/i
 
@@ -698,6 +706,11 @@ If no commands are given, snow will run check.
     # main() bootstrapper
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
+
+    # ----------------------------------------------------------------------
+    # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "CREATE TABLE (LIKE)", /\(LIKE/, suggest: :replace_inline_create_table_like
   end
 end
 
