@@ -1,58 +1,31 @@
 #!/usr/bin/env ruby
 # csv-to-table - Print a csv file as a text table
 #
-# Options:
-#     -o, --org    Print table with emacs-friendly org-mode decorations
-
 # Usage:
-#     csv-to-table -o filename.csv
-#     cat filename.csv | csv-to-table --org
-#     curl https://example.org/somefile.csv | csv-to-table
+#     csv-to-table filename.csv
+#     cat filename.csv | csv-to-table
 #
-# TODO:
-# Add -n option: number of lines to read
-# Add -s, -t option: number of lines offset from start or backwards from tail
-#
-# Add an option to pull in multiple csv files and emit a single table (and if
-# both files have header rows, match them up and suppress one row). What to call
-#     this? -j --join ? I.e.
-#     csv-to-table file1.csv -j file2.csv --join=file3.csv ?
-#
-# E.g.
-# read the second batch of 10 lines from the end: -n 10 -t 20
-# read lines 1000-1100: -s 1000 -n 100
+# Options:
+#     -o, --org:              Print CSV as an org-mode table
+#     -d<d>, --delimiter=<d>: Use alternate field delimiter
 require "csv"
+require "optimist"
+require "text-table"
 
-begin
-  require "text-table"
-rescue LoadError
-  puts "Cannot load text-table, please do:"
-  puts "gem install text-table"
-  puts "And try again."
-  exit -1
-end
-
-options = {}
-options["org"] = false
-if ARGV.include?("-o") || ARGV.include?("--org")
-  options["org"] = true
-  # I don't like modifying this constant but ARGF only reads from ARGV and it
-  # assumes/requires that anything that isn't a filename has been removed
-  # beforehand.
-  ARGV.delete("-o")
-  ARGV.delete("--org")
+opts = Optimist.options do
+  opt :org, "Emit table in org-mode style"
+  opt :delimiter, "Set CSV field delimiter", type: :string, default: ','
 end
 
 csv = ARGF.readlines.join
-formatted = CSV.parse(csv, headers: true).to_a.to_table(first_row_is_head: true).to_s
+formatted = CSV.parse(csv, headers: true, col_sep: opts[:delimiter]).to_a.to_table(first_row_is_head: true).to_s
 
-if options["org"]
-  # sadly the text-table to_table can't deal with org-mode's headache. It
-  # accepts args like :horizontal_boundary and :boundary_intersection but does
-  # not distinguish between horizontal end boundaries and horizontal
-  # intersections. text-table can do "+---+---+" or "|---|---|" but we need
-  # "|---+---|".
-  puts "org-mode formatting on."
+if opts[:org]
+  # sadly the text-table to_table can't deal with the headache that is emacs'
+  # org-mode. It accepts args like :horizontal_boundary and
+  # :boundary_intersection but does not distinguish between horizontal end
+  # boundaries and horizontal intersections. So text-table can do
+  # "+---+---+---+---+" or "|---|---|---|---|", but we need "|---+---+---+---|".
   puts formatted.gsub(/^\+/, "|").gsub(/\+$/, "|")
 else
   puts formatted
