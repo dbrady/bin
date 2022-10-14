@@ -3,4 +3,11 @@
 # TODO: Ensure git diff returns results (changes present in script)
 # TODO: Ensure git diff -b does not (no non-whitespace changes present in script)
 
-snow-commit-ds-script "Whitespace"
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+snow-commit-ds-script "Fix whitespace in $SCRIPT"

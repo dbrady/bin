@@ -1,2 +1,9 @@
 #!/bin/bash
-snow-commit-ds-script "PEP8 comformance"
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+snow-commit-ds-script "PEP8 comformance in $SCRIPT"

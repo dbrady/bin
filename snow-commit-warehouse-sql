@@ -9,5 +9,5 @@ fi
 echo git add $SCRIPT
 git add $SCRIPT
 
-echo git commit -m "Port SQL to Snowflake"
-git commit -m "Port SQL to Snowflake"
+echo git commit -m "Port SQL to Snowflake in $SCRIPT"
+git commit -m "Port SQL to Snowflake in $SCRIPT"
