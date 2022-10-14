@@ -671,6 +671,11 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "Unsize VARCHAR", /varchar\(\d+\)/i, autofix: %Q|ruby -i -n -e 'puts $_.gsub(/varchar\\(\\d+\\)/, "varchar").gsub(/VARCHAR\\(\\d+\\)/, "VARCHAR")' #{get_script}|
 
     # ----------------------------------------------------------------------
+    # similar to
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "SIMILAR TO", /similar to/i
+
+    # ----------------------------------------------------------------------
     # TODO: no-op reraise in exception
     # marketing_device_traffic.py
     #
