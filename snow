@@ -277,6 +277,13 @@ If no commands are given, snow will run check.
     end
 
     # ----------------------------------------------------------------------
+    # snow-slam - git cram both repos and emit create pr links
+    # ----------------------------------------------------------------------
+    if ARGV.first == "slam"
+      run_and_exit! "snow-slam"
+    end
+
+    # ----------------------------------------------------------------------
     # Start the actual checking process
     # ----------------------------------------------------------------------
 
@@ -535,6 +542,19 @@ If no commands are given, snow will run check.
     #     parser.add_argument('--start_date', help='Start Date', required=False)
     #     parser.add_argument('--end_date', help='Start Date', required=False)
     # ----------------------------------------------------------------------
+
+
+    # ----------------------------------------------------------------------
+    # TODO: etl_client.close() before finally
+    # Fun/danger: this is caused by fixing exceptions with a facile approach
+    # ----------------------------------------------------------------------
+
+    # ----------------------------------------------------------------------
+    # Hidden blockers (depends on an unmigrated table)
+    # ----------------------------------------------------------------------
+    ["d_team_list_sales_gsheet"].each do |table|
+      detect_and_print_lines lines, "HIDDEN TABLE DEPENDENCY: #{table}", /#{table}/i
+    end
 
     # ----------------------------------------------------------------------
     # main() bootstrapper
