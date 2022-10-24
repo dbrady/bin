@@ -6,20 +6,19 @@ puts <<CHECKLIST
 #{i=i+1}. Find next ticket (next-ticket)
 #{i=i+1}. Claim the ticket in Jira and move it to IN DEVELOPMENT
 #{i=i+1}. Set ds script and cut feature branches: snow new <jira_id> <job.py>
-#{i=i+1}. Run snow check --essential and fix stuff that CAN'T work in Snowflake
-#{i=i+1}. Cut the config over to snowflake snow job s
-#{i=i+1}. Ensure job runs in Snowflake (check db if needed)
-#{i=i+1}. Run snow check and clean up style things
+#{i=i+1}. Run snow to look at checks; snow -e shows essential problems
+#{i=i+1}. Fix problems with snow-fix-x or edit and snow-commit-x
 #{i=i+1}. Inspect the code for any other egregious style concerns
-#{i=i+1}. If any args have changed, update the Example Usage
-#{i=i+1}. Put any new ones in snow check
-#{i=i+1}. Ensure job STILL runs in Snowflake
+#{i=i+1}. Put any new issues in snow check
+#{i=i+1}. Cut the config over to snowflake snow job s
+#{i=i+1}. If any args have changed, update the Example Usage comment
+#{i=i+1}. Ensure job runs in Snowflake (check db if needed)
 #{i=i+1}. Screenshot it and attach it to the JIRA ticket
-#{i=i+1}. Open a PR in warehouse to merge it into feature/snowflake-moveover: git cram && snow-create-pr-warehouse
+#{i=i+1}. Open a PR in warehouse: snow-slam or git cram && snow-create-pr-warehouse
 #{i=i+1}. Open a PR in finance for the config
 #{i=i+1}. STOP AND CHECK: Sanity-check the PRs
    #{i}.1. Ensure you are merging into sf-moveover, NOT MASTER
-   #{i}.2. Ensure PR has no extra commits
+   #{i}.2. Ensure both PRs have no extra commits
    #{i}.3. Inspect the file changes on GitHub
 #{i=i+1}. Make links: snow link <warehouse> <finance> [<pkg>]
 #{i=i+1}. Move JIRA ticket to IN REVIEW
