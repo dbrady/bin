@@ -5,9 +5,12 @@ puts <<CHECKLIST
 #{i=i+1}. Go to latest feature/snowflake-moveover: snow main
 #{i=i+1}. Find next ticket (next-ticket)
 #{i=i+1}. Claim the ticket in Jira and move it to IN DEVELOPMENT
-#{i=i+1}. Set ds script and cut feature branches: snow new <jira_id> <job.py>
-#{i=i+1}. Run snow to look at checks; snow -e shows essential problems
+#{i=i+1}. Set ds script and branches: snow new <jira_id> <job.py>
+#{i=i+1}. Run snow to look at checks; snow check
 #{i=i+1}. Fix problems with snow-fix-x or edit and snow-commit-x
+   #{i}.1. Edit and save to fix whitespace
+   #{i}.2. Run snow-fix-x for pep, distkeys, chdir, et al
+   #{i}.3. Manually fix other issues and snow-commit-wx
 #{i=i+1}. Inspect the code for any other egregious style concerns
 #{i=i+1}. Put any new issues in snow check
 #{i=i+1}. Cut the config over to snowflake snow job s
