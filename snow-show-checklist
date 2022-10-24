@@ -17,7 +17,7 @@ puts <<CHECKLIST
 #{i=i+1}. If any args have changed, update the Example Usage comment
 #{i=i+1}. Ensure job runs in Snowflake (check db if needed)
 #{i=i+1}. Screenshot it and attach it to the JIRA ticket
-#{i=i+1}. Open a PR in warehouse: snow-slam or git cram && snow-create-pr-warehouse
+#{i=i+1}. Open a PR in warehouse: snow-slam or snow-create-pr-x
 #{i=i+1}. Open a PR in finance for the config
 #{i=i+1}. STOP AND CHECK: Sanity-check the PRs
    #{i}.1. Ensure you are merging into sf-moveover, NOT MASTER
