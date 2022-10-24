@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# fleds - st00pid hack to measure the largest value in each column of a CSV
+require "csv"
+require "optimist"
+
+opts = Optimist.options do
+  opt :delimiter, "Set CSV field delimiter", type: :string, default: ','
+  opt :alpha, "Sort by key name"
+  opt :value, "Sort by value size"
+  opt :reverse, "Reverse sort direction"
+end
+
+csv = ARGF.readlines.join
+fields = CSV.parse(csv, headers: true, col_sep: opts[:delimiter])
+
+sizes = Hash.new(0)
+
+fields.each do |row|
+  row.each_pair do |key, val|
+    # puts "#{key} => #{val.inspect}"
+    sizes[key] = [sizes[key], val ? val.size : 0].max
+  end
+end
+
+longest_key = sizes.keys.map(&:size).max
+format = "%#{longest_key}s: %s"
+
+keys = if opts[:alpha]
+         sizes.keys.sort
+       elsif opts[:value]
+         sizes.to_a.map(&:reverse).sort.map(&:reverse).map(&:first)
+       else
+         sizes.keys
+       end
+
+keys = keys.reverse if opts[:reverse]
+
+keys.each do |key|
+  puts sprintf(format, key, sizes[key])
+end
