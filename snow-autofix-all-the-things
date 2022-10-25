@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo "This will attempt to fix all the things. Make sure script you really want to fix up this file:"
+echo `get-ds-script`
+echo "Fix up any whitespace issues if needed first, and make sure your branch is clean."
+
+git-isclean &&
+    echo "(It looks clean from here.)" || (echo "\033[1;37;41Branch is not clean\033[0m" && exit)
+
+echo "Hit CTRL-C to abort. Otherwise, hit ENTER to begin."
+read
+
+# now run all the snow-fix-* scripts
+snow-fix-pep
+snow-fix-distkeys
+snow-fix-chdir
+snow-fix-except-exception
+snow-fix-varchar-sizing
+
+# This is a partial fix only, and does not commit the fix. Run it manually.
+# snow-fix-timezones

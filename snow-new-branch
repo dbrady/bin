@@ -2,6 +2,8 @@
 # snow-new-branch <ticket> <path/to/job.py> - git new-branch in both repos
 require "colorize"
 
+$force = false
+
 def usage
   puts <<USAGE
 snow-new-branch <ticket> [path/to/job.py] - create new snowflake branches in both repos.
@@ -32,6 +34,7 @@ end
 def make_sure_script_is_current!(ticket_id)
   # tl;dr if script is set but git branch -a contains the ticket id or job name, raise a warning
   return unless get_script
+  return if $force
 
   branches = get_all_branches
 
@@ -48,6 +51,11 @@ end
 if ARGV.include?("-h") || ARGV.include?("--help")
   usage
   exit 0
+end
+
+if ARGV.include?("-f") || ARGV.include?("--force")
+  $force = true
+  ARGV -= ["-f", "--force"]
 end
 
 if ARGV.first.to_i.zero?

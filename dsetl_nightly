@@ -41,14 +41,14 @@ if !branch_name.include?(job_name)
   exit -1
 end
 
-if branch_name != finance_branch_name
-  str =<<BRANCH_WARNING
-WARNING: warehouse and finance branches do not match. Is that OK?
-Warehouse: #{branch_name}
-Finance: #{finance_branch_name}
-BRANCH_WARNING
-  puts str.yellow
-end
+# if branch_name != finance_branch_name
+#   str =<<BRANCH_WARNING
+# WARNING: warehouse and finance branches do not match. Is that OK?
+# Warehouse: #{branch_name}
+# Finance: #{finance_branch_name}
+# BRANCH_WARNING
+#   puts str.yellow
+# end
 
 # Overwrite previous line so the command screenshots correctly
 print "\033[1F"

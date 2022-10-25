@@ -10,7 +10,7 @@ class SnowflakeManglerApp
   end
 
   def set_script(script)
-    $script = script
+    $get_script = script
   end
 
   def get_script
@@ -88,6 +88,15 @@ class SnowflakeManglerApp
     end
   end
 
+  def detect_missing_skip_upload
+    puts section_title "Skip Upload"
+    if should_be_skippable? && !skippable?
+      puts "File should have skip_upload but does not"
+    else
+      log_ok
+    end
+  end
+
   def usage
     puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing all the time. Sorry not sorry, you're welcome."
     puts "Try doing this, and maybe put it in .bashrc while you're at it:"
@@ -99,11 +108,14 @@ class SnowflakeManglerApp
     IO.readlines(get_script).any? { |line| line =~ /--skip_upload/ }
   end
 
+  def should_be_skippable?
+    get_script.include?("mcloud") || get_script.include?("_sf_")
+  end
+
   def run_and_exit!(command)
     system command
     exit $?.exitstatus
   end
-
 
   def usage
     str = <<~USAGE
@@ -187,6 +199,13 @@ If no commands are given, snow will run check.
       exit 0
     end
 
+    if ARGV.first == "preview"
+      puts "Setting script temporarily to #{ARGV[1]}"
+      set_script ARGV[1]
+    end
+
+    puts "Script is now set to #{get_script}"
+
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if get_script.empty?
       puts "You must run set-ds-script <path/to/job.py> first."
@@ -268,8 +287,7 @@ If no commands are given, snow will run check.
 
     if ARGV.first == "check"
       args = ARGV.dup
-      args.delete('-e')
-      args.delete('--essential')
+      args -= ['-e','--essential']
 
       if args.size > 1
         set_script args.last
@@ -281,6 +299,13 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     if ARGV.first == "slam"
       run_and_exit! "snow-slam"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow-auto - automatically fix what can be automatically fixed
+    # ----------------------------------------------------------------------
+    if ARGV.first == "auto"
+      run_and_exit! "snow-autofix-all-the-things"
     end
 
     # ----------------------------------------------------------------------
@@ -562,9 +587,19 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
 
     # ----------------------------------------------------------------------
+    # WARN if job is mcloud or sf but does not have --skip_upload
+    # ----------------------------------------------------------------------
+    detect_missing_skip_upload
+
+    # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "CREATE TABLE (LIKE)", /\(LIKE/, suggest: :replace_inline_create_table_like
+
+    # ----------------------------------------------------------------------
+    # TABS
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "TABS", /\t/
   end
 end
 
