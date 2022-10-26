@@ -10,7 +10,8 @@ class SnowflakeManglerApp
   end
 
   def set_script(script)
-    $get_script = script
+    puts "set_script(#{script})"
+    @get_script = script
   end
 
   def get_script
@@ -199,12 +200,10 @@ If no commands are given, snow will run check.
       exit 0
     end
 
+    # Override script if job is preview
     if ARGV.first == "preview"
-      puts "Setting script temporarily to #{ARGV[1]}"
       set_script ARGV[1]
     end
-
-    puts "Script is now set to #{get_script}"
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if get_script.empty?
@@ -284,6 +283,14 @@ If no commands are given, snow will run check.
     if ARGV.first == "link"
       run_and_exit! "snow-make-links #{ARGV[1..].join(' ')}"
     end
+
+    # ----------------------------------------------------------------------
+    # snow [check] [-e]
+    #
+    # TODO: snow -q, --quick just emits a single OK or "5 problems found on 23
+    # lines" etc. Have to rework the detectors to return the number of problems
+    # found.
+    # ----------------------------------------------------------------------
 
     if ARGV.first == "check"
       args = ARGV.dup
