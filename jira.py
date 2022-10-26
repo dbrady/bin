@@ -33,6 +33,7 @@ def find_ready_for_dev():
     # print(bad_ticket_ids)
 
     while not finished:
+        # print("Querying JIRA")
         tickets = jira_client.find_issue_by_epic_id(ticket_number, fields=fields, start_at=start_at)
         # print(f"FOUND {len(tickets)} TICKETS!")
         for ticket in tickets['issues']:
@@ -60,12 +61,14 @@ def find_ready_for_dev():
                 dave_count += 1
                 print(f'https://acima.atlassian.net/browse/{ticket["key"]}')
                 if dave_count >= dave_max:
+                    print("More tickets available (total={tickets['total']}) but that's enough for now")
                     finished = True
                     break
 
         start_at = tickets['startAt'] + tickets['maxResults']
         dave_count = dave_count + 1
         if start_at >= tickets['total']:
+            print(f"Out of tickets, stopping. (start_at={start_at}, tickets['total']={tickets['total']})")
             finished = True
 
 
@@ -73,6 +76,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Manage the incremental process')
     parser.add_argument(
         '--ready_for_dev', action='store_true', help='Find tickets that are ready for development', required=False)
+
     args = parser.parse_args()
 
     # ready_for_dev = args.ready_for_dev or False
