@@ -47,7 +47,8 @@ class SnowflakeManglerApp
   # This is turning into a bit of a swiss army kitchen sink...
   # lines:     array of lines to check
   # title:     section title to print if matches are found
-  # regex:     use this to detect matching lines
+  # regex:     use this to detect matching lines. If regex is an array of regexes,
+  #            finds matches on adjacent lines
   # disabled:  this check is turned off. Do not run, even if marked essential
   # essential: this check is essential. If we're running snow -e, skip
   #            inessential checks
@@ -87,6 +88,48 @@ class SnowflakeManglerApp
     else
       log_ok
     end
+  end
+
+  def detect_and_print_multilines(
+        lines,
+        title,
+        regexes,
+        essential: false,
+        disabled: false,
+        autofix: nil,
+        suggest: nil,
+        unmatch: nil
+      )
+    return if disabled
+    return if essential? && !essential
+    puts section_title title
+
+    # given n regexes, at line[m], then...
+    # Simple Match For Now:
+    # 1. lines[m..m+n].zip(regexes).all? {|line, regex| line =~ regex }
+    #
+    # More complex matching might allows for same-line stuff, e.g. if we are
+    # matching on [/create/, /table/, /like/], we should match if:
+    #
+    # (line[m] =~ /create.*table.*like/) ||
+    # (line[n] =~ /create/ && line[n+1] =~ /table.*like/) ||
+    # (line[n] =~ /create.*table/ && line[n+1] =~ /like/) ||
+    # (line[n] =~ /create/ && line[n+1] =~ /table/ && line[n+2] =~ /like/)
+    no_matches = true
+    first = true
+    0.upto(lines.size - regexes.size) do |main_offset|
+      if (0...regexes.size).map {|j| [lines[main_offset+j], regexes[j]] }.all? {|line, regex| line =~ regex }
+        no_matches = false
+        if first
+          first = false
+        else
+          puts "--"
+        end
+        puts (0...regexes.size).map {|j| "#{main_offset+j}: #{lines[main_offset+j]}" }
+      end
+    end
+
+    log_ok if no_matches
   end
 
   def detect_missing_skip_upload
@@ -290,6 +333,11 @@ If no commands are given, snow will run check.
     # TODO: snow -q, --quick just emits a single OK or "5 problems found on 23
     # lines" etc. Have to rework the detectors to return the number of problems
     # found.
+    #
+    # TODO: snow -w, --work emits only the detectors that fail, so you can see
+    # remaining work
+    #
+    # TODO: port this to Optimist. The arg processing is killing me here
     # ----------------------------------------------------------------------
 
     if ARGV.first == "check"
@@ -585,7 +633,7 @@ If no commands are given, snow will run check.
     # Hidden blockers (depends on an unmigrated table)
     # ----------------------------------------------------------------------
     ["d_team_list_sales_gsheet"].each do |table|
-      detect_and_print_lines lines, "HIDDEN TABLE DEPENDENCY: #{table}", /#{table}/i
+      detect_and_print_lines lines, "HIDDEN TABLE DEPENDENCY: #{table}", /#{table}/i, essential: true
     end
 
     # ----------------------------------------------------------------------
@@ -601,7 +649,19 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "CREATE TABLE (LIKE)", /\(LIKE/, suggest: :replace_inline_create_table_like
+    detect_and_print_lines lines, "CREATE TABLE (LIKE)", /\bCREATE\s+TABLE\b.*\(LIKE/i, suggest: :replace_inline_create_table_like, essential: true
+    detect_and_print_multilines lines, "CREATE TABLE (LIKE)", [/\bCREATE\s+TABLE\b.*\(/i, /LIKE/i], essential: true
+    detect_and_print_multilines lines, "CREATE TABLE (LIKE)", [/\bCREATE\s+TABLE\b/i, /\(\s*LIKE/i], essential: true
+
+    # ----------------------------------------------------------------------
+    # ENCODE
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "ENCODE", /\bencode\s+\S+/i, essential: true
+
+    # ----------------------------------------------------------------------
+    # GREATEST/LEAST -> NVL(...)
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # TABS
