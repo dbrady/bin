@@ -6,4 +6,4 @@ if [ -z "$SCRIPT" ]; then
     exit -1
 fi
 
-snow-commit-ds-script "PEP8 comformance in $SCRIPT"
+snow-commit-ds-script "PEP8 conformance in $SCRIPT"
