@@ -3,6 +3,7 @@
 
 # TODO: snow job default should show me just the default job. snow job -d should
 # show me the job overlaid on defaults.
+require 'deep_merge'
 require 'json'
 require 'colorize'
 require 'optimist'
@@ -31,7 +32,7 @@ json = JSON.parse(config)
 default_config = json["job_defaults"]
 job_config = json["jobs"][script] || {}
 merged_config = if opts[:defaults]
-                  default_config.merge(job_config)
+                  default_config.deep_merge!(job_config)
                 else
                   job_config
                 end
