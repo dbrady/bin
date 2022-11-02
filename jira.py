@@ -42,7 +42,7 @@ def find_ready_for_dev():
             issuelinks = ticket['fields']['issuelinks']
             for issue in issuelinks:
                 if 'inwardIssue' in issue:
-                    if issue['inwardIssue']['fields']['status']['statusCategory']['name'] != 'Done' or ticket['fields']['status']['statusCategory']['name'] != 'To Do':
+                    if issue['inwardIssue']['fields']['status']['name'] not in ('Closed', 'In Review') or ticket['fields']['status']['statusCategory']['name'] != 'To Do':
                         ready = False
 
             # if ticket["key"] in bad_tickets <-- can we hijack the "in" operator?
