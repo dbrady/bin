@@ -428,15 +428,22 @@ If no commands are given, snow will run check.
     # Illegal Snowflake Syntax: GEOMETRY, ST_GEOMFROMTEXT
     # ----------------------------------------------------------------------
     # GEOMETRY data type: change to GEOGRAPHY data type
+    #
+    # 2021-11-07: Cancel this change; We have updated Snowflake to calculate
+    # GEOGRAPHY correctly. In fact, if we run snow on an older job, we want it
+    # to flag the GEOMETRY as an error. So don't just disable this job; we need
+    # to reverse it.
+    #
     # https://docs.snowflake.com/en/sql-reference/data-types-geospatial.html
-    detect_and_print_lines lines, "GEOMETRY", /\bGEOMETRY\b/i, essential: true
+    # detect_and_print_lines lines, "GEOMETRY", /\bGEOMETRY\b/i, essential: true
+    detect_and_print_lines lines, "GEOGRAPHY", /\bGEOGRAPHY\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: ST_GEOMFROMTEXT
     # ----------------------------------------------------------------------
     # ST_GEOMFROMTEXT function: change to TO_GEOGRAPHY
     # https://docs.snowflake.com/en/sql-reference/functions/to_geography.html
-    detect_and_print_lines lines, "ST_GEOMFROMTEXT", /\bST_GEOMFROMTEXT\b/i, essential: true
+    detect_and_print_lines lines, "ST_GEOMFROMTEXT (***TEST THIS***, GEOMETRY IS CANCELED)", /\bST_GEOMFROMTEXT\b/i, essential: true
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: AT TIME ZONE
