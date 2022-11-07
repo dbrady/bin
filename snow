@@ -394,6 +394,10 @@ If no commands are given, snow will run check.
     # check for --skip_upload
     detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
 
+    # ======================================================================
+    # BEGIN SQL CHANGES - Stuff that runs in Redshift but not in Snowflake
+    # ======================================================================
+
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: DISTKEY, SORTKEY
     # ----------------------------------------------------------------------
@@ -487,6 +491,22 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
 
     # ----------------------------------------------------------------------
+    # TODO: CREATE TABLE ( LIKE )
+    # ----------------------------------------------------------------------
+    # change CREATE TABLE foo ( LIKE bar ) -> CREATE TABLE foo LIKE bar
+    #
+    # Needs multiline search to find "create table" on one line and "( like" on
+    # the next
+    #
+    # Originally found in etl_f_delighted_survey_responses.py
+    # ----------------------------------------------------------------------
+    # detect_and_print_lines lines, "name?", finder: :find_create_table_foo_paren_like_bar
+
+    # ======================================================================
+    # END SQL CHANGES
+    # ======================================================================
+
+    # ----------------------------------------------------------------------
     # NPM-style Lists
     # ----------------------------------------------------------------------
     # I deeply dislike NPM-style leading-commas. Casey loves them. Be kind to
@@ -530,18 +550,6 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i '/\\bos.chdir\\b/d' #{get_script}"
 
     # ----------------------------------------------------------------------
-    # TODO: CREATE TABLE ( LIKE )
-    # ----------------------------------------------------------------------
-    # change CREATE TABLE foo ( LIKE bar ) -> CREATE TABLE foo LIKE bar
-    #
-    # Needs multiline search to find "create table" on one line and "( like" on
-    # the next
-    #
-    # Originally found in etl_f_delighted_survey_responses.py
-    # ----------------------------------------------------------------------
-    # detect_and_print_lines lines, "name?", finder: :find_create_table_foo_paren_like_bar
-
-    # ----------------------------------------------------------------------
     # Excessive globals in main
     # ----------------------------------------------------------------------
     # Needs custom finder. Count up lines after def main that contain "global"
@@ -580,6 +588,7 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # Long lines
+    # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{220,}$/, disabled: true
 
     # ----------------------------------------------------------------------
