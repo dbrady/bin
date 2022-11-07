@@ -36,6 +36,7 @@ end
 
 branch = branches.first.strip.sub(/^\s*\*\s*/, '')
 puts "WARNING! This will change your warehouse and finance repos to the \033[1;32;40m'#{branch}'\033[0m branch."
+puts "It will also set ~/.ds_script (with set-ds-script) to the appropriate job."
 puts "HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:"
 $stdin.gets
 
