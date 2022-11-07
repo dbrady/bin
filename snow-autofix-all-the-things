@@ -5,7 +5,7 @@ echo `get-ds-script`
 echo "Fix up any whitespace issues if needed first, and make sure your branch is clean."
 
 git-isclean &&
-    echo "(It looks clean from here.)" || (echo "\033[1;37;41Branch is not clean\033[0m" && exit)
+    echo "(It looks clean from here.)" || (echo -e "\033[1;37;41mBranch is not clean\033[0m" && exit)
 
 echo "Hit CTRL-C to abort. Otherwise, hit ENTER to begin."
 read
