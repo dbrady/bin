@@ -25,7 +25,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    !ARGV.include?("go")
+    !["go", "new"].include?(ARGV.first)
   end
 
   # Was this script invoked with --essential?
