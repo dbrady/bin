@@ -196,7 +196,8 @@ If no commands are given, snow will run check.
 
   def replace_at_time_zone(line)
     # AND t.contact_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' >= '2021-01-23'
-    regex = /([\w\.]+) AT TIME ZONE '(.+?)' AT TIME ZONE '([^']+)'/
+    # ,MIN(v.created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS awaiting_delivery_at_local
+    regex = /([()_\w\.]+) AT TIME ZONE '([^']+)' AT TIME ZONE '([^']+)'/
     return unless line =~ regex
 
     line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
