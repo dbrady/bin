@@ -31,4 +31,5 @@ end
 # if file does NOT contain any ATZs, just go ahead and commit it
 puts "Fixed what timezones I could. You can commit this with:"
 puts "git add #{SCRIPT}"
-puts "git commit -m \"Fix timezones in #{JOB}\""
+system "snow-commit-warehouse-timezones"
+#puts "git commit -m \"Fix timezones in #{JOB}\""
