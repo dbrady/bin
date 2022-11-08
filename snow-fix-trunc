@@ -1,0 +1,12 @@
+#!/bin/bash
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo "sed -E -i 's/\bTRUNC\b/TO_DATE/g' $SCRIPT"
+sed -E -i 's/\bTRUNC\b/TO_DATE/g' $SCRIPT
+
+snow-commit-ds-script "Convert TRUNC to TO_DATE in $SCRIPT"

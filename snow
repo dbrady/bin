@@ -507,6 +507,11 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "UNLOAD", /\bUNLOAD\b\s*\(/i, essential: true
 
+    # ----------------------------------------------------------------------
+    # TRUNC
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "TRUNC", /\bTRUNC\b\s*\(/i, essential: true, autofix: "sed -E -i 's/\\bTRUNC\\b/TO_DATE/' #{get_script}"
+
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
