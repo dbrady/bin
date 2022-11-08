@@ -13,6 +13,7 @@ read
 # now run all the snow-fix-* scripts
 snow-fix-pep
 snow-fix-distkeys
+snow-fix-trunc
 snow-fix-chdir
 snow-fix-except-exception
 snow-fix-varchar-sizing
