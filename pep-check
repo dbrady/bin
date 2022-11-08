@@ -1,4 +1,18 @@
 #!/bin/bash
 # E501 is line-length, so
 # autopep8 -d --exit-code --ignore E501 $* && echo "PEP8 OK" || echo '*** PEP8 VIOLATIONS DETECTED ***'
-autopep8 -d --exit-code --ignore E501 $* && echo -e "\033[1;37;42m OK \033[0m" || echo '*** PEP8 VIOLATIONS DETECTED ***'
+
+if [ -z "$1" ]; then
+    SCRIPT=`get-ds-script`
+
+    if [ -z "$SCRIPT" ]; then
+        echo "You must set the SCRIPT variable first."
+        exit -1
+    fi
+    # rewrite line to show SCRIPT as the arg
+    echo -ne "\033[1F# "
+    echo "pep-check $SCRIPT"
+    autopep8 -d --exit-code --ignore E501 $SCRIPT && echo -e "\033[1;37;42m OK \033[0m" || echo '*** PEP8 VIOLATIONS DETECTED ***'
+else
+    autopep8 -d --exit-code --ignore E501 $* && echo -e "\033[1;37;42m OK \033[0m" || echo '*** PEP8 VIOLATIONS DETECTED ***'
+fi
