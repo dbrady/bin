@@ -31,7 +31,7 @@ echo starting... &&
          echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    echo -e "\033[36mclear-ds-script\03300m" &&
+    echo -e "\033[36mclear-ds-script\033[0m" &&
     clear-ds-script &&
 
     echo done.
