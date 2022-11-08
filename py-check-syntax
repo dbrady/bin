@@ -1,4 +1,19 @@
 #!/bin/bash
 # because remembering this is fucking ridiculous.
-echo python -m py_compile $@
-python -m py_compile $@
+
+if [ -z "$1" ]; then
+    SCRIPT=`get-ds-script`
+
+    if [ -z "$SCRIPT" ]; then
+        echo "You must set the SCRIPT variable first."
+        exit -1
+    fi
+    # rewrite line to show SCRIPT as the arg
+    echo -ne "\033[1F# "
+    echo "py-check-syntax $SCRIPT"
+    echo python -m py_compile $SCRIPT
+    python -m py_compile $SCRIPT
+else
+    echo python -m py_compile $@
+    python -m py_compile $@
+fi
