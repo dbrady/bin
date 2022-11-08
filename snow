@@ -271,6 +271,17 @@ If no commands are given, snow will run check.
     # dsetl_nightly reads SCRIPT from rc file; Use dsetl to specify from CLI
     # ----------------------------------------------------------------------
     if ARGV.first == "run"
+      # Check to see if etl_nightly.py has been gorbled by git, which has
+      # happened twice in the last week.
+      #
+      # "If I had a nickel for every time git has trashed etl_nightly.py, I'd
+      # have two nickels - which isn't a lot, but it's weird that it happened
+      # twice."
+      if !system("grep -- '--retry_count' etl_nightly.py")
+        puts "\033[97;41metl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?\033[0m"
+        puts
+      end
+
       command = "dsetl_nightly"
       command += " --skip_upload" if skippable?
       command += " " + ARGV[1..].join(" ")
