@@ -89,6 +89,10 @@ class SnowflakeManglerApp
         end
         if suggest && suggestion = send(suggest, line)
           puts "Replacement: #{suggestion}"
+          sed_replacement = suggestion.gsub(%r|/|, "\\/")
+
+          sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
+          puts "Replace with: #{sed_command}"
         end
       end
     else
@@ -644,7 +648,7 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "Unsize VARCHAR", /varchar\(\d+\)/i, autofix: %Q|ruby -i -n -e 'puts $_.gsub(/varchar\\(\\d+\\)/, "varchar").gsub(/VARCHAR\\(\\d+\\)/, "VARCHAR")' #{get_script}|
 
     # ----------------------------------------------------------------------
-    # similar to
+    # SIMILAR TO
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "SIMILAR TO", /similar to/i
 
