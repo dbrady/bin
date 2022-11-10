@@ -1,0 +1,13 @@
+#!/bin/bash
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo git add $SCRIPT
+git add $SCRIPT
+
+echo git commit -m "Change SIMILAR TO to LIKE ANY in $SCRIPT"
+git commit -m "Change SIMILAR TO to LIKE ANY in $SCRIPT"

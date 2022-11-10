@@ -84,15 +84,15 @@ class SnowflakeManglerApp
       # write a generic version to do what this regex does, and then we can
       # pass in custom finder methods for multiline and trickier stuff
       lines.each.with_index do |line, index|
-        if line =~ regex && (unmatch.nil? || line !~ unmatch)
+        if line =~ regex && (!unmatch || line !~ unmatch)
           puts "%4d: %s" % [index+1, line]
-        end
-        if suggest && suggestion = send(suggest, line)
-          puts "Replacement: #{suggestion}"
-          sed_replacement = suggestion.gsub(%r|/|, "\\/")
+          if suggest && suggestion = send(suggest, line)
+            puts "Replacement: #{suggestion}"
+            sed_replacement = suggestion.gsub(%r|/|, "\\/")
 
-          sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
-          puts "Replace with: #{sed_command}"
+            sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
+            puts "Replace with: #{sed_command}"
+          end
         end
       end
     else
@@ -234,6 +234,29 @@ If no commands are given, snow will run check.
     replacement = "TO_TIMESTAMP(#{replacement})"
 
     line.gsub(regex, replacement)
+  end
+
+  def replace_similar_to_with_like_any(line)
+    regex = %r{'%\((.*|.*)\)%'}
+    return unless line =~ regex
+
+    patterns = $1
+
+    new_patterns = patterns.split(/\|/).map {|pattern| "'%#{pattern}%'" }.join(', ')
+
+    line.sub(%r{similar\s+to\s+'%\((.*|.*)\)%'}i, "LIKE ANY (#{new_patterns})")
+  end
+
+  def replace_greatest_with_nvl(line)
+    regex = %r{GREATEST\(([^)]+)\)}
+    return unless line =~ regex
+
+    args = $1.split(',').map(&:strip)
+
+    new_args = args[1..].map {|arg| "NVL(#{arg}, #{args.first})"}.join(', ')
+    new_args = args.first + "," + new_args
+
+    line.sub(regex, "GREATEST(#{new_args})")
   end
 
   # THE MAIN APP METHOD, LET'S GO
@@ -527,6 +550,25 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "TRUNC", /\bTRUNC\b\s*\(/i, essential: true, autofix: "sed -E -i 's/\\bTRUNC\\b/TO_DATE/' #{get_script}"
 
+    # ----------------------------------------------------------------------
+    # SIMILAR TO
+    #
+    # Similar to uses a regex
+    #
+    # select count(*) from event where eventname SIMILAR TO '%(Ring|Die)%';
+    # --> is the same as -->
+    # select count(*) from event where eventname LIKE '%Ring%' OR eventname LIKE '%Die%';
+    #
+    # Similar to is wildly inefficient. It's not much better than chaining all
+    # the LIKE phrases together.
+    #
+    # For short strings just break them out. For long strings with lots of
+    # replacements, look at LIKE ANY / ILIKE ANY.
+    #
+    # If the pattern is SIMILAR TO '%(a|b|c)%' we can replace it with LIKE ANY ('%a%', '%b%', '%c%')
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_like_any
+
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
@@ -648,11 +690,6 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "Unsize VARCHAR", /varchar\(\d+\)/i, autofix: %Q|ruby -i -n -e 'puts $_.gsub(/varchar\\(\\d+\\)/, "varchar").gsub(/VARCHAR\\(\\d+\\)/, "VARCHAR")' #{get_script}|
 
     # ----------------------------------------------------------------------
-    # SIMILAR TO
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /similar to/i
-
-    # ----------------------------------------------------------------------
     # TODO: no-op reraise in exception
     # marketing_device_traffic.py
     #
@@ -709,7 +746,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # GREATEST/LEAST -> NVL(...)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, essential: true
+    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /\bnvl\(/i, essential: true, suggest: :replace_greatest_with_nvl
 
     # ----------------------------------------------------------------------
     # TABS
