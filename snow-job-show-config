@@ -17,8 +17,36 @@ def get_script
   $get_script
 end
 
+# TODO: Specialize between "overridden by job" and "explicitly specified, but with same value as job_defaults"
+def color_for(in_defaults, in_job)
+  if in_defaults && in_job     # overridden by job
+    :light_green
+  elsif in_defaults && !in_job # use default
+    :light_black
+  elsif !in_defaults && in_job # new field defined by job
+    :light_yellow
+  else                        # json punctuation
+    :light_black
+  end
+end
+
+def show_legend
+  puts "-" * 80
+  puts "Color Legend"
+  [
+    { name: "in defaults only", in_defaults: true, in_job: false },
+    { name: "in job only (new field)", in_defaults: false, in_job: true },
+    { name: "in defaults and in job (may be overridden or unchanged)", in_defaults: true, in_job: true },
+    { name: "punctuation", in_defaults: false, in_job: false },
+  ].each do |item|
+    puts item[:name].send(color_for(item[:in_defaults], item[:in_job]))
+  end
+  puts "-" * 80
+end
+
 opts = Optimist.options do
   opt :defaults, "Include defaults", type: :boolean
+  opt :legend, "Show color legend", type: :boolean
 end
 
 script = (ARGV.first || get_script).sub(%r|/|, '.').sub(/\.py$/, '')
@@ -41,25 +69,18 @@ default_lines = JSON.pretty_generate(default_config).each_line.to_a
 job_lines = JSON.pretty_generate(job_config).each_line.to_a
 merged_lines = JSON.pretty_generate(merged_config).each_line.to_a
 
-puts script
+show_legend if opts[:legend]
+
+# show name of script
+puts opts[:defaults] ? "job_defaults" : script
 
 merged_lines.each do |line|
   # puts "line: #{line.rstrip}"
   key = line[/^\s*"[^"]+?"/]
   key = key.gsub(/"/, '').strip if key
 
-  in_default = key && default_lines.any? { |l| l.include? key }
+  in_defaults = key && default_lines.any? { |l| l.include? key }
   in_job = key && job_lines.any? { |l| l.include? key }
 
-  color = if in_default && in_job     # overridden by job
-            :light_green
-          elsif in_default && !in_job # use default
-            :light_black
-          elsif !in_default && in_job # new field defined by job
-            :light_yellow
-          else                        # json punctuation
-            :light_black
-          end
-
-  puts line.rstrip.send(color).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+  puts line.rstrip.send(color_for(in_defaults, in_job)).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
 end

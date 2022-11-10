@@ -347,14 +347,15 @@ If no commands are given, snow will run check.
     # snow job -> snow-show-job-config
     # ----------------------------------------------------------------------
     if ARGV.first == "job"
-      if ARGV.size == 1
-        run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
-      elsif ARGV[1] == "defaults" || ARGV[1] == "d"
-        run_and_exit! "snow-job-show-config --defaults"
+      if ["defaults", "d", "--defaults"].any? {|arg| ARGV.include?(arg) }
+        argv = ARGV.dup - ["defaults", "d", "--defaults"]
+        run_and_exit! "snow-job-show-config --defaults #{argv[1..].join(' ')}"
       elsif ARGV[1] == "redshift" || ARGV[1] == "r"
         run_and_exit! "snow-job-convert-to-redshift #{get_script}"
       elsif ARGV[1] == "snowflake" || ARGV[1] == "s"
         run_and_exit! "snow-job-convert-to-snowflake #{get_script}"
+      else
+        run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
       end
     end
 
