@@ -1,0 +1,110 @@
+#!/usr/bin/env ruby
+
+# TODO: This is snow-check-boilerplate but I accidentally wrote a generator for
+# the boilerplate. It does not check boilerplate and it does not fix it.
+#
+# snow-check-x must exit with failure if the SCRIPT violates x.
+#
+# snow-correct-x must edit SCRIPT to correct x.
+#
+# snow-commit-warehouse-x must perform a git commit with some equivalent message
+# of "Fix x in SCRIPT". It does NOT git add the script file.
+#
+# snow-fix-x does EVERYTHING. It must edit SCRIPT in place to correct x, git add
+# it, and git commit it with some equivalent of "Fix x in SCRIPT"
+
+# The boilerplate comment has a small amount of magic in it.
+
+# Authors should be a list of contributing developers. Grep the git log for authors.
+
+# The Description must be completed by hand, therefore it should be marked nocommit
+# to prevent accidental premature committing.
+
+# Inputs and Outputs must be verified by hand. Theoretically we could try to
+# look for INSERT INTO and unload_warehouse_s3 and try to suss out the table
+# and/or bucket name, but with some scripts hardconding and others using
+# variables and others using dst_table and s3_prefix in the config file... and
+# still over scripts casually overwriting dst_table... yuck. So le'ts put a
+# verify by hand here.
+
+# Example Usage MIGHT be fine to just put the script name into the command
+# with no other args, but we could maybe extract any and all parser.add_argument
+# statements and jam them in here for convenience.
+
+# Copyright is fun/easy: pull the git log of the file, find its oldest commit,
+# and use that year.
+require 'erb'
+
+def nocommit(reason="")
+  "# NO" + "COMMIT: #{reason}"
+end
+
+filename = ARGV.first
+created_on = `git log #{filename} | grep -E '^Date: ' | tail -n 1 | awk '{ print $3 " " $4 " " $6 }'`.strip
+first_commit_year = created_on.split.last
+
+# Authors is harder than it looks. In theory we do a git log and get the list of
+# authors. In practice we can end up getting dozens of authors, and many of
+# those authors have multiple email addresses. (E.g. sf -> ac -> a)
+#
+# HOWEVER. The boilerplate is no longer strictly required (we are adding them
+# out of courtesy), and its formatting need not be perfect. Let's just use the
+# top 5 authors' names and tag a nocommit for editing in there.
+authors = `git log #{filename} | grep -E '^Author: ' | sort | uniq -c | sort -n | tail -n 5 | sed -E "s/^.*Author: //" | sed -E 's/<.*$//'`.each_line.map(&:strip).uniq.reverse
+
+authors << nocommit("^^^ Prune authors list")
+author_list = ([authors.first] + authors[1..].map {|author| "         #{author}"}).join("\n")
+
+
+
+inputs = [nocommit('Verify inputs'), "There are no inputs for this job"]
+outputs = [nocommit('Verify outputs'), "There are no outputs for this job"]
+
+lines = File.readlines(filename)
+
+if lines.any? {|line| line.include?("s3_") }
+  inputs << nocommit('s3 is mentioned in the job; check for input')
+  outputs << nocommit('s3 is mentioned in the job; check for output')
+end
+
+if lines.any? {|line| line.include?("load_s3_warehouse") }
+  inputs << nocommit('job calls load_s3_warehouse; there is probably an input')
+end
+
+if lines.any? {|line| line.include?("unload_warehouse_s3") }
+  outputs << nocommit('job calls unload_warehouse_s3; there is probably an output')
+end
+
+inputs = inputs.map {|input| "    #{input}" }.join("\n")
+outputs = outputs.map {|output| "    #{output}" }.join("\n")
+
+puts "filename: #{filename.inspect}"
+puts "created_on: #{created_on.inspect}"
+puts "first_commit_year: #{first_commit_year.inspect}"
+
+
+
+template = ERB.new(DATA.read)
+puts template.result(binding)
+
+__END__
+"""
+Authors: <%= author_list %>
+Created Date: <%= created_on %>
+Status: [Production]
+
+Description:
+    <%= nocommit('Describe this please') %>
+
+Inputs:
+<%= inputs %>
+
+Outputs:
+<%= outputs %>
+
+Example Usage:
+    python etl_nightly.py --job <%= filename %>
+
+Copyright Acima Credit (c) <%= first_commit_year %>
+All rights reserved.
+"""
