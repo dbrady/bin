@@ -10,7 +10,6 @@ class SnowflakeManglerApp
   end
 
   def set_script(script)
-    puts "set_script(#{script})"
     @get_script = script
   end
 
@@ -87,11 +86,13 @@ class SnowflakeManglerApp
         if line =~ regex && (!unmatch || line !~ unmatch)
           puts "%4d: %s" % [index+1, line]
           if suggest && suggestion = send(suggest, line)
-            puts "Replacement: #{suggestion}"
+            puts "Replacement:"
+            puts line.red
+            puts suggestion.green
             sed_replacement = suggestion.gsub(%r|/|, "\\/")
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
-            puts "Replace with: #{sed_command}"
+            puts sed_command.cyan
           end
         end
       end
@@ -247,14 +248,13 @@ If no commands are given, snow will run check.
     line.sub(%r{similar\s+to\s+'%\((.*|.*)\)%'}i, "LIKE ANY (#{new_patterns})")
   end
 
-  def replace_greatest_with_nvl(line)
+  def replace_greatest_with_coalesce(line)
     regex = %r{GREATEST\(([^)]+)\)}
     return unless line =~ regex
 
     args = $1.split(',').map(&:strip)
 
-    new_args = args[1..].map {|arg| "NVL(#{arg}, #{args.first})"}.join(', ')
-    new_args = args.first + "," + new_args
+    new_args = args.map {|arg| "COALESCE(#{arg}, '1970-01-01')"}.join(', ')
 
     line.sub(regex, "GREATEST(#{new_args})")
   end
@@ -304,8 +304,8 @@ If no commands are given, snow will run check.
       # "If I had a nickel for every time git has trashed etl_nightly.py, I'd
       # have two nickels - which isn't a lot, but it's weird that it happened
       # twice."
-      if !system("grep -- '--retry_count' etl_nightly.py")
-        puts "\033[97;41metl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?\033[0m"
+      if !system("grep -- '--retry_count' etl_nightly.py > /dev/null")
+        puts "etl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?".bold.white.on_red
         puts
       end
 
@@ -424,6 +424,9 @@ If no commands are given, snow will run check.
     if !essential?
       puts section_title("PEP8 CONFORMANCE")
       system "pep-check #{get_script}"
+
+      # puts section_title("BOILERPLATE DOCUMENTATION")
+      # system "snow-check-boilerplate #{get_script}"
     end
 
     # ----------------------------------------------------------------------
@@ -745,9 +748,9 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "ENCODE", /\bencode\s+\S+/i, essential: true
 
     # ----------------------------------------------------------------------
-    # GREATEST/LEAST -> NVL(...)
+    # GREATEST/LEAST -> COALESCE(...)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /\bnvl\(/i, essential: true, suggest: :replace_greatest_with_nvl
+    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /greatest\b.*\bcoalesce\(/i, essential: true, suggest: :replace_greatest_with_coalesce
 
     # ----------------------------------------------------------------------
     # TABS
