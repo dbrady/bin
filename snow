@@ -444,7 +444,7 @@ If no commands are given, snow will run check.
     # Illegal Snowflake Syntax: DISTKEY, SORTKEY
     # ----------------------------------------------------------------------
     # DISTKEY, SORTKEY: just remove, it's fine
-    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/\\b(DIS|SOR)TKEY\\b/d' #{get_script}"
+    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/^.\\s*\\b(DIS|SOR)TKEY\\b .*$/d' #{get_script}"
     # if no conflicts found, this can be autofixed with sed -E -i '/\b(DIS|SOR)TKEY\b/d
 
     # ----------------------------------------------------------------------
