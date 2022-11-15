@@ -139,3 +139,14 @@ puts "1. Copy this to the clipboard"
 puts "2. Update JIRA ticket with PR info"
 puts "3. Update PRs with JIRA tickets"
 puts "4. Paste this blurb to Zack (CMD-v CMD-SHIFT-f)"
+
+# If ~/review-backlog.txt does NOT contain the jira ticket number, write the blurb to that file.
+if !system("grep #{TICKET_ID} ~/review-backlog.txt > /dev/null")
+  File.open(File.expand_path("~/review-backlog.txt"), "a") do |file|
+    file.puts
+    file.puts blurb
+  end
+  puts "Blurb appended to ~/review-backlog.txt."
+else
+  puts "Blurb is already present in ~/review-backlog.txt; not appending."
+end
