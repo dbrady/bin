@@ -237,17 +237,6 @@ If no commands are given, snow will run check.
     line.gsub(regex, replacement)
   end
 
-  def replace_similar_to_with_like_any(line)
-    regex = %r{'%\((.*|.*)\)%'}
-    return unless line =~ regex
-
-    patterns = $1
-
-    new_patterns = patterns.split(/\|/).map {|pattern| "'%#{pattern}%'" }.join(', ')
-
-    line.sub(%r{similar\s+to\s+'%\((.*|.*)\)%'}i, "LIKE ANY (#{new_patterns})")
-  end
-
   def replace_greatest_with_coalesce(line)
     regex = %r{GREATEST\(([^)]+)\)}
     return unless line =~ regex
@@ -258,6 +247,17 @@ If no commands are given, snow will run check.
 
     line.sub(regex, "GREATEST(#{new_args})")
   end
+
+  def replace_similar_to_with_rlike(line)
+    regex = %r{\b(SIMILAR\s+TO)\s+(.+)}
+    return unless line =~ regex
+
+    line
+      .sub(regex, "RLIKE(#{$2})")
+      .sub(%r{'%\(?}, "'.*(")
+      .sub(%r{\)?%'}, ").*'")
+  end
+
 
   # THE MAIN APP METHOD, LET'S GO
   def run
@@ -555,23 +555,12 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "TRUNC", /\bTRUNC\b\s*\(/i, essential: true, autofix: "sed -E -i 's/\\bTRUNC\\b/TO_DATE/' #{get_script}"
 
     # ----------------------------------------------------------------------
-    # SIMILAR TO
+    # SIMILAR TO -> RLIKE
     #
-    # Similar to uses a regex
-    #
-    # select count(*) from event where eventname SIMILAR TO '%(Ring|Die)%';
-    # --> is the same as -->
-    # select count(*) from event where eventname LIKE '%Ring%' OR eventname LIKE '%Die%';
-    #
-    # Similar to is wildly inefficient. It's not much better than chaining all
-    # the LIKE phrases together.
-    #
-    # For short strings just break them out. For long strings with lots of
-    # replacements, look at LIKE ANY / ILIKE ANY.
-    #
-    # If the pattern is SIMILAR TO '%(a|b|c)%' we can replace it with LIKE ANY ('%a%', '%b%', '%c%')
+    # AWS: <column> SIMILAR TO <regex>
+    # SNOW: RLIKE(<column>, <regex>)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_like_any
+    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
 
     # ======================================================================
     # END SQL CHANGES
