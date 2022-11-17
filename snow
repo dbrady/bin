@@ -24,7 +24,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    !["go", "new"].include?(ARGV.first)
+    !["go", "new", "master", "main"].include?(ARGV.first)
   end
 
   # Was this script invoked with --essential?
@@ -559,6 +559,24 @@ If no commands are given, snow will run check.
     #
     # AWS: <column> SIMILAR TO <regex>
     # SNOW: RLIKE(<column>, <regex>)
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
+
+    # ----------------------------------------------------------------------
+    # JSON_EXTRACT_* functions
+    #
+    # JSON_EXTRACT_PATH_TEXT - Path may need tweaking but should port fine as
+    # long as it only has 2 or 3 arguments the third argument, if present, is
+    # TRUE.
+    #
+    # JSON_EXTRACT_ARRAY_ELEMENT_TEXT - This can be expressed as a
+    # JSON_EXTRACT_PATH_TEXT call:
+    #
+    # JEAET('json_array', 3) -> JEPT('json_array', '[3]')
+    detect_and_print_lines lines, "JSON MANIPULATION FUNCTIONS",
+                           %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE}, essential: true
+
+
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
 
