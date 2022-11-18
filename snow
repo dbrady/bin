@@ -49,6 +49,10 @@ class SnowflakeManglerApp
     puts " OK ".bold.light_white.on_green
   end
 
+  # ======================================================================
+  # DETECTORS
+  # ======================================================================
+
   # This is turning into a bit of a swiss army kitchen sink...
   # lines:     array of lines to check
   # title:     section title to print if matches are found
@@ -152,7 +156,52 @@ class SnowflakeManglerApp
     end
   end
 
-  def usage
+  def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
+    tables = %w(
+      d_customer_details
+      d_customer_details_quickapply
+      d_experian_key_factors
+      d_merchant_categories
+      d_merchant_locations_details
+      d_team_list_sales_gsheet
+      f_accrual_rent
+      f_adverse_actions_explanations
+      f_adverse_actions_explanations_uw
+      f_applicant_credit_reports
+      f_collections_chargeoffs
+      f_financial_transactions
+      f_leases
+      f_leases_denials
+      f_lms_financial_transactions
+      f_marketingcloud_urls
+      f_merchant_receivables
+      f_salesrep_volumes
+      mp_lease_snapshots
+      s_transaction_summary
+    )
+    regex = /(#{tables.join('|')})/
+
+    puts section_title "Potentially Unmigrated Tables"
+    if lines.any? {|line| line =~ regex }
+      lines.each.with_index do |line, index|
+        problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
+        next if problem_tables.size.zero?
+
+        problem_tables.each do |table|
+          line = line.gsub(/#{table}/, table.yellow)
+        end
+        puts "%4d: %s" % [index+1, line]
+      end
+    else
+      log_ok
+    end
+  end
+
+  # ======================================================================
+  # END DETECTORS
+  # ======================================================================
+
+ def usage
     puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing all the time. Sorry not sorry, you're welcome."
     puts "Try doing this, and maybe put it in .bashrc while you're at it:"
     puts "export SCRIPT=#{ARGV.join(' ')}"
@@ -728,9 +777,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # Hidden blockers (depends on an unmigrated table)
     # ----------------------------------------------------------------------
-    ["d_team_list_sales_gsheet"].each do |table|
-      detect_and_print_lines lines, "HIDDEN TABLE DEPENDENCY: #{table}", /#{table}/i, essential: true
-    end
+    detect_potentially_unmigrated_tables lines, essential: true
 
     # ----------------------------------------------------------------------
     # main() bootstrapper
