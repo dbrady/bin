@@ -158,7 +158,6 @@ class SnowflakeManglerApp
 
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
     tables = %w(
-      d_customer_details
       d_customer_details_quickapply
       d_experian_key_factors
       d_merchant_categories
@@ -432,7 +431,7 @@ If no commands are given, snow will run check.
     # TODO: snow -w, --work emits only the detectors that fail, so you can see
     # remaining work
     #
-    # TODO: port this to Optimist. The arg processing is killing me here
+    # TODO: port this to Optimist*. The arg processing is killing me here
     # ----------------------------------------------------------------------
 
     if ARGV.first == "check"
@@ -623,7 +622,9 @@ If no commands are given, snow will run check.
     #
     # JEAET('json_array', 3) -> JEPT('json_array', '[3]')
     detect_and_print_lines lines, "JSON MANIPULATION FUNCTIONS",
-                           %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE}, essential: true
+                           %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE},
+                           essential: true,
+                           unmatch: /JSON_EXTRACT_PATH_TEXT\([^,]+,[^,]+\)/ # JEPT/2 good; JEPT/3 bad.
 
 
     # ----------------------------------------------------------------------
