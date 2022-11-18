@@ -1,12 +1,29 @@
 #!/usr/bin/env ruby
 # select-random - take a list of things from stdin and emit one at random
 
-pic=''
+# This uses the old Knuth trick of selecting a random item from a list
+# of unknown length. Basically you pick up 1 item and say "I have a 1
+# in 1 chance of picking this item." Now you pick up a second item and
+# say "I have a 1 in 2 chance of choosing this one instead." Then 1 in
+# 3 for the third one, 1 in 4, and so on. When you pick up the nth
+# item, you have a 1 in n chance of choosing that item over everything
+# in the list up til now.
 
+# pic=''
+#
 # $stdin.each_line.with_index do |line, index|
 #   pic=line if rand(index+1).zero?
 # end
-
+#
 # puts pic
 
-puts $stdin.each_line.with_index.to_a.inject {|best, line| best_line = best[0]; index = line[1]; rand(index+1).zero? ? line : best}[0]
+# Or as a one-liner,
+#
+# puts $stdin.each_line.with_index.to_a.inject {|best, line| best_line = best[0]; index = line[1]; rand(index+1).zero? ? line : best}[0]
+
+
+# OTOH, it's 2022. There's enough memory on this thing to make an
+# array and sample it even if I was piping my whole file system into
+# it.
+
+puts $stdin.each_line.to_a.sample
