@@ -31,7 +31,7 @@ if Dir.pwd !~ %r|data_services/etl/warehouse$|
   exit -1
 end
 
-if !branch_name.include?(job_name)
+if !branch_name.include?(job_name) && !(ARGV.include?("-f") || ARGV.include?("--force"))
   puts "*** SNOWFLAKE WARNING: BRANCH DOES NOT CONTAIN JOB NAME ***".bold.light_white.on_red
   puts "job_name: #{job_name}"
   puts "branch_name: #{branch_name}"
@@ -39,6 +39,9 @@ if !branch_name.include?(job_name)
   puts "If you are sure you meant to do this, fire it off manually with"
   puts "python etl_nightly.py --retry_count 1 --job #{get_script}"
   exit -1
+else
+  puts "*** SNOWFLAKE WARNING: BRANCH DOES NOT CONTAIN JOB NAME *** (Overridden by --force)".light_black
+  puts
 end
 
 # if branch_name != finance_branch_name

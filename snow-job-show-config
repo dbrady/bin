@@ -72,7 +72,8 @@ merged_lines = JSON.pretty_generate(merged_config).each_line.to_a
 show_legend if opts[:legend]
 
 # show name of script
-puts opts[:defaults] ? "job_defaults" : script
+job_name = opts[:defaults] ? "job_defaults" : script
+puts job_name.bold.magenta
 
 merged_lines.each do |line|
   # puts "line: #{line.rstrip}"

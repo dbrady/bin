@@ -24,7 +24,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    !["go", "new"].include?(ARGV.first)
+    !["go", "new", "master", "main"].include?(ARGV.first)
   end
 
   # Was this script invoked with --essential?
@@ -237,17 +237,6 @@ If no commands are given, snow will run check.
     line.gsub(regex, replacement)
   end
 
-  def replace_similar_to_with_like_any(line)
-    regex = %r{'%\((.*|.*)\)%'}
-    return unless line =~ regex
-
-    patterns = $1
-
-    new_patterns = patterns.split(/\|/).map {|pattern| "'%#{pattern}%'" }.join(', ')
-
-    line.sub(%r{similar\s+to\s+'%\((.*|.*)\)%'}i, "LIKE ANY (#{new_patterns})")
-  end
-
   def replace_greatest_with_coalesce(line)
     regex = %r{GREATEST\(([^)]+)\)}
     return unless line =~ regex
@@ -258,6 +247,17 @@ If no commands are given, snow will run check.
 
     line.sub(regex, "GREATEST(#{new_args})")
   end
+
+  def replace_similar_to_with_rlike(line)
+    regex = %r{\b(SIMILAR\s+TO)\s+(.+)}
+    return unless line =~ regex
+
+    line
+      .sub(regex, "RLIKE(#{$2})")
+      .sub(%r{'%\(?}, "'.*(")
+      .sub(%r{\)?%'}, ").*'")
+  end
+
 
   # THE MAIN APP METHOD, LET'S GO
   def run
@@ -444,7 +444,7 @@ If no commands are given, snow will run check.
     # Illegal Snowflake Syntax: DISTKEY, SORTKEY
     # ----------------------------------------------------------------------
     # DISTKEY, SORTKEY: just remove, it's fine
-    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/\\b(DIS|SOR)TKEY\\b/d' #{get_script}"
+    detect_and_print_lines lines, "DISTKEY / SORTKEYS", /\b(DIS|SOR)TKEY\b/i, essential: true, autofix: "sed -E -i '/^.\\s*\\b(DIS|SOR)TKEY\\b .*$/d' #{get_script}"
     # if no conflicts found, this can be autofixed with sed -E -i '/\b(DIS|SOR)TKEY\b/d
 
     # ----------------------------------------------------------------------
@@ -555,23 +555,30 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "TRUNC", /\bTRUNC\b\s*\(/i, essential: true, autofix: "sed -E -i 's/\\bTRUNC\\b/TO_DATE/' #{get_script}"
 
     # ----------------------------------------------------------------------
-    # SIMILAR TO
+    # SIMILAR TO -> RLIKE
     #
-    # Similar to uses a regex
-    #
-    # select count(*) from event where eventname SIMILAR TO '%(Ring|Die)%';
-    # --> is the same as -->
-    # select count(*) from event where eventname LIKE '%Ring%' OR eventname LIKE '%Die%';
-    #
-    # Similar to is wildly inefficient. It's not much better than chaining all
-    # the LIKE phrases together.
-    #
-    # For short strings just break them out. For long strings with lots of
-    # replacements, look at LIKE ANY / ILIKE ANY.
-    #
-    # If the pattern is SIMILAR TO '%(a|b|c)%' we can replace it with LIKE ANY ('%a%', '%b%', '%c%')
+    # AWS: <column> SIMILAR TO <regex>
+    # SNOW: RLIKE(<column>, <regex>)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_like_any
+    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
+
+    # ----------------------------------------------------------------------
+    # JSON_EXTRACT_* functions
+    #
+    # JSON_EXTRACT_PATH_TEXT - Path may need tweaking but should port fine as
+    # long as it only has 2 or 3 arguments the third argument, if present, is
+    # TRUE.
+    #
+    # JSON_EXTRACT_ARRAY_ELEMENT_TEXT - This can be expressed as a
+    # JSON_EXTRACT_PATH_TEXT call:
+    #
+    # JEAET('json_array', 3) -> JEPT('json_array', '[3]')
+    detect_and_print_lines lines, "JSON MANIPULATION FUNCTIONS",
+                           %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE}, essential: true
+
+
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
 
     # ======================================================================
     # END SQL CHANGES

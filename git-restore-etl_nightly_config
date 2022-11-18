@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "git restore config/etl_nightly_config.json"
+git restore config/etl_nightly_config.json
