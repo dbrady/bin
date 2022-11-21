@@ -1,2 +1,2 @@
 #!/bin/bash
-snow-commit-ds-script $*
+snow-commit-ds-script "$*"
