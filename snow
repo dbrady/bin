@@ -256,10 +256,14 @@ If no commands are given, snow will run check.
   def replace_at_time_zone(line)
     # AND t.contact_start AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' >= '2021-01-23'
     # ,MIN(v.created_at) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS awaiting_delivery_at_local
-    regex = /([()_\w\.]+) AT TIME ZONE '([^']+)' AT TIME ZONE '([^']+)'/
+    #
+    # in a subselect with double quotes and doubled single quotes
+    # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
+    regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/
+    # regex = /([()_\w\.]+) AT TIME ZONE (.+?) AT TIME ZONE (.+?)/
     return unless line =~ regex
 
-    line.gsub(regex, "CONVERT_TIMEZONE('#{$2}', '#{$3}', #{$1})")
+    line.gsub(regex, "#{$1}CONVERT_TIMEZONE(#{$3}, #{$4}, #{$2})")
   end
 
   # This doesn't get all the cases, but it does get the ones that are inline.
@@ -482,7 +486,8 @@ If no commands are given, snow will run check.
     # that whenever we run the job we must include --skip_upload
     # ----------------------------------------------------------------------
     # check for --skip_upload
-    detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
+    # 2022-11-21 - removing; snow run picks this up automatically
+    # detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
 
     # ======================================================================
     # BEGIN SQL CHANGES - Stuff that runs in Redshift but not in Snowflake
