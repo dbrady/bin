@@ -1,5 +1,5 @@
 #!/bin/bash
 
-script_to_run=$(cd ~/bin && ls snow-commit-warehouse-$1* | selecta)
+script_to_run=$(cd ~/bin && ls snow-commit-warehouse-*$1* | selecta)
 
 $script_to_run
