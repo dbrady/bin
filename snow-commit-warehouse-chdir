@@ -6,4 +6,4 @@ if [ -z "$SCRIPT" ]; then
     exit -1
 fi
 
-snow-commit-ds-script "Remove unnecessary os.chdir in $SCRIPT"
+snow-commit-ds-script "Remove unnecessary os.chdir"

@@ -9,4 +9,4 @@ fi
 echo "sed -E -i '/\b(DIS|SOR)TKEY\b/d' $SCRIPT"
 sed -E -i '/\b(DIS|SOR)TKEY\b/d' $SCRIPT
 
-snow-commit-ds-script "Remove distkey/sortkey in $SCRIPT"
+snow-commit-ds-script "Remove distkey/sortkey"

@@ -9,4 +9,4 @@ fi
 echo "sed -E -i 's/\bTRUNC\b/TO_DATE/g' $SCRIPT"
 sed -E -i 's/\bTRUNC\b/TO_DATE/g' $SCRIPT
 
-snow-commit-ds-script "Convert TRUNC to TO_DATE in $SCRIPT"
+snow-commit-ds-script "Convert TRUNC to TO_DATE"

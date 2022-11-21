@@ -10,4 +10,4 @@ if [ -z "$SCRIPT" ]; then
     exit -1
 fi
 
-snow-commit-ds-script "Fix whitespace in $SCRIPT"
+snow-commit-ds-script "Fix whitespace"
