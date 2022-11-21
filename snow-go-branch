@@ -64,7 +64,7 @@ end
 # set-ds-script. If the current-branch is feature/DS-8888/path.to.etl_f_job it
 # should know the filename is path/to/etl_f_job.py, and check that that file
 # exists.
-filename = branch.split(/\//).last.gsub(/\./, '/') + ".py"
+filename = branch.sub(%r|^feature/DS-\d+/|,'').sub(/\.\d+$/, '').gsub(/\./, '/') + ".py"
 
 if File.exists?(File.join(warehouse_path, filename))
   command = "set-ds-script #{filename}"
