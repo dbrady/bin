@@ -16,7 +16,7 @@ commit_message += " in #{script}" unless commit_message&.end_with?("in #{script}
 
 def command(cmd)
   puts "\033[36m#{cmd}\033[0m"
-  # system cmd
+  system cmd
 end
 
 command "git add #{script}"
