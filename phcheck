@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# because I keep forgetting the damn thing, and need a reason to memorize it
+
+# Phone number is in a .rc file because I don't want my PHI in my public GH
+# repo... heh.  (Don't just hash it like emails in my bash prompt; there are
+# only 10B possible phone numbers. Too easy to force.)
+rcfilename = File.expand_path("~/.phcheck-my-number")
+if !File.exists?(rcfilename) then
+   puts "Could not find #{rcfilename}, you could probably write that."
+   puts "echo '<phonenumber>' > #{rcfilename}"
+   exit 1
+end
+
+print "Hey I just met you and this is crazy, but can I get your number: "
+number=gets.strip.gsub(/-/, '')
+
+correct_number = File.read(rcfilename).strip.gsub(/-/, '')
+
+if number == correct_number
+    puts "\033[32mYay! You know it!\033[0m"
+else
+  puts "\033[31mBoo, hiss. Get better, bro.\033[0m"
+end
