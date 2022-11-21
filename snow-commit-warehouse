@@ -1,13 +1,2 @@
 #!/bin/bash
-SCRIPT=`get-ds-script`
-
-if [ -z "$SCRIPT" ]; then
-    echo "You must set the SCRIPT variable first; run set-ds-script <path/to/job.py>"
-    exit -1
-fi
-
-echo git add $SCRIPT
-git add $SCRIPT
-
-echo git commit -m "Port SQL to Snowflake in $SCRIPT"
-git commit -m "Port SQL to Snowflake in $SCRIPT"
+snow-commit-ds-script $*
