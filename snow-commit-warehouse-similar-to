@@ -1,2 +1,2 @@
 #!/bin/bash
-snow-commit-ds-script "Change SIMILAR TO to LIKE ANY"
+snow-commit-ds-script "Change SIMILAR TO to RLIKE"
