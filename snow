@@ -162,7 +162,6 @@ class SnowflakeManglerApp
       d_experian_key_factors
       d_merchant_categories
       d_merchant_locations_details
-      d_team_list_sales_gsheet
       f_accrual_rent
       f_adverse_actions_explanations
       f_adverse_actions_explanations_uw
@@ -174,7 +173,6 @@ class SnowflakeManglerApp
       f_lms_financial_transactions
       f_marketingcloud_urls
       f_merchant_receivables
-      f_salesrep_volumes
       mp_lease_snapshots
       s_transaction_summary
     )
@@ -259,7 +257,7 @@ If no commands are given, snow will run check.
     #
     # in a subselect with double quotes and doubled single quotes
     # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
-    regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/
+    regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
     # regex = /([()_\w\.]+) AT TIME ZONE (.+?) AT TIME ZONE (.+?)/
     return unless line =~ regex
 
@@ -639,7 +637,13 @@ If no commands are given, snow will run check.
 
 
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
+    # Doubled Quotes
+    # Check these by hand - python stmts like var = '' are fine but embedded
+    # SQL with an extra escaping level makes snowflake sad.
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''/
+
+
 
     # ======================================================================
     # END SQL CHANGES
