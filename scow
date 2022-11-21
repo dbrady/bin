@@ -1,4 +1,7 @@
 #!/bin/bash
+# Because I can't be bothered to keep track of all the snow-commit-warehouse-x scripts
+# scow      -> select from all commit scripts
+# scow part -> select from snow-commit-warehouse-*part*
 
 script_to_run=$(cd ~/bin && ls snow-commit-warehouse-*$1* | selecta)
 
