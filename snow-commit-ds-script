@@ -1,15 +1,23 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 # snow-commit-ds-script "<commit_message>" - add and commit current ds script with message
-SCRIPT=`get-ds-script`
-COMMIT_MESSAGE=$1
+# appends "in  $SCRIPT" if it isn't already there
+script=`get-ds-script`.strip
+commit_message=ARGV.first
 
-if [ -z "$SCRIPT" ]; then
-    echo "You must set the SCRIPT variable first."
+puts ARGV.inspect
+puts commit_message
+
+if script.empty?
+    puts "You must set the SCRIPT variable first."
     exit -1
-fi
+end
 
-echo -e "\033[36mgit add $SCRIPT\033[0m"
-git add $SCRIPT
+commit_message += " in #{script}" unless commit_message&.end_with?("in #{script}")
 
-echo -e "\033[36mgit commit -m \"$COMMIT_MESSAGE\"\033[0m"
-git commit -m "$COMMIT_MESSAGE"
+def command(cmd)
+  puts "\033[36m#{cmd}\033[0m"
+  # system cmd
+end
+
+command "git add #{script}"
+command "git commit -m \"#{commit_message}\""
