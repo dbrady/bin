@@ -613,6 +613,12 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # JSON_EXTRACT_* functions
     #
+    # 2022-11-21: Per Zack, consider replacing with PARSE_JSON and handling the
+    # resulting variant instead. DS-1746 came out much cleaner that way:
+    #
+    # Strict Replacement: JSON_EXTRACT_PATH_TEXT(json, '[' || level || ']')
+    # Cleaner Replacement: PARSE_JSON(json)[level]
+    #
     # JSON_EXTRACT_PATH_TEXT - Path may need tweaking but should port fine as
     # long as it only has 2 or 3 arguments the third argument, if present, is
     # TRUE.
