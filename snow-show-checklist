@@ -23,7 +23,7 @@ puts <<CHECKLIST
    #{i}.1. Ensure you are merging into sf-moveover, NOT MASTER
    #{i}.2. Ensure both PRs have no extra commits
    #{i}.3. Inspect the file changes on GitHub
-   #{i}.4. Problematic tables? Compare results snowflake <-> redshift
+   #{i}.4. Problematic tables? Compare results snowflake<->redshift
 #{i=i+1}. Make links: snow link <warehouse> <finance> [<pkg>]
 #{i=i+1}. Move JIRA ticket to IN REVIEW
 #{i=i+1}. DELEGATE: Notify Zack by sending him links
