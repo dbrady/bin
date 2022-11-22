@@ -157,40 +157,36 @@ class SnowflakeManglerApp
   end
 
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
-    tables = %w(
-      d_customer_details_quickapply
-      d_experian_key_factors
-      d_merchant_categories
-      d_merchant_locations_details
+    diy_tables = %w(
+       d_customer_details_quickapply
+       f_applicant_credit_reports
+       f_collections_chargeoffs
+    )
+
+    zack_casey_tables = %w(
       f_accrual_rent
-      f_adverse_actions_explanations
-      f_adverse_actions_explanations_uw
-      f_applicant_credit_reports
-      f_collections_chargeoffs
+      f_accrual_rent
       f_financial_transactions
-      f_leases
-      f_leases_denials
       f_lms_financial_transactions
-      f_marketingcloud_urls
-      f_merchant_receivables
-      mp_lease_snapshots
       s_transaction_summary
     )
-    regex = /(#{tables.join('|')})/
+    {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
+      regex = /(#{tables.join('|')})/
 
-    puts section_title "Potentially Unmigrated Tables"
-    if lines.any? {|line| line =~ regex }
-      lines.each.with_index do |line, index|
-        problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
-        next if problem_tables.size.zero?
+      puts section_title "Potentially Unmigrated Tables (#{color})"
+      if lines.any? {|line| line =~ regex }
+        lines.each.with_index do |line, index|
+          problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
+          next if problem_tables.size.zero?
 
-        problem_tables.each do |table|
-          line = line.gsub(/#{table}/, table.yellow)
+          problem_tables.each do |table|
+            line = line.gsub(/#{table}/, table.send(color))
+          end
+          puts "%4d: %s" % [index+1, line]
         end
-        puts "%4d: %s" % [index+1, line]
+      else
+        log_ok
       end
-    else
-      log_ok
     end
   end
 
