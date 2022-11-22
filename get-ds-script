@@ -1,6 +1,12 @@
 #!/bin/bash
 # get-ds-script [-f] - return scriptfile (mostly just a helper to remind me where I parked $SCRIPTFILE)
 # -f = show full path
+
+if [ `uname -s` == 'Darwin' ]; then
+    echo -e "\033[33mYou are in OSX. DS script only makes sense from inside Docker. Aborting.\033[0m"
+    exit -1
+fi
+
 SCRIPTFILE=~/.ds_script
 
 if [ -e $SCRIPTFILE ]; then
