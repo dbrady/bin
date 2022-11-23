@@ -2,10 +2,7 @@
 # snow-commit-ds-script "<commit_message>" - add and commit current ds script with message
 # appends "in  $SCRIPT" if it isn't already there
 script=`get-ds-script`.strip
-commit_message=ARGV.first
-
-puts ARGV.inspect
-puts commit_message
+commit_message=ARGV * ' '
 
 if script.empty?
     puts "You must set the SCRIPT variable first."
