@@ -1,0 +1,76 @@
+#!/usr/bin/env python
+
+# check_mcloud_tables - Checks the list of known-problematic tables to see if
+# they exist in Snowflake. writes worky_tables.log, because DB clutters up
+# stdout with extraneous logging.
+from datetime import datetime
+import csv
+import sys
+import traceback
+
+from dataservices import db
+
+tables = [
+    "d_customer_details", # Done
+    "d_customer_details_quickapply", # Anyone can do (Done)
+    "d_experian_key_factors", # Done
+    "d_merchant_categories", # Done
+    "d_merchant_locations_details", # Zack or Casey
+    "d_team_list_sales_gsheet", # Anyone can do (Done)
+    "f_accrual_rent", # Zack or Casey
+    "f_adverse_actions_explanations", # Zack or Casey
+    "f_adverse_actions_explanations_uw", # Zack or Casey
+    "f_applicant_credit_reports", # Anyone can do (Done)
+    "f_collections_chargeoffs", # Anyone can do (Done)
+    "f_financial_transactions", # Zack or Casey
+    "f_leases", # Zack or Casey
+    "f_leases_denials", # Zack or Casey
+    "f_lms_financial_transactions", # Zack or Casey
+    "f_marketingcloud_urls", # Done
+    "f_merchant_receivables", # Anyone can do (Done)
+    "f_salesrep_volumes", # Anyone can do (Done)
+    "mp_lease_snapshots", # Done (Done)
+    "s_transaction_summary" # Zack or Casey
+]
+tables.sort()
+
+# tables = [
+#       'd_merchant_locations_details',
+#       'f_accrual_rent',
+#       'f_adverse_actions_explanations',
+#       'f_adverse_actions_explanations_uw',
+#       'f_financial_transactions',
+#       'f_leases',
+#       'f_leases_denials',
+#       'f_lms_financial_transactions',
+#       'f_marketingcloud_urls',
+#       'mp_lease_snapshots',
+#       's_transaction_summary'
+#         ]
+
+
+dbo = db.DB('snowflake')
+conn = dbo.connect('snowflake')
+timestamp = datetime.now().strftime("%F.%H%M%S")
+filename = f"worky_tables.{timestamp}.log"
+filename2 = f"worky_tables.log"
+
+with open(filename, "w") as file:
+    with open(filename2, "w") as file2:
+        for table in tables:
+            try:
+                query = f"SELECT COUNT(*) FROM {table}"
+                results = dbo.query(query)
+                print(results)
+                print(f"\033[32mHEY IT LOOKS LIKE TABLE {table} HAS BEEN COPIED OVER!\033[0m")
+                file.write(f"\033[32mWorky: {table}\033[0m\n")
+                file2.write(f"Worky: {table}\n")
+
+            except Exception as e:
+                print(f"Looks like table {table} doesn't exist.")
+                file.write(f"\033[31mSadge: {table}\033[0m\n")
+                file2.write(f"Sadge: {table}\n")
+
+print(f"Wrote {filename}")
+file.close()
+dbo.close()

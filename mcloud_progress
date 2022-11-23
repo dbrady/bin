@@ -1,0 +1,59 @@
+#!/usr/bin/env ruby
+require "json"
+
+
+puts '--'
+puts "All mcloud files:"
+
+mcloud_files = Dir.glob("etl_mcloud_*.py")
+puts mcloud_files
+
+
+puts '--'
+puts "Problem tables:"
+
+problem_tables = `grep Sadge worky_tables.log | sed -e 's/Sadge: //'`.each_line.map(&:strip)
+puts problem_tables
+
+
+puts '--'
+puts "Problematic Files:"
+problematic_files = []
+files_by_table = {}
+
+problem_tables.each do |table|
+  files = `grep -l #{table} etl_mcloud_*`.each_line.map(&:strip).to_a
+  files_by_table[table] = files.dup
+  problematic_files += files
+end
+
+problematic_files = problematic_files.sort.uniq
+
+puts problematic_files
+
+
+puts '--'
+puts "Less Problematic Files:"
+candidate_files = mcloud_files - problematic_files
+puts candidate_files
+
+
+puts '--'
+puts "Files that still need doing:"
+# How many of these are already done?
+# sure hope you're on the main snowflake branch or this will make less sense
+json = JSON.parse(File.read("etl_nightly_config.json"))
+job_names = candidate_files.map {|file| file.sub(/\.py$/, '') }.first(3)
+
+jobs_still_on_redshift = job_names.find_all {|job_name| json["jobs"][job_name].values.any? {|value| value == "redshift" }}
+ jobs_not_on_snowflake = job_names.find_all {|job_name| json["jobs"][job_name].values.all? {|value| value != "snowflake" }}
+
+jobs_that_need_doing = (jobs_still_on_redshift + jobs_not_on_snowflake).sort.uniq
+puts jobs_that_need_doing
+
+
+puts '--'
+puts "Tables That Block Which Files:"
+files_by_table.each do |table, files|
+  puts "#{table}: #{files.sort.join(', ')}"
+end
