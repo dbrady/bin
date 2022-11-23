@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# coding: utf-8
+
+# unicode green check: ✅
+# U+2705
+# HTML: %E2%9C%85
+# UTF-8 (hex): 0xE2 0x9C 0x85
+
+# unicode red x: ❌
+# U+274C
+# HTML: &#10060;

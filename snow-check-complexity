@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# snow-get-complexity [<file>] - calculate a rough complexity for a given job
+
+# This complexity is like flay: the numbers are meaningless except in comparison with others. Good luck.
+
+# for now, let's say...
+# line count * (number of selects, creates, drops, and updates) * 2**(number of CTEs + number of recursive CTEs)
+
+script = ARGV.first || `get-ds-script`.strip
+
+if script.empty?
+  puts "Nothing to analyze. Specify job file as a script argument or with set-ds-script first"
+  exit -1
+end
+
+lines = File.readlines(script).map(&:rstrip)
+
+line_count = lines.size
+sql_query_count = lines.find_all {|line| line =~ /\b(insert|select|update|delete|drop|create)\b/i }.size
+cte_count = lines.find_all {|line| line =~ /\b[\w_]+\s+AS\s*\(/i }.size
+recursive_cte_count = lines.find_all {|line| line =~ /\bRECURSIVE\b/i }.size
+
+
+# THE FORMULA (change this as needed)
+complexity = line_count * sql_query_count * 2**(cte_count * (1+recursive_cte_count))
+pretty_complexity = complexity.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(',').reverse
+
+puts "Script: #{script}"
+puts "line_count: #{line_count}"
+puts "cte_count: #{cte_count}"
+puts "recursive_cte_count: #{recursive_cte_count}"
+puts "-------------------------------"
+puts "Total Complexity: #{pretty_complexity}"
