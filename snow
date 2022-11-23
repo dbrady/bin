@@ -37,6 +37,10 @@ class SnowflakeManglerApp
     ARGV.include?('--list') || ARGV.include?('-l') || ARGV.include?('list')
   end
 
+  def preview?
+    ARGV.first == "preview"
+  end
+
   def help?
     ARGV.include?('--help') || ARGV.include?('-h') || ARGV.include?('help')
   end
@@ -157,20 +161,15 @@ class SnowflakeManglerApp
   end
 
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
-    diy_tables = %w(
-       d_customer_details_quickapply
-       f_applicant_credit_reports
-       f_collections_chargeoffs
-    )
-
     zack_casey_tables = %w(
       f_accrual_rent
-      f_accrual_rent
+      f_collections_chargeoffs
       f_financial_transactions
       f_lms_financial_transactions
       s_transaction_summary
     )
-    {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
+    # {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
+      {red: zack_casey_tables}.each do |color, tables|
       regex = /(#{tables.join('|')})/
 
       puts section_title "Potentially Unmigrated Tables (#{color})"
@@ -206,7 +205,8 @@ class SnowflakeManglerApp
   end
 
   def should_be_skippable?
-    get_script.include?("mcloud") || get_script.include?("_sf_")
+    get_script.include?("_sf_") ||
+      (get_script.include?("mcloud") && !get_script.include?("_get_"))
   end
 
   def run_and_exit!(command)
@@ -302,6 +302,7 @@ If no commands are given, snow will run check.
       .sub(regex, "RLIKE(#{$2})")
       .sub(%r{'%\(?}, "'.*(")
       .sub(%r{\)?%'}, ").*'")
+      .gsub(/\+/, '\\\\+')
   end
 
 
@@ -324,9 +325,7 @@ If no commands are given, snow will run check.
     end
 
     # Override script if job is preview
-    if ARGV.first == "preview"
-      set_script ARGV[1]
-    end
+    set_script ARGV[1] if preview?
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if need_script? && (get_script.nil? || get_script.empty?)
