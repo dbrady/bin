@@ -27,6 +27,11 @@ class SnowflakeManglerApp
     !["go", "new", "master", "main"].include?(ARGV.first)
   end
 
+  # Quiet: Don't show "OK" detectors, just errors
+  def quiet?
+    ARGV.include?('--quiet') || ARGV.include?('-q')
+  end
+
   # Was this script invoked with --essential?
   def essential?
     ARGV.include?('--essential') || ARGV.include?('-e')
@@ -50,6 +55,7 @@ class SnowflakeManglerApp
   end
 
   def log_ok
+    return if quiet?
     puts " OK ".bold.light_white.on_green
   end
 
@@ -82,10 +88,11 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title
+    puts section_title title unless quiet?
     # OOF.
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
+      puts section_title title if quiet?
       puts "Autofix with: #{autofix}" if autofix
       # Yeah, turn this into lines_with_indexes = finder_method, we can
       # write a generic version to do what this regex does, and then we can
@@ -121,7 +128,7 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title
+    puts section_title title unless quiet?
 
     # given n regexes, at line[m], then...
     # Simple Match For Now:
@@ -152,8 +159,9 @@ class SnowflakeManglerApp
   end
 
   def detect_missing_skip_upload
-    puts section_title "Skip Upload"
+    puts section_title "Skip Upload" unless quiet?
     if should_be_skippable? && !skippable?
+      puts section_title "Skip Upload" if quiet?
       puts "File should have skip_upload but does not"
     else
       log_ok
@@ -162,18 +170,16 @@ class SnowflakeManglerApp
 
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
     zack_casey_tables = %w(
-      f_accrual_rent
       f_collections_chargeoffs
-      f_financial_transactions
-      f_lms_financial_transactions
       s_transaction_summary
     )
     # {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
       {red: zack_casey_tables}.each do |color, tables|
       regex = /(#{tables.join('|')})/
 
-      puts section_title "Potentially Unmigrated Tables (#{color})"
+      puts section_title "Potentially Unmigrated Tables (#{color})" unless quiet?
       if lines.any? {|line| line =~ regex }
+        puts section_title "Potentially Unmigrated Tables (#{color})" if quiet?
         lines.each.with_index do |line, index|
           problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
           next if problem_tables.size.zero?
