@@ -63,13 +63,15 @@ with open(filename, "w") as file:
                 results = dbo.query(query)
                 print(results)
                 print(f"\033[32mHEY IT LOOKS LIKE TABLE {table} HAS BEEN COPIED OVER!\033[0m")
-                file.write(f"\033[32mWorky: {table}\033[0m\n")
-                file2.write(f"Worky: {table}\n")
+                msg = f"\033[32mWorky: {table}\033[0m\n"
+                file.write(msg)
+                file2.write(msg)
 
             except Exception as e:
-                print(f"Looks like table {table} doesn't exist.")
-                file.write(f"\033[31mSadge: {table}\033[0m\n")
-                file2.write(f"Sadge: {table}\n")
+                print(f"\033[31mLooks like table {table} doesn't exist.\033[0m")
+                msg = f"\033[31mSadge: {table}\033[0m\n"
+                file.write(msg)
+                file2.write(msg)
 
 print(f"Wrote {filename}")
 file.close()

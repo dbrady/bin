@@ -1,23 +1,24 @@
 #!/usr/bin/env ruby
 require "json"
-
-
+tables_file = ARGV.first || 'worky_tables.log'
+puts "Using tables_file #{tables_file.inspect}"
 puts '--'
-puts "All mcloud files:"
+puts "All mcloud files: (Obtained by Dir.glob 'etl_mcloud_*.py')"
 
 mcloud_files = Dir.glob("etl_mcloud_*.py")
 puts mcloud_files
 
 
 puts '--'
-puts "Problem tables:"
+puts "Problem tables: (Obtained by grepping 'Sadge' in #{tables_file})"
 
-problem_tables = `grep Sadge worky_tables.log | sed -e 's/Sadge: //'`.each_line.map(&:strip)
+# problem_tables = `grep Sadge #{tables_file} | sed -e 's/Sadge: //'`.each_line.map(&:strip)
+problem_tables = `grep Sadge #{tables_file} | sed -e 's/Sadge: //'`.each_line.map {|line| line.strip.gsub(/\033\[\d+m/, '')}
 puts problem_tables
 
 
 puts '--'
-puts "Problematic Files:"
+puts "Problematic Files: (Obtained by grepping problem tables in mcloud files)"
 problematic_files = []
 files_by_table = {}
 
@@ -33,20 +34,20 @@ puts problematic_files
 
 
 puts '--'
-puts "Less Problematic Files:"
+puts "Candidate Files: (mcloud files that aren't problematic)"
 candidate_files = mcloud_files - problematic_files
 puts candidate_files
 
 
 puts '--'
-puts "Files that still need doing:"
+puts "Jobs that still need doing: (Candidates that still reference redshift / don't reference Snowflake)"
 # How many of these are already done?
 # sure hope you're on the main snowflake branch or this will make less sense
 json = JSON.parse(File.read("etl_nightly_config.json"))
-job_names = candidate_files.map {|file| file.sub(/\.py$/, '') }.first(3)
+job_names = candidate_files.map {|file| file.sub(/\.py$/, '') }
 
-jobs_still_on_redshift = job_names.find_all {|job_name| json["jobs"][job_name].values.any? {|value| value == "redshift" }}
- jobs_not_on_snowflake = job_names.find_all {|job_name| json["jobs"][job_name].values.all? {|value| value != "snowflake" }}
+jobs_still_on_redshift = job_names.find_all {|job_name| json["jobs"].fetch(job_name, {}).values.any? {|value| value == "redshift" }}
+jobs_not_on_snowflake  = job_names.find_all {|job_name| json["jobs"].fetch(job_name, {}).values.all? {|value| value != "snowflake" }}
 
 jobs_that_need_doing = (jobs_still_on_redshift + jobs_not_on_snowflake).sort.uniq
 puts jobs_that_need_doing
