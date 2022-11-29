@@ -629,6 +629,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''/
 
+    detect_and_print_lines lines, "Replace quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/
 
 
     # ======================================================================
