@@ -1,6 +1,9 @@
 #!/bin/bash
 # snow-fix-chdir
 
+# 2022-11-28: disabled
+exit 0
+
 SCRIPT=`get-ds-script`
 
 if [ -z "$SCRIPT" ]; then
