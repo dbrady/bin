@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# snow-check-whitespace - Check for whitespace conformance
+require "colorize"
+
+SCRIPT = ARGV.first || `get-ds-script`.strip
+
+if SCRIPT == ""
+  puts "You must set the SCRIPT variable first."
+  exit -1
+end
+
+line_count = 0
+
+File.readlines(SCRIPT).each.with_index do |line, index|
+  line = line.chomp
+  if line =~ /(\s+)$/
+    line_count += 1
+    colorized_line = line.sub(/\s+$/, $1.on_red)
+    puts "%d: %s" % [index+1, colorized_line]
+  end
+end
+
+exit line_count

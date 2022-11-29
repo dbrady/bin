@@ -1,0 +1,15 @@
+#!/bin/bash
+# snow-fix-whitespace
+# not sure why sed -E -i 's/\s+$//' doesn't work
+
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo -e "\033[36mruby -i -n -e 'puts $_.rstrip' $1\033[0m"
+ruby -i -n -e 'puts $_.rstrip' $1
+
+snow-commit-ds-script "Clean up whitespace"
