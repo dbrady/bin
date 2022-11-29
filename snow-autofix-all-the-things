@@ -1,8 +1,7 @@
 #!/bin/bash
 
-echo "This will attempt to fix all the things. Make sure script you really want to fix up this file:"
+echo "This will attempt to fix all the things. Make sure the script you really want to fix up is this file:"
 echo `get-ds-script`
-echo "Fix up any whitespace issues if needed first, and make sure your branch is clean."
 
 git-isclean &&
     echo "(It looks clean from here.)" || (echo -e "\033[1;37;41mBranch is not clean\033[0m" && exit)
@@ -11,6 +10,7 @@ echo "Hit CTRL-C to abort. Otherwise, hit ENTER to begin."
 read
 
 # now run all the snow-fix-* scripts
+snow-fix-whitespace
 snow-fix-pep
 snow-fix-distkeys
 snow-fix-trunc
