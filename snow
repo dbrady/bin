@@ -171,7 +171,6 @@ class SnowflakeManglerApp
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
     zack_casey_tables = %w(
       f_collections_chargeoffs
-      s_transaction_summary
     )
     # {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
       {red: zack_casey_tables}.each do |color, tables|
