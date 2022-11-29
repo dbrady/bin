@@ -627,9 +627,9 @@ If no commands are given, snow will run check.
     # Check these by hand - python stmts like var = '' are fine but embedded
     # SQL with an extra escaping level makes snowflake sad.
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''/
+    detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''.*''/
 
-    detect_and_print_lines lines, "Replace quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/
+    detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/
 
 
     # ======================================================================
