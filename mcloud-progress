@@ -40,6 +40,15 @@ puts candidate_files
 
 
 puts '--'
+puts "Known-complete / blocked files: (loaded from mcloud-known-complete-reasons.log)"
+reasons_by_file = Hash[File.readlines('mcloud-known-complete-reasons.log').map {|line| line.strip.split(/ /, 2)}]
+
+candidate_files.each do |file|
+  puts "#{file} - #{reasons_by_file[file]}" if reasons_by_file[file]
+end
+candidate_files -= reasons_by_file.keys
+
+puts '--'
 puts "Jobs that still need doing: (Candidates that still reference redshift / don't reference Snowflake)"
 # How many of these are already done?
 # sure hope you're on the main snowflake branch or this will make less sense
