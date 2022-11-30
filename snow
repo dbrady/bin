@@ -1,14 +1,13 @@
 #!/usr/bin/env ruby
 # snow - Command suite to support moving to snowflake
 #
-# TODO: snow -q, --quick just emits a single OK or "5 problems found on 23
-# lines" etc. Have to rework the detectors to return the number of problems
-# found.
-#
-# TODO: snow -w, --work emits only the detectors that fail, so you can see
+# DONE: snow -q, --quiet emits only the detectors that fail, so you can see
 # remaining work
 #
 # TODO: port this to Optimist*. The arg processing is killing me here
+#
+# TODO: instead of catching individual commands, take ARGV.first and check for
+# an executable "snow-<arg>" script in bin
 
 require 'colorize'
 require 'optimist'
