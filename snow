@@ -1,5 +1,14 @@
 #!/usr/bin/env ruby
 # snow - Command suite to support moving to snowflake
+#
+# TODO: snow -q, --quick just emits a single OK or "5 problems found on 23
+# lines" etc. Have to rework the detectors to return the number of problems
+# found.
+#
+# TODO: snow -w, --work emits only the detectors that fail, so you can see
+# remaining work
+#
+# TODO: port this to Optimist*. The arg processing is killing me here
 
 require 'colorize'
 require 'optimist'
@@ -169,6 +178,7 @@ class SnowflakeManglerApp
   end
 
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
+    return
     zack_casey_tables = %w(
       f_collections_chargeoffs
     )
@@ -191,6 +201,21 @@ class SnowflakeManglerApp
       else
         log_ok
       end
+    end
+  end
+
+  def detect_unmanaged_whitespace(lines)
+    puts section_title "UNMANAGED WHITESPACE" unless quiet?
+    if lines.any? {|line| line =~ /\s+$/}
+      puts section_title "Unmanaged whitespace" if quiet?
+      lines.each.with_index do |line, index|
+        if line =~ /(\s+)$/
+          colorized_line = line.sub(/\s+$/, $1.on_red)
+          puts "%d: %s" % [index+1, colorized_line]
+        end
+      end
+    else
+      log_ok
     end
   end
 
@@ -425,15 +450,6 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # snow [check] [-e]
-    #
-    # TODO: snow -q, --quick just emits a single OK or "5 problems found on 23
-    # lines" etc. Have to rework the detectors to return the number of problems
-    # found.
-    #
-    # TODO: snow -w, --work emits only the detectors that fail, so you can see
-    # remaining work
-    #
-    # TODO: port this to Optimist*. The arg processing is killing me here
     # ----------------------------------------------------------------------
 
     if ARGV.first == "check"
@@ -466,7 +482,12 @@ If no commands are given, snow will run check.
     puts "Checking #{get_script}..."
 
     # load file
-    lines = IO.readlines(get_script).map(&:rstrip)
+    lines = IO.readlines(get_script).map(&:chomp)
+
+    # ----------------------------------------------------------------------
+    # Check Whitespace
+    # ----------------------------------------------------------------------
+    detect_unmanaged_whitespace lines
 
     # ----------------------------------------------------------------------
     # Check for PEP8 Conformance
@@ -630,7 +651,6 @@ If no commands are given, snow will run check.
 
     detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/
 
-
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
@@ -744,7 +764,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # except Exception:
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
+    # detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
 
     # ----------------------------------------------------------------------
     # unsize varchars
