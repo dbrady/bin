@@ -8,7 +8,7 @@
 # Usage:
 #     sed-lines [-n] <start> <stop> <file>
 #     -n - show line numbers
-#
+#     -q, --quiet - don't teach me the sed command (use this when calling from another script)
 
 # 2022-09-06 dbrady notes: I have wanted a thing to print lines x-y since
 # forever. I've done it for years with `head -n y file | tail -n x-y`.
