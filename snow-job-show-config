@@ -10,11 +10,7 @@ require 'optimist'
 
 def get_script
   return $get_script if $get_script
-
-  # until/unless we port this to an .rc file
-  $get_script = `get-ds-script`.strip
-  $get_script = ENV['SCRIPT'] if $get_script.empty?
-  $get_script
+  $get_script = ARGV.first || `get-ds-script`.strip || ENV['SCRIPT']
 end
 
 # TODO: Specialize between "overridden by job" and "explicitly specified, but with same value as job_defaults"
