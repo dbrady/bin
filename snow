@@ -667,6 +667,8 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # Redshift S3 buckets
+    # These will probably stay in the project until/unless we can find out who
+    # is reading from these s3 buckets.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "Redshift S3 Buckets", %r|s3.*redshift|i, essential: true
 
@@ -675,7 +677,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # (<!s3) is "negative lookbehind". It means find redshift, but not if it was
     # preceded by s3 (which is found by Redshift S3 buckets above)
-    detect_and_print_lines lines, "Redshift mentioned anywhere", %r|(<!s3).*redshift|i
+    detect_and_print_lines lines, "Redshift mentioned anywhere", /redshift/i, unmatch: %r|s3.*redshift|
 
     # ----------------------------------------------------------------------
     # Secretly blocked by DS-1704: d_team_list_rac_cs_gsheet
