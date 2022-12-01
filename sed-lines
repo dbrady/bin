@@ -21,6 +21,9 @@
 #            says "x,y"
 
 argv = ARGV.dup
+quiet = if argv.include?("-q") || argv.include?("--quiet")
+          argv -= ["-q", "--quiet"]
+        end
 
 show_line_numbers = argv.delete("-n")
 
@@ -32,5 +35,5 @@ command = if show_line_numbers
             "sed -ne '#{start},#{stop}p' #{file}"
           end
 
-puts "\033[92m#{command}\033[0m"
+puts "\033[92m#{command}\033[0m" unless quiet
 system command
