@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+require "colorize"
+require "json"
+
+# Script that tries to determine where a table is coming from
+
+# For a given table <table>...
+# Direct Job:
+# - is there a file etl_<table>.py ? It's a direct job. See next step.
+# - is there a job etl_<table>? It's a direct job. If so, what is src_conn, dst_conn? If it's redshift, it's unmigrated. ALSO CHECK "status" is not "INACTIVE"
+#
+# Indirect Job:
+# - is there a job that has dst_conn=<table> or dst_conn=<table>_load ? It's an indirect job (unless it's already known to be a direct job). Check src/dst conn
+#
+# Side Effect Job:
+# - is there a job that has CREATE <table>, INTO <table>, or UPDATE <table> ? It's a side effect of that job
+# -
+
+# d_customer_details_quickapply - direct job, etl_d_customer_details_quickapply, migrated. Done, DS-1693
+# f_collections_chargeoffs - side effect of etl_f_commissions_collections_settlements.py - In Review 11/30. DS-1552
+
+# d_team_list_sales_gsheet - direct job, NOT YET MIGRATED. DS-1419
+# f_applicant_credit_reports - direct job, NOT YET MIGRATED. DS-1466
+# f_merchant_receivables - direct job. NOT YET MIGRATED. Claimed by Rikki. Blocked. DS-1562
+# f_salesrep_volumes - direct job. NOT YET MIGRATED. DS-1439
+
+tables = %w(
+  d_customer_details_quickapply
+  d_team_list_sales_gsheet
+  f_applicant_credit_reports
+  f_collections_chargeoffs
+  f_merchant_receivables
+  f_salesrep_volumes
+)
+
+cz_tables = %w(
+  d_merchant_locations_details
+  f_accrual_rent
+  f_adverse_actions_explanations
+  f_adverse_actions_explanations_uw
+  f_financial_transactions
+  f_leases
+  f_leases_denials
+  f_lms_financial_transactions
+  s_transaction_summary
+)
+
+
+config = JSON.parse(File.read("etl_nightly_config.json"))
+
+table = ARGV.first
+
+puts "Note: #{table} is not in the mcloud table list, but that's cool.".yellow if !tables.include?(table)
+
+direct_file_name = "etl_#{table}.py"
+puts "DIRECT JOB 1: Searching file tree for #{direct_file_name}..."
+files = Dir.glob("**/#{direct_file_name}")
+if !files.empty?
+  puts "This looks like a direct job. See #{files * ', '}".green
+
+  files.each do |direct_file_path|
+    direct_job_name = direct_file_path.gsub(%r|/|, '.').sub(/\.py$/, '')
+
+    puts "DIRECT JOB 2: Searching job config for #{direct_job_name}..."
+    config = JSON.parse(File.read("etl_nightly_config.json"))
+    if config["jobs"][direct_job_name]
+      puts "Looks like this job has a config:".green
+      job_config = config["jobs"][direct_job_name]
+      connection_fields = job_config.find_all do |key, value|
+        key == "status" || value.to_s.include?("redshift") || value.to_s.include?("snowflake")
+      end
+      connection_fields.each do |key, value|
+        display_value = value
+                          .gsub(/redshift/, "redshift".red)
+                          .gsub(/snowflake/, "snowflake".white.on_cyan)
+                          .sub(/^ACTIVE$/, "ACTIVE".bold.white.on_green)
+                          .sub(/^SKIP$/, "SKIP".green)
+                          .sub(/^INACTIVE$/, "INACTIVE".bold.white.on_red)
+        puts "  #{key}: #{display_value}"
+        puts "View the full config with `snow job #{direct_job_name}`"
+      end
+    else
+      puts "This job does not appear to have a config. That's weird, right? Since it has a direct job file?".red
+    end
+  end
+else
+  puts "This does NOT look like a direct job. (Could not find #{direct_file_name} in the file tree)".red
+end
+
+puts "INDIRECT JOB: Searching job config for tables matching this job..."
+config["jobs"].each do |job_name, job_config|
+  if job_config.fetch("dst_table","").include?(table) || job_config.fetch("export_filename","").include?(table)
+    puts "This job may be an indirect job; its table is mentioned here:"
+    puts JSON.pretty_generate({job_name => job_config}).gsub(/#{table}/, table.yellow)
+  end
+end
+
+
+puts "SIDE EFFECT JOB: Searching etl files for mention of writes to this table..."
+system "ag '\b(create|insert|into|truncate)\b.*#{table}'"
