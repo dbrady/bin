@@ -32,7 +32,9 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    !["go", "new", "master", "main"].include?(ARGV.first)
+    no_need = ["go", "new", "master", "main"].include?(ARGV.first) ||
+              (ARGV.first == "job" && ARGV.size >= 2)
+    !no_need
   end
 
   # Quiet: Don't show "OK" detectors, just errors
