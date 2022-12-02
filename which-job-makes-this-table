@@ -19,10 +19,7 @@ require "json"
 # d_customer_details_quickapply - direct job, etl_d_customer_details_quickapply, migrated. Done, DS-1693
 # f_collections_chargeoffs - side effect of etl_f_commissions_collections_settlements.py - In Review 11/30. DS-1552
 
-# d_team_list_sales_gsheet - direct job, NOT YET MIGRATED. DS-1419
-# f_applicant_credit_reports - direct job, NOT YET MIGRATED. DS-1466
-# f_merchant_receivables - direct job. NOT YET MIGRATED. Claimed by Rikki. Blocked. DS-1562
-# f_salesrep_volumes - direct job. NOT YET MIGRATED. DS-1439
+candidates = []
 
 tables = %w(
   d_customer_details_quickapply
@@ -64,6 +61,7 @@ if !files.empty?
     puts "DIRECT JOB 2: Searching job config for #{direct_job_name}..."
     config = JSON.parse(File.read("etl_nightly_config.json"))
     if config["jobs"][direct_job_name]
+      candidates << direct_job_name
       puts "Looks like this job has a config:".green
       job_config = config["jobs"][direct_job_name]
       connection_fields = job_config.find_all do |key, value|
@@ -78,7 +76,7 @@ if !files.empty?
                           .sub(/^INACTIVE$/, "INACTIVE".bold.white.on_red)
         puts "  #{key}: #{display_value}"
         puts "View the full config with `snow job #{direct_job_name}`"
-      end
+p      end
     else
       puts "This job does not appear to have a config. That's weird, right? Since it has a direct job file?".red
     end
@@ -90,6 +88,7 @@ end
 puts "INDIRECT JOB: Searching job config for tables matching this job..."
 config["jobs"].each do |job_name, job_config|
   if job_config.fetch("dst_table","").include?(table) || job_config.fetch("export_filename","").include?(table)
+    candidates << job_name
     puts "This job may be an indirect job; its table is mentioned here:"
     puts JSON.pretty_generate({job_name => job_config}).gsub(/#{table}/, table.yellow)
   end
@@ -98,3 +97,5 @@ end
 
 puts "SIDE EFFECT JOB: Searching etl files for mention of writes to this table..."
 system "ag '\b(create|insert|into|truncate)\b.*#{table}'"
+puts "Candidates:"
+puts candidates.uniq.map {|job| "  #{job}"}
