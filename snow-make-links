@@ -15,6 +15,9 @@
 
 require 'yaml'
 require 'date'
+require 'colorize'
+
+BACKLOG_FILE=File.expand_path("~/data_services/review-backlog.log")
 
 def usage
   str = <<USAGE
@@ -141,12 +144,12 @@ puts "3. Update PRs with JIRA tickets"
 puts "4. Paste this blurb to Zack (CMD-v CMD-SHIFT-f)"
 
 # If ~/review-backlog.txt does NOT contain the jira ticket number, write the blurb to that file.
-if !system("grep #{TICKET_ID} ~/review-backlog.txt > /dev/null")
-  File.open(File.expand_path("~/review-backlog.txt"), "a") do |file|
+if !system("grep #{TICKET_ID} #{BACKLOG_FILE} > /dev/null")
+  File.open(BACKLOG_FILE, "a") do |file|
     file.puts
     file.puts blurb
   end
-  puts "Blurb appended to ~/review-backlog.txt."
+  puts "Blurb appended to #{BACKLOG_FILE}."
 else
-  puts "Blurb is already present in ~/review-backlog.txt; not appending."
+  puts "Blurb is already present in #{BACKLOG_FILE}; not appending. Remove the bad blurb first.".white.bold.on_red
 end
