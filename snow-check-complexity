@@ -27,8 +27,9 @@ complexity = line_count * sql_query_count * 2**(cte_count * (1+recursive_cte_cou
 pretty_complexity = complexity.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(',').reverse
 
 puts "Script: #{script}"
-puts "line_count: #{line_count}"
-puts "cte_count: #{cte_count}"
-puts "recursive_cte_count: #{recursive_cte_count}"
-puts "-------------------------------"
+puts "l: line_count: #{line_count}"
+puts "s: sql_query_count: #{sql_query_count}"
+puts "c: cte_count: #{cte_count}"
+puts "r: recursive_cte_count: #{recursive_cte_count}"
+puts "---------------------------------------"
 puts "Total Complexity: #{pretty_complexity}"
