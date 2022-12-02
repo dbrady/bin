@@ -9,7 +9,7 @@ if [ -z "$SCRIPT" ]; then
     exit -1
 fi
 
-echo -e "\033[36mruby -i -n -e 'puts $_.rstrip' $SCRIPT\033[0m"
-ruby -i -n -e 'puts $_.rstrip' $SCRIPT
+echo -e "\033[36mruby -i -n -e 'puts \$_.rstrip' $SCRIPT\033[0m"
+ruby -i -n -e 'puts $_.rstrip' $1
 
 snow-commit-ds-script "Clean up whitespace"
