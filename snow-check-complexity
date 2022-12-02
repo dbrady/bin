@@ -17,7 +17,8 @@ lines = File.readlines(script).map(&:rstrip)
 
 line_count = lines.size
 sql_query_count = lines.find_all {|line| line =~ /\b(insert|select|update|delete|drop|create)\b/i }.size
-cte_count = lines.find_all {|line| line =~ /\b[\w_]+\s+AS\s*\(/i }.size
+# cte_count = lines.find_all {|line| line =~ /\b[\w_,]+\s+AS\s*\(/i }.size
+cte_count = lines.find_all {|line| line =~ /\bAS\s*\(/ }.size
 recursive_cte_count = lines.find_all {|line| line =~ /\bRECURSIVE\b/i }.size
 
 
