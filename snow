@@ -671,6 +671,25 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "BTRIM", /\bBTRIM\(/i, autofix: "sed -i -E 's/BTRIM\\(/TRIM\\(/g' #{get_script}"
 
+    # ----------------------------------------------------------------------
+    # TO_CHAR
+    #
+    # You can specify a fixed char size for a numeric field with 9's. Redshift
+    # allows this to be an integer. Snowflake demands a string:
+    #
+    # Red:
+    # SELECT '[' || TO_CHAR(99, 999) || ']'       # [ 99]
+    # SELECT '[' || TO_CHAR(9999, 999) || ']'     # [###]
+    #
+    # Sno:
+    # SELECT '[' || TO_CHAR(99, '999') || ']'     # [ 99]
+    # SELECT '[' || TO_CHAR(9999, '999') || ']'   # [###]
+    #
+    # match will unmatch if there is a last argument in quotes that's like
+    # 999,999D99 or YYYY-MM-DD etc.
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "TO_CHAR (with numeric format)", /to_char/i, unmatch: /'[YMD\-9,]+'/
+
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
