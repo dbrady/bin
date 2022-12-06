@@ -76,7 +76,7 @@ if !files.empty?
                           .sub(/^INACTIVE$/, "INACTIVE".bold.white.on_red)
         puts "  #{key}: #{display_value}"
         puts "View the full config with `snow job #{direct_job_name}`"
-p      end
+      end
     else
       puts "This job does not appear to have a config. That's weird, right? Since it has a direct job file?".red
     end
@@ -96,6 +96,8 @@ end
 
 
 puts "SIDE EFFECT JOB: Searching etl files for mention of writes to this table..."
-system "ag '\b(create|insert|into|truncate)\b.*#{table}'"
+command = "ag '\\b(create|insert\\s+into|truncate)\\b.*#{table}'"
+puts command.cyan
+system command
 puts "Candidates:"
 puts candidates.uniq.map {|job| "  #{job}"}
