@@ -8,6 +8,19 @@
 #
 # TODO: instead of catching individual commands, take ARGV.first and check for
 # an executable "snow-<arg>" script in bin
+#
+# TODO: Document the snow ecosystem for future me:
+#
+# - snow - check the current script. -q to only show failing checks.
+# - snow main - jump back to main snowflake branch
+# - snow master - same thing but back to origin/master
+# - snow new <id> <file> - create new branches
+# - snow run
+# - snow-commit-warehouse-* will commit the script with a specific message. It
+#     does not modify the script.
+# - scow <term> will show you all snow-commit-warehouse-*<term>* files, let you
+#     pick one with selecta, then run it.
+# - snow-fix-* will modify the script AND commit it.
 
 require 'colorize'
 require 'optimist'
@@ -314,20 +327,14 @@ If no commands are given, snow will run check.
     line.gsub(regex, replacement)
   end
 
-  def replace_greatest_with_coalesce(line)
-    regex = %r{GREATEST\(([^)]+)\)}
-    return unless line =~ regex
-
-    args = $1.split(',').map(&:strip)
-
-    new_args = args.map {|arg| "COALESCE(#{arg}, '1970-01-01')"}.join(', ')
-
-    line.sub(regex, "GREATEST(#{new_args})")
-  end
-
   def replace_similar_to_with_rlike(line)
     regex = %r{\b(SIMILAR\s+TO)\s+(.+)}
     return unless line =~ regex
+
+    # TODO: if the regex doesn't have alternates, use LIKE instead?
+    # So:
+    # x SIMILAR TO '%(pants)%' => x LIKE '%pants%'
+    # x SIMILAR TO '%(hat|glasses)%' => x RLIKE '.*(hat|glasses).*'
 
     line
       .sub(regex, "RLIKE(#{$2})")
@@ -652,6 +659,18 @@ If no commands are given, snow will run check.
 
     detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/
 
+
+    # ----------------------------------------------------------------------
+    # DATE_ADD('unit',num, column) -> DATEADD(unit, num, column)
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "DATE_ADD", /DATE_ADD\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_ADD\\('([^']+)'/DATEADD(\\1/ig" #{get_script}|
+
+
+    # ----------------------------------------------------------------------
+    # BTRIM
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "BTRIM", /\bBTRIM\(/i, autofix: "sed -i -E 's/BTRIM\\(/TRIM\\(/g' #{get_script}"
+
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
@@ -827,9 +846,9 @@ If no commands are given, snow will run check.
     detect_and_print_lines lines, "ENCODE", /\bencode\s+\S+/i, essential: true
 
     # ----------------------------------------------------------------------
-    # GREATEST/LEAST -> COALESCE(...)
+    # GREATEST/LEAST -> COALESCE(GREATEST/LEAST(...),value)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /greatest\b.*\bcoalesce\(/i, essential: true, suggest: :replace_greatest_with_coalesce
+    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /coalesce\((greatest|least)\b\(/i, essential: true
 
     # ----------------------------------------------------------------------
     # TABS
