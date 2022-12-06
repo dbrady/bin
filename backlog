@@ -3,12 +3,12 @@
 # backlog - Show the review backlog, beacuse I've renamed that stupid file twice
 # and keep forgetting where snow-make-links puts it.
 
-if [ $IS_DOCKER_LOCAL = "1" ]; then
+if [ "$IS_DOCKER_LOCAL" == "1" ]; then
     # docker
     FILENAME="/root/data_services/review-backlog.log"
 else
     # osx
-    FILENAME="/Users/david.brady/acima/devel/data_services"
+    FILENAME="/Users/david.brady/acima/devel/data_services/review-backlog.log"
 fi
 
 echo -e "\033[36mcat $FILENAME \033[0m"
