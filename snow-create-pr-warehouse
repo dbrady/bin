@@ -5,7 +5,7 @@
 home = "https://github.com/acima-credit/data_services"
 
 branch = `git current-branch`.strip
-pr_name = branch.sub(%r|^feature/|, '')
+pr_name = branch.sub(%r|^feature/|, '') + " (Snowflake)"
 ticket_id = $1 if branch =~ /(\d+)/
 
 puts "\033[93mYou can run this script from inside Docker if it's more convenient. It emits the link but does not try to open a browser.\033[0m" unless ENV["IS_DOCKER_LOCAL"]
