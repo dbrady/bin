@@ -1,0 +1,12 @@
+#!/bin/bash
+# sync-table <table> - run Zack's interactive sync script in batch mode
+
+# This version is convenient but for some reason it eats the stdout from the python script. Sadge. Let's allow this to run interactively if no $1.
+
+if [ "$1" == "" ]; then
+    echo -e "\033[36mpython /root/data_services/utilities/sync_data_snowflake.py\033[0m"
+    python /root/data_services/utilities/sync_data_snowflake.py
+else
+    printf "n\n%s\nn\n" $1 |
+        python /root/data_services/utilities/sync_data_snowflake.py
+fi

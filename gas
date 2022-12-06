@@ -1,4 +1,3 @@
 #!/bin/bash
-SCRIPT=`get-ds-script`
 echo git add-script
 git add-script
