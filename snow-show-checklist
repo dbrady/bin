@@ -3,7 +3,7 @@
 # stoopid numbering hacks
 # i!, j! = init and return the counter
 # i, j = increment and return the counter
-# i?, j? = get counter without
+# i?, j? = get counter without incrementing it (for i?.j subheads)
 def i?; $i; end
 def i!; $i=1; end
 def i;  $i += 1; end
@@ -17,24 +17,22 @@ puts <<CHECKLIST
 #{i}. Claim the ticket in Jira and move it to IN DEVELOPMENT
 #{i}. Set ds script and branches: snow new <jira_id> <job.py>
 #{i}. Run snow to look at checks; snow check
-#{i}. Fix problems with snow-fix-x or edit and snow-commit-x
-   #{i?}.#{j!}. Edit and save to fix whitespace
-   #{i?}.#{j}. Run snow auto, snow-fix-x, snow-commit-wx
-   #{i?}.#{j}. Manually fix other issues and snow-commit-wx
-   #{i?}.#{j}. Problematic tables? Check access in redshift
+#{i}. Fix problems. snow auto, snow-fix-x, scow x
 #{i}. Inspect the code. Does it look good?
-#{i}. Put any new issues in snow check
+#{i}. Put recurring issues in snow check
 #{i}. Cut the config over to snowflake snow job s
-#{i}. If any args have changed, update the Example Usage comment
-#{i}. Ensure job runs in Snowflake (check db if needed)
-#{i}. Screenshot it and attach it to the JIRA ticket
+#{i}. Check boilerplate
+  #{i?}.#{j!} Does it exist?
+  #{i}.#{j} Any args changed?
+#{i}. Ensure job runs in Snowflake
+#{i}. Compare results in databases
+#{i}. Screenshot job and attach it to the JIRA ticket
 #{i}. Open a PR in both repos: snow slam
 #{i}. STOP AND CHECK: Sanity-check the PRs
    #{i?}.#{j!}. Doublecheck the screenshot
    #{i?}.#{j}. Ensure you are merging into sf-moveover, NOT MASTER
    #{i?}.#{j}. Ensure both PRs have no extra commits
-   #{i?}.#{j}. Inspect the file changes on GitHub
-   #{i?}.#{j}. Problematic tables? Compare results snowflake<->redshift
+   #{i?}.#{j}. Inspect file changes on GitHub
 #{i}. Make links: snow link <warehouse> <finance> [<pkg>]
 #{i}. Move JIRA ticket to IN REVIEW
 #{i}. DELEGATE: Notify Zack by sending him links
