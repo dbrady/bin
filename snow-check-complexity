@@ -17,12 +17,27 @@ lines = File.readlines(script).map(&:rstrip)
 
 line_count = lines.size
 sql_query_count = lines.find_all {|line| line =~ /\b(insert|select|update|delete|drop|create)\b/i }.size
-# cte_count = lines.find_all {|line| line =~ /\b[\w_,]+\s+AS\s*\(/i }.size
-cte_count = lines.find_all {|line| line =~ /\bAS\s*\(/ }.size
+cte_count = lines.find_all {|line| line =~ /\bAS\s*\(/i }.size
+view_count = lines.find_all {|line| line =~ /\bcreate\b.*\bview\b/i }.size
 recursive_cte_count = lines.find_all {|line| line =~ /\bRECURSIVE\b/i }.size
 
 
 # THE FORMULA (change this as needed)
+#
+# - Base complexity is line count * query count. Mo script, mo problems
+#
+# - I've noticed that scripts with CTEs usually beat me up and take my lunch
+#   money, so let's score them 2**c
+#
+# - Scripts with recursive CTEs beat me up, take my clothes, then duct tape me
+#   to a flagpole to be found by the janitorial staff the next morning. Let's
+#   change that exponent to 2**(c * r)
+#
+# - I just ran into my first script with views. It's pretty hairy and this
+#   *might* be causative, so let's score those queries twice as hard. They
+#   already get counted once with the table queries, so if we do (s + v), s will
+#   scores non-view queries once and view queries once, then v scores the view
+#   queries again. Nice.
 complexity = line_count * sql_query_count * 2**(cte_count * (1+recursive_cte_count))
 pretty_complexity = complexity.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(',').reverse
 
@@ -31,7 +46,8 @@ puts "l: line_count: #{line_count}"
 puts "s: sql_query_count: #{sql_query_count}"
 puts "c: cte_count: #{cte_count}"
 puts "r: recursive_cte_count: #{recursive_cte_count}"
+puts "v: view_count: #{view_count}"
 puts "---------------------------------------"
-puts "Using formula: C = l * s * 2**(c*(1+r))"
+puts "Using formula: C = l * (s + v) * 2**(c*(1+r))"
 puts "---------------------------------------"
 puts "Total Complexity: #{pretty_complexity}"
