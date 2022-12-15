@@ -5,6 +5,7 @@
 
 # for now, let's say...
 # line count * (number of selects, creates, drops, and updates) * 2**(number of CTEs + number of recursive CTEs)
+require 'colorize'
 
 script = ARGV.first || `get-ds-script`.strip
 
@@ -50,4 +51,4 @@ puts "v: view_count: #{view_count}"
 puts "---------------------------------------"
 puts "Using formula: C = l * (s + v) * 2**(c*(1+r))"
 puts "---------------------------------------"
-puts "Total Complexity: #{pretty_complexity}"
+puts "Total Complexity: #{pretty_complexity}".cyan
