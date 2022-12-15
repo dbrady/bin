@@ -139,9 +139,7 @@ puts
 puts blurb
 puts
 puts "1. Copy this to the clipboard"
-puts "2. Update JIRA ticket with PR info"
-puts "3. Update PRs with JIRA tickets"
-puts "4. Paste this blurb to Zack (CMD-v CMD-SHIFT-f)"
+puts "2. Paste this blurb to Zack (CMD-v CMD-SHIFT-f)"
 
 # If ~/review-backlog.txt does NOT contain the jira ticket number, write the blurb to that file.
 if !system("grep #{TICKET_ID} #{BACKLOG_FILE} > /dev/null")
