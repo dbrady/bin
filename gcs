@@ -12,5 +12,5 @@ fi
 # echo "gcs: $(grep -c gcs-or-scod.log)"; echo -n "scod: $(grep -c scod-or-scod.log)"
 date +'%F.%T gcs' >> $WAREHOUSE/gcs-or-scod.log
 
-echo "\033[36msnow-commit-ds-script \"$*\"\033[0m"
+echo -e "\033[36msnow-commit-ds-script \"$*\"\033[0m"
 snow-commit-ds-script "$*"
