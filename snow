@@ -552,9 +552,8 @@ If no commands are given, snow will run check.
     #
     # Or
     #
-    # But watch out: This is an ok conversion:
-    # contact_start - interval '6 hour'
-    # DATEADD(contact_start, -6, 'hour')
+    # ==> LQQK LQQK LQQK ==> Watch out: This is an ok conversion:
+    # contact_start - INTERVAL '6 hour'
     #
     # Watch for Spencer's `timestamp 'epoch' + seconds * interval '1 second'`,
     # it specifally converts easilly to just `TO_TIMESTAMP(seconds)`
