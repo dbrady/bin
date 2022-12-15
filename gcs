@@ -1,16 +1,11 @@
 #!/bin/bash
-# gcs - "git commit script" (SEE ALSO: scod)
+# gcs - "git commit script"
 
 if [ `uname -s` == 'Darwin' ]; then
     WAREHOUSE=/Users/david.brady/acima/devel/data_services/etl/warehouse
 else
     WAREHOUSE=/root/data_services/etl/warehouse
 fi
-
-# Experiment: This SHOULD be called scods, btu will I remember/favor gcs?
-# Try both for a while, then find out with
-# echo "gcs: $(grep -c gcs-or-scod.log)"; echo -n "scod: $(grep -c scod-or-scod.log)"
-date +'%F.%T gcs' >> $WAREHOUSE/gcs-or-scod.log
 
 echo -e "\033[36msnow-commit-ds-script \"$*\"\033[0m"
 snow-commit-ds-script "$*"
