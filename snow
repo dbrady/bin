@@ -24,6 +24,7 @@
 
 require 'colorize'
 require 'optimist'
+require 'io/console'
 
 class SnowflakeManglerApp
   def checklist
@@ -50,7 +51,7 @@ class SnowflakeManglerApp
     !no_need
   end
 
-  # Quiet: Don't show "OK" detectors, just errors
+  # Quiet: Don't show passing detectors or extraneous logging
   def quiet?
     ARGV.include?('--quiet') || ARGV.include?('-q')
   end
@@ -392,9 +393,17 @@ If no commands are given, snow will run check.
         puts
       end
 
+      if !quiet?
+        _,cols = $stdout.winsize
+        branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
+        print "\033[s\033[1;#{cols-branch.size}H#{branch}\033[u"
+      end
+
+      argv = ARGV.dup - ['-q', '--quiet']
+      argv.shift
       command = "dsetl_nightly"
       command += " --skip_upload" if skippable?
-      command += " " + ARGV[1..].join(" ")
+      command += " " + argv.join(" ")
       run_and_exit! command
     end
 
