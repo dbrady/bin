@@ -15,6 +15,7 @@ snow-fix-pep
 snow-fix-distkeys
 snow-fix-trunc
 snow-fix-chdir
+snow-fix-optional-job-config
 snow-fix-except-exception
 snow-fix-varchar-sizing
 

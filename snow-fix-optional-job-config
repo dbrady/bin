@@ -1,0 +1,12 @@
+#!/bin/bash
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo "sed -E -i 's/def main\(job_config=None\):/def main(job_config):/' $SCRIPT"
+sed -E -i 's/def main\(job_config=None\):/def main(job_config):/' $SCRIPT
+
+snow-commit-ds-script "Remove optional job config"
