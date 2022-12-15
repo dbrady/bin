@@ -10,6 +10,6 @@ if [ -z "$SCRIPT" ]; then
 fi
 
 echo -e "\033[36mruby -i -n -e 'puts \$_.rstrip' $SCRIPT\033[0m"
-ruby -i -n -e 'puts $_.rstrip' $1
+ruby -i -n -e 'puts $_.rstrip' $SCRIPT
 
 snow-commit-ds-script "Clean up whitespace"
