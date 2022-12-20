@@ -395,8 +395,9 @@ If no commands are given, snow will run check.
 
       if !quiet?
         _,cols = $stdout.winsize
+        warehouse = `snow-get-warehouse -c`
         branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
-        print "\033[s\033[1;#{cols-branch.size}H#{branch}\033[u"
+        print "\033[s\033[1;#{cols-warehouse.size}H#{warehouse}\033[u"
       end
 
       argv = ARGV.dup - ['-q', '--quiet']
@@ -433,6 +434,13 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     if ARGV.first == "rebase"
       run_and_exit! "snow-rebase #{ARGV[1..] * ' '}"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow cplx | complexity
+    # ----------------------------------------------------------------------
+    if ARGV.first == "cplx" || ARGV.first == "complexity"
+      run_and_exit! "snow-check-complexity #{ARGV[1..] * ' '}"
     end
 
     # ----------------------------------------------------------------------
