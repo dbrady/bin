@@ -18,23 +18,20 @@ puts <<CHECKLIST
 #{i}. Set ds script and branches: snow new <jira_id> <job.py>
 #{i}. Run snow to look at checks; snow check
 #{i}. Fix problems with snow-fix-x or edit and snow-commit-x
-   #{i?}.#{j!}. Edit and save to fix whitespace
-   #{i?}.#{j}. Run snow auto, snow-fix-x, snow-commit-wx
+   #{i?}.#{j!}. Run snow auto, snow-fix-x, snow-commit-wx
    #{i?}.#{j}. Manually fix other issues and snow-commit-wx
-   #{i?}.#{j}. Problematic tables? Check access in redshift
 #{i}. Inspect the code. Does it look good?
 #{i}. Put any new issues in snow check
 #{i}. Cut the config over to snowflake snow job s
 #{i}. If any args have changed, update the Example Usage comment
-#{i}. Ensure job runs in Snowflake (check db if needed)
+#{i}. Ensure job runs in Snowflake (check db if needed/possible)
 #{i}. Screenshot it and attach it to the JIRA ticket
-#{i}. Open a PR in both repos: snow slam
+#{i}. Open a PR in each repo: snow slam
 #{i}. STOP AND CHECK: Sanity-check the PRs
    #{i?}.#{j!}. Doublecheck the screenshot
    #{i?}.#{j}. Ensure you are merging into sf-moveover, NOT MASTER
    #{i?}.#{j}. Ensure both PRs have no extra commits
    #{i?}.#{j}. Inspect the file changes on GitHub
-   #{i?}.#{j}. Problematic tables? Compare results snowflake<->redshift
 #{i}. Make links: snow link <warehouse> <finance> [<pkg>]
 #{i}. Move JIRA ticket to IN REVIEW
 #{i}. DELEGATE: Notify Zack by sending him links
