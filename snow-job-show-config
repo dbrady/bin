@@ -79,5 +79,5 @@ merged_lines.each do |line|
   in_defaults = key && default_lines.any? { |l| l.include? key }
   in_job = key && job_lines.any? { |l| l.include? key }
 
-  puts line.rstrip.send(color_for(in_defaults, in_job)).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+  puts line.rstrip.send(color_for(in_defaults, in_job)).gsub("redshift", "\033[1;37;41mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
 end
