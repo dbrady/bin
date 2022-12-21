@@ -61,7 +61,7 @@ def find_ready_for_dev():
                 dave_count += 1
                 print(f'https://acima.atlassian.net/browse/{ticket["key"]}')
                 if dave_count >= dave_max:
-                    print("More tickets available (total={tickets['total']}) but that's enough for now")
+                    print(f"More tickets are available. (total={tickets['total']})")
                     finished = True
                     break
 
