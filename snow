@@ -11,6 +11,11 @@
 #
 # TODO: Document the snow ecosystem for future me:
 #
+# TODO: Keep the job name around when off of the branch. Now we have the ability
+# to blast a flash warning on the screen saying "you're off-branch, are you
+# sure?". That would be more convenient that running python manually--and losing
+# the checks in the process.
+#
 # - snow - check the current script. -q to only show failing checks.
 # - snow main - jump back to main snowflake branch
 # - snow master - same thing but back to origin/master
@@ -46,7 +51,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    no_need = ["go", "new", "master", "main"].include?(ARGV.first) ||
+    no_need = ["go", "new", "master", "main", "cplx", "complexity"].include?(ARGV.first) ||
               (ARGV.first == "job" && ARGV.size >= 2)
     !no_need
   end
@@ -117,7 +122,7 @@ class SnowflakeManglerApp
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       puts section_title title if quiet?
-      puts "Autofix with: #{autofix}" if autofix
+      puts "Autofix with: #{autofix.cyan}" if autofix
       # Yeah, turn this into lines_with_indexes = finder_method, we can
       # write a generic version to do what this regex does, and then we can
       # pass in custom finder methods for multiline and trickier stuff
@@ -298,8 +303,15 @@ If no commands are given, snow will run check.
     #
     # in a subselect with double quotes and doubled single quotes
     # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
+
     regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
-    # regex = /([()_\w\.]+) AT TIME ZONE (.+?) AT TIME ZONE (.+?)/
+    #           ^      ^                     ^                          ^
+    #           |      |                     |                           \_ $4. "to" time zone
+    #           |      |                      \_ $3. "from" time zone
+    #           |       \_ $2. timestamp column to be converted
+    #            \_ $1. indentation and optional leading comma
+    #
+
     return unless line =~ regex
 
     line.gsub(regex, "#{$1}CONVERT_TIMEZONE(#{$3}, #{$4}, #{$2})")
@@ -397,7 +409,7 @@ If no commands are given, snow will run check.
         _,cols = $stdout.winsize
         warehouse = `snow-get-warehouse -c`
         branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
-        print "\033[s\033[1;#{cols-warehouse.size}H#{warehouse}\033[u"
+        print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
       end
 
       argv = ARGV.dup - ['-q', '--quiet']
