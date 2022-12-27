@@ -3,12 +3,12 @@ import json
 
 class BadTicket:
     """
-    BadTicket
+    Wrapper for a single bad ticket instance, with an id and comment.
 
     Nomenclature consistency:
 
     If we say "number" it is an integer. Jira case DS-1406 would have number
-    1406. If we say "ticket_id" it is the string of the ticket and include the
+    1406. If we say "ticket_id" it is the string of the ticket and includes the
     team prefix, e.g. "DS-1406".
     """
     def __init__(self, id, comment=""):
@@ -28,6 +28,13 @@ class BadTicket:
 
 
 class BadTickets:
+    """
+    Bad tickets collection. Reads ~/jira-bad-tickets.json.
+
+    Not Yet Implemented: Writing it back out. YAGNI until we need to, e.g. prune
+    the bad tickets. Which to be fair is approaching.
+
+    """
     def __init__(self):
         try:
             with open(os.path.expanduser("~/jira-bad-tickets.json")) as file:

@@ -8,12 +8,12 @@ from dataservices import jira
 import json
 import os
 
-def get_bad_tickets():
-    try:
-        with open(os.path.expanduser("~/jira-bad-tickets.json")) as file:
-            return json.loads(file.read())["tickets"]
-    except FileNotFoundError:
-        return []
+# def get_bad_tickets():
+#     try:
+#         with open(os.path.expanduser("~/jira-bad-tickets.json")) as file:
+#             return json.loads(file.read())["tickets"]
+#     except FileNotFoundError:
+#         return []
 
 
 def find_ready_for_dev():
