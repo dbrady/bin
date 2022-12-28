@@ -461,7 +461,7 @@ If no commands are given, snow will run check.
     # snow cplx | complexity
     # ----------------------------------------------------------------------
     if ARGV.first == "cplx" || ARGV.first == "complexity"
-      run_and_exit! "snow-check-complexity #{ARGV[1..] * ' '}"
+      run_and_exit! "snow-complexity #{ARGV[1..] * ' '}"
     end
 
     # ----------------------------------------------------------------------
