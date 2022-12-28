@@ -314,7 +314,16 @@ If no commands are given, snow will run check.
 
     return unless line =~ regex
 
-    line.gsub(regex, "#{$1}CONVERT_TIMEZONE(#{$3}, #{$4}, #{$2})")
+    # line.gsub(regex, "#{$1}CONVERT_TIMEZONE(#{$3}, #{$4}, #{$2})")
+    line = line.gsub(regex, '\1CONVERT_TIMEZONE(\3, \4, \2)')
+
+    # Sometimes we get extra parens around the timestamp, like so:
+    # CONVERT_BLAH(x, y, (c.contact_start))
+
+    # This is tricky to catch going in because the regex breaks $2 right before
+    # the closing paren. However, these are detectable after the replacement
+    # because the innermost match has no whitespace or parens.
+    line.gsub( /\(([A-Za-z0-9_\.]+)\)/, '\1' )
   end
 
   # This doesn't get all the cases, but it does get the ones that are inline.
