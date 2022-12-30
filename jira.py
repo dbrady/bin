@@ -27,7 +27,7 @@ def find_ready_for_dev():
     finished = None
     start_at = 0
     dave_count = 0
-    dave_max = 10
+    dave_max = 20
     bad_tickets = BadTickets()
     bad_ticket_ids = bad_tickets.ids()
     # print(bad_ticket_ids)
