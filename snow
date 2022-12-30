@@ -349,14 +349,26 @@ If no commands are given, snow will run check.
     line.gsub(regex, replacement)
   end
 
-  def replace_similar_to_with_rlike(line)
+  def replace_similar_to_with_like_any(line)
     regex = %r{\b(SIMILAR\s+TO)\s+(.+)}
     return unless line =~ regex
 
-    # TODO: if the regex doesn't have alternates, use LIKE instead?
-    # So:
     # x SIMILAR TO '%(pants)%' => x LIKE '%pants%'
-    # x SIMILAR TO '%(hat|glasses)%' => x RLIKE '.*(hat|glasses).*'
+    # x SIMILAR TO '%%(pants)%%' => x LIKE '%pants%'
+    # x SIMILAR TO '%(hat|glasses)%' => x LIKE ANY ('%hat%', '%glasses%')
+
+    # To negate, put the NOT in front of the column name
+    # x NOT SIMILAR TO '%(pants)%' => NOT x LIKE ANY ('%pants%')
+
+    # match_phrase = \
+    # if match begins and ends with %(...)% and contains no other %'s
+    #   strip leading %( and trailing )%
+    #   # is match plural?
+    #   matches = match.split(%r|/|).map {|m| "'%#{m}%'" }.join(", ")
+    #   "LIKE ANY (#{matches})"
+    #
+    # else
+    #   it's a weird match, let the human do it
 
     line
       .sub(regex, "RLIKE(#{$2})")
@@ -668,7 +680,7 @@ If no commands are given, snow will run check.
     # NOTE: For simple expressions favor LIKE ANY ('%bleh%', '%glorp%')
     # Use RLIKE when the regexp is genuinely complicated
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /(similar to|~)/i, suggest: :replace_similar_to_with_rlike
+    detect_and_print_lines lines, "SIMILAR TO", /(similar to|~)/i, suggest: :replace_similar_to_with_like_any, unmatch: /os\.path\.expanduser/
 
     # ----------------------------------------------------------------------
     # JSON_EXTRACT_* functions
