@@ -334,7 +334,7 @@ If no commands are given, snow will run check.
     line.gsub(regex, "LIKE #{$1}")
   end
 
-  def replace_epoch_timestamp_with_interal_1_second(line)
+  def replace_epoch_timestamp_with_interval_1_second(line)
     regex = /timestamp\s+'epoch'\s*\+\s*(.*?)\*\s*interval\s+'1 second'/i
 
     return unless line =~ regex
@@ -566,7 +566,7 @@ If no commands are given, snow will run check.
     # if no conflicts found, this can be autofixed with sed -E -i '/\b(DIS|SOR)TKEY\b/d
 
     # ----------------------------------------------------------------------
-    # Illegal Snowflake Syntax:  INTERVAL
+    # Illegal Snowflake Syntax: * INTERVAL
     # ----------------------------------------------------------------------
     #
     # Don't use postgresq2l date interval arithmetic.
@@ -586,7 +586,10 @@ If no commands are given, snow will run check.
     #
     # Watch for Spencer's `timestamp 'epoch' + seconds * interval '1 second'`,
     # it specifally converts easilly to just `TO_TIMESTAMP(seconds)`
-    detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true, suggest: :replace_epoch_timestamp_with_interal_1_second
+    detect_and_print_lines lines, "Interval Arithmetic",
+                           /\*\s*INTERVAL\b/i,
+                           essential: true,
+                           suggest: :replace_epoch_timestamp_with_interval_1_second
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: Postgres INT2, INT4, INT8
@@ -659,10 +662,13 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # SIMILAR TO -> RLIKE
     #
-    # AWS: <column> SIMILAR TO <regex>
+    # RED: <column> SIMILAR TO <regex>
     # SNOW: RLIKE(<column>, <regex>)
+    #
+    # NOTE: For simple expressions favor LIKE ANY ('%bleh%', '%glorp%')
+    # Use RLIKE when the regexp is genuinely complicated
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
+    detect_and_print_lines lines, "SIMILAR TO", /(similar to|~)/i, suggest: :replace_similar_to_with_rlike
 
     # ----------------------------------------------------------------------
     # JSON_EXTRACT_* functions
@@ -701,6 +707,11 @@ If no commands are given, snow will run check.
     # DATE_ADD('unit',num, column) -> DATEADD(unit, num, column)
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "DATE_ADD", /DATE_ADD\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_ADD\\('([^']+)'/DATEADD(\\1/ig" #{get_script}|
+
+    # ----------------------------------------------------------------------
+    # DATE_DIFF('unit',num, column) -> DATEDIFF(unit, num, column)
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "DATE_DIFF", /DATE_DIFF\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_DIFF\\('([^']+)'/DATEDIFF(\\1/ig" #{get_script}|
 
 
     # ----------------------------------------------------------------------
@@ -897,9 +908,9 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "CREATE TABLE (LIKE)", /\bCREATE\s+TABLE\b.*\(LIKE/i, suggest: :replace_inline_create_table_like, essential: true
-    detect_and_print_multilines lines, "CREATE TABLE (LIKE)", [/\bCREATE\s+TABLE\b.*\(/i, /LIKE/i], essential: true
-    detect_and_print_multilines lines, "CREATE TABLE (LIKE)", [/\bCREATE\s+TABLE\b/i, /\(\s*LIKE/i], essential: true
+    detect_and_print_lines lines, "CREATE TABLE LIKE [1/3]", /\bCREATE\s+TABLE\b.*\(LIKE/i, suggest: :replace_inline_create_table_like, essential: true
+    detect_and_print_multilines lines, "CREATE TABLE LIKE [2/3]", [/\bCREATE\s+TABLE\b.*\(/i, /LIKE/i], essential: true
+    detect_and_print_multilines lines, "CREATE TABLE LIKE [3/3]", [/\bCREATE\s+TABLE\b/i, /\(\s*LIKE/i], essential: true
 
     # ----------------------------------------------------------------------
     # ENCODE
@@ -909,7 +920,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # GREATEST/LEAST -> COALESCE(GREATEST/LEAST(...),value)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /coalesce\((greatest|least)\b\(/i, essential: true
+    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, essential: true # , unmatch: /coalesce\((greatest|least)\b\(/i
 
     # ----------------------------------------------------------------------
     # TABS
