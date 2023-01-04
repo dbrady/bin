@@ -755,6 +755,11 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "WITH NO SCHEMA BINDING", /WITH NO SCHEMA BINDING/i
 
+    # ----------------------------------------------------------------------
+    # BOOL -> BOOLEAN
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!CAUTION: UNTESTED!!!) sed -i -E 's/\bBOOL\b/BOOLEAN/ig' #{get_script}"
+
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
