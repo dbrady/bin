@@ -8,7 +8,12 @@
 require 'colorize'
 require 'yaml'
 
-script = ARGV.first || `get-ds-script`.strip
+script = if ARGV.first.to_i > 0
+           ARGV[1]
+         else
+           ARGV.first
+         end
+script ||= `get-ds-script`.strip
 
 if script.empty?
   puts "Nothing to analyze. Specify job file as a script argument or with set-ds-script first"
@@ -97,3 +102,8 @@ puts "---------------------------------------"
 puts "Using formula: C = d * l * (p + s + v) * 2**(c*(1+r))"
 puts "---------------------------------------"
 puts "Total Complexity: #{pretty_complexity}".cyan
+
+if ARGV.first.to_i > 0
+  puts "Pick up this ticket with"
+  puts "snow new #{ARGV.join(' ')}".green
+end

@@ -51,7 +51,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    no_need = ["go", "new", "master", "main", "cplx", "complexity"].include?(ARGV.first) ||
+    no_need = (["go", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
               (ARGV.first == "job" && ARGV.size >= 2)
     !no_need
   end
@@ -72,7 +72,7 @@ class SnowflakeManglerApp
   end
 
   def preview?
-    ARGV.first == "preview"
+    ARGV.include?("preview")
   end
 
   def help?
@@ -397,7 +397,9 @@ If no commands are given, snow will run check.
     end
 
     # Override script if job is preview
-    set_script ARGV[1] if preview?
+    if preview?
+      set_script((ARGV[1].to_i > 0) ? ARGV[2] : ARGV[1])
+    end
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if need_script? && (get_script.nil? || get_script.empty?)
@@ -472,7 +474,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # snow cplx | complexity
     # ----------------------------------------------------------------------
-    if ARGV.first == "cplx" || ARGV.first == "complexity"
+    if (ARGV & ["cplx", "complexity"]).size > 0
       run_and_exit! "snow-complexity #{ARGV[1..] * ' '}"
     end
 
