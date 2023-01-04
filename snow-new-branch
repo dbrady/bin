@@ -108,4 +108,4 @@ Dir.chdir("finance") do
 end
 
 puts "Script is at:"
-puts `get-ds-script -f`.green
+puts `get-ds-script -f`.rstrip.bold.white.on_green
