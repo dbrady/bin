@@ -1,5 +1,6 @@
 #!/bin/bash
 echo 'WARNING! This will commit your warehouse and finance branches, push them up, and give you create-pr links'
+git isclean && echo -e "\033[32mBranch looks clean from here\033[0m" || (echo -e "\033[1;37;41mCowardly refusing to continue because branch is not clean\033[0m" && exit -1)
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
 
