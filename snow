@@ -514,7 +514,7 @@ If no commands are given, snow will run check.
     # snow link <pr> <finance_pr> [package_pr] -> Create Slackable links for Zack
     # ----------------------------------------------------------------------
     if ARGV.first == "link"
-      run_and_exit! "snow-make-links #{ARGV[1..].join(' ')}"
+      run_and_exit! "snow-link #{ARGV[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------

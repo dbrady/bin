@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # backlog - Show the review backlog, beacuse I've renamed that stupid file twice
-# and keep forgetting where snow-make-links puts it.
+# and keep forgetting where snow-link puts it.
 
 if [ "$IS_DOCKER_LOCAL" == "1" ]; then
     # docker

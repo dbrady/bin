@@ -1,17 +1,18 @@
 #!/usr/bin/env ruby
-# snow-make-links - generate all the PR links for a job's migrations
+# snow-link - generate all the PR links for a job's migrations
 #
-# snow-make-links <WAREHOUSE_PR_ID> <FINANCE_PR_ID> [<PACKAGE_PR_ID>]
+# snow-link <WAREHOUSE_PR_ID> <FINANCE_PR_ID> [<PACKAGE_PR_ID>]
 #
-# Given 2-3 integers, generates and prints the link template.
+# Given 2-3 integers, generates and prints the link template. Emits "None" for a
+# link if the given pr id is -1.
 #
 # This script also records PRs as you make them, supporting looking back to find
-# which PRs went with what ticket.
+# which PRs went with what ticket. See ~/.branch-history-warehouse.yml
 #
-# snow-make-links show                      - show links for current git branch (if already recorded)
-# snow-make-links show <ticket|search_term> - search for ticket or branch name
-# snow-make-links show last                 - show last set of links recorded
-# snow-make-links show all                  - show all the recorded PRs.
+# snow-link show                      - show links for current git branch (if already recorded)
+# snow-link show <ticket|search_term> - search for ticket or branch name
+# snow-link show last                 - show last set of links recorded
+# snow-link show all                  - show all the recorded PRs.
 
 require 'yaml'
 require 'date'
@@ -64,7 +65,7 @@ if ARGV[0] == "show"
 
   elsif ARGV[1].to_i > 0
     puts({ARGV[1].to_i => branch_history[ARGV[1].to_i]}.to_yaml)
-  #
+
   elsif ARGV[1] == "all"
     # show whole file
     puts branch_history.to_yaml
