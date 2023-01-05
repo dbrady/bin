@@ -93,8 +93,16 @@ FINANCE_PR_ID=ARGV[1]
 PACKAGE_PR_ID=ARGV[2]
 
 JIRA_LINK = "https://acima.atlassian.net/browse/DS-#{TICKET_ID}"
-WAREHOUSE_LINK = "https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}"
-FINANCE_LINK = "https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}"
+WAREHOUSE_LINK = if WAREHOUSE_PR_ID.to_i < 0
+                   "None"
+                 else
+                   "https://github.com/acima-credit/data_services/pull/#{WAREHOUSE_PR_ID}"
+                 end
+FINANCE_LINK = if FINANCE_PR_ID.to_i < 0
+                 "None"
+               else
+                 "https://github.com/acima-credit/data_services_finance/pull/#{FINANCE_PR_ID}"
+               end
 PACKAGE_LINK = "https://github.com/acima-credit/data_services_package/pull/#{PACKAGE_PR_ID}"
 
 # update yaml
