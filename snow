@@ -37,7 +37,16 @@ class SnowflakeManglerApp
   end
 
   def set_script(script)
-    @get_script = script
+    @get_script = if File.exists? script
+                    script
+                  else
+                    script = script.gsub(/\./, '/')
+                    if script.end_with?(".py")
+                      script
+                    else
+                      script + ".py"
+                    end
+                  end
   end
 
   def get_script
