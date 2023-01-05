@@ -60,7 +60,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    no_need = (["go", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
+    no_need = (["backlog", "go", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
               (ARGV.first == "job" && ARGV.size >= 2)
     !no_need
   end
@@ -515,6 +515,13 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     if ARGV.first == "link"
       run_and_exit! "snow-link #{ARGV[1..].join(' ')}"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow backlog - show backlog file
+    # ----------------------------------------------------------------------
+    if ARGV.first == "backlog"
+      run_and_exit! "snow-backlog #{ARGV[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
