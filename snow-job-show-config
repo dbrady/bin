@@ -45,7 +45,7 @@ opts = Optimist.options do
   opt :legend, "Show color legend", type: :boolean
 end
 
-script = (ARGV.first || get_script).sub(%r|/|, '.').sub(/\.py$/, '')
+script = (ARGV.first || get_script).gsub(%r|/|, '.').sub(/\.py$/, '')
 
 config = File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json"))
 
