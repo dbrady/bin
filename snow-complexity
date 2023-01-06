@@ -49,6 +49,7 @@ cte_count = lines.find_all {|line| line =~ /\bAS\s*\(/i }.size
 view_count = lines.find_all {|line| line =~ /\bcreate\b.*\bview\b/i }.size
 recursive_cte_count = lines.find_all {|line| line =~ /\bRECURSIVE\b/i }.size
 problematic_query_count = lines.find_all {|line| line =~ /\b(greatest|least)\b/i }.size
+panda_factor = 1 + lines.find_all {|line| line =~ /\.DataFrame/ }.size
 
 dev_factor = 1.0
 seen_devs = []
@@ -87,7 +88,7 @@ seen_devs = seen_devs.empty? ? "" : "(#{seen_devs * ', '})"
 #   instances. But timezone conversion is a 1 point change per instance, and
 #   least/greatest and json manipulation is 3 to 5 points easy.
 
-complexity = (dev_factor * line_count * (problematic_query_count + sql_query_count + view_count) * 2**(cte_count * (1+recursive_cte_count))).round
+complexity = (dev_factor * line_count * panda_factor * (problematic_query_count + sql_query_count + view_count) * 2**(cte_count * (1+recursive_cte_count))).round
 pretty_complexity = complexity.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(',').reverse
 
 puts "Script: #{script}"
@@ -97,9 +98,10 @@ puts "s: sql_query_count: #{sql_query_count}"
 puts "c: cte_count: #{cte_count}"
 puts "r: recursive_cte_count: #{recursive_cte_count}"
 puts "v: view_count: #{view_count}"
+puts "pd: panda_factor: #{panda_factor}"
 puts "d: dev_factor: #{dev_factor} #{seen_devs}"
 puts "---------------------------------------"
-puts "Using formula: C = d * l * (p + s + v) * 2**(c*(1+r))"
+puts "Using formula: C = d * l * pd * (p + s + v) * 2**(c*(1+r))"
 puts "---------------------------------------"
 puts "Total Complexity: #{pretty_complexity}".cyan
 
