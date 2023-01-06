@@ -256,7 +256,12 @@ class SnowflakeManglerApp
 
   def should_be_skippable?
     get_script.include?("_sf_") ||
+      get_script.include?("salesforce") ||
       (get_script.include?("mcloud") && !get_script.include?("_get_"))
+  end
+
+  def has_test_mode?
+    File.readlines(get_script).any? {|line| line.include?("--test")}
   end
 
   def run_and_exit!(command)
@@ -350,8 +355,22 @@ If no commands are given, snow will run check.
   end
 
   def replace_similar_to_with_like_any(line)
-    regex = %r{\b(SIMILAR\s+TO)\s+(.+)}
+    regex = %r{^(.*?)([A-Za-z0-9\._]+)\s+((NOT)\s+)SIMILAR\s+TO\s+(.+)}
     return unless line =~ regex
+
+    # column, is_not, patterns = $1, $3, $4
+    left, column, is_not, patterns = $1, $2, $4, $5
+
+    replacement = "column: #{column}, not: #{is_not ? 'NOT!' : 'not-not'}, patterns: #{patterns.inspect}"
+
+    pats = if patterns =~ /^'%\((.*?)\)%'$/
+             $1.split(/\|/).map {|pat| "'%#{pat}%'"}.join(', ')
+           else
+             "NO MATCH"
+           end
+
+
+    "#{left}#{is_not ? 'NOT ' : ''}#{column} LIKE ANY (#{pats})"
 
     # x SIMILAR TO '%(pants)%' => x LIKE '%pants%'
     # x SIMILAR TO '%%(pants)%%' => x LIKE '%pants%'
@@ -370,11 +389,11 @@ If no commands are given, snow will run check.
     # else
     #   it's a weird match, let the human do it
 
-    line
-      .sub(regex, "RLIKE(#{$2})")
-      .sub(%r{'%\(?}, "'.*(")
-      .sub(%r{\)?%'}, ").*'")
-      .gsub(/\+/, '\\\\+')
+    # line
+    #   .sub(regex, "RLIKE(#{$2})")
+    #   .sub(%r{'%\(?}, "'.*(")
+    #   .sub(%r{\)?%'}, ").*'")
+    #   .gsub(/\+/, '\\\\+')
   end
 
 
@@ -439,6 +458,7 @@ If no commands are given, snow will run check.
       argv.shift
       command = "dsetl_nightly"
       command += " --skip_upload" if skippable?
+      command += " --test" if has_test_mode?
       command += " " + argv.join(" ")
       run_and_exit! command
     end
@@ -678,7 +698,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # TRUNC
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TRUNC", /\bTRUNC\b\s*\(/i, essential: true, autofix: "sed -E -i 's/\\bTRUNC\\b/TO_DATE/' #{get_script}"
+    detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, essential: true
 
     # ----------------------------------------------------------------------
     # SIMILAR TO -> RLIKE
