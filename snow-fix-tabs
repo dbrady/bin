@@ -1,0 +1,14 @@
+#!/bin/bash
+# snow-fix-tabs
+
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo -e "\033[36msed -E -i 's/\t/    /g' $SCRIPT\033[0m"
+sed -E -i 's/\t/    /g' $SCRIPT
+
+snow-commit-warehouse-tabs

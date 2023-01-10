@@ -10,6 +10,7 @@ echo "Hit CTRL-C to abort. Otherwise, hit ENTER to begin."
 read
 
 # now run all the snow-fix-* scripts
+snow-fix-tabs
 snow-fix-whitespace
 snow-fix-pep
 snow-fix-distkeys
