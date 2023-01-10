@@ -1,2 +1,0 @@
-#!/bin/bash
-snow-commit-ds-script "Change SIMILAR TO to RLIKE"

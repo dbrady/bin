@@ -2,7 +2,7 @@
 echo TODO: Check to make sure nothing else is currently staged
 
 # commify args. `git add-new a b c d` -> "a, b, c, d"
-# first time through loop, files and c expand to empty string.
+# first time through loop, files and glue expand to empty string.
 for i in $@; do
     files="$files$glue$i"
     glue=', '

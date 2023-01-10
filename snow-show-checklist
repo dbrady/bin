@@ -3,7 +3,7 @@
 # stoopid numbering hacks
 # i!, j! = init and return the counter
 # i, j = increment and return the counter
-# i?, j? = get counter without
+# i?, j? = get counter without incrementing it (for i?.j subheads)
 def i?; "#{$i}."; end
 def i!; "#{$i = 1}."; end
 def i; "#{ $i += 1}."; end

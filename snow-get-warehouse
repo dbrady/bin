@@ -1,0 +1,37 @@
+#!/usr/bin/env ruby
+# snow-get-warehouse [-c] [job] - is this job on snowflake or redshift?
+# -c - colorize output
+require 'colorize'
+require 'json'
+
+argv = ARGV.dup
+
+colorize = argv.delete("-c")
+
+script = argv.first || `get-ds-script`.rstrip
+
+if script.empty?
+    puts "You must provide script as an arg, or set the SCRIPT variable first."
+    exit -1
+end
+
+job_name = script.sub(/.py/, '').gsub(%r|/|, '.')
+
+config = JSON.parse(File.read("/root/data_services/etl/warehouse/finance/config/etl_nightly_config.json"))
+
+warehouse = config["jobs"].fetch(job_name, {})["dst_conn"]
+
+if colorize
+  puts case warehouse
+       when "redshift"
+         warehouse.bold.light_white.on_red
+       when "snowflake"
+         warehouse.light_white.on_light_blue
+       when /redshift/
+         warehouse.red
+       else
+         warehouse.bold.white.on_magenta
+       end
+else
+  puts warehouse
+end

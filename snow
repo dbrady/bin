@@ -11,6 +11,11 @@
 #
 # TODO: Document the snow ecosystem for future me:
 #
+# TODO: Keep the job name around when off of the branch. Now we have the ability
+# to blast a flash warning on the screen saying "you're off-branch, are you
+# sure?". That would be more convenient that running python manually--and losing
+# the checks in the process.
+#
 # - snow - check the current script. -q to only show failing checks.
 # - snow main - jump back to main snowflake branch
 # - snow master - same thing but back to origin/master
@@ -24,6 +29,7 @@
 
 require 'colorize'
 require 'optimist'
+require 'io/console'
 
 class SnowflakeManglerApp
   def checklist
@@ -45,12 +51,12 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    no_need = ["go", "new", "master", "main"].include?(ARGV.first) ||
+    no_need = (["backlog", "go", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
               (ARGV.first == "job" && ARGV.size >= 2)
     !no_need
   end
 
-  # Quiet: Don't show "OK" detectors, just errors
+  # Quiet: Don't show passing detectors or extraneous logging
   def quiet?
     ARGV.include?('--quiet') || ARGV.include?('-q')
   end
@@ -66,7 +72,7 @@ class SnowflakeManglerApp
   end
 
   def preview?
-    ARGV.first == "preview"
+    ARGV.include?("preview")
   end
 
   def help?
@@ -116,7 +122,7 @@ class SnowflakeManglerApp
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       puts section_title title if quiet?
-      puts "Autofix with: #{autofix}" if autofix
+      puts "Autofix with: #{autofix.cyan}" if autofix
       # Yeah, turn this into lines_with_indexes = finder_method, we can
       # write a generic version to do what this regex does, and then we can
       # pass in custom finder methods for multiline and trickier stuff
@@ -250,7 +256,12 @@ class SnowflakeManglerApp
 
   def should_be_skippable?
     get_script.include?("_sf_") ||
+      get_script.include?("salesforce") ||
       (get_script.include?("mcloud") && !get_script.include?("_get_"))
+  end
+
+  def has_test_mode?
+    File.readlines(get_script).any? {|line| line.include?("--test")}
   end
 
   def run_and_exit!(command)
@@ -297,11 +308,27 @@ If no commands are given, snow will run check.
     #
     # in a subselect with double quotes and doubled single quotes
     # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
+
     regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
-    # regex = /([()_\w\.]+) AT TIME ZONE (.+?) AT TIME ZONE (.+?)/
+    #           ^      ^                     ^                          ^
+    #           |      |                     |                           \_ $4. "to" time zone
+    #           |      |                      \_ $3. "from" time zone
+    #           |       \_ $2. timestamp column to be converted
+    #            \_ $1. indentation and optional leading comma
+    #
+
     return unless line =~ regex
 
-    line.gsub(regex, "#{$1}CONVERT_TIMEZONE(#{$3}, #{$4}, #{$2})")
+    # line.gsub(regex, "#{$1}CONVERT_TIMEZONE(#{$3}, #{$4}, #{$2})")
+    line = line.gsub(regex, '\1CONVERT_TIMEZONE(\3, \4, \2)')
+
+    # Sometimes we get extra parens around the timestamp, like so:
+    # CONVERT_BLAH(x, y, (c.contact_start))
+
+    # This is tricky to catch going in because the regex breaks $2 right before
+    # the closing paren. However, these are detectable after the replacement
+    # because the innermost match has no whitespace or parens.
+    line.gsub( /\(([A-Za-z0-9_\.]+)\)/, '\1' )
   end
 
   # This doesn't get all the cases, but it does get the ones that are inline.
@@ -312,7 +339,7 @@ If no commands are given, snow will run check.
     line.gsub(regex, "LIKE #{$1}")
   end
 
-  def replace_epoch_timestamp_with_interal_1_second(line)
+  def replace_epoch_timestamp_with_interval_1_second(line)
     regex = /timestamp\s+'epoch'\s*\+\s*(.*?)\*\s*interval\s+'1 second'/i
 
     return unless line =~ regex
@@ -327,20 +354,46 @@ If no commands are given, snow will run check.
     line.gsub(regex, replacement)
   end
 
-  def replace_similar_to_with_rlike(line)
-    regex = %r{\b(SIMILAR\s+TO)\s+(.+)}
+  def replace_similar_to_with_like_any(line)
+    regex = %r{^(.*?)([A-Za-z0-9\._]+)\s+((NOT)\s+)SIMILAR\s+TO\s+(.+)}
     return unless line =~ regex
 
-    # TODO: if the regex doesn't have alternates, use LIKE instead?
-    # So:
-    # x SIMILAR TO '%(pants)%' => x LIKE '%pants%'
-    # x SIMILAR TO '%(hat|glasses)%' => x RLIKE '.*(hat|glasses).*'
+    # column, is_not, patterns = $1, $3, $4
+    left, column, is_not, patterns = $1, $2, $4, $5
 
-    line
-      .sub(regex, "RLIKE(#{$2})")
-      .sub(%r{'%\(?}, "'.*(")
-      .sub(%r{\)?%'}, ").*'")
-      .gsub(/\+/, '\\\\+')
+    replacement = "column: #{column}, not: #{is_not ? 'NOT!' : 'not-not'}, patterns: #{patterns.inspect}"
+
+    pats = if patterns =~ /^'%\((.*?)\)%'$/
+             $1.split(/\|/).map {|pat| "'%#{pat}%'"}.join(', ')
+           else
+             "NO MATCH"
+           end
+
+
+    "#{left}#{is_not ? 'NOT ' : ''}#{column} LIKE ANY (#{pats})"
+
+    # x SIMILAR TO '%(pants)%' => x LIKE '%pants%'
+    # x SIMILAR TO '%%(pants)%%' => x LIKE '%pants%'
+    # x SIMILAR TO '%(hat|glasses)%' => x LIKE ANY ('%hat%', '%glasses%')
+
+    # To negate, put the NOT in front of the column name
+    # x NOT SIMILAR TO '%(pants)%' => NOT x LIKE ANY ('%pants%')
+
+    # match_phrase = \
+    # if match begins and ends with %(...)% and contains no other %'s
+    #   strip leading %( and trailing )%
+    #   # is match plural?
+    #   matches = match.split(%r|/|).map {|m| "'%#{m}%'" }.join(", ")
+    #   "LIKE ANY (#{matches})"
+    #
+    # else
+    #   it's a weird match, let the human do it
+
+    # line
+    #   .sub(regex, "RLIKE(#{$2})")
+    #   .sub(%r{'%\(?}, "'.*(")
+    #   .sub(%r{\)?%'}, ").*'")
+    #   .gsub(/\+/, '\\\\+')
   end
 
 
@@ -363,7 +416,9 @@ If no commands are given, snow will run check.
     end
 
     # Override script if job is preview
-    set_script ARGV[1] if preview?
+    if preview?
+      set_script((ARGV[1].to_i > 0) ? ARGV[2] : ARGV[1])
+    end
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if need_script? && (get_script.nil? || get_script.empty?)
@@ -392,9 +447,19 @@ If no commands are given, snow will run check.
         puts
       end
 
+      if !quiet?
+        _,cols = $stdout.winsize
+        warehouse = `snow-get-warehouse -c`
+        branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
+        print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
+      end
+
+      argv = ARGV.dup - ['-q', '--quiet']
+      argv.shift
       command = "dsetl_nightly"
       command += " --skip_upload" if skippable?
-      command += " " + ARGV[1..].join(" ")
+      command += " --test" if has_test_mode?
+      command += " " + argv.join(" ")
       run_and_exit! command
     end
 
@@ -427,6 +492,13 @@ If no commands are given, snow will run check.
     end
 
     # ----------------------------------------------------------------------
+    # snow cplx | complexity
+    # ----------------------------------------------------------------------
+    if (ARGV & ["cplx", "complexity"]).size > 0
+      run_and_exit! "snow-complexity #{ARGV[1..] * ' '}"
+    end
+
+    # ----------------------------------------------------------------------
     # snow job -> snow-show-job-config
     # ----------------------------------------------------------------------
     if ARGV.first == "job"
@@ -453,7 +525,14 @@ If no commands are given, snow will run check.
     # snow link <pr> <finance_pr> [package_pr] -> Create Slackable links for Zack
     # ----------------------------------------------------------------------
     if ARGV.first == "link"
-      run_and_exit! "snow-make-links #{ARGV[1..].join(' ')}"
+      run_and_exit! "snow-link #{ARGV[1..].join(' ')}"
+    end
+
+    # ----------------------------------------------------------------------
+    # snow backlog - show backlog file
+    # ----------------------------------------------------------------------
+    if ARGV.first == "backlog"
+      run_and_exit! "snow-backlog #{ARGV[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
@@ -528,7 +607,7 @@ If no commands are given, snow will run check.
     # if no conflicts found, this can be autofixed with sed -E -i '/\b(DIS|SOR)TKEY\b/d
 
     # ----------------------------------------------------------------------
-    # Illegal Snowflake Syntax:  INTERVAL
+    # Illegal Snowflake Syntax: * INTERVAL
     # ----------------------------------------------------------------------
     #
     # Don't use postgresq2l date interval arithmetic.
@@ -543,13 +622,15 @@ If no commands are given, snow will run check.
     #
     # Or
     #
-    # But watch out: This is an ok conversion:
-    # contact_start - interval '6 hour'
-    # DATEADD(contact_start, -6, 'hour')
+    # ==> LQQK LQQK LQQK ==> Watch out: This is an ok conversion:
+    # contact_start - INTERVAL '6 hour'
     #
     # Watch for Spencer's `timestamp 'epoch' + seconds * interval '1 second'`,
     # it specifally converts easilly to just `TO_TIMESTAMP(seconds)`
-    detect_and_print_lines lines, "Interval Arithmetic", /\bINTERVAL\b/i, essential: true, suggest: :replace_epoch_timestamp_with_interal_1_second
+    detect_and_print_lines lines, "Interval Arithmetic",
+                           /\*\s*INTERVAL\b/i,
+                           essential: true,
+                           suggest: :replace_epoch_timestamp_with_interval_1_second
 
     # ----------------------------------------------------------------------
     # Illegal Snowflake Syntax: Postgres INT2, INT4, INT8
@@ -617,15 +698,18 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # TRUNC
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TRUNC", /\bTRUNC\b\s*\(/i, essential: true, autofix: "sed -E -i 's/\\bTRUNC\\b/TO_DATE/' #{get_script}"
+    detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, essential: true
 
     # ----------------------------------------------------------------------
     # SIMILAR TO -> RLIKE
     #
-    # AWS: <column> SIMILAR TO <regex>
+    # RED: <column> SIMILAR TO <regex>
     # SNOW: RLIKE(<column>, <regex>)
+    #
+    # NOTE: For simple expressions favor LIKE ANY ('%bleh%', '%glorp%')
+    # Use RLIKE when the regexp is genuinely complicated
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "SIMILAR TO", /similar to/i, suggest: :replace_similar_to_with_rlike
+    detect_and_print_lines lines, "SIMILAR TO", /(similar to|~)/i, suggest: :replace_similar_to_with_like_any, unmatch: /os\.path\.expanduser/
 
     # ----------------------------------------------------------------------
     # JSON_EXTRACT_* functions
@@ -665,6 +749,11 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "DATE_ADD", /DATE_ADD\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_ADD\\('([^']+)'/DATEADD(\\1/ig" #{get_script}|
 
+    # ----------------------------------------------------------------------
+    # DATE_DIFF('unit',num, column) -> DATEDIFF(unit, num, column)
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "DATE_DIFF", /DATE_DIFF\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_DIFF\\('([^']+)'/DATEDIFF(\\1/ig" #{get_script}|
+
 
     # ----------------------------------------------------------------------
     # BTRIM
@@ -689,6 +778,16 @@ If no commands are given, snow will run check.
     # 999,999D99 or YYYY-MM-DD etc.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "TO_CHAR (with numeric format)", /to_char/i, unmatch: /'[YMD\-9,]+'/
+
+    # ----------------------------------------------------------------------
+    # WITH NO SCHEMA BINDING -> just delete the line
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "WITH NO SCHEMA BINDING", /WITH NO SCHEMA BINDING/i
+
+    # ----------------------------------------------------------------------
+    # BOOL -> BOOLEAN
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!CAUTION: UNTESTED!!!) sed -i -E 's/\bBOOL\b/BOOLEAN/ig' #{get_script}"
 
     # ======================================================================
     # END SQL CHANGES
@@ -855,9 +954,9 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "CREATE TABLE (LIKE)", /\bCREATE\s+TABLE\b.*\(LIKE/i, suggest: :replace_inline_create_table_like, essential: true
-    detect_and_print_multilines lines, "CREATE TABLE (LIKE)", [/\bCREATE\s+TABLE\b.*\(/i, /LIKE/i], essential: true
-    detect_and_print_multilines lines, "CREATE TABLE (LIKE)", [/\bCREATE\s+TABLE\b/i, /\(\s*LIKE/i], essential: true
+    detect_and_print_lines lines, "CREATE TABLE LIKE [1/3]", /\bCREATE\s+TABLE\b.*\(LIKE/i, suggest: :replace_inline_create_table_like, essential: true
+    detect_and_print_multilines lines, "CREATE TABLE LIKE [2/3]", [/\bCREATE\s+TABLE\b.*\(/i, /LIKE/i], essential: true
+    detect_and_print_multilines lines, "CREATE TABLE LIKE [3/3]", [/\bCREATE\s+TABLE\b/i, /\(\s*LIKE/i], essential: true
 
     # ----------------------------------------------------------------------
     # ENCODE
@@ -867,7 +966,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # GREATEST/LEAST -> COALESCE(GREATEST/LEAST(...),value)
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, unmatch: /coalesce\((greatest|least)\b\(/i, essential: true
+    detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, essential: true # , unmatch: /coalesce\((greatest|least)\b\(/i
 
     # ----------------------------------------------------------------------
     # TABS

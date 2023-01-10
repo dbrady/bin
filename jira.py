@@ -8,12 +8,12 @@ from dataservices import jira
 import json
 import os
 
-def get_bad_tickets():
-    try:
-        with open(os.path.expanduser("~/jira-bad-tickets.json")) as file:
-            return json.loads(file.read())["tickets"]
-    except FileNotFoundError:
-        return []
+# def get_bad_tickets():
+#     try:
+#         with open(os.path.expanduser("~/jira-bad-tickets.json")) as file:
+#             return json.loads(file.read())["tickets"]
+#     except FileNotFoundError:
+#         return []
 
 
 def find_ready_for_dev():
@@ -27,7 +27,7 @@ def find_ready_for_dev():
     finished = None
     start_at = 0
     dave_count = 0
-    dave_max = 10
+    dave_max = 20
     bad_tickets = BadTickets()
     bad_ticket_ids = bad_tickets.ids()
     # print(bad_ticket_ids)
@@ -61,7 +61,7 @@ def find_ready_for_dev():
                 dave_count += 1
                 print(f'https://acima.atlassian.net/browse/{ticket["key"]}')
                 if dave_count >= dave_max:
-                    print("More tickets available (total={tickets['total']}) but that's enough for now")
+                    print(f"More tickets are available. (total={tickets['total']})")
                     finished = True
                     break
 

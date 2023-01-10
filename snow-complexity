@@ -1,0 +1,111 @@
+#!/usr/bin/env ruby
+# snow-get-complexity [<file>] - calculate a rough complexity for a given job
+
+# This complexity is like flay: the numbers are meaningless except in comparison with others. Good luck.
+
+# for now, let's say...
+# line count * (number of selects, creates, drops, and updates) * 2**(number of CTEs + number of recursive CTEs)
+require 'colorize'
+require 'yaml'
+
+script = if ARGV.first.to_i > 0
+           ARGV[1]
+         else
+           ARGV.first
+         end
+script ||= `get-ds-script`.strip
+
+if script.empty?
+  puts "Nothing to analyze. Specify job file as a script argument or with set-ds-script first"
+  exit -1
+end
+
+lines = File.readlines(script).map(&:rstrip)
+
+line_count = lines.size
+
+# Not trynna be a dick here, so I'm putting this in an rc file outside of the
+# repo. Certain devs have a consistent, significant, and measurable impact on
+# ticket complexit.  I'm only adding this because it's a measured factor.
+dev_factor_file = File.expand_path("/root/data_services/dev_factors.yml.log")
+dev_factors = if File.exist?(dev_factor_file)
+                YAML::load_file(dev_factor_file)
+              else
+                halp = <<HALP
+No dev factors rc file found. Proceeding with dev_factor = 1.0. Create factor file matching this format:
+
+---
+Firstname Lastname:
+  :regex: !ruby/regexp /(Firstname Lastname|firstname.lastname)/
+  :factor: 4.5
+  :initials: fl
+HALP
+                puts halp.yellow
+                {}
+              end
+
+sql_query_count = lines.find_all {|line| line =~ /\b(insert|select|update|delete|drop|create)\b/i }.size
+cte_count = lines.find_all {|line| line =~ /\bAS\s*\(/i }.size
+view_count = lines.find_all {|line| line =~ /\bcreate\b.*\bview\b/i }.size
+recursive_cte_count = lines.find_all {|line| line =~ /\bRECURSIVE\b/i }.size
+problematic_query_count = lines.find_all {|line| line =~ /\b(greatest|least)\b/i }.size
+panda_factor = 1 + lines.find_all {|line| line =~ /\.DataFrame/ }.size
+
+dev_factor = 1.0
+seen_devs = []
+dev_factors.each_pair do |name, factor|
+  if lines.any? {|line| line =~ factor[:regex] }
+    dev_factor *= factor[:factor]
+    seen_devs << factor[:initials]
+  end
+end
+seen_devs = seen_devs.empty? ? "" : "(#{seen_devs * ', '})"
+
+# THE FORMULA (change this as needed)
+#
+# - Base complexity is line count * query count. Mo script, mo problems
+#
+# - I've noticed that scripts with CTEs usually beat me up and take my lunch
+#   money, so let's score them 2**c
+#
+# - Scripts with recursive CTEs beat me up, take my clothes, then duct tape me
+#   to a flagpole to be found by the janitorial staff the next morning. Let's
+#   change that exponent to 2**(c * r)
+#
+# - I just ran into my first script with views. It's pretty hairy and this
+#   *might* be causative, so let's score those queries twice as hard. They
+#   already get counted once with the table queries, so if we do (s + v), s will
+#   scores non-view queries once and view queries once, then v scores the view
+#   queries again. Nice.
+#
+# - Some devs write code somewhere on a spectrum from "intensely personal style"
+#   to "gratuitously clever", which requires some extra detangling.
+#
+# - TODO: Check individual detectors. Some are basically free. Others are simple
+#   but slightly tedious. And a couple are punishing. Pep8, os.chdir,
+#   bootstrapper, and varchar sizing are all 0-point changes. Exception handling
+#   and python 2 string formatting are 1-point changes, perhaps 1 point per 5-10
+#   instances. But timezone conversion is a 1 point change per instance, and
+#   least/greatest and json manipulation is 3 to 5 points easy.
+
+complexity = (dev_factor * line_count * panda_factor * (problematic_query_count + sql_query_count + view_count) * 2**(cte_count * (1+recursive_cte_count))).round
+pretty_complexity = complexity.to_s.chars.to_a.reverse.each_slice(3).map(&:join).join(',').reverse
+
+puts "Script: #{script}"
+puts "l: line_count: #{line_count}"
+puts "p: problematic_query_count: #{problematic_query_count}"
+puts "s: sql_query_count: #{sql_query_count}"
+puts "c: cte_count: #{cte_count}"
+puts "r: recursive_cte_count: #{recursive_cte_count}"
+puts "v: view_count: #{view_count}"
+puts "pd: panda_factor: #{panda_factor}"
+puts "d: dev_factor: #{dev_factor} #{seen_devs}"
+puts "---------------------------------------"
+puts "Using formula: C = d * l * pd * (p + s + v) * 2**(c*(1+r))"
+puts "---------------------------------------"
+puts "Total Complexity: #{pretty_complexity}".cyan
+
+if ARGV.first.to_i > 0
+  puts "Pick up this ticket with"
+  puts "snow new #{ARGV.join(' ')}".green
+end

@@ -37,10 +37,11 @@ ticket = "DS-#{ticket}" if ticket =~ /^\d+$/
 # full_branch_name = "dbrady/#{ticket}/#{branch}"
 full_branch_name = "feature/#{ticket}/#{branch}"
 
-if full_branch_name.size > 60
-  puts "ERROR: branch name is too long (length = #{full_branch_name.size}, must be <= 60)"
-  exit 2
-end
+# DS team doesn't use this
+# if full_branch_name.size > 60
+#   puts "ERROR: branch name is too long (length = #{full_branch_name.size}, must be <= 60)"
+#   exit 2
+# end
 
 command = "git co -b #{full_branch_name}"
 puts command

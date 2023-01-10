@@ -1,0 +1,12 @@
+#!/bin/bash
+# share-gsheet <sheet_id> - run Zack's google spreadsheet sharing util in batch mode
+
+# This version is convenient but for some reason it eats the stdout from the python script. Sadge. Let's allow this to run interactively if no $1.
+
+if [ "$1" == "" ]; then
+    echo -e "\033[36mpython /root/data_services/utilities/google_util.py --share\033[0m"
+    python /root/data_services/utilities/google_util.py --share
+else
+    printf "%s\ndavid.brady@acima.comn\nwriter\n" $1 |
+        python /root/data_services/utilities/google_util.py --share
+fi

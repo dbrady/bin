@@ -45,7 +45,7 @@ opts = Optimist.options do
   opt :legend, "Show color legend", type: :boolean
 end
 
-script = (ARGV.first || get_script).sub(%r|/|, '.').sub(/\.py$/, '')
+script = (ARGV.first || get_script).gsub(%r|/|, '.').sub(/\.py$/, '')
 
 config = File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json"))
 
@@ -79,5 +79,5 @@ merged_lines.each do |line|
   in_defaults = key && default_lines.any? { |l| l.include? key }
   in_job = key && job_lines.any? { |l| l.include? key }
 
-  puts line.rstrip.send(color_for(in_defaults, in_job)).gsub("redshift", "\033[31mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+  puts line.rstrip.send(color_for(in_defaults, in_job)).gsub("redshift", "\033[1;37;41mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
 end

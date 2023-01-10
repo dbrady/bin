@@ -1,0 +1,7 @@
+#!/bin/bash
+
+echo -e "\033[36msnow preview $*\033[0m"
+snow preview $*
+
+echo -e "\033[36msnow cplx $*\033[0m"
+snow cplx $*

@@ -100,11 +100,12 @@ end
 
 job_name = filename.sub(%r|/|, '.').sub(/\.py$/, '')
 
-puts "export SCRIPT=#{filename}"
-
-command = "git new-branch #{ticket} #{job_name}"
+command = "git checkout feature/snowflake-moveover && git pull && git new-branch #{ticket} #{job_name}"
 
 system command
 Dir.chdir("finance") do
   system command
 end
+
+puts "Script is at:"
+puts `get-ds-script -f`.rstrip.bold.white.on_green

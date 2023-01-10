@@ -1,5 +1,0 @@
-#!/bin/bash
-echo -e "\033[31;40mFAVOR git add-new\033[0m"
-echo -e "\033[32mRunning it for you now...\033[0m"
-echo git add-new $@
-git add-new $@

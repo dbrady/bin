@@ -1,0 +1,11 @@
+#!/bin/bash
+# snow-script-has-changes exits with 0 if there are changes pending in git for $SCRIPT.
+#
+# I wrote this because I keep needing to say something like this in a bash script:
+#
+# snow-script-has-changes && snow-commit-x
+#
+# This allows scow to check for changes before attempting to commit which generates a screenful of warnings.
+
+git update-index -q --refresh
+git diff-index HEAD | grep `get-ds-script` 2>&1 >/dev/null && exit 0 || exit 1

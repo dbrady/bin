@@ -9,5 +9,5 @@ if [ `uname -s` != 'Linux' ]; then
     exit
 fi
 
-echo "(cd ~/data_services_package && python setup.py clean && python setup.py install)"
+echo -e "\033[36m(cd ~/data_services_package && python setup.py clean && python setup.py install)\033[0m"
 (cd ~/data_services_package && python setup.py clean && python setup.py install)
