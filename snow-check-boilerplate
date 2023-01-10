@@ -39,7 +39,14 @@ def nocommit(reason="")
   "# NO" + "COMMIT: #{reason}"
 end
 
-filename = ARGV.first
+SCRIPT = ARGV.first || `get-ds-script`.strip
+
+if SCRIPT == ""
+  puts "You must set the SCRIPT variable first."
+  exit -1
+end
+
+filename = SCRIPT
 created_on = `git log #{filename} | grep -E '^Date: ' | tail -n 1 | awk '{ print $3 " " $4 " " $6 }'`.strip
 first_commit_year = created_on.split.last
 
@@ -50,7 +57,7 @@ first_commit_year = created_on.split.last
 # HOWEVER. The boilerplate is no longer strictly required (we are adding them
 # out of courtesy), and its formatting need not be perfect. Let's just use the
 # top 5 authors' names and tag a nocommit for editing in there.
-authors = `git log #{filename} | grep -E '^Author: ' | sort | uniq -c | sort -n | tail -n 5 | sed -E "s/^.*Author: //" | sed -E 's/<.*$//'`.each_line.map(&:strip).uniq.reverse
+authors = `git log #{filename} | grep -E '^Author: ' | sort | uniq -c | sort -n | tail -n 5 | sed -E "s/^.*Author: //" | sed -E 's/<.*$//'`.each_line.map(&:strip).uniq.reverse.grep_v(/David Brady/)
 
 authors << nocommit("^^^ Prune authors list")
 author_list = ([authors.first] + authors[1..].map {|author| "         #{author}"}).join("\n")
