@@ -1,8 +1,22 @@
-#!/bin/bash
-echo 'WARNING! This will commit your warehouse and finance branches, push them up, and give you create-pr links'
-git isclean && echo -e "\033[32mBranch looks clean from here\033[0m" || (echo -e "\033[1;37;41mCowardly refusing to continue because branch is not clean\033[0m" && exit -1)
-echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
-read
+#!/usr/bin/env ruby
+require 'colorize'
 
-echo -e "\033[36mgit cram && (cd finance && snow-commit-finance-config && git cram && snow-create-pr-finance) && snow-create-pr-warehouse\033[0m"
-git cram && (cd finance && snow-commit-finance-config && git cram && snow-create-pr-finance) && snow-create-pr-warehouse
+puts 'WARNING! This will commit your warehouse and finance branches, push them up, and give you create-pr links'
+system "git isclean"
+branch_is_clean = $?
+
+if branch_is_clean.exitstatus.zero?
+  puts "Branch is clean.".green
+  puts "HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:"
+  $stdin.gets
+
+  command = "git cram && (cd finance && snow-commit-finance-config && git cram && snow-create-pr-finance) && snow-create-pr-warehouse"
+
+  puts command.cyan
+  system command
+
+  exit($?.exitstatus)
+else
+  puts "Cowardly refusing to proceed because branch is not clean.".bold.white.on_red
+  exit(-1)
+end
