@@ -4,37 +4,34 @@
 # i!, j! = init and return the counter
 # i, j = increment and return the counter
 # i?, j? = get counter without incrementing it (for i?.j subheads)
-def i?; $i; end
-def i!; $i=1; end
-def i;  $i += 1; end
-def j?; $j; end
-def j!; $j=1; end
-def j;  $j += 1; end
+def i?; "#{$i}."; end
+def i!; "#{$i = 1}."; end
+def i; "#{ $i += 1}."; end
+def j?; "#{$j}."; end
+def j!; "#{$j = 1}."; end
+def j; "#{ $j += 1}."; end
 
-puts <<CHECKLIST
-#{i!}. Go to latest feature/snowflake-moveover: snow main
-#{i}. Find next ticket (next-ticket, or search DS-879)
-#{i}. Claim the ticket in Jira and move it to IN DEVELOPMENT
-#{i}. Set ds script and branches: snow new <jira_id> <job.py>
-#{i}. Run snow to look at checks; snow check
-#{i}. Fix problems. snow auto, snow-fix-x, scow x
-#{i}. Inspect the code. Does it look good?
-#{i}. Put recurring issues in snow check
-#{i}. Cut the config over to snowflake snow job s
-#{i}. Check boilerplate
-  #{i?}.#{j!} Does it exist?
-  #{i}.#{j} Any args changed?
-#{i}. Ensure job runs in Snowflake
-#{i}. Compare results in databases
-#{i}. Screenshot job and attach it to the JIRA ticket
-#{i}. Open a PR in both repos: snow slam
-#{i}. STOP AND CHECK: Sanity-check the PRs
-   #{i?}.#{j!}. Doublecheck the screenshot
-   #{i?}.#{j}. Ensure you are merging into sf-moveover, NOT MASTER
-   #{i?}.#{j}. Ensure both PRs have no extra commits
-   #{i?}.#{j}. Inspect file changes on GitHub
-#{i}. Make links: snow link <warehouse> <finance> [<pkg>]
-#{i}. Move JIRA ticket to IN REVIEW
-#{i}. DELEGATE: Notify Zack by sending him links
-#{i}. WAIT ON: Watch PR for being merged
+def checklist
+  puts <<CHECKLIST
+#{i!} Go to latest feature/snowflake-moveover: snow main
+#{i} Find next ticket: next-ticket, DS-879, snow cplx, snow preview
+#{i} MANUAL: Claim the ticket in Jira and move it to IN DEVELOPMENT
+#{i} Create branches: snow new <jira_id> <job.py>
+#{i} Fixup: snow auto, scow/snow-fix/snow-commit, snow -q
+#{i} MANUAL: Code look good? Any new/repeated issues?
+#{i} Cut config over to snowflake: snow job s
+#{i} Run job: clear; snow run
+#{i} MANUAL: Screenshot and move JIRA ticket to IN REVIEW
+#{i} Open a PR in each repo: snow slam
+#{i} MANUAL: Sanity check the PRs
+  #{i?}#{j!} Doublecheck the screenshot
+  #{i?}#{j} Ensure target branch is feature/snowflake-moveover
+  #{i?}#{j} Ensure both PRs have no extra commits
+  #{i?}#{j} Inspect file changes on GitHub
+#{i} Make links: snow link <warehouse_pr> <finance_pr> [<pkg_pr>]
+#{i} MANUAL: Delegate to Zack by sending him links
+#{i} MANUAL: Wait on review
 CHECKLIST
+end
+
+checklist
