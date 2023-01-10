@@ -51,7 +51,7 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    no_need = (["backlog", "go", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
+    no_need = (["backlog", "go", "link", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
               (ARGV.first == "job" && ARGV.size >= 2)
     !no_need
   end
@@ -133,7 +133,7 @@ class SnowflakeManglerApp
             puts "Replacement:"
             puts line.red
             puts suggestion.green
-            sed_replacement = suggestion.gsub(%r|/|, "\\/")
+            sed_replacement = suggestion.gsub(%r|/|, "\\/").gsub('"', '\"')
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
             puts sed_command.cyan
@@ -308,6 +308,15 @@ If no commands are given, snow will run check.
     #
     # in a subselect with double quotes and doubled single quotes
     # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
+
+    # My nex regex chokes on this special case which is uncommon but not rare
+    getdate_regex = %r|^(.*)GETDATE\(\) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver'(.*)$|i
+    if line =~ getdate_regex
+      puts "MATCH!!!".white.bold.on_green
+      return line.sub(getdate_regex, %q|\1CONVERT_TIMEZONE('UTC', 'America/Denver', GETDATE())\2|)
+    else
+      puts "NO MATCH".white.bold.on_red
+    end
 
     regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
     #           ^      ^                     ^                          ^
@@ -721,8 +730,9 @@ If no commands are given, snow will run check.
     # Cleaner Replacement: PARSE_JSON(json)[level]
     #
     # JSON_EXTRACT_PATH_TEXT - Path may need tweaking but should port fine as
-    # long as it only has 2 or 3 arguments the third argument, if present, is
-    # TRUE.
+    # long as it only has 2 or 3 arguments and if the third argument is present,
+    # it is TRUE. (Redshift allows TRUE/FALSE, Snowflake only does the TRUE
+    # version. Our codebase only does TRUE to the best of my knowledge).
     #
     # JSON_EXTRACT_ARRAY_ELEMENT_TEXT - This can be expressed as a
     # JSON_EXTRACT_PATH_TEXT call:
@@ -730,8 +740,8 @@ If no commands are given, snow will run check.
     # JEAET('json_array', 3) -> JEPT('json_array', '[3]')
     detect_and_print_lines lines, "JSON MANIPULATION FUNCTIONS",
                            %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE},
-                           essential: true,
-                           unmatch: /JSON_EXTRACT_PATH_TEXT\([^,]+,[^,]+\)/ # JEPT/2 good; JEPT/3 bad.
+                           essential: true
+                           # , unmatch: /JSON_EXTRACT_PATH_TEXT\([^,]+,[^,]+\)/ # JEPT/2 good; JEPT/3 bad.
 
 
     # ----------------------------------------------------------------------
@@ -789,6 +799,14 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!CAUTION: UNTESTED!!!) sed -i -E 's/\bBOOL\b/BOOLEAN/ig' #{get_script}"
 
+    # ----------------------------------------------------------------------
+    # [WITH] days AS
+    #
+    # You can have a CTE named days in redshift, but in snowflake it's a
+    # keyword.
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "DAYS AS", /\bdays\s+as\b/i, essential: true
+
     # ======================================================================
     # END SQL CHANGES
     # ======================================================================
@@ -826,7 +844,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # Update Python String Formatting
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Python 2 String Formatting", %r|(?<!%)%[\d\.]*[sdf].*|, unmatch: %r{(str[pf]time|%Y-%m-%d)}
+    detect_and_print_lines lines, "Python 2 String Formatting", %r|(?<!%)%[\d\.]*[sdf].*|, unmatch: %r{(str[pf]time|%Y-%m-%d|LIKE ANY)}
 
     # ----------------------------------------------------------------------
     # os.chdir to self: remove
