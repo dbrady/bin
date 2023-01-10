@@ -16,6 +16,9 @@
 # sure?". That would be more convenient that running python manually--and losing
 # the checks in the process.
 #
+# TODO: Write fixes to a script file instead of just the console. Hand-copying
+# 40 sed commonds to fix timezones has the sheets all the way up my crack.
+#
 # - snow - check the current script. -q to only show failing checks.
 # - snow main - jump back to main snowflake branch
 # - snow master - same thing but back to origin/master
@@ -105,6 +108,8 @@ class SnowflakeManglerApp
   # suggest:   a method that receives the matching line, and returns a suggested
   #            fix.
   # unmatch:   ignore lines that match regex but ALSO match this regex.
+  # warning:   Warning only and/or the detector will continue to fire even after
+  #            the problem has been fixed
   def detect_and_print_lines(
         lines,
         title,
@@ -113,7 +118,8 @@ class SnowflakeManglerApp
         disabled: false,
         autofix: nil,
         suggest: nil,
-        unmatch: nil
+        unmatch: nil,
+        warning: nil
       )
     return if disabled
     return if essential? && !essential
@@ -122,7 +128,7 @@ class SnowflakeManglerApp
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       puts section_title title if quiet?
-      puts "Autofix with: #{autofix.cyan}" if autofix
+      puts "Autofix with:\n#{autofix.cyan}" if autofix
       # Yeah, turn this into lines_with_indexes = finder_method, we can
       # write a generic version to do what this regex does, and then we can
       # pass in custom finder methods for multiline and trickier stuff
@@ -707,7 +713,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # TRUNC
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, essential: true
+    detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, warning: true
 
     # ----------------------------------------------------------------------
     # SIMILAR TO -> RLIKE
@@ -749,9 +755,9 @@ If no commands are given, snow will run check.
     # Check these by hand - python stmts like var = '' are fine but embedded
     # SQL with an extra escaping level makes snowflake sad.
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''.*''/
+    detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''.*''/, warning: true
 
-    detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/
+    detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/, warning: true
 
 
     # ----------------------------------------------------------------------
@@ -763,6 +769,15 @@ If no commands are given, snow will run check.
     # DATE_DIFF('unit',num, column) -> DATEDIFF(unit, num, column)
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "DATE_DIFF", /DATE_DIFF\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_DIFF\\('([^']+)'/DATEDIFF(\\1/ig" #{get_script}|
+
+    # ----------------------------------------------------------------------
+    # DATEPART -> DATE_PART
+    #
+    # YES, this is the OPPOSITE of date add and diff: Redshift does NOT have an
+    # underscore and snowflake requires one. At least the units are the same;
+    # Redshift actually uses bareword identifiers here. :shrug:
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "DATEPART", /\bDATEPART\b/i, autofix: %Q|sed -i -E "s/\\bDATEPART\\b/DATE_PART/ig" #{get_script}|
 
 
     # ----------------------------------------------------------------------
@@ -872,36 +887,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # except Exception
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/
-
-    # egregious exception handling -- wait, what if instead of a regex we pass
-    # a detector symbol?  and detector method receives ALL of lines. Then it can
-    # check for e.g. this regex followed by "raise" and then blank line(s).
-    #
-    # Argh. No, it's too much of a partial solution (but maybe yes b/c yagni?),
-    # what if we want to add line numbers to th eautofix? I.e. This could be
-    # autofix: 'sed "{LINE},{LINE+1}d"' or similar.
-    #
-    # The alternate approach is to have a "found problem" object that has the
-    # line where a problem occurs AND its location. Then we can feed that
-    # through an autofix/suggest class. Maybe we keep the bare regex thing, but
-    # allow passing in an object that has a detection method, autofix method,
-    # suggest method, etc. (Basically IOC for the detect and fix pattern).
-
-    # ----------------------------------------------------------------------
-    # Outdented SQL
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Outdented SQL (Not Fully Implemented - Check By Hand)", /^(FROM|WHERE|JOIN) /, disabled: true
-
-    # ----------------------------------------------------------------------
-    # Long lines
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Egregiously Long Lines (Check by hand)", /^.{220,}$/, disabled: true
-
-    # ----------------------------------------------------------------------
-    # Overcomplicated format() calls
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Overly short format() calls (Check by hand)", /\.format\([^){,20}]\)/, disabled: true
+    detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/, warning: true
 
     # ----------------------------------------------------------------------
     # job_config must not be optional
