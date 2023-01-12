@@ -1,0 +1,11 @@
+#!/bin/bash
+SCRIPT=$1 || `get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    if [ -z "$SCRIPT" ]; then
+        echo "You must set the SCRIPT variable or pass in an argument first."
+        exit -1
+    fi
+fi
+
+cat $SCRIPT | ruby -ne 'puts $1 if $_=~/\b([dfs]_.*?)\b/' | sort | uniq
