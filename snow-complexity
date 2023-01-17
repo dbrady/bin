@@ -107,10 +107,14 @@ puts "Total Complexity: #{pretty_complexity}".cyan
 
 if ARGV.first.to_i > 0
   puts "Pick up this ticket with"
-  command = "snow new #{ARGV.join(' ')}"
-  puts command.green
+  pickup_command = "snow new #{ARGV.join(' ')}"
+  puts pickup_command.green
+
+  puts "Or skip it with"
+  skip_command = "skip-ticket #{ARGV.first} ''"
+  puts skip_command.red
 
   puts "Hit ENTER to run pickup command, CTRL-C to ignore ticket"
   $stdin.gets
-  system(command)
+  system(pickup_command)
 end
