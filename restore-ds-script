@@ -1,0 +1,11 @@
+#!/bin/bash
+# restore-ds-script - run git restore on ds script
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+    echo "You must set the SCRIPT variable first."
+    exit -1
+fi
+
+echo -e "\033[36mgit restore $SCRIPT\033[0m"
+git restore $SCRIPT
