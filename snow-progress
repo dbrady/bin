@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+
+require "json"
+require "colorize"
+long_version = false # add me as an option?
+
+config = JSON.parse(File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json")), symbolize_names: true)
+
+config[:jobs].reject! {|name, job| job[:status] == "INACTIVE" }
+
+counts = { src_conn: Hash.new(0), dst_conn: Hash.new(0) }
+
+config[:jobs].each do |name, job|
+  counts[:src_conn][job[:src_conn]] += 1
+  counts[:dst_conn][job[:dst_conn]] += 1
+end
+
+total = config[:jobs].size
+
+{"Source" => :src_conn, "Dest" => :dst_conn}.each do |title, key|
+  puts "#{title}:"
+  if long_version
+    counts[key].each_pair do |source, count|
+      puts "  %10s: %3d/%3d" % [source, count, total]
+    end
+  else
+    snowflake_pct = (100.0 * counts[key]["snowflake"]) / total
+    redshift_pct = (100.0 * counts[key]["redshift"]) / total
+    other_pct = 100.0 - (snowflake_pct + redshift_pct)
+
+
+    puts "%5.2f%% done, %5.2f%% remaining" % [snowflake_pct, redshift_pct]
+    snowflake_bar = 's' * snowflake_pct
+    redshift_bar = 'r' * redshift_pct
+    other_bar = 'o' * other_pct
+    puts '[' + snowflake_bar.light_blue + other_bar.yellow + redshift_bar.red + ']'
+
+    # redshift_bar = "r" * counts[key]["redshift"]
+    # snowflake_bar = "s" * counts[key]["snowflake"]
+    # other_bar = "o" * (total - (counts[key]["redshift"] + counts[key]["snowflake"]))
+
+    # puts redshift_bar.red + snowflake_bar.light_blue + other_bar.yellow
+  end
+end
+
+puts
