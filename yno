@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+# yno <ticket_id> - Why no?
+
+# TODO: yno ticket_id "[new reason]"
+# TODO: yno -a ticket_id "[additional reason]"
+
+require "json"
+
+def usage
+  puts <<USAGE
+# yno <ticket_id> - Why no?
+# TODO: yno ticket_id "[new reason]"
+# TODO: yno -a ticket_id "[additional reason]"
+USAGE
+end
+
+ticket_id = ARGV.first.to_i
+
+if ticket_id.zero?
+  usage
+  exit(1)
+end
+
+tickets = JSON.parse(File.read("/root/jira-bad-tickets.json"))["tickets"]
+
+ticket = tickets.detect {|t| t["id"] == ticket_id }
+
+puts JSON.pretty_generate(ticket)
