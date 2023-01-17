@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # snow - Command suite to support moving to snowflake
 #
-# DONE: snow -q, --quiet emits only the detectors that fail, so you can see
+# DONE: snow -q, --quick emits only the detectors that fail, so you can see
 # remaining work
 #
 # TODO: port this to Optimist*. The arg processing is killing me here
@@ -59,9 +59,9 @@ class SnowflakeManglerApp
     !no_need
   end
 
-  # Quiet: Don't show passing detectors or extraneous logging
-  def quiet?
-    ARGV.include?('--quiet') || ARGV.include?('-q')
+  # Quick: Don't show passing detectors or extraneous logging
+  def quick?
+    ARGV.include?('--quick') || ARGV.include?('-q')
   end
 
   # Was this script invoked with --essential?
@@ -87,7 +87,7 @@ class SnowflakeManglerApp
   end
 
   def log_ok
-    return if quiet?
+    return if quick?
     puts " OK ".bold.light_white.on_green
   end
 
@@ -123,11 +123,11 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title unless quiet?
+    puts section_title title unless quick?
     # OOF.
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
-      puts section_title title if quiet?
+      puts section_title title if quick?
       puts "Autofix with:\n#{autofix.cyan}" if autofix
       # Yeah, turn this into lines_with_indexes = finder_method, we can
       # write a generic version to do what this regex does, and then we can
@@ -163,7 +163,7 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title unless quiet?
+    puts section_title title unless quick?
 
     # given n regexes, at line[m], then...
     # Simple Match For Now:
@@ -194,10 +194,20 @@ class SnowflakeManglerApp
   end
 
   def detect_missing_skip_upload
-    puts section_title "Skip Upload" unless quiet?
-    if should_be_skippable? && !skippable?
-      puts section_title "Skip Upload" if quiet?
+    puts section_title "Skip Upload" unless quick?
+    if should_have_skip_upload? && !has_skip_upload?
+      puts section_title "Skip Upload" if quick?
       puts "File should have skip_upload but does not"
+    else
+      log_ok
+    end
+  end
+
+  def detect_missing_test_mode
+    puts section_title "--test" unless quick?
+    if should_have_test_mode? && !has_test_mode?
+      puts section_title "--test" if quick?
+      puts "File should have test option but does not"
     else
       log_ok
     end
@@ -212,9 +222,9 @@ class SnowflakeManglerApp
       {red: zack_casey_tables}.each do |color, tables|
       regex = /(#{tables.join('|')})/
 
-      puts section_title "Potentially Unmigrated Tables (#{color})" unless quiet?
+      puts section_title "Potentially Unmigrated Tables (#{color})" unless quick?
       if lines.any? {|line| line =~ regex }
-        puts section_title "Potentially Unmigrated Tables (#{color})" if quiet?
+        puts section_title "Potentially Unmigrated Tables (#{color})" if quick?
         lines.each.with_index do |line, index|
           problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
           next if problem_tables.size.zero?
@@ -231,9 +241,9 @@ class SnowflakeManglerApp
   end
 
   def detect_unmanaged_whitespace(lines)
-    puts section_title "UNMANAGED WHITESPACE" unless quiet?
+    puts section_title "UNMANAGED WHITESPACE" unless quick?
     if lines.any? {|line| line =~ /\s+$/}
-      puts section_title "Unmanaged whitespace" if quiet?
+      puts section_title "Unmanaged whitespace" if quick?
       lines.each.with_index do |line, index|
         if line =~ /(\s+)$/
           colorized_line = line.sub(/\s+$/, $1.on_red)
@@ -256,18 +266,24 @@ class SnowflakeManglerApp
     puts "^^^ DEPRECATED. Use set-ds-script instead!"
   end
 
-  def skippable?
-    IO.readlines(get_script).any? { |line| line =~ /--skip_upload/ }
+  def has_skip_upload?
+    IO.readlines(get_script).any? { |line| line.include?("parser.add_argument('--skip_upload") }
   end
 
-  def should_be_skippable?
+  def should_have_skip_upload?
     get_script.include?("_sf_") ||
       get_script.include?("salesforce") ||
       (get_script.include?("mcloud") && !get_script.include?("_get_"))
   end
 
   def has_test_mode?
-    File.readlines(get_script).any? {|line| line.include?("--test")}
+    File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--test")}
+  end
+
+  def should_have_test_mode?
+    # this is just a tiny tiny sample
+    ["gsheet", "facebook", "commissions"].any? {|part| get_script.include?(part) } ||
+      File.readlines(get_script).any? {|line| line.include? "portal" }
   end
 
   def run_and_exit!(command)
@@ -432,6 +448,7 @@ If no commands are given, snow will run check.
 
     # Override script if job is preview
     if preview?
+      # If arg 1 is an integer, we've been given a ticket number also
       set_script((ARGV[1].to_i > 0) ? ARGV[2] : ARGV[1])
     end
 
@@ -462,17 +479,17 @@ If no commands are given, snow will run check.
         puts
       end
 
-      if !quiet?
+      if !quick?
         _,cols = $stdout.winsize
         warehouse = `snow-get-warehouse -c`
         branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
         print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
       end
 
-      argv = ARGV.dup - ['-q', '--quiet']
+      argv = ARGV.dup - ['-q', '--quick']
       argv.shift
       command = "dsetl_nightly"
-      command += " --skip_upload" if skippable?
+      command += " --skip_upload" if has_skip_upload?
       command += " --test" if has_test_mode?
       command += " " + argv.join(" ")
       run_and_exit! command
@@ -594,7 +611,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # Check for PEP8 Conformance
     # ----------------------------------------------------------------------
-    if !essential?
+    if !essential? && !quick?
       puts section_title("PEP8 CONFORMANCE")
       system "pep-check #{get_script}"
 
@@ -937,7 +954,21 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # TODO: etl_client.close() before finally
-    # Fun/danger: this is caused by fixing exceptions with a facile approach
+    # Actually, there's a whole common thing here:
+    #
+    # 1. Detection:
+    #   1. Find the 'except Exception[ as e]:' line
+    #   2. Is it followed only by 1 or more of etl_client.close(), dbo.closue, or raise
+    #   3. It MAY be preceded by 1 or 2 blank lines
+    #   4. Those blank lines may by preceded by another etl_client.close() (and
+    #   potentially dbo.close(), but that's super rare, so ignore and faster to
+    #   fix it by hand when it occurs)
+    #
+    # 2. Correction:
+    #   1. Delete the preceding etl close
+    #   2. Insert 1 blank line between that and the finally
+    #   3. Change the except Exception line to finally, keeping same indent
+    #   4. Delete the raise
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
@@ -952,8 +983,10 @@ If no commands are given, snow will run check.
 
     # ----------------------------------------------------------------------
     # WARN if job is mcloud or sf but does not have --skip_upload
+    # Or if it's gsheet or API and does not have --test
     # ----------------------------------------------------------------------
     detect_missing_skip_upload
+    detect_missing_test_mode
 
     # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
@@ -971,6 +1004,11 @@ If no commands are given, snow will run check.
     # GREATEST/LEAST -> COALESCE(GREATEST/LEAST(...),value)
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "GREATEST/LEAST", /\b(greatest|least)\b/i, essential: true # , unmatch: /coalesce\((greatest|least)\b\(/i
+
+    # ----------------------------------------------------------------------
+    # COALESCE/1
+    # ----------------------------------------------------------------------
+    detect_and_print_lines lines, "COALESCE/1", /coalesce\([^\(,]+\)/i, essential: true
 
     # ----------------------------------------------------------------------
     # TABS
