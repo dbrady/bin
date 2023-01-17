@@ -23,7 +23,7 @@ def find_ready_for_dev():
     ticket_number = 'DS-879'
 
     jira_client = jira.Jira()
-    fields = 'issuelinks,status'
+    fields = 'summary,issuelinks,status'
     finished = None
     start_at = 0
     dave_count = 0
@@ -36,25 +36,31 @@ def find_ready_for_dev():
         # print("Querying JIRA")
         tickets = jira_client.find_issue_by_epic_id(ticket_number, fields=fields, start_at=start_at)
         # print(f"FOUND {len(tickets)} TICKETS!")
+        with open("/root/data_services/etl/warehouse/found_links.json", "w") as file:
+            file.write(json.dumps(tickets))
+            file.write("\n")
         for ticket in tickets['issues']:
-            # print(ticket['key'])
+            with open("/root/data_services/etl/warehouse/found_link.json", "w") as file:
+                file.write(json.dumps(ticket))
+                file.write("\n")
             ready = True
+            # These are the upstream blockers. If they're still open, this is blocked
             issuelinks = ticket['fields']['issuelinks']
             for issue in issuelinks:
                 if 'inwardIssue' in issue:
+                    if issue['inwardIssue']['fields']['status']['name'] not in ('Closed', 'In Review'):
+                        print(f"    -> This ticket MAY be blocked by {ticket['key']} status: {issue['inwardIssue']['fields']['status']['name']}, {ticket['fields']['status']['statusCategory']['name']}")
                     if issue['inwardIssue']['fields']['status']['name'] not in ('Closed', 'In Review') or ticket['fields']['status']['statusCategory']['name'] != 'To Do':
                         ready = False
 
-            # if ticket["key"] in bad_tickets <-- can we hijack the "in" operator?
-            #
-            # bad_ticket = bad_tickets.find(ticket["key"])
-            # if bad_ticket is not None:
-            #     print(f"skipping ticket {bad_ticket.id} because {bad_ticket.reason}")
             bad_ticket = bad_tickets.find_ticket(ticket["key"])
             #if ticket["key"] in bad_ticket_ids:
             if bad_ticket is not None:
                 #print(f'Skipping {ticket["key"]}: \033[2;37mhttps://acima.atlassian.net/browse/{ticket["key"]}\033[0m')
-                print(f'Skipping {bad_ticket.id} {bad_ticket.url} ({bad_ticket.comment})')
+                if ready:
+                    print(f'Skipping {bad_ticket.id} {bad_ticket.url} ({bad_ticket.comment})')
+                else:
+                    print(f'Skipping {bad_ticket.id} because ticket is no longer ready')
                 continue
 
             if ready:
