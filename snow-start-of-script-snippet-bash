@@ -1,0 +1,10 @@
+#!/bin/bash
+# FILENAME - DESCRIPTION
+# USAGE
+# OPTIONS
+SCRIPT=`get-ds-script`
+
+if [ -z "$SCRIPT" ]; then
+  echo "You must set the SCRIPT variable first."
+  exit -1
+fi
