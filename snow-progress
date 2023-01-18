@@ -4,43 +4,53 @@ require "json"
 require "colorize"
 long_version = false # add me as an option?
 
-config = JSON.parse(File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json")), symbolize_names: true)
+config_with_skips = JSON.parse(File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json")), symbolize_names: true)
+config_w_no_skips = JSON.parse(File.read(File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json")), symbolize_names: true)
 
-config[:jobs].reject! {|name, job| job[:status] == "INACTIVE" }
+config_w_no_skips[:jobs].reject! {|name, job| job[:status] == "INACTIVE" || job[:status] == "SKIP" }
 
-counts = { src_conn: Hash.new(0), dst_conn: Hash.new(0) }
+[
+  ["Jobs Marked ACTIVE and SKIP", config_with_skips, [:bold, :white, :on_red]],
+  ["Jobs Marked ACTIVE only", config_w_no_skips, [:bold, :white, :on_green]]
+].each do |title, config, colors|
+  title = colors.inject(title.center(120)) {|text, color| text.send(color)}
+  puts title
 
-config[:jobs].each do |name, job|
-  counts[:src_conn][job[:src_conn]] += 1
-  counts[:dst_conn][job[:dst_conn]] += 1
-end
+  counts = { src_conn: Hash.new(0), dst_conn: Hash.new(0) }
 
-total = config[:jobs].size
-
-{"Source" => :src_conn, "Dest" => :dst_conn}.each do |title, key|
-  puts "#{title}:"
-  if long_version
-    counts[key].each_pair do |source, count|
-      puts "  %10s: %3d/%3d" % [source, count, total]
-    end
-  else
-    snowflake_pct = (100.0 * counts[key]["snowflake"]) / total
-    redshift_pct = (100.0 * counts[key]["redshift"]) / total
-    other_pct = 100.0 - (snowflake_pct + redshift_pct)
-
-
-    puts "%5.2f%% done, %5.2f%% remaining" % [snowflake_pct, redshift_pct]
-    snowflake_bar = 's' * snowflake_pct
-    redshift_bar = 'r' * redshift_pct
-    other_bar = 'o' * other_pct
-    puts '[' + snowflake_bar.light_blue + other_bar.yellow + redshift_bar.red + ']'
-
-    # redshift_bar = "r" * counts[key]["redshift"]
-    # snowflake_bar = "s" * counts[key]["snowflake"]
-    # other_bar = "o" * (total - (counts[key]["redshift"] + counts[key]["snowflake"]))
-
-    # puts redshift_bar.red + snowflake_bar.light_blue + other_bar.yellow
+  config[:jobs].each do |name, job|
+    counts[:src_conn][job[:src_conn]] += 1
+    counts[:dst_conn][job[:dst_conn]] += 1
   end
-end
 
-puts
+  total = config[:jobs].size
+
+  {"Source" => :src_conn, "Dest" => :dst_conn}.each do |title, key|
+    puts "#{title}:"
+    if long_version
+      counts[key].each_pair do |source, count|
+        puts "  %10s: %3d/%3d" % [source, count, total]
+      end
+    else
+      snowflake_ct = counts[key]["snowflake"]
+      redshift_ct = counts[key]["redshift"]
+      snowflake_pct = (100.0 * snowflake_ct) / total
+      redshift_pct = (100.0 * redshift_ct) / total
+      other_pct = 100.0 - (snowflake_pct + redshift_pct)
+
+
+      puts "%d (%5.2f%%) done, %d (%5.2f%%) remaining" % [snowflake_ct, snowflake_pct, redshift_ct, redshift_pct]
+      snowflake_bar = 's' * snowflake_pct
+      redshift_bar = 'r' * redshift_pct
+      other_bar = 'o' * other_pct
+      puts '[' + snowflake_bar.light_blue + other_bar.yellow + redshift_bar.red + ']'
+
+      # redshift_bar = "r" * counts[key]["redshift"]
+      # snowflake_bar = "s" * counts[key]["snowflake"]
+      # other_bar = "o" * (total - (counts[key]["redshift"] + counts[key]["snowflake"]))
+
+      # puts redshift_bar.red + snowflake_bar.light_blue + other_bar.yellow
+    end
+  end
+  puts
+end
