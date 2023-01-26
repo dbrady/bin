@@ -1,0 +1,4 @@
+#!/bin/bash
+# gdf - git diff, but in the finance dir
+echo -e "\033[36m(cd ~/data_services/etl/warehouse/finance && git diff)\033[0m"
+(cd ~/data_services/etl/warehouse/finance && git diff)
