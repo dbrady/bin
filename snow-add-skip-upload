@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# snow-add-skip-upload
+#
+# This has happened enough to merit at least an architectural sketch. Might not
+# be worth it but it's worth it to start comparing the cost.
+#
+# To add upload:
+#
+# 1. Add the import argparse line
+#
+#    - Does the file have import argparse? If yes, skip to next step
+#    - Find the imports section
+#    - Inject the "import argparse" ahead of the first import line that sorts
+#      after it (it's probably going to be the first line anyway)
+#
+# 2. Add the line to create the ArgumentParser (it needs a description)
+#
+# 3. Add the argument --skip_upload
+#
+# 4. set the skip_upload var from the option
+#
+# 5. do what you want with it.
+
+# Have to compute this string because including it directly causes git to, well, refuse to commit the file. That's literally this string's job
+nocommit = "# NO" + "COMMIT"
+
+str = <<PYTHON
+
+import argparse
+
+parser = argparse.ArgumentParser(description='#{nocommit}: Describe me!')
+parser.add_argument('--skip_upload', action='store_true', help='skip upload', required=False)
+
+args, remaining_args = parser.parse_known_args()
+
+skip_upload = args.skip_upload
+
+PYTHON
+
+str.upcase
