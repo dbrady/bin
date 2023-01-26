@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# wh-describe-table - describe a table in the warehouse
+#
+# import argparse - you suck, argparse
+import sys
+from dataservices import db
+
+
+def usage():
+    print(f"""
+wh-describe-table <warehouse> <table>
+
+Warehouse:
+  r, redshift
+  s, snowflake
+""")
+
+
+if __name__ == '__main__':
+    allowed_warehouses = {'r': 'redshift', 's': 'snowflake', 'd': 'dataservices'}
+
+    # parser = argparse.ArgumentParser(description='Describe Table in Warehouse')
+    # parser.add_argument('--warehouse', help='Warehouse (r or s)', default='s', required=False)
+    # args, remaining_args = parser.parse_known_args()
+
+    pretend = False
+    print(sys.argv)
+    if "-p" in sys.argv:
+        pretend = True
+        sys.argv.remove("-p")
+    print(sys.argv)
+
+    warehouse, table = sys.argv[1:]
+    warehouse = allowed_warehouses.get(warehouse, warehouse)
+
+    if warehouse not in allowed_warehouses.values():
+        print(f"Warehouse '{warehouse}' must be one of: {', '.join(allowed_warehouses.values())}")
+        sys.exit(1)
+
+    print(f"Warehouse: {warehouse}")
+    print(f"Table: {table}")
+
+    if warehouse == 'snowflake':
+        table = table.upper()
+    elif warehouse == 'redshift':
+        table = table.lower()
+
+    try:
+        dbo = db.DB(warehouse)
+        conn = dbo.connect(warehouse)
+
+        query = f"SELECT ordinal_position, column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position"
+        print(f"\033[36m{query}\033[0m")
+        if not pretend:
+            results = dbo.query(query)
+            dbo.commit()
+
+            for row in results:
+                print(row)
+
+            print()
+            query = f"SELECT COUNT(*) FROM {table}"
+            print(f"\033[36m{query}\033[0m")
+            results = dbo.query(query)
+            print(results[0][0])
+
+    finally:
+        dbo.close()
