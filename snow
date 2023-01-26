@@ -213,6 +213,15 @@ class SnowflakeManglerApp
     end
   end
 
+  def detect_missing_recipients_override
+    if should_have_recipients_override? && !has_recipients_override?
+      puts section_title "--recipients" if quick?
+      puts "File should have mail recipients override but does not"
+    else
+      log_ok
+    end
+  end
+
   def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
     return
     zack_casey_tables = %w(
@@ -255,6 +264,10 @@ class SnowflakeManglerApp
     end
   end
 
+  def skip_pep_check?
+    true
+  end
+
   # ======================================================================
   # END DETECTORS
   # ======================================================================
@@ -284,6 +297,16 @@ class SnowflakeManglerApp
     # this is just a tiny tiny sample
     ["gsheet", "facebook", "commissions"].any? {|part| get_script.include?(part) } ||
       File.readlines(get_script).any? {|line| line.include? "portal" }
+  end
+
+  def has_recipients_override?
+    File.readlines(get_script).any? {|line| line.include? "parser.add_argument('--recipients'" }
+  end
+
+  def should_have_recipients_override?
+    # true if we see "mail_recipients" anywhere in the file
+    # -OR- if we see "mail_recipients" in the job config
+    File.readlines(get_script).any? {|line| line.include? "mail_recipients" }
   end
 
   def run_and_exit!(command)
@@ -471,7 +494,7 @@ If no commands are given, snow will run check.
       # Check to see if etl_nightly.py has been gorbled by git, which has
       # happened twice in the last week.
       #
-      # "If I had a nickel for every time git has trashed etl_nightly.py, I'd
+      # "If I had a nickel for every time [git has trashed etl_nightly.py], I'd
       # have two nickels - which isn't a lot, but it's weird that it happened
       # twice."
       if !system("grep -- '--retry_count' etl_nightly.py > /dev/null")
@@ -483,7 +506,7 @@ If no commands are given, snow will run check.
         _,cols = $stdout.winsize
         warehouse = `snow-get-warehouse -c`
         branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
-        print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
+        print "\033[s\033[1;#{10+cols-warehouse.size}H #{warehouse} \033[u"
       end
 
       argv = ARGV.dup - ['-q', '--quick']
@@ -491,6 +514,7 @@ If no commands are given, snow will run check.
       command = "dsetl_nightly"
       command += " --skip_upload" if has_skip_upload?
       command += " --test" if has_test_mode?
+      command += " --recipients david.brady@acima.com" if has_recipients_override?
       command += " " + argv.join(" ")
       run_and_exit! command
     end
@@ -612,8 +636,13 @@ If no commands are given, snow will run check.
     # Check for PEP8 Conformance
     # ----------------------------------------------------------------------
     if !essential? && !quick?
-      puts section_title("PEP8 CONFORMANCE")
-      system "pep-check #{get_script}"
+      if skip_pep_check?
+        puts section_title("SKIPPING PEP8 CONFORMANCE")
+      else
+        puts section_title("PEP8 CONFORMANCE")
+        system "pep-check #{get_script}"
+      end
+
 
       # puts section_title("BOILERPLATE DOCUMENTATION")
       # system "snow-check-boilerplate #{get_script}"
@@ -987,6 +1016,7 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     detect_missing_skip_upload
     detect_missing_test_mode
+    detect_missing_recipients_override
 
     # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
