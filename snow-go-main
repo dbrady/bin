@@ -7,7 +7,8 @@ read
 
 echo starting... &&
 
-    echo -e "\033[36mcd ~/data_services/etl/warehouse/\033[0m" &&
+    # Move warehouse back to feature/snowflake-moveover
+    echo -e "\033[94mcd ~/data_services/etl/warehouse/\033[0m" &&
     (cd ~/data_services/etl/warehouse/ &&
 
          # echo -e "\033[36mgit reset --hard\033[0m" &&
@@ -19,8 +20,22 @@ echo starting... &&
          echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    echo -e "\033[36mcd ~/data_services/etl/warehouse/finance\033[0m" &&
+    # Move finance submodule back to feature/snowflake-moveover
+    echo -e "\033[94mcd ~/data_services/etl/warehouse/finance\033[0m" &&
     (cd ~/data_services/etl/warehouse/finance &&
+
+         echo -e "\033[36mgit reset --hard\033[0m" &&
+         git reset --hard &&
+
+         echo -e "\033[36mgit co feature/snowflake-moveover\033[0m" &&
+         git co feature/snowflake-moveover &&
+
+         echo -e "\033[36mgit pull\033[0m" &&
+         git pull) &&
+
+    # Move sql submodule back to feature/snowflake-moveover
+    echo -e "\033[94mcd ~/data_services/etl/warehouse/sql\033[0m" &&
+    (cd ~/data_services/etl/warehouse/sql &&
 
          echo -e "\033[36mgit reset --hard\033[0m" &&
          git reset --hard &&

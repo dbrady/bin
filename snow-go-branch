@@ -54,7 +54,7 @@ end
 command = "git checkout #{force ? '-f ' : ''}#{branch}"
 
 [warehouse_path, finance_path].each do |path|
-  puts "cd #{path}".cyan
+  puts "cd #{path}".light_blue
   Dir.chdir path
 
   puts command.cyan
