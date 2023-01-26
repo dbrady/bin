@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# csv-to-json - Print a csv file as a json hash (big <3 to mysql's \G syntax)
+#
+# Usage:
+#     csv-to-json filename.csv
+#     cat filename.csv | csv-to-json
+
+require "csv"
+require "json"
+require "optimist"
+
+opts = Optimist.options do
+  opt :delimiter, "Set CSV field delimiter", type: :string, default: ','
+end
+
+csv = ARGF.readlines.join
+puts JSON.pretty_generate(CSV.parse(csv, headers: true, col_sep: opts[:delimiter]).map(&:to_h))
