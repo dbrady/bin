@@ -20,7 +20,22 @@
 # {2addr}p - print any line that falls inside {2addr}, which is how `man sed`
 #            says "x,y"
 
+def usage
+  puts <<USAGE
+  Usage:
+      sed-lines [-v] [-n] <start> <stop> <file>
+      -n - show line numbers
+      -v, --verbose - show the native sed command
+USAGE
+end
+
 argv = ARGV.dup
+
+if argv.size.zero? || argv.include?("-h") || argv.include?("--help")
+  usage
+  exit 0
+end
+
 verbose = if argv.include?("-v") || argv.include?("--verbose")
             argv -= ["-v", "--verbose"]
             true
