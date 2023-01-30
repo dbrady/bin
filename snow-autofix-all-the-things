@@ -13,6 +13,7 @@ read
 snow-fix-tabs
 snow-fix-whitespace
 snow-fix-pep
+snow-fix-btrim
 snow-fix-distkeys
 snow-fix-chdir
 snow-fix-optional-job-config

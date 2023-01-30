@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# which-tables-are-mentioned-in-this-job [-f|--full-line] - try to find tables (by prefix) mentioned in this job
+require 'colorize'
+
+full = ARGV.delete('-f') || ARGV.delete('--full-line')
+script = ARGV.first || `get-ds-script`.rstrip
+
+if script.empty?
+  puts "You must set the SCRIPT variable or pass in an argument first."
+  exit -1
+end
+
+command = "cat #{script} | ruby -ne 'puts $1 if $_=~/\\b((lms|mp|d|f|s)_.*?)\\b/' | sort | uniq"
+puts command.cyan
+system command

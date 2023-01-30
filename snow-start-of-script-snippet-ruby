@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# FILENAME - DESCRIPTION
+# USAGE
+# OPTIONS
+require 'colorize'
+
+script = ARGV.first || `get-ds-script`.rstrip
+
+if script.empty?
+  puts "You must set the SCRIPT variable or pass in an argument first."
+  exit -1
+end
