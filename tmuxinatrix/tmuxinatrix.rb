@@ -39,8 +39,10 @@ class Tmuxinatrix
       settingses.each.with_index do |settings, index|
         pane = index + 1
 
-        # FIXME: Window creation is problematic. Have to wait for bash to start up and
-        # run all my crap before tmux can find the stupid window.
+        # FIXME: Window creation is problematic. Have to wait for bash to start
+        # up and run all my crap before tmux can find the stupid window. FIXED?
+        # Sending "sleep 10 && dsexec" seems worky. Note, we can't do dsexec and
+        # then sleep as the dsexec blocks until I leave the guest OS.
 
         # if index > 1
         #   # window 1 is already open
