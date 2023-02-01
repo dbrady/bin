@@ -6,6 +6,12 @@ require_relative 'tmuxinatrix/tmuxinatrix'
 
 settingses = [
   # first session of the day needs to start the container
+  #
+  # TODO: Can't do dsstart && sleep 10 && emacs because emacs needs to
+  # be sent into the guest OS and dsstart will block. BUT... this is
+  # pure ruby. Could we cleanly make this thing dsstart, then sleep
+  # *in ruby*, then send emacs C-m ? Maybe change the final arg from
+  # String to array of strings... or perhaps a lambda? Idk.
   TmuxSettings.new("ds.emacs", "data_services/etl/warehouse/", "dsstart"),
 
   # all subsequent sessions connect with dsexec, but we need to give dsstart enough time to fire up
