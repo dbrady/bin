@@ -14,8 +14,8 @@ def j; "#{ $j += 1}."; end
 def checklist
   puts <<CHECKLIST
 #{i!} Go to latest feature/snowflake-moveover: snow main
-#{i} Find next ticket: next-ticket, DS-879, snow cplx, snow preview
-#{i} MANUAL: Claim the ticket in Jira and move it to IN DEVELOPMENT
+#{i} Find next ticket: next-ticket, DS-879, snow cplx/ preview
+#{i} MANUAL: Jira: Claim the ticket, move to IN DEVELOPMENT
 #{i} Create branches: snow new <jira_id> <job.py>
 #{i} Fixup: snow auto, scow/snow-fix/snow-commit, snow -q
 #{i} MANUAL: Code look good? Any new/repeated issues?
@@ -28,7 +28,7 @@ def checklist
   #{i?}#{j} Ensure target branch is feature/snowflake-moveover
   #{i?}#{j} Ensure both PRs have no extra commits
   #{i?}#{j} Inspect file changes on GitHub
-#{i} Make links: snow link <warehouse_pr> <finance_pr> [<pkg_pr>]
+#{i} Make links: snow link <wh_pr> <fin_pr> [<pkg_pr>]
 #{i} MANUAL: Delegate to Zack by sending him links
 #{i} MANUAL: Wait on review
 CHECKLIST
