@@ -128,7 +128,11 @@ class SnowflakeManglerApp
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       puts section_title title if quick?
-      puts "Autofix with:\n#{autofix.cyan}" if autofix
+      if autofix
+        puts "Autofix with:\n#{autofix.cyan}"
+        fixlog "#{get_script}: autofix #{title}", autofix
+      end
+
       # Yeah, turn this into lines_with_indexes = finder_method, we can
       # write a generic version to do what this regex does, and then we can
       # pass in custom finder methods for multiline and trickier stuff
@@ -143,6 +147,7 @@ class SnowflakeManglerApp
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
             puts sed_command.cyan
+            fixlog "#{get_script}: replacement for #{title}", sed_command
           end
         end
       end
@@ -191,6 +196,18 @@ class SnowflakeManglerApp
     end
 
     log_ok if no_matches
+  end
+
+  # Let's start capturing the fixes and suggests to a script/log
+  def fixlog(comment, autofix)
+    comment = comment.gsub(%r|sql/|, '')
+    autofix = autofix.gsub(%r|sql/|, '')
+
+    autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
+    if !File.exists?(autofix_filename)
+      File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
+    end
+    File.open(autofix_filename, "a") { |file| file.puts "# #{comment}"; file.puts autofix}
   end
 
   def detect_missing_skip_upload
@@ -291,6 +308,14 @@ class SnowflakeManglerApp
 
   def has_test_mode?
     File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--test")}
+  end
+
+  def has_start_date?
+    File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--start_date")}
+  end
+
+  def has_end_date?
+    File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--end_date")}
   end
 
   def should_have_test_mode?
@@ -503,18 +528,29 @@ If no commands are given, snow will run check.
       end
 
       if !quick?
+        # print dst_conn warehouse name in top-right corner
+        #
+        # ...because sometimes I want to fire this thing at redshift, but
+        # usually I don't, and that's a high-impact error.
         _,cols = $stdout.winsize
         warehouse = `snow-get-warehouse -c`
         branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
-        print "\033[s\033[1;#{10+cols-warehouse.size}H #{warehouse} \033[u"
+        print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
       end
 
       argv = ARGV.dup - ['-q', '--quick']
+      # TODO: I would like to add -c to 'snow run' to "show command only",
+      # but the showing of the command is entirely inside dsetl_nightly. So we
+      # generate all the arguments here, but we display them over there. This is
+      # the opposite of SRP--a single concern has been separated into two
+      # separate programs.
       argv.shift
       command = "dsetl_nightly"
       command += " --skip_upload" if has_skip_upload?
       command += " --test" if has_test_mode?
-      command += " --recipients david.brady@acima.com" if has_recipients_override?
+      command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !argv.include?('--start_date')
+      command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !argv.include?('--end_date')
+      command += " --recipients david.brady@acima.com" if has_recipients_override? && !argv.include?('--recipients')
       command += " " + argv.join(" ")
       run_and_exit! command
     end
