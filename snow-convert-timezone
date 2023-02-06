@@ -5,31 +5,37 @@
 # and correct field to be converted
 require "colorize"
 
-script = `get-ds-script`.strip
+argv = ARGV.dup
 
-ARGV.each do |param|
-  grep_command = %Q|grep -E "#{param} AT TIME ZONE 'UTC' AT TIME ZONE 'America\/Denver'" #{script}|
-  replace_text = %Q|CONVERT_TIMEZONE('UTC', 'Amercia/Denver', #{param})"|
-  sed_commands = [
-    %Q|sed -i -e "s/(#{param} AT TIME ZONE 'UTC' AT TIME ZONE 'America\\\/Denver')/CONVERT_TIMEZONE('UTC', 'America\\\/Denver', #{param})/g" #{script} |,
-    %Q|sed -i -e "s/#{param} AT TIME ZONE 'UTC' AT TIME ZONE 'America\\\/Denver'/CONVERT_TIMEZONE('UTC', 'America\\\/Denver', #{param})/g" #{script} |
-  ]
+force = !(['-f', '--force'] & argv).empty?
+argv -= ['-f', '--force']
 
-  puts param.bold.light_magenta
-  puts grep_command.cyan
-  puts replace_text.green
-  puts sed_commands.map(&:cyan)
+script = File.exists?(argv[1]) ? argv[1] : `get-ds-script`.strip
 
-  puts "Run these? y/N"
-  confirm = $stdin.gets.strip.upcase
-  if confirm == "Y"
-    puts "Executing".white.bold.on_red
-    sed_commands.each do |command|
-      puts command.cyan
-      system command
-      puts "Done."
-    end
-  else
-    puts "Skipping"
+param = argv.first
+
+grep_command = %Q|grep -E "#{param} AT TIME ZONE 'UTC' AT TIME ZONE 'America\/Denver'" #{script}|
+replace_text = %Q|CONVERT_TIMEZONE('UTC', 'Amercia/Denver', #{param})"|
+sed_commands = [
+  %Q|sed -i -e "s/(#{param} AT TIME ZONE 'UTC' AT TIME ZONE 'America\\\/Denver')/CONVERT_TIMEZONE('UTC', 'America\\\/Denver', #{param})/g" #{script} |,
+  %Q|sed -i -e "s/#{param} AT TIME ZONE 'UTC' AT TIME ZONE 'America\\\/Denver'/CONVERT_TIMEZONE('UTC', 'America\\\/Denver', #{param})/g" #{script} |
+]
+
+puts param.bold.light_magenta
+puts grep_command.cyan
+puts replace_text.green
+puts sed_commands.map(&:cyan)
+
+puts "Run these? y/N" if !force
+confirm = force ? "Y" : $stdin.gets.strip.upcase
+
+if confirm == "Y"
+  puts "Executing".white.bold.on_red
+  sed_commands.each do |command|
+    puts command.cyan
+    system command
+    puts "Done."
   end
+else
+  puts "Skipping"
 end
