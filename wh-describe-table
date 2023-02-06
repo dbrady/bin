@@ -55,6 +55,18 @@ if __name__ == '__main__':
             results = dbo.query(query)
             dbo.commit()
 
+
+            # TODO: interpret the results
+            # IS_NULLABLE = No / NULL / FALSE : add "NOT NULL"
+            # COLUMN_DEFAULT is not null : add "DEFAULT <value>" if numeric else "DEFAULT '<value>'"
+            # DATA_TYPE
+            #   TEXT - VARCHAR(<CHARACTER_MAXIMUM_LENGTH>)
+            #   BOOLEAN - BOOLEAN
+            #   NUMBER
+            #     NUMERIC_PRECISION=38 && NUMERIC_SCALE=0 - NUMBER
+            #     ELSE - DECIMAL(<NUMERIC_PRECISION>, <NUMERIC_SCALE>)
+            #   FLOAT - DOUBLE PRECISION
+
             for row in results:
                 print(row)
 
