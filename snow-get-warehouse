@@ -24,13 +24,13 @@ warehouse = config["jobs"].fetch(job_name, {})["dst_conn"]
 if colorize
   puts case warehouse
        when "redshift"
-         warehouse.bold.light_white.on_red
+         " #{warehouse} ".bold.light_white.on_red
        when "snowflake"
-         warehouse.light_white.on_light_blue
+         " #{warehouse} ".light_white.on_light_blue
        when /redshift/
-         warehouse.red
+         " #{warehouse} ".red
        else
-         warehouse.bold.white.on_magenta
+         " #{warehouse} ".bold.white.on_magenta
        end
 else
   puts warehouse
