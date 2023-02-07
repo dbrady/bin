@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# coding: utf-8
 # snow-get-warehouse [-c] [job] - is this job on snowflake or redshift?
 # -c - colorize output
 require 'colorize'
@@ -24,9 +25,9 @@ warehouse = config["jobs"].fetch(job_name, {})["dst_conn"]
 if colorize
   puts case warehouse
        when "redshift"
-         " #{warehouse} ".bold.light_white.on_red
+         " 🛢️  #{warehouse} 🛢️  ".bold.light_white.on_red
        when "snowflake"
-         " #{warehouse} ".light_white.on_light_blue
+         " ❄️  #{warehouse} ❄️  ".light_white.on_light_blue
        when /redshift/
          " #{warehouse} ".red
        else
