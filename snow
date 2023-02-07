@@ -36,7 +36,7 @@ require 'io/console'
 
 class SnowflakeManglerApp
   def checklist
-    run_and_exit! "snow-show-checklist"
+    run_and_exit! "snow-show-checklist #{ARGV.join(' ')}"
   end
 
   def set_script(script)

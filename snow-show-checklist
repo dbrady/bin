@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+def short?
+  ARGV.include?("-q")
+end
+
 # stoopid numbering hacks
 # i!, j! = init and return the counter
 # i, j = increment and return the counter
@@ -11,17 +15,49 @@ def j?; "#{$j}."; end
 def j!; "#{$j = 1}."; end
 def j; "#{ $j += 1}."; end
 
-def checklist
-  puts <<CHECKLIST
+
+def short_checklist
+  # Sure, it's annoying to keep these duplicated blocks in sync, but
+  #
+  # 1) it's even more annoying to try to maintain a synced data structure and
+  # write a teaser-aparter. Ask me how I know.
+  #
+  # 2) the short version actually has fewer/different steps, so they're NOT
+  # actually duplicates. Ask me how I found that out. (Hint: see point 1)
+  return <<CHECKLIST
+#{i!} snow main
+#{i} next-ticket
+#{i} claim ticket, IN DEVELOPMENT
+#{i} snow new <jira_id> <job.py>
+#{i} snow auto, scow/scod
+#{i} snow job s
+#{i} snow run
+#{i} screenshot, IN REVIEW
+#{i} manually inspect code
+#{i} snow slam
+#{i} sanity check:
+  #{i?}#{j!} screenshot
+  #{i?}#{j} branch=feature/snowflake-moveover
+  #{i?}#{j} no extra commits
+  #{i?}#{j} inspect file changes
+#{i} snow link <wh_pr> <fin_pr> [<pkg_pr>]
+#{i} paste to zack
+#{i} review
+CHECKLIST
+
+end
+
+def full_checklist
+  return <<CHECKLIST
 #{i!} Go to latest feature/snowflake-moveover: snow main
 #{i} Find next ticket: next-ticket, DS-879, snow cplx/ preview
 #{i} MANUAL: Jira: Claim the ticket, move to IN DEVELOPMENT
 #{i} Create branches: snow new <jira_id> <job.py>
 #{i} Fixup: snow auto, scow/snow-fix/snow-commit, snow -q
-#{i} MANUAL: Code look good? Any new/repeated issues?
 #{i} Cut config over to snowflake: snow job s
-#{i} Run job: clear; snow run
+#{i} Run job: snow run
 #{i} MANUAL: Screenshot and move JIRA ticket to IN REVIEW
+#{i} MANUAL: Code look good? Any new/repeated issues?
 #{i} Open a PR in each repo: snow slam
 #{i} MANUAL: Sanity check the PRs
   #{i?}#{j!} Doublecheck the screenshot
@@ -34,4 +70,4 @@ def checklist
 CHECKLIST
 end
 
-checklist
+puts short? ? short_checklist : full_checklist
