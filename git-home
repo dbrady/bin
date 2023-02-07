@@ -5,6 +5,8 @@ puts "Opening the github homepage for this project: "
 #       - Upside: fast, I hate waiting
 #       - Downside: breaks if they ever change the parsing structure
 #       - Downside: I'd have to write the parser
+require "colorize"
+
 url=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
 
 def osx?
@@ -20,7 +22,7 @@ end
 url = url.sub(/.git$/, '').strip
 
 # Tell user what we're gonna open
-puts "\x1b[1;37;42m#{url}\x1b[0m"
+puts url.on_green
 
 if osx?
   system "open #{url}"
