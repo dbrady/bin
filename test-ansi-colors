@@ -1,0 +1,5 @@
+#!/bin/bash
+
+source vars-ansicolors.sh
+
+echo -e "This is ${ANSI_BOLD}${ANSI_WHITE}BOLD WHITE ${ANSI_ON_RED}ON A RED BACKGROUND ${ANSI_DIM}(AND THIS IS DIM)${ANSI_OFF}"
