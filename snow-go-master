@@ -27,15 +27,6 @@ echo starting... &&
          echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    # echo -e "\033[94mcd ~/data_services/etl/warehouse/sql/\033[0m" &&
-    # (cd ~/data_services/etl/warehouse/sql/ &&
-
-    #      echo -e "\033[36mgit main\033[0m" &&
-    #      git main &&
-
-    #      echo -e "\033[36mgit pull\033[0m" &&
-    #      git pull) &&
-
     echo -e "\033[94mcd ~/data_services/etl/warehouse/\033[0m" &&
     (cd ~/data_services/etl/warehouse/ &&
 
