@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+# triad [-#|-b] <chord>
+
+# This draws a fretboard and colors the root, 3rd and 5th of that chord.
+
+# TODO: Colorize chords in relative keys. Technically Am is really just "colorize A in the C major scale", so we could maybe generalize this to "colorize Dmin in A phrygian" (which is the relative phrygian to F major)
+
+# relative_major_key> color:<notes> color:<notes> - highlight given triads on the fretboard
+
+require "colorize"
+
+#
+# triad <chord> - highlight the correct notes for this triad. E.g.
+#
+# triad G      ...is the same as...     triad G green:G light_blue:B,D
+# triad Am     ...is the same as...     triad C green:A light_blue:C,E
+# triad Gm     ...is the same as...     triad Bb green:G light_blue:Bb,D
+#
+# Because of some limitations on how I wrote the original fretmap, I need to know the relative major key for the desired chord. Well, not technically true. You just need to give a key that contains all the notes you're looking for.
+#
+
+# show all notes with one of these:
+#
+# fretmap -t A,A#,B,C,C#,D,D#,E,F,F#,G,G#
+# fretmap -t Ab,A,Bb,B,C,Db,D,Eb,E,F,Gb,G
+
+# This is just an attempt to make this monster easier to type:
+# fretmap -t G,D,B | sed -E "s/ G /\x1b[30;102m G \x1b[0m/g" | sed -E "s/ D /\x1b[30;106m D \x1b[0m/g" | sed -E "s/ B /\x1b[30;106m B \x1b[0m/g"
+
+# Which, given the 3 notes G, D and B, highlights G in black-on-green (30;102), and D and B in black on cyan (30;106)
+
+# Input: a 3-note chord name.
+
+chords = {
+  # Majors
+  "A" => "A,C#,E",
+  "B" => "B,D#,F#",
+  "C" =>  "C,E,G",
+  "D" => "D,F#,A",
+  "E" => "E,G#,B",
+  "F" => "F,A,C",
+  "G" => "G,B,D",
+
+  # The flats
+
+  # The sharps
+
+  "Am" => "A,C,E",
+  "Bm" => "B,D,F#",
+  "Cm" => "C,Eb,G",
+  "Dm" => "D,F,A",
+  "Em" => "E,G,B",
+  "Fm" => "F,G#,C",
+  "Gm" => "G,Bb,D",
+
+  # Flat Majors
+
+  # Sharp Majors
+}
+
+argv = ARGV.dup
+sharp = !(argv & ["-#", "--sharp"]).empty?
+flat = !(argv & ["-b", "--flat"]).empty?
+
+argv = argv - (argv & ["-#", "--sharp", "-b", "--flat"])
+
+if sharp && flat
+  puts "Show accidentals as sharp or flat? You said both. I can't do both. Please make up your mind."
+end
+
+key = argv[0]
+
+if !chords[key]
+  puts "Unrecognized key: #{key}, must be one of: #{chords.keys.sort.join(', ')}"
+  exit -1
+end
+
+root, *notes = chords[key].split(/,/)
+
+fretmap_command = if sharp
+                    'fretmap -t A,A#,B,C,C#,D,D#,E,F,F#,G,G#'
+                  else
+                    'fretmap -t Ab,A,Bb,B,C,Db,D,Eb,E,F,Gb,G'
+                  end
+
+output = `#{fretmap_command}`
+
+# primary_colors = [:on_green]
+# secondary_colors = [:on_light_blue]
+
+new_output = output.each_line.map do |line|
+  line = line.rstrip
+  line = line.gsub(/\| #{root}\s*\|/, "|" + root.center(3).on_green + "|")
+  notes.each do |note|
+    line = line.gsub(/\| #{note}\s*\|/, "|" + note.reverse.center(3).reverse.on_blue + "|")
+  end
+  line
+end # .join("\n")
+
+puts new_output
