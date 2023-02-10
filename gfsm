@@ -1,0 +1,5 @@
+#!/bin/bash
+# gfsm - "go feature/snow-moveover" - checkout snowflake branch in git w/o invoking all the snow hooks
+. vars-ansicolors.sh
+echo -e "${ANSI_CYAN}go feature/snowflake-moveover${ANSI_OFF}"
+go feature/snowflake-moveover
