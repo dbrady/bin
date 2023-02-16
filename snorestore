@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ `uname -s` != 'Darwin' ]; then
+    echo "\033[31mThis script only runs on OSX.\033[0m"
+    exit -1
+fi
+
+FILE=etl_transunion_tcpa_pull.py
+
+echo "Remote File Before Restore:"
+snocheck
+
+echo -e "\033[36mssh dataservicessnowflake \"cd ~/data_services/etl/warehouse && git restore $FILE\" 2>/dev/null\033[0m"
+ssh dataservicessnowflake "cd ~/data_services/etl/warehouse && git restore $FILE" 2>/dev/null
+
+echo "Remote File After Restore:"
+snocheck

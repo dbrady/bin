@@ -1,0 +1,19 @@
+#!/bin/bash
+if [ `uname -s` != 'Darwin' ]; then
+    echo "\033[31mThis script only runs on OSX.\033[0m"
+    exit -1
+fi
+
+FILE=etl_transunion_tcpa_pull.py
+
+echo "Local File:"
+echo -e "\033[36mls -la ~/acima/devel/data_services/etl/warehouse/$FILE && sha256sum ~/acima/devel/data_services/etl/warehouse/$FILE\033[0m"
+ls -la ~/acima/devel/data_services/etl/warehouse/$FILE && sha256sum ~/acima/devel/data_services/etl/warehouse/$FILE
+
+echo "Remote File Before Copy:"
+snocheck
+echo -e "\033[36mscp $FILE dataservicessnowflake:data_services/etl/warehouse/ 2>/dev/null\033[0m"
+scp $FILE dataservicessnowflake:data_services/etl/warehouse/ 2>/dev/null
+
+echo "Remote File After Copy:"
+snocheck

@@ -1,0 +1,10 @@
+#!/bin/bash
+if [ `uname -s` != 'Darwin' ]; then
+    echo "\033[31mThis script only runs on OSX.\033[0m"
+    exit -1
+fi
+
+FILE=etl_transunion_tcpa_pull.py
+
+echo -e "\033[36mssh dataservicessnowflake \"ls -la ~/data_services/etl/warehouse/$FILE && sha256sum ~/data_services/etl/warehouse/$FILE\" 2>/dev/null\033[0m"
+ssh dataservicessnowflake "ls -la ~/data_services/etl/warehouse/$FILE && sha256sum ~/data_services/etl/warehouse/$FILE" 2>/dev/null | ruby -ne 'puts "\033[35m#{$_.sub(/ /, "\033[0m ")}"'
