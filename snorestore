@@ -4,7 +4,7 @@ if [ `uname -s` != 'Darwin' ]; then
     exit -1
 fi
 
-FILE=etl_transunion_tcpa_pull.py
+FILE=etl_transunion_tlo_pull.py
 
 echo "Remote File Before Restore:"
 snocheck

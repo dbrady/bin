@@ -4,7 +4,7 @@ if [ `uname -s` != 'Darwin' ]; then
     exit -1
 fi
 
-FILE=etl_transunion_tcpa_pull.py
+FILE=etl_transunion_tlo_pull.py
 
 echo -e "\033[36mssh dataservicessnowflake \"ls -la ~/data_services/etl/warehouse/$FILE && sha256sum ~/data_services/etl/warehouse/$FILE\" 2>/dev/null\033[0m"
 ssh dataservicessnowflake "ls -la ~/data_services/etl/warehouse/$FILE && sha256sum ~/data_services/etl/warehouse/$FILE" 2>/dev/null | ruby -ne 'puts "\033[35m#{$_.sub(/ /, "\033[0m ")}"'
