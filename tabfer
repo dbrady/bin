@@ -64,7 +64,7 @@ end
 # expand it to a fuzzy match, and if exactly one file matches, use that.
 def find_best_file(song)
   filename = File.join(TAB_FOLDER, "#{song}.txt")
-  if !File.exists? filename
+  if !File.exist? filename
     filename_regex = Regexp.new(song.split(//).join('.*'))
     matching_files = Dir.glob(TAB_FOLDER + "/*").sort.find_all { |file| File.basename(file, '.txt') =~ filename_regex }
 
@@ -94,7 +94,7 @@ magic_numbers = {
 
 range = magic_numbers[File.basename(filename, '.txt')]
 
-if File.exists? filename
+if File.exist? filename
   line_number = 0
 
   puts

@@ -214,7 +214,7 @@ class SnowflakeManglerApp
     puts section_title "Skip Upload" unless quick?
     if should_have_skip_upload? && !has_skip_upload?
       puts section_title "Skip Upload" if quick?
-      puts "File should have skip_upload but does not"
+      puts "File is mccloud or salesforce but does not have --skip_upload option"
     else
       log_ok
     end
@@ -224,7 +224,7 @@ class SnowflakeManglerApp
     puts section_title "--test" unless quick?
     if should_have_test_mode? && !has_test_mode?
       puts section_title "--test" if quick?
-      puts "File should have test option but does not"
+      puts "File talks to gsheet, facebook, or commissions but does not have --test option"
     else
       log_ok
     end
@@ -233,7 +233,7 @@ class SnowflakeManglerApp
   def detect_missing_recipients_override
     if should_have_recipients_override? && !has_recipients_override?
       puts section_title "--recipients" if quick?
-      puts "File should have mail recipients override but does not"
+      puts "File sends email but does not have --recipients override option"
     else
       log_ok
     end

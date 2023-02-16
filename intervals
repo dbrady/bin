@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# intervals <root> <note2> <note3> <note4> <note5> <note6> <note7>
+# intervals <scale>
+
+
+if [ $# == 1 ]; then
+    case $1 in
+        # Major keys
+        "C")
+            intervals C D E F G A B
+            ;;
+        "D")
+            intervals D E F# G A B C#
+            ;;
+        "E")
+            intervals E F# G# A B C# D#
+            ;;
+        "F")
+            intervals F G A Bb C D E
+            ;;
+        "G")
+            intervals G A B C D E "F#"
+            ;;
+        "A")
+            intervals A B C# D E F# "G#"
+            ;;
+        "B")
+            intervals B C# D# E F# G# A#
+            ;;
+
+        # Minor
+        "Am")
+            intervals A B C D E F G
+            ;;
+        "Bm")
+            intervals B C# D E F# G A
+            ;;
+        "Cm")
+            intervals C# D# E F# G# A B
+            ;;
+        "Dm")
+            intervals D E F G A Bb C
+            ;;
+        "Em")
+            intervals E "F#" G A B C D
+            ;;
+        "Fm")
+            intervals F# "G#" A B C# D E
+            ;;
+        "Gm")
+            intervals G# A# B C# D# E F#
+            ;;
+    esac
+else
+
+    . vars-ansicolors.sh
+
+    ROOT="\x1b[30;102m"
+    SECOND="\x1b[97;44m"
+    THIRD="\x1b[97;44m"
+    FOURTH="\x1b[97;44m"
+    FIFTH="\x1b[97;44m"
+    SIXTH="\x1b[97;44m"
+    SEVENTH="\x1b[97;44m"
+
+    fretmap -t $1,$2,$3,$4,$5,$6,$7 | sed -E "s/ ($1\s*)/$ROOT 1 \x1b[0m/g" | sed -E "s/ ($2\s*)/$SECOND 2 \x1b[0m/g" | sed -E "s/ ($3\s*)/$THIRD 3 \x1b[0m/g" \
+        | sed -E "s/ ($4\s*)/$FOURTH 4 \x1b[0m/g" | sed -E "s/ ($5\s*)/$FIFTH 5 \x1b[0m/g" | sed -E "s/ ($6\s*)/$SIXTH 6 \x1b[0m/g"  | sed -E "s/ ($7\s*)/$SEVENTH 7 \x1b[0m/g"
+
+fi
