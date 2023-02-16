@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # snow-new-branch <ticket> <path/to/job.py> - git new-branch in both repos
 require "colorize"
+$argv=ARGV.dup
 
 $force = false
 
@@ -38,7 +39,7 @@ def make_sure_script_is_current!(ticket_id)
 
   branches = get_all_branches
 
-  if problem_branch = branches.detect {|branch| branch.include?(ticket_id) || branch.include?(job_name) }
+  if problem_branch = branches.detect {|branch| branch.include?("#{ticket_id}/#{job_name}")}
     raise "ERROR: Cowardly refusing to create new snowflake tickets for #{job_name} because I found an existing branch called #{problem_branch}."
   end
 end
@@ -48,35 +49,35 @@ end
 # Start of main script
 # ----------------------------------------------------------------------
 
-if ARGV.include?("-h") || ARGV.include?("--help")
+if $argv.include?("-h") || $argv.include?("--help")
   usage
   exit 0
 end
 
-if ARGV.include?("-f") || ARGV.include?("--force")
+if $argv.include?("-f") || $argv.include?("--force")
   $force = true
-  ARGV -= ["-f", "--force"]
+  $argv -= ["-f", "--force"]
 end
 
-if ARGV.first.to_i.zero?
+if $argv.first.to_i.zero?
   puts "Argument must be a ticket id"
   usage
   exit -1
 end
 
-if ARGV.size != 1 && ARGV.size != 2
-  puts "Expected 1-2 arguments, got #{ARGV.size}"
+if $argv.size != 1 && $argv.size != 2
+  puts "Expected 1-2 arguments, got #{$argv.size}"
   usage
   exit -1
 end
 
-filename = if ARGV.size == 2
-             system "set-ds-script", ARGV[1]
+filename = if $argv.size == 2
+             system "set-ds-script", $argv[1]
            else
              get_script
            end
 
-ticket = ARGV.first
+ticket = $argv.first
 filename = get_script
 warehouse_dir = File.expand_path("~/data_services/etl/warehouse")
 
