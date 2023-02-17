@@ -224,7 +224,7 @@ class SnowflakeManglerApp
     puts section_title "--test" unless quick?
     if should_have_test_mode? && !has_test_mode?
       puts section_title "--test" if quick?
-      puts "File talks to gsheet, facebook, or commissions but does not have --test option"
+      puts "File mentions portal, gsheet, facebook, or commissions but does not have --test option"
     else
       log_ok
     end
