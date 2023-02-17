@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 require "colorize"
 
+if `uname -s`.strip == "Darwin"
+  puts "This script runs in Docker, not OSX.".red
+  exit -1
+end
+
 # Find exactly one branch matching ARGV.first, and find the same branch in both
 # the warehouse and finance repo. If found, check out those branches.
 argv = ARGV

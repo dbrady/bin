@@ -1,5 +1,11 @@
 #!/bin/bash
 # snow-go-master
+
+if [ `uname -s` == "Darwin" ]; then
+    echo -e "\033[31mThis script runs in Docker, not OSX.\033[0m"
+    exit -1
+fi
+
 echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41m!!!  MASTER  !!! \033[0m branch, NOT SNOWFLAKE."
 echo "It will also clear ~/.ds_script."
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
