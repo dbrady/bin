@@ -34,10 +34,10 @@ align_method = :center
 align_method = :ljust if opts[:left]
 align_method = :rjust if opts[:right]
 
-puts "bold: #{opts[:bold]}"
-puts "argv: #{ARGV}"
-puts "align_method: #{align_method}"
-puts "padding: #{opts[:padding]}"
+# puts "bold: #{opts[:bold]}"
+# puts "argv: #{ARGV}"
+# puts "align_method: #{align_method}"
+# puts "padding: #{opts[:padding]}"
 padding = ' ' * opts[:padding]
 
 text_to_display = "#{padding}#{message}#{padding}".send(align_method, width).send(fg_color).send(bg_color)
