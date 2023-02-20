@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+# rub1nner - Print a colorized banner, 1 line high (so no fonts)
+#
+# rub1nner [-l|-r|-c] [-b|--bold] <color> <on_color> "<message>"
+#
+#
+
+require "colorize"
+require "io/console"
+require "optimist"
+
+_height,width = $stdout.winsize
+
+opts = Optimist.options do
+  opt :left, "Align text to the left"
+  opt :right, "Align text to the right"
+  opt :center, "Align text to the center (default: true unless -l or -r specified)"
+  opt :padding, "Number of spaces to pad text", type: :int, default: 1
+  opt :bold, "Use bold text"
+end
+
+raise "Expected 3 args, got #{ARGV.size}" unless ARGV.size == 3
+
+fg_color, bg_color, message = *ARGV
+
+# These checks are here more to remind me how to use the script than to protect
+# me from trying to pack little Bobby Tables into the arguments before flinging
+# them at my Kernel with String.send.
+Optimist::die :fg_color, "First argument must be a valid color name, e.g. 'blue' or 'light_magenta'" unless "String".methods.include?(fg_color.to_sym)
+Optimist::die :bg_color, "Second argument must be a valid background color name, e.g. 'on_cyan' or 'on_light_green'" unless "String".methods.include?(bg_color.to_sym)
+Optimist::die :alignment, "You must specify at most one of --left, --right, or --center" if (opts[:left] && opts[:right]) || (opts[:left] && opts[:center]) || (opts[:center] && opts[:right])
+
+align_method = :center
+align_method = :ljust if opts[:left]
+align_method = :rjust if opts[:right]
+
+puts "bold: #{opts[:bold]}"
+puts "argv: #{ARGV}"
+puts "align_method: #{align_method}"
+puts "padding: #{opts[:padding]}"
+padding = ' ' * opts[:padding]
+
+text_to_display = "#{padding}#{message}#{padding}".send(align_method, width).send(fg_color).send(bg_color)
+text_to_display = text_to_display.bold if opts[:bold]
+
+
+puts text_to_display
