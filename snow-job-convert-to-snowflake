@@ -5,11 +5,11 @@
 require 'json'
 
 config_file = File.expand_path("./finance/config/etl_nightly_config.json")
-job = ARGV.first
+job_file = ARGV.first
 
 puts "Configuring job to run in snowflake"
 
-job = job.gsub(%r|/|, '.').sub(/.py$/, '')
+job = job_file.gsub(%r|/|, '.').sub(/.py$/, '')
 
 # 1. parse the config file and read the jobs hash to get all of its keys in
 #   order.
@@ -71,7 +71,7 @@ end
 
 # puts "AFTER:"
 # system sed_print_command
-system "snow job"
+system "snow job #{job_file}"
 # puts `#{sed_print_command}`
 
 # The sister script, snow-job-convert-to-redshift, does exactly the same thing
