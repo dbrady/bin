@@ -78,6 +78,10 @@ class SnowflakeManglerApp
     ARGV.include?("preview")
   end
 
+  def job?
+    ARGV.include?("job")
+  end
+
   def help?
     ARGV.include?('--help') || ARGV.include?('-h') || ARGV.include?('help')
   end
@@ -498,6 +502,14 @@ If no commands are given, snow will run check.
     if preview?
       # If arg 1 is an integer, we've been given a ticket number also
       set_script((ARGV[1].to_i > 0) ? ARGV[2] : ARGV[1])
+    end
+
+    # Optionally override script if job is show config for job
+    if job?
+      # If arg 2 exists and is a file that exists, override it
+      if ARGV[2] && File.exists?(ARGV[2])
+        set_script(ARGV[2])
+      end
     end
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
