@@ -35,8 +35,11 @@ require 'optimist'
 require 'io/console'
 
 class SnowflakeManglerApp
+  attr_reader :opts
+  attr_accessor :argv
+
   def checklist
-    run_and_exit! "snow-show-checklist #{ARGV.join(' ')}"
+    run_and_exit! "snow-show-checklist #{argv.join(' ')}"
   end
 
   def set_script(script)
@@ -54,36 +57,48 @@ class SnowflakeManglerApp
   # Some commands do not need the script var to be set; in fact they need to be
   # able to when it is not set (because they cause it to become set)
   def need_script?
-    no_need = (["backlog", "go", "link", "new", "master", "main", "cplx", "complexity"] & ARGV).size > 0 ||
-              (ARGV.first == "job" && ARGV.size >= 2)
+    no_need = (["backlog", "go", "link", "new", "master", "main", "cplx", "complexity"] & argv).size > 0 ||
+              (argv.first == "job" && argv.size >= 2)
     !no_need
+  end
+
+  # ----------------------------------------------------------------------
+  # OPTIONS ACCESSORS - Because this script made it 6 months and 1100 LOC before
+  # I added the Optimist gem and by then it was detecting arguments by Doing Its
+  # Own Thing Man(TM)
+  # ----------------------------------------------------------------------
+
+  # force: proceed in the face of warnings
+  def force?
+    opts[:force]
   end
 
   # Quick: Don't show passing detectors or extraneous logging
   def quick?
-    ARGV.include?('--quick') || ARGV.include?('-q')
+    opts[:quick]
+  end
+
+  # For job config only: show the default job config AND this job config (to show complete config)
+  def defaults?
+    opts[:defaults]
   end
 
   # Was this script invoked with --essential?
   def essential?
-    ARGV.include?('--essential') || ARGV.include?('-e')
+    opts[:essential]
   end
 
   # Was this script invoked with --list?
   def list?
-    ARGV.include?('--list') || ARGV.include?('-l') || ARGV.include?('list')
+    opts[:list]
   end
 
   def preview?
-    ARGV.include?("preview")
+    argv.include?("preview")
   end
 
   def job?
-    ARGV.include?("job")
-  end
-
-  def help?
-    ARGV.include?('--help') || ARGV.include?('-h') || ARGV.include?('help')
+    argv.include?("job")
   end
 
   def section_title(title)
@@ -293,13 +308,6 @@ class SnowflakeManglerApp
   # END DETECTORS
   # ======================================================================
 
- def usage
-    puts "I COULD be bothered to parse ARGV, but I don't want YOU to be bothered typing all the time. Sorry not sorry, you're welcome."
-    puts "Try doing this, and maybe put it in .bashrc while you're at it:"
-    puts "export SCRIPT=#{ARGV.join(' ')}"
-    puts "^^^ DEPRECATED. Use set-ds-script instead!"
-  end
-
   def has_skip_upload?
     IO.readlines(get_script).any? { |line| line.include?("parser.add_argument('--skip_upload") }
   end
@@ -360,8 +368,6 @@ extra bit of bookkeeping on you, but it's actually there to ensure that you're
 not accidentally merging to master or snowflake-moveover. Again.
 
 Commands/options:
-help, -h, --help                 Show this message
-list, -l, --list                 Print out the migration checklist
 check [-e|--essential] [job.py]  Check the [current] job for [only essential] coding violations
 job [job]                        Show current [or specified] job's configuration
 job s[nowflake]                  Convert job configuration to snowflake
@@ -369,11 +375,16 @@ job r[edshift]                   Convert job configuration back to redshift
 run                              Run the current job
 main                             Checkout the snowflake main branch in both repos
 master                           Checkout master in both repos
+go <ticket>|<job_name>           Checkout the branch containing this search term
 new <ticket> <job.py>            Create a new feature branch in both repos
 link <pr> <finance_pr> [pkg_pr]  Create links template for Zack
+slam                             Commit finance config change and open PRs for both repos
 
 If no commands are given, snow will run check.
+
+Options:
     USAGE
+    # actual options are automagically presented by Optimist after displaying this banner text
   end
 
   def replace_at_time_zone(line)
@@ -482,13 +493,21 @@ If no commands are given, snow will run check.
 
   # THE MAIN APP METHOD, LET'S GO
   def run
-    # ----------------------------------------------------------------------
-    # 1. Check for --help and --list
-    # ----------------------------------------------------------------------
-    if help?
-      puts usage
-      exit 0
+    banner_text=usage # bc we can't call self.usage inside this do...end (it changes self)
+    @opts = Optimist.options do
+      banner banner_text
+
+      opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
+      opt :quick, "Only show output from failing detectors"
+      opt :essential, "Only run essential detectors"
+      opt :list, "Show PR workflow checklist"
+      opt :defaults, "(job only) Include job config defaults with job config (to see complete config)"
     end
+    @argv = ARGV.dup
+
+    puts "@argv: #{@argv.inspect}"
+    puts "argv:  #{argv.inspect}"
+    # Optimist::die :dynos, "must be a non-negative number" unless opts[:dynos] >= 0.0
 
     # if -l or --list, show checklist and exit
     if list?
@@ -501,14 +520,14 @@ If no commands are given, snow will run check.
     # Override script if job is preview
     if preview?
       # If arg 1 is an integer, we've been given a ticket number also
-      set_script((ARGV[1].to_i > 0) ? ARGV[2] : ARGV[1])
+      set_script((argv[1].to_i > 0) ? argv[2] : argv[1])
     end
 
     # Optionally override script if job is show config for job
     if job?
       # If arg 2 exists and is a file that exists, override it
-      if ARGV[2] && File.exists?(ARGV[2])
-        set_script(ARGV[2])
+      if argv[2] && File.exists?(argv[2])
+        set_script(argv[2])
       end
     end
 
@@ -527,7 +546,7 @@ If no commands are given, snow will run check.
     # snow run -> dsetl_nightly
     # dsetl_nightly reads SCRIPT from rc file; Use dsetl to specify from CLI
     # ----------------------------------------------------------------------
-    if ARGV.first == "run"
+    if argv.first == "run"
       # Check to see if etl_nightly.py has been gorbled by git, which has
       # happened twice in the last week.
       #
@@ -542,21 +561,20 @@ If no commands are given, snow will run check.
       if !quick?
         # print dst_conn warehouse name in top-right corner
         #
-        # ...because sometimes I want to fire this thing at redshift, but
-        # usually I don't, and that's a high-impact error.
+        # ...because usually I don't want to fire this thing at redshift, and
+        # that's a high-impact error.
         _,cols = $stdout.winsize
         warehouse = `snow-get-warehouse -c`
         branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
         print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
       end
 
-      argv = ARGV.dup - ['-q', '--quick']
       # TODO: I would like to add -c to 'snow run' to "show command only",
       # but the showing of the command is entirely inside dsetl_nightly. So we
       # generate all the arguments here, but we display them over there. This is
       # the opposite of SRP--a single concern has been separated into two
       # separate programs.
-      argv.shift
+      argv.shift # clip "run" off of the argv
       command = "dsetl_nightly"
       command += " --skip_upload" if has_skip_upload?
       command += " --test" if has_test_mode?
@@ -570,81 +588,81 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # snow main -> snow-go-main
     # ----------------------------------------------------------------------
-    if ARGV.first == "main"
+    if argv.first == "main"
       run_and_exit! "snow-go-main"
     end
 
     # ----------------------------------------------------------------------
     # snow master -> snow-go-master
     # ----------------------------------------------------------------------
-    if ARGV.first == "master"
+    if argv.first == "master"
       run_and_exit! "snow-go-master"
     end
 
     # ----------------------------------------------------------------------
     # snow go <id> -> snow-go-branch
     # ----------------------------------------------------------------------
-    if ARGV.first == "go"
-      run_and_exit! "snow-go-branch #{ARGV[1..] * ' '}"
+    if argv.first == "go"
+      run_and_exit! "snow-go-branch #{force? ? "-f " : ""}#{argv[1..] * ' '}"
     end
 
     # ----------------------------------------------------------------------
     # snow rebase [parent_branch] -> snow-rebase
     # ----------------------------------------------------------------------
-    if ARGV.first == "rebase"
-      run_and_exit! "snow-rebase #{ARGV[1..] * ' '}"
+    if argv.first == "rebase"
+      run_and_exit! "snow-rebase #{argv[1..] * ' '}"
     end
 
     # ----------------------------------------------------------------------
     # snow cplx | complexity
     # ----------------------------------------------------------------------
-    if (ARGV & ["cplx", "complexity"]).size > 0
-      run_and_exit! "snow-complexity #{ARGV[1..] * ' '}"
+    if (argv & ["cplx", "complexity"]).size > 0
+      run_and_exit! "snow-complexity #{argv[1..] * ' '}"
     end
 
     # ----------------------------------------------------------------------
     # snow job -> snow-show-job-config
     # ----------------------------------------------------------------------
-    if ARGV.first == "job"
-      if ["defaults", "d", "--defaults"].any? {|arg| ARGV.include?(arg) }
-        argv = ARGV.dup - ["defaults", "d", "--defaults"]
+    if argv.first == "job"
+      if defaults?
+        @argv = argv.dup - ["defaults", "d", "--defaults"]
         run_and_exit! "snow-job-show-config --defaults #{argv[1..].join(' ')}"
-      elsif ARGV[1] == "redshift" || ARGV[1] == "r"
+      elsif argv[1] == "redshift" || argv[1] == "r"
         run_and_exit! "snow-job-convert-to-redshift #{get_script}"
-      elsif ARGV[1] == "snowflake" || ARGV[1] == "s"
+      elsif argv[1] == "snowflake" || argv[1] == "s"
         run_and_exit! "snow-job-convert-to-snowflake #{get_script}"
       else
-        run_and_exit! "snow-job-show-config #{ARGV[1..].join(' ')}"
+        run_and_exit! "snow-job-show-config #{argv[1..].join(' ')}"
       end
     end
 
     # ----------------------------------------------------------------------
     # snow new <ticket> <script> -> run snow-new-branch, which runs git new-branch in both repos
     # ----------------------------------------------------------------------
-    if ARGV.first == "new"
-      run_and_exit! "snow-new-branch #{ARGV[1..].join(' ')}"
+    if argv.first == "new"
+      run_and_exit! "snow-new-branch #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
     # snow link <pr> <finance_pr> [package_pr] -> Create Slackable links for Zack
     # ----------------------------------------------------------------------
-    if ARGV.first == "link"
-      run_and_exit! "snow-link #{ARGV[1..].join(' ')}"
+    if argv.first == "link"
+      run_and_exit! "snow-link #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
     # snow backlog - show backlog file
     # ----------------------------------------------------------------------
-    if ARGV.first == "backlog"
-      run_and_exit! "snow-backlog #{ARGV[1..].join(' ')}"
+    if argv.first == "backlog"
+      run_and_exit! "snow-backlog #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
     # snow [check] [-e]
     # ----------------------------------------------------------------------
 
-    if ARGV.first == "check"
-      args = ARGV.dup
+    if argv.first == "check"
+      args = argv.dup
       args -= ['-e','--essential']
 
       if args.size > 1
@@ -655,14 +673,14 @@ If no commands are given, snow will run check.
     # ----------------------------------------------------------------------
     # snow-slam - git cram both repos and emit create pr links
     # ----------------------------------------------------------------------
-    if ARGV.first == "slam"
+    if argv.first == "slam"
       run_and_exit! "snow-slam"
     end
 
     # ----------------------------------------------------------------------
     # snow-auto - automatically fix what can be automatically fixed
     # ----------------------------------------------------------------------
-    if ARGV.first == "auto"
+    if argv.first == "auto"
       run_and_exit! "snow-autofix-all-the-things"
     end
 

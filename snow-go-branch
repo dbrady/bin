@@ -8,9 +8,13 @@ end
 
 # Find exactly one branch matching ARGV.first, and find the same branch in both
 # the warehouse and finance repo. If found, check out those branches.
-argv = ARGV
+argv = ARGV.dup
 force = argv.delete('-f') || argv.delete('--force')
 pattern = argv.first
+
+puts '-' * 80
+puts "force: #{force}"
+puts '-' * 80
 
 warehouse_path = File.expand_path("~/data_services/etl/warehouse")
 finance_path = File.expand_path("~/data_services/etl/warehouse/finance")
@@ -51,7 +55,7 @@ Dir.chdir finance_path
 # different name. That's outside the use case for this tool; exploding is the
 # prescribed behavior. Consult the operator's manual for correct procedure when
 # stepping on a land mine.
-if !`git branch -a`.include?(branch)
+if !`git branch -a`.include?(branch) && !force
   puts "Found a branch #{branch} in the warehouse repo, but a matching branch for it in the finance repo does not exist."
   exit -1
 end
@@ -71,7 +75,7 @@ end
 # exists.
 filename = branch.sub(%r|^feature/DS-\d+/|,'').sub(/\.\d+$/, '').gsub(/\./, '/') + ".py"
 
-if File.exists?(File.join(warehouse_path, filename))
+if force || File.exists?(File.join(warehouse_path, filename))
   command = "set-ds-script #{filename}"
   puts command.cyan
   system command
