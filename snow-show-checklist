@@ -28,7 +28,7 @@ def short_checklist
 #{i!} snow main
 #{i} next-ticket
 #{i} claim ticket, IN DEVELOPMENT
-#{i} snow new <jira_id> <job.py>
+#{i} snow-preview <jira_id> <job.py>
 #{i} snow auto, scow/scod
 #{i} snow job s
 #{i} snow run
