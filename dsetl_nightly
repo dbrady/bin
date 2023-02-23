@@ -3,6 +3,13 @@
 # TODO: Because snowflake, check for script in current branch!
 require 'colorize'
 
+argv=ARGV.dup
+
+force = if argv & ['-f', '--force']
+          argv -= ['-f', '--force']
+          true
+        end
+
 # ENV['IS_DOCKER_LOCAL'] will be "1" (as a string) if we're in docker
 if ENV['IS_DOCKER_LOCAL'].to_i.zero?
     puts "Must be run from inside the docker container."
@@ -32,10 +39,7 @@ if Dir.pwd !~ %r|data_services/etl/warehouse$|
 end
 
 if !branch_name.include?(job_name)
-  if ARGV.include?("-f") || ARGV.include?("--force")
-    puts "*** SNOWFLAKE WARNING: BRANCH DOES NOT CONTAIN JOB NAME *** (Overridden by --force)".light_black
-    puts
-  else
+  if !force
     puts "*** SNOWFLAKE WARNING: BRANCH DOES NOT CONTAIN JOB NAME ***".bold.light_white.on_red
     puts "job_name: #{job_name}"
     puts "branch_name: #{branch_name}"
@@ -57,7 +61,7 @@ end
 
 # Overwrite previous line so the command screenshots correctly
 print "\033[1F"
-command = "python etl_nightly.py --retry_count 1 --job #{get_script} #{ARGV.join(' ')}"
+command = "python etl_nightly.py --retry_count 1 --job #{get_script} #{argv.join(' ')}"
 puts "# #{command}"
 
 system command
