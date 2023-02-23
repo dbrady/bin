@@ -497,6 +497,8 @@ Options:
     @opts = Optimist.options do
       banner banner_text
 
+      @ignore_invalid_options = true
+
       opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
       opt :quick, "Only show output from failing detectors"
       opt :essential, "Only run essential detectors"
@@ -505,8 +507,6 @@ Options:
     end
     @argv = ARGV.dup
 
-    puts "@argv: #{@argv.inspect}"
-    puts "argv:  #{argv.inspect}"
     # Optimist::die :dynos, "must be a non-negative number" unless opts[:dynos] >= 0.0
 
     # if -l or --list, show checklist and exit
@@ -577,6 +577,7 @@ Options:
       argv.shift # clip "run" off of the argv
       command = "dsetl_nightly"
       command += " --skip_upload" if has_skip_upload?
+      command += " --force" if force?
       command += " --test" if has_test_mode?
       command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !argv.include?('--start_date')
       command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !argv.include?('--end_date')
