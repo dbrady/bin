@@ -30,7 +30,16 @@ if __name__ == '__main__':
         sys.argv.remove("-p")
     print(sys.argv)
 
-    warehouse, table = sys.argv[1:]
+    # I keep forgetting to specify the warehouse. Make the tool smarter.
+    if len(sys.argv) == 2:
+        print("No warehouse specified; assuming Snowflake.")
+        table = sys.argv[1]
+        warehouse = 's'
+    else:
+        warehouse = sys.argv[1]
+        table = sys.argv[2]
+
+    # Look up warehouse from shorthand
     warehouse = allowed_warehouses.get(warehouse, warehouse)
 
     if warehouse not in allowed_warehouses.values():
