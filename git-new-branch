@@ -31,6 +31,7 @@ USAGE
 
   opt :type, 'Type of branch. Determines branch name prefix.', default: 'feature' # default: 'dbrady'
   opt :hotfix, 'Create hotfix branch. Same as --type=hotfix.'
+  opt :job, 'Convert branch name from a filename to a job. (Cancel with --no-job)', default: true
 end
 Optimist::die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
 Optimist::die "First argument must be a Jira ticket id" unless ARGV.first.to_i > 0
@@ -45,6 +46,10 @@ branch_type = if opts[:hotfix]
 
 ticket=ARGV[0]
 branch=ARGV[1]
+
+if opts[:job]
+  branch = branch.gsub(%r|/|, ".").sub(/.py$/, "")
+end
 
 ticket = "#{TEAM_PREFIX}-#{ticket}" if ticket =~ /^\d+$/
 
