@@ -4,6 +4,7 @@
 # Usage:
 # git new-branch 5658 set_default_epot_in_merchant_settings
 # => git co -b dbrady/ATL-5658/set_default_epot_in_merchant_settings
+require "colorize"
 require "optimist"
 
 def usage
@@ -22,19 +23,40 @@ end
 opts = Optimist.options do
   banner <<USAGE
 git new-branch [options] <jira_id> <branch_name>
+
 Usage:
+
     git new-branch 5658 set-default-epot-in-merchant-settings
     => git co -b dbrady/ATL-5658/set-default-epot-in-merchant-settings
     get new-branch --type=hotfix 1234 etl_f_this_job_is_busted
     => git co -b hotfix/DS-1234/etl_f_this_job_is_busted
+
+Note:
+
+    Options can only be passed in when directly running this script
+    (git-new-branch), not when auto-dispatching it from git (git new-branch)
+
 USAGE
 
   opt :type, 'Type of branch. Determines branch name prefix.', default: 'feature' # default: 'dbrady'
   opt :hotfix, 'Create hotfix branch. Same as --type=hotfix.'
-  opt :job, 'Convert branch name from a filename to a job. (Cancel with --no-job)', default: true
+  # This is a clever idea and it does what I want it to, but it's very
+  # surprising to me for a script to change its default based on an implicit
+  # external condition, so... no.  opt :job, 'Convert branch name from a
+  # filename to a job.', default:
+  # Dir.pwd.include?('/data_services/etl/warehouse')
+  opt :job, 'Convert branch name from a filename to a job.', default: true
 end
 Optimist::die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
 Optimist::die "First argument must be a Jira ticket id" unless ARGV.first.to_i > 0
+
+def in_warehouse?
+  Dir.pwd.include?('/data_services/etl/warehouse')
+end
+
+def filename_to_job_name(name)
+  name.gsub(%r|/|, ".").sub(/.py$/, "")
+end
 
 # TEAM_PREFIX='ATL'
 TEAM_PREFIX='DS'
@@ -47,14 +69,25 @@ branch_type = if opts[:hotfix]
 ticket=ARGV[0]
 branch=ARGV[1]
 
-if opts[:job]
-  branch = branch.gsub(%r|/|, ".").sub(/.py$/, "")
+# You know what, toggling the job option based on directory just feels strange
+# and weird. Instead, let's turn it on all the time and show a warning if we're
+# outside the warehouse.
+
+current_branch = `git current-branch`.strip
+old_branch = branch
+branch = opts[:job] ? filename_to_job_name(branch) : branch
+ticket = "#{TEAM_PREFIX}-#{ticket}" if ticket =~ /^\d+$/
+full_branch_name = "#{branch_type}/#{ticket}/#{branch}"
+
+# Show warning message IFF
+#   1. the branch name IS BEING changed
+#   2. --job and --no-job were not explicitly specified
+#   3. we are outside the warehouse
+if filename_to_job_name(branch) != old_branch && !opts[:job_given] && !in_warehouse?
+  puts "Converting branch name from #{branch} to #{branch}, but we are outside the warehouse. If you did not mean this, run:".bold.white.on_yellow
+  puts "git checkout #{current_branch} && git branch -d #{full_branch_name} && git-new-branch --no-job #{ARGV.join(' ')}".cyan
 end
 
-ticket = "#{TEAM_PREFIX}-#{ticket}" if ticket =~ /^\d+$/
-
-# full_branch_name = "dbrady/#{ticket}/#{branch}"
-full_branch_name = "#{branch_type}/#{ticket}/#{branch}"
 
 # Ensure branch name is short enough to fit through the CI mangler
 # DS team doesn't use this
