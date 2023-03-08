@@ -101,6 +101,31 @@ class SnowflakeManglerApp
     argv.include?("job")
   end
 
+  def run_json_detectors?
+    opts[:json]
+  end
+
+  def run_quotes_detectors?
+    opts[:quotes]
+  end
+
+  def run_date_detectors?
+    opts[:dates]
+    # Should I maybe do opts[:disable].split(/,/).include?("date")
+    # So I can say --disable=date,json etc?
+    #
+    # Right now I kinda like --no-json --no-dates, so eh. But if it tuns into 20
+    # different --no-foo options, this might be the way.
+  end
+
+  def run_exception_detectors?
+    opts[:exceptions]
+  end
+
+  # ----------------------------------------------------------------------
+  # END OPTIONS ACCESSORS
+  # ----------------------------------------------------------------------
+
   def section_title(title)
     "====%s" % " #{title} ".ljust(80, "=").cyan
   end
@@ -504,6 +529,9 @@ Options:
       opt :essential, "Only run essential detectors"
       opt :list, "Show PR workflow checklist"
       opt :defaults, "(job only) Include job config defaults with job config (to see complete config)"
+      opt :json, "Run JSON detectors", default: true
+      opt :quotes, "Run double-quotes detectors", default: true
+      opt :exceptions, "Run exception detectors", default: true
     end
     @argv = ARGV.dup
 
@@ -675,7 +703,7 @@ Options:
     # snow-slam - git cram both repos and emit create pr links
     # ----------------------------------------------------------------------
     if argv.first == "slam"
-      run_and_exit! "snow-slam"
+      run_and_exit! "snow-slam #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
@@ -839,59 +867,58 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "SIMILAR TO", /(similar to|~)/i, suggest: :replace_similar_to_with_like_any, unmatch: /os\.path\.expanduser/
 
-    # ----------------------------------------------------------------------
-    # JSON_EXTRACT_* functions
-    #
-    # 2022-11-21: Per Zack, consider replacing with PARSE_JSON and handling the
-    # resulting variant instead. DS-1746 came out much cleaner that way:
-    #
-    # Strict Replacement: JSON_EXTRACT_PATH_TEXT(json, '[' || level || ']')
-    # Cleaner Replacement: PARSE_JSON(json)[level]
-    #
-    # JSON_EXTRACT_PATH_TEXT - Path may need tweaking but should port fine as
-    # long as it only has 2 or 3 arguments and if the third argument is present,
-    # it is TRUE. (Redshift allows TRUE/FALSE, Snowflake only does the TRUE
-    # version. Our codebase only does TRUE to the best of my knowledge).
-    #
-    # JSON_EXTRACT_ARRAY_ELEMENT_TEXT - This can be expressed as a
-    # JSON_EXTRACT_PATH_TEXT call:
-    #
-    # JEAET('json_array', 3) -> JEPT('json_array', '[3]')
-    detect_and_print_lines lines, "JSON MANIPULATION FUNCTIONS",
-                           %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE},
-                           essential: true
-                           # , unmatch: /JSON_EXTRACT_PATH_TEXT\([^,]+,[^,]+\)/ # JEPT/2 good; JEPT/3 bad.
+    if run_json_detectors?
+      # ----------------------------------------------------------------------
+      # JSON_EXTRACT_* functions
+      #
+      # 2022-11-21: Per Zack, consider replacing with PARSE_JSON and handling the
+      # resulting variant instead. DS-1746 came out much cleaner that way:
+      #
+      # Strict Replacement: JSON_EXTRACT_PATH_TEXT(json, '[' || level || ']')
+      # Cleaner Replacement: PARSE_JSON(json)[level]
+      #
+      # JSON_EXTRACT_PATH_TEXT - Path may need tweaking but should port fine as
+      # long as it only has 2 or 3 arguments and if the third argument is present,
+      # it is TRUE. (Redshift allows TRUE/FALSE, Snowflake only does the TRUE
+      # version. Our codebase only does TRUE to the best of my knowledge).
+      #
+      # JSON_EXTRACT_ARRAY_ELEMENT_TEXT - This can be expressed as a
+      # JSON_EXTRACT_PATH_TEXT call:
+      #
+      # JEAET('json_array', 3) -> JEPT('json_array', '[3]')
+      detect_and_print_lines lines, "JSON MANIPULATION FUNCTIONS",
+                             %r{JSON_EXTRACT_PATH_TEXT|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|IS_VALID_JSON|IS_VALID_JSON_ARRAY|JSON_ARRAY_LENGTH|JSON_EXTRACT_ARRAY_ELEMENT_TEXT|JSON_PARSE|CAN_JSON_PARSE|JSON_SERIALIZE|JSON_SERIALIZE_TO_VARBYTE},
+                             essential: true
+      # , unmatch: /JSON_EXTRACT_PATH_TEXT\([^,]+,[^,]+\)/ # JEPT/2 good; JEPT/3 bad.
+    end
+
+    if run_quotes_detectors?
+      detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''.*''/, warning: true
+
+      detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/, warning: true
+    end
 
 
-    # ----------------------------------------------------------------------
-    # Doubled Quotes
-    # Check these by hand - python stmts like var = '' are fine but embedded
-    # SQL with an extra escaping level makes snowflake sad.
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Doubled Quotes (Check By Hand)", /''.*''/, warning: true
+    if run_date_detectors?
+      # ----------------------------------------------------------------------
+      # DATE_ADD('unit',num, column) -> DATEADD(unit, num, column)
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "DATE_ADD", /DATE_ADD\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_ADD\\('([^']+)'/DATEADD(\\1/ig" #{get_script}|
 
-    detect_and_print_lines lines, ".replace(\"'\", \"''\") quotes with doubled quotes", /\.replace[\(\)\,\s\'\"]+$/, warning: true
+      # ----------------------------------------------------------------------
+      # DATE_DIFF('unit',num, column) -> DATEDIFF(unit, num, column)
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "DATE_DIFF", /DATE_DIFF\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_DIFF\\('([^']+)'/DATEDIFF(\\1/ig" #{get_script}|
 
-
-    # ----------------------------------------------------------------------
-    # DATE_ADD('unit',num, column) -> DATEADD(unit, num, column)
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "DATE_ADD", /DATE_ADD\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_ADD\\('([^']+)'/DATEADD(\\1/ig" #{get_script}|
-
-    # ----------------------------------------------------------------------
-    # DATE_DIFF('unit',num, column) -> DATEDIFF(unit, num, column)
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "DATE_DIFF", /DATE_DIFF\('\w+'/i, autofix: %Q|sed -i -E "s/DATE_DIFF\\('([^']+)'/DATEDIFF(\\1/ig" #{get_script}|
-
-    # ----------------------------------------------------------------------
-    # DATEPART -> DATE_PART
-    #
-    # YES, this is the OPPOSITE of date add and diff: Redshift does NOT have an
-    # underscore and snowflake requires one. At least the units are the same;
-    # Redshift actually uses bareword identifiers here. :shrug:
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "DATEPART", /\bDATEPART\b/i, autofix: %Q|sed -i -E "s/\\bDATEPART\\b/DATE_PART/ig" #{get_script}|
-
+      # ----------------------------------------------------------------------
+      # DATEPART -> DATE_PART
+      #
+      # YES, this is the OPPOSITE of date add and diff: Redshift does NOT have an
+      # underscore and snowflake requires one. At least the units are the same;
+      # Redshift actually uses bareword identifiers here. :shrug:
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "DATEPART", /\bDATEPART\b/i, autofix: %Q|sed -i -E "s/\\bDATEPART\\b/DATE_PART/ig" #{get_script}|
+    end
 
     # ----------------------------------------------------------------------
     # BTRIM
@@ -997,10 +1024,12 @@ Options:
     # start_date, see where it is used and maybe upgrade it to a parameter
     # instead of a global".
 
-    # ----------------------------------------------------------------------
-    # except Exception
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/, warning: true
+    if run_exception_detectors?
+      # ----------------------------------------------------------------------
+      # except Exception
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "Global Exception Handling", /\bexcept Exception\b/, warning: true
+    end
 
     # ----------------------------------------------------------------------
     # job_config must not be optional
