@@ -151,12 +151,12 @@ puts "1. Copy this to the clipboard"
 puts "2. Paste this blurb to Zack (CMD-v CMD-SHIFT-f)"
 
 # If ~/review-backlog.txt does NOT contain the jira ticket number, write the blurb to that file.
-if !system("grep #{TICKET_ID} #{BACKLOG_FILE} > /dev/null")
+if !system("grep #{proposed_branch_name} #{BACKLOG_FILE} > /dev/null")
   File.open(BACKLOG_FILE, "a") do |file|
     file.puts
     file.puts blurb
   end
-  puts "Blurb appended to #{BACKLOG_FILE}."
+  puts "Link blurb appended to #{BACKLOG_FILE}."
 else
-  puts "Blurb is already present in #{BACKLOG_FILE}; not appending. Remove the bad blurb first.".white.bold.on_red
+  puts "This branch is part of a blurb that is already present in #{BACKLOG_FILE}; not appending. Remove the bad blurb first.".white.bold.on_red
 end
