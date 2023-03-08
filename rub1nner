@@ -16,12 +16,19 @@ opts = Optimist.options do
   opt :right, "Align text to the right"
   opt :center, "Align text to the center (default: true unless -l or -r specified)"
   opt :padding, "Number of spaces to pad text", type: :int, default: 1
+  opt :vpadding, "Number of lines to vertically pad banner", type: :int, default: 1
   opt :bold, "Use bold text"
 end
 
-raise "Expected 3 args, got #{ARGV.size}" unless ARGV.size == 3
+raise "Expected exactly 1 or 3 args, got #{ARGV.size}" unless [1,3].include?(ARGV.size)
 
-fg_color, bg_color, message = *ARGV
+if ARGV.size == 1
+  fg_color, bg_color, message = 'white', 'on_magenta', ARGV.first
+  opts[:bold] = true
+
+else
+  fg_color, bg_color, message = *ARGV
+end
 
 # These checks are here more to remind me how to use the script than to protect
 # me from trying to pack little Bobby Tables into the arguments before flinging
@@ -43,5 +50,6 @@ padding = ' ' * opts[:padding]
 text_to_display = "#{padding}#{message}#{padding}".send(align_method, width).send(fg_color).send(bg_color)
 text_to_display = text_to_display.bold if opts[:bold]
 
-
+opts[:vpadding].times { puts "".send(align_method, width).send(fg_color).send(bg_color) }
 puts text_to_display
+opts[:vpadding].times { puts "".send(align_method, width).send(fg_color).send(bg_color) }
