@@ -105,6 +105,10 @@ class SnowflakeManglerApp
     opts[:json]
   end
 
+  def run_whitespace_detectors?
+    opts[:space]
+  end
+
   def run_quotes_detectors?
     opts[:quotes]
   end
@@ -532,6 +536,7 @@ Options:
       opt :json, "Run JSON detectors", default: true
       opt :quotes, "Run double-quotes detectors", default: true
       opt :exceptions, "Run exception detectors", default: true
+      opt :space, "Run unmanaged whitespace detectors", default: true
     end
     @argv = ARGV.dup
 
@@ -725,7 +730,7 @@ Options:
     # ----------------------------------------------------------------------
     # Check Whitespace
     # ----------------------------------------------------------------------
-    detect_unmanaged_whitespace lines
+    detect_unmanaged_whitespace lines if run_whitespace_detectors?
 
     # ----------------------------------------------------------------------
     # Check for PEP8 Conformance
