@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
-# which-tables-are-mentioned-in-this-job [-f|--full-line] - try to find tables (by prefix) mentioned in this job
+# which-tables-are-mentioned-in-this-job [-q|--quiet] - try to find tables (by prefix) mentioned in this job
 require 'colorize'
+argv=ARGV.dup
 
-full = ARGV.delete('-f') || ARGV.delete('--full-line')
-script = ARGV.first || `get-ds-script`.rstrip
+quiet = argv.delete('-q') || argv.delete('--quiet')
+script = argv.first || `get-ds-script`.rstrip
 
 if script.empty?
   puts "You must set the SCRIPT variable or pass in an argument first."
@@ -11,5 +12,5 @@ if script.empty?
 end
 
 command = "cat #{script} | ruby -ne 'puts $1 if $_=~/\\b((lms|mp|d|f|s)_.*?)\\b/' | sort | uniq"
-puts command.cyan
+puts command.cyan unless quiet
 system command

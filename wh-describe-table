@@ -24,11 +24,15 @@ if __name__ == '__main__':
     # args, remaining_args = parser.parse_known_args()
 
     pretend = False
-    print(sys.argv)
+    quiet = False
+
     if "-p" in sys.argv:
         pretend = True
         sys.argv.remove("-p")
-    print(sys.argv)
+
+    if "-q" in sys.argv:
+        quiet = True
+        sys.argv.remove("-q")
 
     # I keep forgetting to specify the warehouse. Make the tool smarter.
     if len(sys.argv) == 2:
@@ -46,8 +50,9 @@ if __name__ == '__main__':
         print(f"Warehouse '{warehouse}' must be one of: {', '.join(allowed_warehouses.values())}")
         sys.exit(1)
 
-    print(f"Warehouse: {warehouse}")
-    print(f"Table: {table}")
+    if not quiet:
+        print(f"Warehouse: {warehouse}")
+        print(f"Table: {table}")
 
     if warehouse == 'snowflake':
         table = table.upper()
@@ -59,7 +64,8 @@ if __name__ == '__main__':
         conn = dbo.connect(warehouse)
 
         query = f"SELECT ordinal_position, column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position"
-        print(f"\033[36m{query}\033[0m")
+        if not quiet:
+            print(f"\033[36m{query}\033[0m")
         if not pretend:
             results = dbo.query(query)
             dbo.commit()
@@ -79,11 +85,11 @@ if __name__ == '__main__':
             for row in results:
                 print(row)
 
-            print()
-            query = f"SELECT COUNT(*) FROM {table}"
-            print(f"\033[36m{query}\033[0m")
-            results = dbo.query(query)
-            print(results[0][0])
+            # print()
+            # query = f"SELECT COUNT(*) FROM {table}"
+            # print(f"\033[36m{query}\033[0m")
+            # results = dbo.query(query)
+            # print(results[0][0])
 
     finally:
         dbo.close()
