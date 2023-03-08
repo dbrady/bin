@@ -1,7 +1,16 @@
 #!/usr/bin/env ruby
 require 'colorize'
+require 'optimist'
 
-puts 'WARNING! This will commit your warehouse and finance branches, push them up, and give you create-pr links'
+opts = Optimist.options do
+  opt :finance, "Include the finance submodule", default: true
+end
+
+branches = opts[:finance] ? "warehouse and finance branches" : "warehouse branch"
+them = opts[:finance] ? "them" : "it"
+links = opts[:finance] ? "create-pr links" : "a create-pr link"
+
+puts "WARNING! This will commit your #{branches}, push #{them} up, and give you #{links}"
 system "git isclean"
 branch_is_clean = $?
 
@@ -10,7 +19,11 @@ if branch_is_clean.exitstatus.zero?
   puts "HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:"
   $stdin.gets
 
-  command = "git cram && (cd finance && snow-commit-finance-config && git cram && snow-create-pr-finance) && snow-create-pr-warehouse"
+  command = if opts[:finance]
+              "git cram && (cd finance && snow-commit-finance-config && git cram && snow-create-pr-finance) && snow-create-pr-warehouse"
+            else
+              "git cram && snow-create-pr-warehouse"
+            end
 
   puts command.cyan
   system command
