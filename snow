@@ -105,6 +105,10 @@ class SnowflakeManglerApp
     opts[:tz]
   end
 
+  def run_python2_detectors?
+    opts[:python2]
+  end
+
   def run_json_detectors?
     opts[:json]
   end
@@ -542,11 +546,13 @@ Options:
       opt :json, "Run JSON detectors", short: :none, default: true
       opt :quote, "Run double-quote detectors", default: true
       opt :timezone, "Run time zone detectors", default: true
-      opt :"no-x", "same as --no-exception", short: :none, default: false
+      opt :python2, "Run python2 string formatting detectors", default: true
+      opt :"no-2", "same as --no-python2", short: :none, default: false
       opt :"no-j", "same as --no-json", short: :none, default: false
       opt :"no-q", "same as --no-quotes", short: :none, default: false
       opt :"no-s", "same as --no-space", short: :none, default: false
       opt :"no-t", "same as --no-timezone", short: :none, default: false
+      opt :"no-x", "same as --no-exception", short: :none, default: false
       opt :space, "Run unmanaged whitespace detectors", default: true
       opt :wat, "Dump options and exit", default: false
     end
@@ -556,7 +562,8 @@ Options:
       json: "j",
       quote: "q",
       space: "s",
-      timezone: "t"
+      timezone: "t",
+      python2: "2"
     }.each do |option, shortcode|
       # opts[:json] = opts[:"no-j"] if opts[:"no-j_given"]
       opts[option] = opts[:"no-#{shortcode}"] if opts[:"no-#{shortcode}_given"]
@@ -1031,7 +1038,9 @@ Options:
     # ----------------------------------------------------------------------
     # Update Python String Formatting
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Python 2 String Formatting", %r|(?<!%)%[\d\.]*[sdf].*|, unmatch: %r{(str[pf]time|%Y-%m-%d|LIKE ANY)}
+    if run_python2_detectors?
+      detect_and_print_lines lines, "Python 2 String Formatting", %r|(?<!%)%[\d\.]*[sdf].*|, unmatch: %r{(str[pf]time|%Y-%m-%d|LIKE ANY)}
+    end
 
     # ----------------------------------------------------------------------
     # os.chdir to self: remove
