@@ -101,6 +101,10 @@ class SnowflakeManglerApp
     argv.include?("job")
   end
 
+  def run_timezone_detectors?
+    opts[:tz]
+  end
+
   def run_json_detectors?
     opts[:json]
   end
@@ -530,14 +534,35 @@ Options:
 
       opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
       opt :quick, "Only show output from failing detectors"
+      opt :debug, "Output extra debug info"
       opt :essential, "Only run essential detectors"
       opt :list, "Show PR workflow checklist"
       opt :defaults, "(job only) Include job config defaults with job config (to see complete config)"
-      opt :json, "Run JSON detectors", default: true
-      opt :quotes, "Run double-quotes detectors", default: true
-      opt :exceptions, "Run exception detectors", default: true
+      opt :exception, "Run exception detectors", default: true
+      opt :json, "Run JSON detectors", short: :none, default: true
+      opt :quote, "Run double-quote detectors", default: true
+      opt :timezone, "Run time zone detectors", default: true
+      opt :"no-x", "same as --no-exception", short: :none, default: false
+      opt :"no-j", "same as --no-json", short: :none, default: false
+      opt :"no-q", "same as --no-quotes", short: :none, default: false
+      opt :"no-s", "same as --no-space", short: :none, default: false
+      opt :"no-t", "same as --no-timezone", short: :none, default: false
       opt :space, "Run unmanaged whitespace detectors", default: true
+      opt :wat, "Dump options and exit", default: false
     end
+    # copy alternate args over
+    {
+      exception: "x",
+      json: "j",
+      quote: "q",
+      space: "s",
+      timezone: "t"
+    }.each do |option, shortcode|
+      # opts[:json] = opts[:"no-j"] if opts[:"no-j_given"]
+      opts[option] = opts[:"no-#{shortcode}"] if opts[:"no-#{shortcode}_given"]
+    end
+
+    puts opts.inspect if opts[:debug]
     @argv = ARGV.dup
 
     # Optimist::die :dynos, "must be a non-negative number" unless opts[:dynos] >= 0.0
@@ -837,7 +862,9 @@ Options:
 
     # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
     # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
-    detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
+    if run_timezone_detectors?
+      detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
+    end
 
     # ----------------------------------------------------------------------
     # TODO: CREATE TABLE ( LIKE )
