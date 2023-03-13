@@ -9,9 +9,6 @@ if [ -e "$1" ]; then
     shift
 fi
 
-echo "SCRIPT=$SCRIPT"
-exit
-
 if [ -z "$SCRIPT" ]; then
     echo "You must set the SCRIPT variable first."
     exit -1
