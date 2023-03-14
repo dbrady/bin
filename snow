@@ -113,6 +113,10 @@ class SnowflakeManglerApp
     opts[:json]
   end
 
+  def run_missing_detectors?
+    opts[:missing]
+  end
+
   def run_whitespace_detectors?
     opts[:space]
   end
@@ -359,6 +363,10 @@ class SnowflakeManglerApp
     File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--test")}
   end
 
+  def use_test_mode?
+    opts[:test]
+  end
+
   def has_start_date?
     File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--start_date")}
   end
@@ -544,11 +552,14 @@ Options:
       opt :defaults, "(job only) Include job config defaults with job config (to see complete config)"
       opt :exception, "Run exception detectors", default: true
       opt :json, "Run JSON detectors", short: :none, default: true
+      opt :missing, "Run missing detectors", short: :none, default: true
       opt :quote, "Run double-quote detectors", default: true
       opt :timezone, "Run time zone detectors", default: true
       opt :python2, "Run python2 string formatting detectors", default: true
+      opt :test, "Send --test mode to jobs that offer it", short: :none, default: true
       opt :"no-2", "same as --no-python2", short: :none, default: false
       opt :"no-j", "same as --no-json", short: :none, default: false
+      opt :"no-m", "same as --no-missing", short: :none, default: false
       opt :"no-q", "same as --no-quotes", short: :none, default: false
       opt :"no-s", "same as --no-space", short: :none, default: false
       opt :"no-t", "same as --no-timezone", short: :none, default: false
@@ -560,6 +571,7 @@ Options:
     {
       exception: "x",
       json: "j",
+      missing: "m",
       quote: "q",
       space: "s",
       timezone: "t",
@@ -643,7 +655,7 @@ Options:
       command = "dsetl_nightly"
       command += " --skip_upload" if has_skip_upload?
       command += " --force" if force?
-      command += " --test" if has_test_mode?
+      command += " --test" if has_test_mode? && use_test_mode?
       command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !argv.include?('--start_date')
       command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !argv.include?('--end_date')
       command += " --recipients david.brady@acima.com" if has_recipients_override? && !argv.include?('--recipients')
@@ -1151,9 +1163,11 @@ Options:
     # WARN if job is mcloud or sf but does not have --skip_upload
     # Or if it's gsheet or API and does not have --test
     # ----------------------------------------------------------------------
-    detect_missing_skip_upload
-    detect_missing_test_mode
-    detect_missing_recipients_override
+    if run_missing_detectors?
+      detect_missing_skip_upload
+      detect_missing_test_mode
+      detect_missing_recipients_override
+    end
 
     # ----------------------------------------------------------------------
     # CREATE TABLE a (LIKE b) -> CREATE TABLE a LIKE b
@@ -1177,10 +1191,12 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "COALESCE/1", /coalesce\([^\(,]+\)/i, essential: true
 
-    # ----------------------------------------------------------------------
-    # TABS
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TABS", /\t/
+    if run_whitespace_detectors?
+      # ----------------------------------------------------------------------
+      # TABS
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "TABS", /\t/
+    end
   end
 end
 
