@@ -62,6 +62,14 @@ class SnowflakeManglerApp
     !no_need
   end
 
+  def osx?
+    `uname -s`.strip == "Darwin"
+  end
+
+  def docker?
+    ENV['IS_DOCKER_LOCAL'] = "1"
+  end
+
   # ----------------------------------------------------------------------
   # OPTIONS ACCESSORS - Because this script made it 6 months and 1100 LOC before
   # I added the Optimist gem and by then it was detecting arguments by Doing Its
@@ -136,6 +144,10 @@ class SnowflakeManglerApp
 
   def run_exception_detectors?
     opts[:exceptions]
+  end
+
+  def use_test_mode?
+    opts[:test]
   end
 
   # ----------------------------------------------------------------------
@@ -361,10 +373,6 @@ class SnowflakeManglerApp
 
   def has_test_mode?
     File.readlines(get_script).any? {|line| line.include?("parser.add_argument('--test")}
-  end
-
-  def use_test_mode?
-    opts[:test]
   end
 
   def has_start_date?
@@ -624,6 +632,11 @@ Options:
     # dsetl_nightly reads SCRIPT from rc file; Use dsetl to specify from CLI
     # ----------------------------------------------------------------------
     if argv.first == "run"
+      if !docker?
+        puts "This script must be run from inside docker.".bold.red
+        exit -1
+      end
+
       # Check to see if etl_nightly.py has been gorbled by git, which has
       # happened twice in the last week.
       #
