@@ -22,6 +22,10 @@
 PICTURES_FOLDER = File.join(File.expand_path('~'), "Pictures")
 BIRBS_CACHE_FOLDER = File.join(File.expand_path('~'), "Documents", "refdox", "birbs_cache")
 
+# Create bribs cache if needed (only need this once per laptop, but man when it crashes the error comes from a weird place)
+
+Dir.mkdir(BIRBS_CACHE_FOLDER) unless Dir.exists?(BIRBS_CACHE_FOLDER)
+
 def available_birbs(filter=nil)
   if filter
     Dir.glob(File.join(PICTURES_FOLDER, "birb*#{filter}*"))
