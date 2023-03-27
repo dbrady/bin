@@ -1,4 +1,6 @@
 #!/bin/bash
+# windoze - Display the windows 95 "bliss" (the green hill one) as ANSI art at the terminal
+# Needs my windows_xp_bliss.jpg, I keep a copy in my reference dox.
 if which chafa; then
     echo 'chafa ~/Documents/refdox/windows_xp_bliss.jpg'
     chafa ~/Documents/refdox/windows_xp_bliss.jpg
