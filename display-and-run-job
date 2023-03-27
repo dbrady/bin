@@ -1,0 +1,24 @@
+#!/bin/bash
+# display-and-run-job - Run job in other tmux window. Keeping
+# around as a "how to remote control another tmux window" demo.
+#
+# See Also: display-job-title.
+job_name=`echo $1 | sed -e "s/\//./g" | sed -e 's/.py//'`
+
+echo $job_name...
+tmux send-keys -tdata:2 "clear; echo; rub1nner --bold white on_magenta $job_name; echo; echo -n 'Configured warehouse for $job_name: '; show-dst-conn-for-job -c $job_name; echo"
+tmux send-keys -tdata:2 "C-m"
+
+sleep 4
+tmux send-keys -tdata:2 "python etl_nightly.py --job $1"
+tmux send-keys -tdata:2 "C-m"
+
+echo Job run command has been sent.
+echo "$job_name" | pbcopy
+echo This filename has been copied to the clipboard: $job_name
+echo TAKE SCREENSHOT NOW, AND EXPORT IT WITH Cmd-E Cmd-V ENTER
+echo Hit Enter when screenshot has been exported:
+read
+echo Done with $job_name, proceeding...
+echo
+echo

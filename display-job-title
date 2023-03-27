@@ -1,0 +1,12 @@
+#!/bin/bash
+# display-job-title - Make another tmux window display the job title. Keeping
+# around as a "how to remote control another tmux window" demo.
+#
+# See Also: display-and-run-job
+job=`echo $1 | sed -e "s/\//./g" | sed -e 's/.py//'`
+
+tmux send-keys -tdata:2 "clear; echo; rub1nner --bold white on_magenta $job; echo; echo -n 'Configured warehouse for $job: '; show-dst-conn-for-job -c $job; echo"
+tmux send-keys -tdata:2 "C-m"
+
+tmux send-keys -tdata:2 "echo python etl_nightly.py --job $1"
+tmux send-keys -tdata:2 "C-m"
