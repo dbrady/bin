@@ -1,0 +1,5 @@
+#!/bin/bash
+# ds-docker-setup-3-dotfile-symlinks - Customize My Docker Setup
+
+
+(cd ~/dotfiles && bash setup.sh)

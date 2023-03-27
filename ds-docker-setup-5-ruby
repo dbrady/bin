@@ -1,0 +1,17 @@
+#!/bin/bash
+# ds-docker-setup-5-ruby - Customize My Docker Setup
+
+# taken directly from rvm.io
+gpg2 --keyserver keyserver.ubuntu.com --recv-keys 409B6B1796C275462A1703113804BB82D39DC0E3 7D2BAF1CF37B13E2069D6956105BD0E739499BDB
+
+\curl -sSL https://get.rvm.io | bash -s stable
+
+# If all that worked, we can install ruby. Let's put this in a variable so
+# future maintainers will know that we assume the latest ruby version will never
+# change in the history of ever:
+RUBY_VERSION=ruby-3.1.1
+
+rvm install $RUBY_VERSION
+rvm default $RUBY_VERSION
+
+echo "Be sure to add 'rvm default $RUBY_VERSION' to .bashrc or .bash_profile"

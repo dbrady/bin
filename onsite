@@ -1,3 +1,15 @@
 #!/bin/sh
 echo 'You are onsite! Disabling hue lights in ci...'
-touch ~/onsite.touch
+
+
+TOUCH_FILE=~/onsite.touch
+rm -f $TOUCH_FILE
+touch $TOUCH_FILE
+
+echo "The existence of this file DISABLES my HUE Lights." >> $TOUCH_FILE
+echo "" >> $TOUCH_FILE
+echo "This file was created by running ~/bin/onsite." >> $TOUCH_FILE
+echo "If this file exists, my ci scripts will assume the local HUE lights are unreachable." >> $TOUCH_FILE
+echo "run ~/bin/offsite or rm this file when home and on home network." >> $TOUCH_FILE
+
+echo "Wrote $TOUCH_FILE. HUE lights are now disabled."

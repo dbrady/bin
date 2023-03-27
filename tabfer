@@ -76,8 +76,8 @@ def find_best_file(song)
       puts "Pattern '#{song}' matches filename #{filename}"
     else
       puts "Multiple files match pattern '#{song}':"
-      puts matching_files.map { |file| "- " + File.basename(file, '.txt') }
-      exit 1
+      filename = `(cd ~/bin/tabs/ && ls | selecta -s #{song})`.strip
+      filename = File.expand_path("~/bin/tabs/#{filename}")
     end
   end
   filename

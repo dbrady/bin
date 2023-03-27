@@ -7,7 +7,7 @@
 
 require 'digest/md5'
 
-digest = Digest::SHA2.new(256)
+digest = Digest::SHA2.new(512)
 ARGF.each do |line|
   digest << line
 end
