@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+# dsannouncewarehouse - print dst_conn warehouse name in top-right corner
+#
+# ...because usually I don't want to fire this thing at redshift, and if I do
+# when I don't then that's a high-impact error.
+require 'io/console'
+require 'json'
+
+job = ARGV.first
+3
+_,cols = $stdout.winsize
+command = "snow-get-warehouse -c #{job}"
+puts command
+warehouse = `#{command}`
+branch = `snow-job-show-config #{job} | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
+print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"

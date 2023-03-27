@@ -648,16 +648,8 @@ Options:
         puts
       end
 
-      if !quick?
-        # print dst_conn warehouse name in top-right corner
-        #
-        # ...because usually I don't want to fire this thing at redshift, and
-        # that's a high-impact error.
-        _,cols = $stdout.winsize
-        warehouse = `snow-get-warehouse -c`
-        branch = `snow-job-show-config | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
-        print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
-      end
+      # print dst_conn warehouse name in top-right corner
+      dsannouncewarehouse unless quick?
 
       # TODO: I would like to add -c to 'snow run' to "show command only",
       # but the showing of the command is entirely inside dsetl_nightly. So we
