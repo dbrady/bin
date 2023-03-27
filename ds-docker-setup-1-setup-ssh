@@ -1,0 +1,12 @@
+#!/bin/bash
+# ds-docker-setup-1-ssh - Customize My Docker Setup
+
+if [ ! -d ~/.ssh ]; then
+    echo "Generating new ssh key..."
+    ssh-keygen -t rsa
+
+    echo "Copy this key to your github account:"
+    cat ~/.ssh/id_rsa.pub
+else
+    echo "~/.ssh folder already exists; skipping keygen"
+fi
