@@ -1,0 +1,10 @@
+#!/bin/bash
+# dirad - List subdirectories. I always loved dir /ad from DOS.
+if [ "$1" == "" ]; then
+    DIR="."
+else
+    DIR=$1
+fi
+
+echo "find $DIR -maxdepth 1 -type d"
+find $DIR -maxdepth 1 -type d
