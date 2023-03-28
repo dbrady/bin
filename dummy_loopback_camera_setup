@@ -1,6 +1,10 @@
 #!/bin/bash
+# dummy_loopback_camera_setup - Set up OBS loopback on Ubuntu 16.04LTS
+#
+# Dateline: Spark, September 2020
+#
 # Set up loopback camera - run this after every reboot because it goes away. :(
-
+#
 # Including this because sometimes when my machine reboots or crashes I lose
 # the video capture device. This sets up a dummy loopback camera for OBS to
 # output to; the exclusive_caps=1 tells the OS it's an input device only, which
