@@ -4,6 +4,20 @@
 
 # This version is convenient but for some reason it eats the stdout from the python script. Sadge. Let's allow this to run interactively if no $1.
 
+echo -e "\033[1;37;41m                                                                                        \033[0m"
+echo -e "\033[1;37;41m                         ████████ ██████████   ███████   ███████                        \033[0m"
+echo -e "\033[1;37;41m                        ██░░░░░░ ░░░░░██░░░   ██░░░░░██ ░██░░░░██                       \033[0m"
+echo -e "\033[1;37;41m                       ░██           ░██     ██     ░░██░██   ░██                       \033[0m"
+echo -e "\033[1;37;41m                       ░█████████    ░██    ░██      ░██░███████                        \033[0m"
+echo -e "\033[1;37;41m                       ░░░░░░░░██    ░██    ░██      ░██░██░░░░                         \033[0m"
+echo -e "\033[1;37;41m                              ░██    ░██    ░░██     ██ ░██                             \033[0m"
+echo -e "\033[1;37;41m                        ████████     ░██     ░░███████  ░██                             \033[0m"
+echo -e "\033[1;37;41m                       ░░░░░░░░      ░░       ░░░░░░░   ░░                              \033[0m"
+echo -e "\033[1;37;41m                                                                                        \033[0m"
+echo -e "\033[1;37;41m    The sync-table script has changed, and this script has not changed to follow it.    \033[0m"
+echo -e "\033[1;37;41m                                                                                        \033[0m"
+exit 1
+
 if [ "$1" == "" ]; then
     echo -e "\033[36mpython /root/data_services/utilities/sync_data_snowflake.py\033[0m"
     python /root/data_services/utilities/sync_data_snowflake.py
