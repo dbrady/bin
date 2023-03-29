@@ -1,0 +1,66 @@
+#!/usr/bin/env python
+# dsquery <query>|-f query.sql - Run sql query. Basically a CLI console until I can get DataGrip licensed and running again.
+
+import argparse
+import os
+import sys
+from dataservices import db
+
+
+def run(query, **attrs):
+    warehouse = attrs.get('warehouse') or 'snowflake'
+
+    dbo = db.DB(warehouse)
+    conn = dbo.connect(warehouse)
+
+    try:
+        if attrs.get('bare') is True:
+            results = dbo.query(query)
+        else:
+            results = dbo.query(query, return_type='dataframe')
+        dbo.commit()
+
+        if attrs.get('bare') is True:
+            for row in results:
+                for value in row:
+                    print(value)
+        elif attrs.get('csv') is True:
+            print(results.to_csv())
+        else:
+            print(results)
+
+    except Exception as e:
+        # Just pass; dbo has already logged the exception 3x
+        pass
+
+    finally:
+        dbo.close()
+
+
+def main():
+    parser = argparse.ArgumentParser(description='CLI query executor for snowflake')
+    # TODO: accept --warehouse redshift to run in other warehouse?
+    parser.add_argument('-f', '--file', help='Get SQL query from file', required=False)
+    parser.add_argument('-q', '--query', help='SQL query', required=False)
+    parser.add_argument('-w', '--warehouse', help='Warehouse (default: snowflake)', required=False)
+    parser.add_argument('-c', '--csv', help='Show results as CSV', action='store_true', required=False)
+    parser.add_argument('-b', '--bare', help='Show results as bare data (e.g. to pipe 1 json column to jq)', action='store_true', required=False)
+
+    args, remaining_args = parser.parse_known_args()
+    query = ""
+
+    if args.query is not None:
+        # query = " ".join(sys.argv[1:])
+        query = args.query
+    else:
+        with open(args.file, "r") as infile:
+            query = infile.read()
+
+    # print("Here is the query:")
+    # print(query)
+
+    run(query, csv=args.csv, warehouse=args.warehouse, bare=args.bare)
+
+
+if __name__ == "__main__":
+    main()
