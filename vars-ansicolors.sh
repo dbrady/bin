@@ -8,8 +8,11 @@
 #
 # source vars-ansicolors.sh
 # echo -e "This is ${ANSI_BOLD}${ANSI_WHITE}BOLD WHITE ${ANSI_ON_RED}ON A RED BACKGROUND${ANSI_OFF}"
-
-# TODO: In theory we could make the full exploded chart of combined codes to prevent stacking escapes, e.g. ANSI_DIM_BOLD_LIGHT_BLACK_ON_RED
+#
+# Or, more tersely,
+#
+# . vars-ansicolors.sh
+# echo -e "This is $ANSI_BOLD$ANSI_WHITEBOLD WHITE ${ANSI_ON_RED}ON A RED BACKGROUND$ANSI_OFF"
 
 export ANSI_OFF="\\033[0m"
 export ANSI_DIM="\\033[2m"
