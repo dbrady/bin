@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# dscmp <query> - Compare query results in both warehouses
+
+require "optimist"
+
+opts = Optimist.options do
+  opt :csv, type: :boolean, default: false
+end
+
+%w(redshift snowflake).each do |warehouse|
+  command = %Q|dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{ARGV * ' '}"|
+  puts command
+  system command
+end
