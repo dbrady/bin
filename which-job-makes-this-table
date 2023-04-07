@@ -96,7 +96,7 @@ end
 
 
 puts "SIDE EFFECT JOB: Searching etl files for mention of writes to this table..."
-command = "ag '\\b(create|insert\\s+into|truncate)\\b.*#{table}'"
+command = "ag --ignore=*.log --ignore=*.org '\\b(create|insert\\s+into|truncate)\\b.*#{table}'"
 puts command.cyan
 system command
 puts "Candidates:"
