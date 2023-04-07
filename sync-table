@@ -2,6 +2,13 @@
 # sync-table [f] <table> - run Zack's interactive sync script in batch mode
 # f - use finance db
 
+. ~/bin/vars-ansicolors.sh
+
+# CURRENTLY THIS REQUIRES MY HAXX TO sync_data_snowflake.py TO ACCEPT CLI ARGS
+echo_color $ANSI_CYAN "python ~/data_services/utilities/sync_data_snowflake.py $@"
+python ~/data_services/utilities/sync_data_snowflake.py $@
+exit
+
 # This version is convenient but for some reason it eats the stdout from the python script. Sadge. Let's allow this to run interactively if no $1.
 
 echo -e "\033[1;37;41m                                                                                        \033[0m"
