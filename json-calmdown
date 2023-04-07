@@ -1,6 +1,12 @@
 #!/usr/bin/env ruby
-# snow-calmdown - Convert screaming uppercase fields to lowercase
-# (Because Snowflake screams everything in allcaps)
+# snow-calmdown [<infile.json>] - Downcase json field names
+#
+# Because Snowflake's motto is WE PUT ALL THE INFORMATION SCHEMA IN UPPERCASE SO
+# YOU DON'T HAVE TO
+#
+# cat allcaps.json | snow-calmdown > calm.json
+# snow-calmdown allcaps.json > calm.json
+
 require "json"
 
 data = Array(JSON.parse(ARGF.read))
