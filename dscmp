@@ -5,9 +5,16 @@ require "optimist"
 
 opts = Optimist.options do
   opt :csv, type: :boolean, default: false
+  opt :finance, "Use finance warehouses", type: :boolean, default: false
 end
 
-%w(redshift snowflake).each do |warehouse|
+warehouses = if opts[:finance]
+               %w(redshift_finance snowflake_finance)
+             else
+               %w(redshift snowflake)
+             end
+
+warehouses.each do |warehouse|
   command = %Q|dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{ARGV * ' '}"|
   puts command
   system command
