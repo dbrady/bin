@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+# dsv-count <table> - get count from <table>_migration_check
+require "optimist"
+
+opts = Optimist.options do
+  opt :csv, type: :boolean, default: false
+  opt :finance, "Use (snowflake_)finance warehouse", type: :boolean, default: false
+end
+table = ARGV[0]
+Optimist::die "Must specify a table name." if !table || table.empty?
+
+warehouse = if opts[:finance]
+               "snowflake_finance"
+             else
+               "snowflake"
+             end
+
+table = "#{table}_migration_check"
+
+query = "SELECT COUNT(*) FROM #{table}"
+
+command = %Q|dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{query}"|
+puts command
+system command

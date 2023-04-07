@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+# snow-calmdown - Convert screaming uppercase fields to lowercase
+# (Because Snowflake screams everything in allcaps)
+require "json"
+
+data = Array(JSON.parse(ARGF.read))
+new_data = []
+
+new_data = data.map {|row| row.transform_keys(&:downcase) }
+
+puts JSON.pretty_generate(new_data)
