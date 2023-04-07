@@ -4,7 +4,7 @@
 # Change all mentions of redshift to/from snowflake in a job's config.
 require 'json'
 
-config_file = File.expand_path("./finance/config/etl_nightly_config.json")
+config_file = File.expand_path("~/data_services/etl/warehouse/finance/config/etl_nightly_config.json")
 job_file = ARGV.first
 
 puts "Configuring job to run in snowflake"
