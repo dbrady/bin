@@ -26,7 +26,7 @@ def run(query, **attrs):
                     print(value)
         elif attrs.get('csv') is True:
             print(results.to_csv())
-        else:
+        else: # else it's a dataframe; just print it
             print(results)
 
     except Exception as e:
