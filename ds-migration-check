@@ -19,31 +19,45 @@
 # redshift rows in 1 read (where id in (a,b,c) vs. where id=a, etc.)
 
 require 'colorize'
+require 'csv'
 require 'optimist'
+require 'text-table'
 
 opts = Optimist.options do
   opt :limit, "Number of rows to compare", :default => 10
+  opt :table, "Table name to check", type: :string, required: true
+  opt :id, "Name of id column", default: 'id'
+  opt :order, "CSV of columns to order in other table", type: :string, required: true
+
+  # this dumps ALL the columns out of migration check
+  opt :check, "Get results of migration check table only", default: false
+
+  # This option will run the select field_name, count(*) query instead
+  opt :summary, "Summarize results of migration check table (NOT YET IMPLEMENTED)", default: false
+  opt :debug, "Additional debug logging", default: false
 end
 
-
-table_name = ARGV[0] || 'f_underwriting_merge_applicant_credit_reports'
-id_column = ARGV[1] || 'id'
-columns = ARGV[2] || 'lease_number, row_number'
-
 # This would be cleaner as SELECT SNOW_VALUE, REDSHIFT_VALUE instead of SELECT | awk
-command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT SNOW_VALUE, REDSHIFT_VALUE FROM #{table_name}_migration_check WHERE field_name='#{id_column}' LIMIT #{opts[:limit]}" | snow-table | awk '{ print $4, $6 }' | sed-lines 4 #{opts[:limit]+3})
+command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT  LEASE_NUMBER, FIELD_NAME, SNOW_VALUE, REDSHIFT_VALUE FROM #{opts[:table]}_migration_check WHERE field_name='#{opts[:id]}' LIMIT #{opts[:limit]}")
 puts command.cyan
 
-output = `#{command}`
-# puts output.inspect
-ids = output.each_line.map(&:strip).to_a.map(&:split)
-# puts ids.inspect
-# exit
+output = `#{command}`.strip
+if opts[:debug]
+  puts CSV.parse(output, headers: true).to_table(first_row_is_head: true)
+end
 
-redshift_ids = ids.map(&:last)
-snowflake_ids = ids.map(&:first)
+exit if opts[:check]
+ids = CSV.parse(output, headers: true).map do |row|
+  # row is 0-based but remember python dataframe prepends an index column
+  [row[4], row[3]]
+end
 
-redshift_query = "SELECT #{columns} FROM #{table_name} WHERE id IN (#{redshift_ids.join(',')}) ORDER BY #{columns} ASC"
+redshift_ids = ids.map(&:first)
+snowflake_ids = ids.map(&:last)
+  puts "redshift_ids: #{redshift_ids.inspect}" if opts[:debug]
+puts "snowflake_ids: #{snowflake_ids.inspect}" if opts[:debug]
+
+redshift_query = "SELECT #{opts[:order]} FROM #{opts[:table]} WHERE id IN (#{redshift_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
 command = %Q{dsquery --warehouse redshift_finance --csv --query "#{redshift_query}"| snow-table}
 puts command.cyan
 redshift_result = `#{command}`.strip
@@ -51,7 +65,7 @@ redshift_result = `#{command}`.strip
 redshift_result = redshift_result.each_line.to_a.tap {|rows| rows[1].upcase! }.join
 puts redshift_result.light_magenta
 
-snowflake_query = "SELECT #{columns} FROM #{table_name} WHERE id IN (#{snowflake_ids.join(',')}) ORDER BY #{columns} ASC"
+snowflake_query = "SELECT #{opts[:order]} FROM #{opts[:table]} WHERE id IN (#{snowflake_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
 command = %Q{dsquery --warehouse snowflake_finance --csv --query "#{snowflake_query}"| snow-table}
 puts command.cyan
 snowflake_result = `#{command}`.strip
