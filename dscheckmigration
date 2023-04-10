@@ -1,0 +1,60 @@
+#!/usr/bin/env ruby
+
+# dscheckmigration - Quick and dirty script to compare migration check rows between
+# redshift and snowflake. Given a table, an id column, and a csv of the relevant
+# columns, grabs n rows from the _migration_check table, pulls the ids of each
+# mismatched pair, then gets the respective row from the source table in both
+# warehouses.
+#
+# TODO: take args from CLI
+# TODO: csv columns should be columns to exclude, then we read the
+# information_schema and include all other columns.
+# TODO: Do this in 3 reads -- get all the ids in one read, then get all the
+# redshift rows in 1 read (where id in (a,b,c) vs. where id=a, etc.)
+
+require 'colorize'
+require 'optimist'
+
+opts = Optimist.options do
+  opt :limit, "Number of rows to compare", :default => 10
+end
+
+
+table_name = ARGV[0] || 'f_underwriting_merge_applicant_credit_reports'
+id_column = ARGV[1] || 'id'
+columns = ARGV[2] || 'lease_number, row_number'
+
+# This would be cleaner as SELECT SNOW_VALUE, REDSHIFT_VALUE instead of SELECT | awk
+command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT SNOW_VALUE, REDSHIFT_VALUE FROM #{table_name}_migration_check WHERE field_name='#{id_column}' LIMIT #{opts[:limit]}" | snow-table | awk '{ print $4, $6 }' | sed-lines 4 #{opts[:limit]+3})
+puts command.cyan
+
+output = `#{command}`
+# puts output.inspect
+ids = output.each_line.map(&:strip).to_a.map(&:split)
+# puts ids.inspect
+# exit
+
+redshift_ids = ids.map(&:last)
+snowflake_ids = ids.map(&:first)
+
+redshift_query = "SELECT #{columns} FROM #{table_name} WHERE id IN (#{redshift_ids.join(',')}) ORDER BY #{columns} ASC"
+command = %Q{dsquery --warehouse redshift_finance --csv --query "#{redshift_query}"| snow-table}
+puts command.cyan
+redshift_result = `#{command}`.strip
+
+redshift_result = redshift_result.each_line.to_a.tap {|rows| rows[1].upcase! }.join
+puts redshift_result.light_magenta
+
+snowflake_query = "SELECT #{columns} FROM #{table_name} WHERE id IN (#{snowflake_ids.join(',')}) ORDER BY #{columns} ASC"
+command = %Q{dsquery --warehouse snowflake_finance --csv --query "#{snowflake_query}"| snow-table}
+puts command.cyan
+snowflake_result = `#{command}`.strip
+
+snowflake_result = snowflake_result.each_line.to_a.tap {|rows| rows[1].upcase! }.join
+puts snowflake_result.light_blue
+
+if redshift_result == snowflake_result
+  puts "MATCH".bold.white.on_green
+else
+  puts "MISMATCH".bold.white.on_red
+end
