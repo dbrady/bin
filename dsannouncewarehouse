@@ -10,7 +10,6 @@ job = ARGV.first
 3
 _,cols = $stdout.winsize
 command = "snow-get-warehouse -c #{job}"
-puts command
 warehouse = `#{command}`
 branch = `snow-job-show-config #{job} | grep dst_conn | awk '{ print $3 }' | cut -f 2 -d '"'`.each_line.first.rstrip
 print "\033[s\033[1;#{10+cols-warehouse.size}H#{warehouse}\033[u"
