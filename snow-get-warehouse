@@ -31,7 +31,7 @@ if colorize
        when "snowflake"
          " ❄️  #{warehouse} ❄️  ".light_white.on_light_blue
        when "snowflake_finance"
-         " ❄️ 💵 #{warehouse} 💵❄️  ".bold.light_green.on_light_blue
+         " ❄️ 💲 #{warehouse} 💲❄️  ".bold.light_green.on_light_blue
        when /redshift/
          " #{warehouse} ".red
        else
