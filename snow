@@ -1,6 +1,21 @@
 #!/usr/bin/env ruby
 # snow - Command suite to support moving to snowflake
 #
+# This script grew into the monstrosity you see before you now: the center of a
+# command/workflow suite. The quick and dirty version:
+#
+# 1. Run this from inside your docker container.
+# 2. $ set-ds-script path/to/job_file.py
+# 3. $ snow
+#
+# Running `snow` will run all of the redshift->snowflake problem detectors and print their output.
+#
+# `snow run` will run the current script, and will try to autodetect necessary
+# parameters: if the script accepts a --test or --recipients option, this script
+# will add those parameters.
+
+# a job name.
+#
 # DONE: snow -q, --quick emits only the detectors that fail, so you can see
 # remaining work
 #
@@ -410,28 +425,34 @@ snow - master control script for snowflake job migration
 
 snow [<command> [<options>]]
 
-Most commands use get-ds-script, and/or check the last line of ~/.ds_script for
-the name of the script filename. For legacy reasons this is called the SCRIPT
-file. It should point to the job file relative from the warehouse
-directory. E.g. for ~/dataservices/etl/warehouse/rac/rac_job1.py, do
-set-ds-script rac/rac_job1.py
+Most commands use get-ds-script, which checks the last line of ~/.ds_script for
+the name of the script filename, you'll want to set this with `set-ds-script
+path/to/job.py` beforehand.
 
-Many jobs check that the current branch matches the SCRIPT file. This puts an
-extra bit of bookkeeping on you, but it's actually there to ensure that you're
-not accidentally merging to master or snowflake-moveover. Again.
+Many jobs check that the current branch matches the output of
+get-ds-script. This is mostly to prevent jamming changes directly into master or
+feature/snowflake-moveover. This puts an extra bit of bookkeeping on you, but
+it's actually there to ensure that I'm not accidentally merging to master or
+snowflake-moveover. Again.
+
+Many commands now accept a job override, notably job (shows the job config) and preview (
+
+Run snow -l to get a checklist of the workflow.
 
 Commands/options:
 check [-e|--essential] [job.py]  Check the [current] job for [only essential] coding violations
+preview job.py                   Run check on a job other that the current script
+cplx [job.py]                    Give a rough complexity estimate for porting this job
 job [job]                        Show current [or specified] job's configuration
 job s[nowflake]                  Convert job configuration to snowflake
 job r[edshift]                   Convert job configuration back to redshift
 run                              Run the current job
 main                             Checkout the snowflake main branch in both repos
 master                           Checkout master in both repos
-go <ticket>|<job_name>           Checkout the branch containing this search term
+go <ticket>|<job_name>           Checkout (in both repos) the branch containing this search term
 new <ticket> <job.py>            Create a new feature branch in both repos
-link <pr> <finance_pr> [pkg_pr]  Create links template for Zack
-slam                             Commit finance config change and open PRs for both repos
+link <pr> <finance_pr> [pkg_pr]  Create links template for pasting to Zack in slack
+slam                             Commit finance config change, push both repos, and generate click-to-open-PR links
 
 If no commands are given, snow will run check.
 
