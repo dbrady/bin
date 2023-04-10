@@ -1,0 +1,30 @@
+#!/usr/bin/env ruby
+require 'colorize'
+require 'csv'
+require 'optimist'
+require 'text-table'
+
+hostname=`hostname`.strip
+
+opts = Optimist::options do
+  opt :warehouse, "Warehouse", type: :string, default: "snowflake"
+  opt :limit, "Max jobs to return", default: 20
+  opt :job, "Job name or path/to/job.py", type: :string, required: true
+  opt :host, "Hostname"
+  opt :mine, "Same as --host=#{hostname}", default: false
+  opt :notes, "Show/hide notes column", default: true
+end
+Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
+opts[:job] = opts[:job].gsub(%r|/|,".").sub(/\.py$/,'')
+
+# puts opts.inspect
+opts[:host] = hostname if opts[:mine]
+where = "job='#{opts[:job]}'"
+where += " AND host='#{opts[:host]}'" if opts[:mine] || opts[:host_given]
+notes = ", notes " if opts[:notes]
+
+command = %Q(dsquery --csv --warehouse snowflake --query "SELECT host, job, start_time, end_time, DATEDIFF('second', start_time, end_time) AS elapsed_seconds, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details WHERE #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}")
+puts command.cyan
+results = `#{command}`.strip
+
+puts CSV.parse(results, headers: true).to_table(first_row_is_head: true)
