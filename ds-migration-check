@@ -57,8 +57,8 @@ if redshift_result == snowflake_result
   puts "MATCH".bold.white.on_green
 else
   puts "MISMATCH".bold.white.on_red
-  File.open("ds-migration-check.redshift.log", "w") {|fp| fp.puts redshift_result }
-  File.open("ds-migration-check.snowflake.log", "w") {|fp| fp.puts snowflake_result }
+  File.open("ds-migration-check.redshift.log", "w") {|fp| fp.puts redshift_result; fp.puts "^^^^ redshift" }
+  File.open("ds-migration-check.snowflake.log", "w") {|fp| fp.puts snowflake_result; fp.puts "^^^^ snowflake" }
   command="colordiff -y ds-migration-check.redshift.log ds-migration-check.snowflake.log"
   puts command.cyan
   system command
