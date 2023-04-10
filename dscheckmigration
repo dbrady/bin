@@ -9,7 +9,7 @@
 # TODO: take args from CLI
 # TODO: csv columns should be columns to exclude, then we read the
 # information_schema and include all other columns.
-# TODO: Do this in 3 reads -- get all the ids in one read, then get all the
+# DONE: Do this in 3 reads -- get all the ids in one read, then get all the
 # redshift rows in 1 read (where id in (a,b,c) vs. where id=a, etc.)
 
 require 'colorize'
