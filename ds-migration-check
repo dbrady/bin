@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# dscheckmigration - Quick and dirty script to compare migration check rows between
+# ds-migration-check - Quick and dirty script to compare migration check rows between
 # redshift and snowflake. Given a table, an id column, and a csv of the relevant
 # columns, grabs n rows from the _migration_check table, pulls the ids of each
 # mismatched pair, then gets the respective row from the source table in both
@@ -57,4 +57,8 @@ if redshift_result == snowflake_result
   puts "MATCH".bold.white.on_green
 else
   puts "MISMATCH".bold.white.on_red
+  File.open("ds-migration-check.redshift.log", "w") {|fp| fp.puts redshift_result }
+  File.open("ds-migration-check.snowflake.log", "w") {|fp| fp.puts snowflake_result }
+  puts "Wrote outputs to ds-migration-check.redshift.log and ds-migration-check.snowflake.log. View diff with".red
+  puts "colordiff -y ds-migration-check.redshift.log ds-migration-check.snowflake.log"
 end
