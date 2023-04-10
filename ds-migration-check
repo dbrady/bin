@@ -7,8 +7,14 @@
 # warehouses.
 #
 # TODO: take args from CLI
-# TODO: csv columns should be columns to exclude, then we read the
-# information_schema and include all other columns.
+#
+# TODO: read the information_schema and exclude the id column, and read/display
+# all the other columns. The csv column arg then becomes just the order
+# column. IF we do this, add --display-columns or similar to override this
+# behavior, since some of our tables have a bazillion columns. We'll want to
+# compare them all before we trust the migration but for debugging just 2 or 3
+# would be nice.
+#
 # DONE: Do this in 3 reads -- get all the ids in one read, then get all the
 # redshift rows in 1 read (where id in (a,b,c) vs. where id=a, etc.)
 
