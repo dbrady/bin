@@ -684,7 +684,7 @@ Options:
       command += " --test" if has_test_mode? && use_test_mode?
       command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !argv.include?('--start_date')
       command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !argv.include?('--end_date')
-      command += " --recipients david.brady@acima.com" if has_recipients_override? && !argv.include?('--recipients')
+      command += " --recipients #{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
       command += " " + argv.join(" ")
       run_and_exit! command
     end
