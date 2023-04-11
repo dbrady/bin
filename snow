@@ -440,19 +440,23 @@ Many commands now accept a job override, notably job (shows the job config) and 
 Run snow -l to get a checklist of the workflow.
 
 Commands/options:
-check [-e|--essential] [job.py]  Check the [current] job for [only essential] coding violations
-preview job.py                   Run check on a job other that the current script
-cplx [job.py]                    Give a rough complexity estimate for porting this job
-job [job]                        Show current [or specified] job's configuration
-job s[nowflake]                  Convert job configuration to snowflake
-job r[edshift]                   Convert job configuration back to redshift
-run                              Run the current job
-main                             Checkout the snowflake main branch in both repos
-master                           Checkout master in both repos
-go <ticket>|<job_name>           Checkout (in both repos) the branch containing this search term
-new <ticket> <job.py>            Create a new feature branch in both repos
-link <pr> <finance_pr> [pkg_pr]  Create links template for pasting to Zack in slack
-slam                             Commit finance config change, push both repos, and generate click-to-open-PR links
+auto                                 Automatically fix and commit as much as possible
+backlog                              Show backlog file
+check [-e|--essential] [job.py]      Check the [current] job for [only essential] coding violations
+complexity|cplx [job.py]             Give a rough complexity estimate for porting this job
+go <ticket>|<job_name>               Checkout (in both repos) the branch containing this search term
+job [job]                            Show current [or specified] job's configuration
+job r[edshift]                       Convert job configuration back to redshift
+job s[nowflake]                      Convert job configuration to snowflake
+link <pr> <finance_pr> [package_pr]  Create Slackable links for Zack
+link <pr> <finance_pr> [pkg_pr]      Create links template for pasting to Zack in slack
+main                                 Checkout the snowflake main branch in both repos
+master                               Checkout master in both repos
+new <ticket> <job.py>                Create a new feature branch in both repos
+preview job.py                       Run check on a job other that the current script
+rebase [parent_branch]               Run snow-rebase
+run                                  Run the current job
+slam                                 Commit finance config change, push both repos, and generate click-to-open-PR links
 
 If no commands are given, snow will run check.
 
@@ -575,10 +579,10 @@ Options:
 
       opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
       opt :quick, "Only show output from failing detectors"
-      opt :debug, "Output extra debug info"
+      opt :debug, "Output extra debug info", short: :none
       opt :essential, "Only run essential detectors"
       opt :list, "Show PR workflow checklist"
-      opt :defaults, "(job only) Include job config defaults with job config (to see complete config)"
+      opt :defaults, "(job only) Include job config defaults with job config (to see complete config)", short: :d
       opt :exception, "Run exception detectors", default: true
       opt :json, "Run JSON detectors", short: :none, default: true
       opt :missing, "Run missing detectors", short: :none, default: true
