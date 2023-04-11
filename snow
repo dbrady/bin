@@ -775,23 +775,22 @@ Options:
     end
 
     # ----------------------------------------------------------------------
-    # snow-slam - git cram both repos and emit create pr links
+    # snow slam - git cram both repos and emit create pr links
     # ----------------------------------------------------------------------
     if argv.first == "slam"
       run_and_exit! "snow-slam #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
-    # snow-auto - automatically fix what can be automatically fixed
+    # snow auto - automatically fix what can be automatically fixed
     # ----------------------------------------------------------------------
     if argv.first == "auto"
       run_and_exit! "snow-autofix-all-the-things"
     end
 
     # ----------------------------------------------------------------------
-    # Start the actual checking process
+    # snow check - run detectors against job
     # ----------------------------------------------------------------------
-
     puts "Checking #{get_script}..."
 
     # load file
