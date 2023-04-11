@@ -24,7 +24,7 @@ require 'optimist'
 require 'text-table'
 
 opts = Optimist.options do
-  opt :limit, "Number of rows to compare", :default => 10
+  opt :limit, "Number of rows to compare (gratuitously clever usage: --limit='10 OFFSET 2000')", :default => "10"
   opt :table, "Table name to check", type: :string, required: true
   opt :id, "Name of id column", default: 'id'
   opt :order, "CSV of columns to order in other table", type: :string, required: true
@@ -35,10 +35,12 @@ opts = Optimist.options do
   # This option will run the select field_name, count(*) query instead
   opt :summary, "Summarize results of migration check table (NOT YET IMPLEMENTED)", default: false
   opt :debug, "Additional debug logging", default: false
+
 end
 
-# This would be cleaner as SELECT SNOW_VALUE, REDSHIFT_VALUE instead of SELECT | awk
+# GET MIGRATION CHECK IDS
 command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT  LEASE_NUMBER, FIELD_NAME, SNOW_VALUE, REDSHIFT_VALUE FROM #{opts[:table]}_migration_check WHERE field_name='#{opts[:id]}' LIMIT #{opts[:limit]}")
+# command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT  * FROM #{opts[:table]}_migration_check WHERE field_name='#{opts[:id]}' LIMIT #{opts[:limit]}")
 puts command.cyan
 
 output = `#{command}`.strip
@@ -57,7 +59,12 @@ snowflake_ids = ids.map(&:last)
   puts "redshift_ids: #{redshift_ids.inspect}" if opts[:debug]
 puts "snowflake_ids: #{snowflake_ids.inspect}" if opts[:debug]
 
-redshift_query = "SELECT #{opts[:order]} FROM #{opts[:table]} WHERE id IN (#{redshift_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
+
+# get colums to check
+
+# GET REDSHIFT ROWS
+columns_to_check=opts[:order]
+redshift_query = "SELECT #{columns_to_check} FROM #{opts[:table]} WHERE id IN (#{redshift_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
 command = %Q{dsquery --warehouse redshift_finance --csv --query "#{redshift_query}"| snow-table}
 puts command.cyan
 redshift_result = `#{command}`.strip
@@ -65,7 +72,9 @@ redshift_result = `#{command}`.strip
 redshift_result = redshift_result.each_line.to_a.tap {|rows| rows[1].upcase! }.join
 puts redshift_result.light_magenta
 
-snowflake_query = "SELECT #{opts[:order]} FROM #{opts[:table]} WHERE id IN (#{snowflake_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
+# GET SNOWFLAKE ROWS
+columns_to_check=opts[:order].upcase
+snowflake_query = "SELECT #{columns_to_check} FROM #{opts[:table]} WHERE id IN (#{snowflake_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
 command = %Q{dsquery --warehouse snowflake_finance --csv --query "#{snowflake_query}"| snow-table}
 puts command.cyan
 snowflake_result = `#{command}`.strip
