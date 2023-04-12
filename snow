@@ -46,8 +46,9 @@
 # - snow-fix-* will modify the script AND commit it.
 
 require 'colorize'
-require 'optimist'
 require 'io/console'
+require 'json'
+require 'optimist'
 
 class SnowflakeManglerApp
   attr_reader :opts
@@ -90,6 +91,10 @@ class SnowflakeManglerApp
   # I added the Optimist gem and by then it was detecting arguments by Doing Its
   # Own Thing Man(TM)
   # ----------------------------------------------------------------------
+
+  def explicitly_allow_redshift?
+    opts[:redshift_given] && opts[:redshift]
+  end
 
   # force: proceed in the face of warnings
   def force?
@@ -140,6 +145,10 @@ class SnowflakeManglerApp
 
   def run_test_detectors?
     opts[:test]
+  end
+
+  def run_to_char_detectors?
+    opts[:char]
   end
 
   def run_python2_detectors?
@@ -390,6 +399,11 @@ class SnowflakeManglerApp
   # END DETECTORS
   # ======================================================================
 
+  def pointed_at_redshift?
+    `snow-job-show-config`.strip.each_line.any? {|line| line =~ /"dst_conn": .*redshift/ }
+  end
+
+
   def has_skip_upload?
     IO.readlines(get_script).any? { |line| line.include?("parser.add_argument('--skip_upload") }
   end
@@ -591,47 +605,52 @@ Options:
 
       @ignore_invalid_options = true
 
-      opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
-      opt :quick, "Only show output from failing detectors"
+      opt :"send-test", "Send --test in snow run to jobs that offer it", short: :none, default: true
       opt :debug, "Output extra debug info", short: :none
-      opt :essential, "Only run essential detectors"
-      opt :list, "Show PR workflow checklist"
       opt :defaults, "(job only) Include job config defaults with job config (to see complete config)", short: :d
+      opt :essential, "Only run essential detectors"
+      opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
+      opt :list, "Show PR workflow checklist"
+      opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
+      opt :quick, "(run only) Only show output from failing detectors"
+
+      opt :char, "Run TO_CHAR detectors", default: true
       opt :exception, "Run exception detectors", default: true
       opt :json, "Run JSON detectors", short: :none, default: true
       opt :missing, "Run missing detectors", short: :none, default: true
-      opt :quote, "Run double-quote detectors", default: true
-      opt :timezone, "Run time zone detectors", default: true
       opt :python2, "Run python2 string formatting detectors", default: true
+      opt :quote, "Run double-quote detectors", default: true
       opt :test, "Run test mode detector", default: true
-      opt :"send-test", "Send --test mode to jobs that offer it", short: :none, default: true
-      opt :"no-test", "Exclude --test detector", short: :none, default: false
+      opt :timezone, "Run time zone detectors", default: true
+
       opt :"no-2", "same as --no-python2", short: :none, default: false
+      opt :"no-c", "same as --no-char", short: :none, default: false
       opt :"no-j", "same as --no-json", short: :none, default: false
       opt :"no-m", "same as --no-missing", short: :none, default: false
       opt :"no-q", "same as --no-quotes", short: :none, default: false
       opt :"no-s", "same as --no-space", short: :none, default: false
-      opt :"no-tz", "same as --no-timezone", short: :none, default: false
       opt :"no-t", "same as --no-test", short: :none, default: false
+      opt :"no-tz", "same as --no-timezone", short: :none, default: false
       opt :"no-x", "same as --no-exception", short: :none, default: false
       opt :space, "Run unmanaged whitespace detectors", default: true
     end
-    # copy alternate args over
+    # copy alternate args over, so that e.g. --no-j will set --no-json to true
     {
+      char: "c",
       exception: "x",
       json: "j",
       missing: "m",
+      python2: "2",
       quote: "q",
       space: "s",
+      test: "t",
       timezone: "tz",
-      python2: "2",
-      test: "t"
     }.each do |option, shortcode|
       # opts[:json] = opts[:"no-j"] if opts[:"no-j_given"]
       opts[option] = opts[:"no-#{shortcode}"] if opts[:"no-#{shortcode}_given"]
     end
 
-    puts opts.inspect if opts[:debug]
+    puts JSON.pretty_generate(opts) if opts[:debug]
     @argv = ARGV.dup
 
     # Optimist::die :dynos, "must be a non-negative number" unless opts[:dynos] >= 0.0
@@ -675,7 +694,21 @@ Options:
     # ----------------------------------------------------------------------
     if argv.first == "run"
       if !docker?
-        puts "This script must be run from inside docker.".bold.red
+        puts "ETL jobs must be run from inside docker.".bold.red
+        exit -1
+      end
+
+      # Don't run if the dst_conn is redshift UNLESS I specify --redshift
+      if pointed_at_redshift? && !explicitly_allow_redshift?
+        puts "JOB IS POINTED AT REDSHIFT. Fix this with snow job s or override with --redshift".bold.red
+        exit -1
+      end
+
+      # You must be in the warehouse folder. Too many of the quick-and-dirty
+      # early versions of these scripts assume this and reference files
+      # relatively.
+      if File.expand_path(Dir.pwd) != File.expand_path("~/data_services/etl/warehouse/")
+        puts "You must be in the warehouse folder for snow run to work reliably.".bold.red
         exit -1
       end
 
@@ -685,7 +718,7 @@ Options:
       # "If I had a nickel for every time [git has trashed etl_nightly.py], I'd
       # have two nickels - which isn't a lot, but it's weird that it happened
       # twice."
-      if !system("grep -- '--retry_count' etl_nightly.py > /dev/null")
+      if !system("grep -- '--retry_count' ~/data_services/etl/warehouse/etl_nightly.py > /dev/null")
         puts "etl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?".bold.white.on_red
         puts
       end
@@ -1039,7 +1072,9 @@ Options:
     # match will unmatch if there is a last argument in quotes that's like
     # 999,999D99 or YYYY-MM-DD etc.
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TO_CHAR (with numeric format)", /to_char/i, unmatch: /'[YMD\-9,]+'/
+    if run_to_char_detectors?
+      detect_and_print_lines lines, "TO_CHAR (with numeric format)", /to_char/i, unmatch: /'[YMD\-9,]+'/
+    end
 
     # ----------------------------------------------------------------------
     # WITH NO SCHEMA BINDING -> just delete the line
