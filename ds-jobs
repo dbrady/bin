@@ -14,11 +14,13 @@ opts = Optimist::options do
   opt :mine, "Same as --host=#{hostname}", default: false
   opt :notes, "Show notes column", default: false
   opt :simple, "Show simple select (skip timestamp calculations)", default: false
+  opt :where, "Override where clause entirely", type: :string
 end
 Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
+
 opts[:job] = opts[:job].gsub(%r|/|,".").sub(/\.py$/,'') if opts[:job_given]
 
-puts opts.inspect
+# puts opts.inspect
 opts[:host] = hostname if opts[:mine]
 
 # optional columns
@@ -28,7 +30,11 @@ notes = ", notes " if opts[:notes]
 wheres = []
 wheres << "job='#{opts[:job]}'" if opts[:job_given]
 wheres << "host='#{opts[:host]}'" if opts[:mine] || opts[:host_given]
-where = if wheres.size.zero?
+where = if opts[:where_given] && !wheres.empty?
+          "WHERE " + wheres.join(" AND ") + " AND " + opts[:where]
+        elsif opts[:where_given]
+          "WHERE " + opts[:where]
+        elsif wheres.size.zero?
           ""
         else
           "WHERE " + wheres.join(" AND ")
