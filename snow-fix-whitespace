@@ -1,7 +1,6 @@
 #!/bin/bash
 # snow-fix-whitespace
-# not sure why sed -E -i 's/\s+$//' doesn't work
-
+# trim space at EOL and ensure exactly 1 newline at EOF
 SCRIPT=`get-ds-script`
 
 if [ -e "$1" ]; then
@@ -14,7 +13,6 @@ if [ -z "$SCRIPT" ]; then
     exit -1
 fi
 
-echo -e "\033[36mruby -i -n -e 'puts \$_.rstrip' $SCRIPT\033[0m"
-ruby -i -n -e 'puts $_.rstrip' $SCRIPT
+system "cleanup-whitespace"
 
 snow-commit-ds-script "Clean up whitespace"
