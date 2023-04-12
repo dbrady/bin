@@ -106,6 +106,11 @@ class SnowflakeManglerApp
     opts[:quick]
   end
 
+  # Quiet: Suppress output, return bash success status only
+  def quiet?
+    opts[:quiet]
+  end
+
   # For job config only: show the default job config AND this job config (to show complete config)
   def defaults?
     opts[:defaults]
@@ -196,9 +201,26 @@ class SnowflakeManglerApp
     "====%s" % " #{title} ".ljust(80, "=").cyan
   end
 
+  def seen_errors!
+    @seen_errors = true
+  end
+
+  def seen_errors?
+    !!@seen_errors
+  end
+
+  def log_error(msg)
+    seen_errors!
+    log(msg)
+  end
+
+  def log(msg)
+    puts msg unless quiet?
+  end
+
   def log_ok
     return if quick?
-    puts " OK ".bold.light_white.on_green
+    log " OK ".bold.light_white.on_green
   end
 
   # ======================================================================
@@ -233,13 +255,13 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title unless quick?
+    log section_title title unless quick?
     # OOF.
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
-      puts section_title title if quick?
+      log section_title title if quick?
       if autofix
-        puts "Autofix with:\n#{autofix.cyan}"
+        log "Autofix with:\n#{autofix.cyan}"
         fixlog "#{get_script}: autofix #{title}", autofix
       end
 
@@ -248,15 +270,16 @@ class SnowflakeManglerApp
       # pass in custom finder methods for multiline and trickier stuff
       lines.each.with_index do |line, index|
         if line =~ regex && (!unmatch || line !~ unmatch)
-          puts "%4d: %s" % [index+1, line]
+          seen_errors!
+          log "%4d: %s" % [index+1, line]
           if suggest && suggestion = send(suggest, line)
-            puts "Replacement:"
-            puts line.red
-            puts suggestion.green
+            log "Replacement:"
+            log line.red
+            log suggestion.green
             sed_replacement = suggestion.gsub(%r|/|, "\\/").gsub('"', '\"')
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
-            puts sed_command.cyan
+            log sed_command.cyan
             fixlog "#{get_script}: replacement for #{title}", sed_command
           end
         end
@@ -278,7 +301,7 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title unless quick?
+    log section_title title unless quick?
 
     # given n regexes, at line[m], then...
     # Simple Match For Now:
@@ -299,13 +322,13 @@ class SnowflakeManglerApp
         if first
           first = false
         else
-          puts "--"
+          log "--"
         end
-        puts (0...regexes.size).map {|j| "#{main_offset+j}: #{lines[main_offset+j]}" }
+        log (0...regexes.size).map {|j| "#{main_offset+j}: #{lines[main_offset+j]}" }
       end
     end
 
-    log_ok if no_matches
+    no_matches ? log_ok : seen_errors!
   end
 
   # Let's start capturing the fixes and suggests to a script/log
@@ -321,20 +344,22 @@ class SnowflakeManglerApp
   end
 
   def detect_missing_skip_upload
-    puts section_title "Skip Upload" unless quick?
+    log section_title "Skip Upload" unless quick?
     if should_have_skip_upload? && !has_skip_upload?
-      puts section_title "Skip Upload" if quick?
-      puts "File is mccloud or salesforce but does not have --skip_upload option"
+      seen_errors!
+      log section_title "Skip Upload" if quick?
+      log "File is mccloud or salesforce but does not have --skip_upload option"
     else
       log_ok
     end
   end
 
   def detect_missing_test_mode
-    puts section_title "--test" unless quick?
+    log section_title "--test" unless quick?
     if should_have_test_mode? && !has_test_mode?
-      puts section_title "--test" if quick?
-      puts "File mentions portal, gsheet, facebook, or commissions but does not have --test option"
+      seen_errors!
+      log section_title "--test" if quick?
+      log "File mentions portal, gsheet, facebook, or commissions but does not have --test option"
     else
       log_ok
     end
@@ -342,48 +367,23 @@ class SnowflakeManglerApp
 
   def detect_missing_recipients_override
     if should_have_recipients_override? && !has_recipients_override?
-      puts section_title "--recipients" if quick?
-      puts "File sends email but does not have --recipients override option"
+      seen_errors!
+      log section_title "--recipients" if quick?
+      log "File sends email but does not have --recipients override option"
     else
       log_ok
-    end
-  end
-
-  def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
-    return
-    zack_casey_tables = %w(
-      f_collections_chargeoffs
-    )
-    # {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
-      {red: zack_casey_tables}.each do |color, tables|
-      regex = /(#{tables.join('|')})/
-
-      puts section_title "Potentially Unmigrated Tables (#{color})" unless quick?
-      if lines.any? {|line| line =~ regex }
-        puts section_title "Potentially Unmigrated Tables (#{color})" if quick?
-        lines.each.with_index do |line, index|
-          problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
-          next if problem_tables.size.zero?
-
-          problem_tables.each do |table|
-            line = line.gsub(/#{table}/, table.send(color))
-          end
-          puts "%4d: %s" % [index+1, line]
-        end
-      else
-        log_ok
-      end
     end
   end
 
   def detect_unmanaged_whitespace(lines)
-    puts section_title "UNMANAGED WHITESPACE" unless quick?
+    log section_title "UNMANAGED WHITESPACE" unless quick?
     if lines.any? {|line| line =~ /\s+$/}
-      puts section_title "Unmanaged whitespace" if quick?
+      seen_errors!
+      log section_title "Unmanaged whitespace" if quick?
       lines.each.with_index do |line, index|
         if line =~ /(\s+)$/
           colorized_line = line.sub(/\s+$/, $1.on_red)
-          puts "%d: %s" % [index+1, colorized_line]
+          log "%d: %s" % [index+1, colorized_line]
         end
       end
     else
@@ -391,8 +391,8 @@ class SnowflakeManglerApp
     end
   end
 
-  def skip_pep_check?
-    true
+  def run_pep_check?
+    opts[:pep]
   end
 
   # ======================================================================
@@ -459,7 +459,7 @@ path/to/job.py` beforehand.
 
 Many jobs check that the current branch matches the output of
 get-ds-script. This is mostly to prevent jamming changes directly into master or
-feature/snowflake-moveover. This puts an extra bit of bookkeeping on you, but
+feature/snowflake-moveover. This log an extra bit of bookkeeping on you, but
 it's actually there to ensure that I'm not accidentally merging to master or
 snowflake-moveover. Again.
 
@@ -503,10 +503,10 @@ Options:
     # My nex regex chokes on this special case which is uncommon but not rare
     getdate_regex = %r|^(.*)GETDATE\(\) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver'(.*)$|i
     if line =~ getdate_regex
-      puts "MATCH!!!".white.bold.on_green
+      log "MATCH!!!".white.bold.on_green
       return line.sub(getdate_regex, %q|\1CONVERT_TIMEZONE('UTC', 'America/Denver', GETDATE())\2|)
     else
-      puts "NO MATCH".white.bold.on_red
+      log "NO MATCH".white.bold.on_red
     end
 
     regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
@@ -613,6 +613,7 @@ Options:
       opt :list, "Show PR workflow checklist"
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
       opt :quick, "(run only) Only show output from failing detectors"
+      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass", short: "Q", default: false
 
       opt :char, "Run TO_CHAR detectors", default: true
       opt :exception, "Run exception detectors", default: true
@@ -650,7 +651,7 @@ Options:
       opts[option] = opts[:"no-#{shortcode}"] if opts[:"no-#{shortcode}_given"]
     end
 
-    puts JSON.pretty_generate(opts) if opts[:debug]
+    log JSON.pretty_generate(opts) if opts[:debug]
     @argv = ARGV.dup
 
     # Optimist::die :dynos, "must be a non-negative number" unless opts[:dynos] >= 0.0
@@ -658,7 +659,7 @@ Options:
     # if -l or --list, show checklist and exit
     if list?
       checklist
-      # puts "HIT ENTER TO EXIT"
+      # log "HIT ENTER TO EXIT"
       # $stdin.gets
       exit 0
     end
@@ -679,7 +680,7 @@ Options:
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if need_script? && (get_script.nil? || get_script.empty?)
-      puts "You must run set-ds-script <path/to/job.py> first."
+      log "You must run set-ds-script <path/to/job.py> first."
       usage
       exit -1
     end
@@ -694,13 +695,13 @@ Options:
     # ----------------------------------------------------------------------
     if argv.first == "run"
       if !docker?
-        puts "ETL jobs must be run from inside docker.".bold.red
+        log "ETL jobs must be run from inside docker.".bold.red
         exit -1
       end
 
       # Don't run if the dst_conn is redshift UNLESS I specify --redshift
       if pointed_at_redshift? && !explicitly_allow_redshift?
-        puts "JOB IS POINTED AT REDSHIFT. Fix this with snow job s or override with --redshift".bold.red
+        log "JOB IS POINTED AT REDSHIFT. Fix this with snow job s or override with --redshift".bold.red
         exit -1
       end
 
@@ -708,7 +709,7 @@ Options:
       # early versions of these scripts assume this and reference files
       # relatively.
       if File.expand_path(Dir.pwd) != File.expand_path("~/data_services/etl/warehouse/")
-        puts "You must be in the warehouse folder for snow run to work reliably.".bold.red
+        log "You must be in the warehouse folder for snow run to work reliably.".bold.red
         exit -1
       end
 
@@ -719,8 +720,8 @@ Options:
       # have two nickels - which isn't a lot, but it's weird that it happened
       # twice."
       if !system("grep -- '--retry_count' ~/data_services/etl/warehouse/etl_nightly.py > /dev/null")
-        puts "etl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?".bold.white.on_red
-        puts
+        log "etl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?".bold.white.on_red
+        log
       end
 
       # print dst_conn warehouse name in top-right corner
@@ -845,7 +846,7 @@ Options:
     # ----------------------------------------------------------------------
     # snow check - run detectors against job
     # ----------------------------------------------------------------------
-    puts "Checking #{get_script}..."
+    log "Checking #{get_script}..."
 
     # load file
     lines = IO.readlines(get_script).map(&:chomp)
@@ -859,25 +860,14 @@ Options:
     # Check for PEP8 Conformance
     # ----------------------------------------------------------------------
     if !essential? && !quick?
-      if skip_pep_check?
-        puts section_title("SKIPPING PEP8 CONFORMANCE")
+      if run_pep_check?
+        log section_title("PEP8 CONFORMANCE")
+        pep_ok = system "pep-check #{get_script}"
+        seen_errors! unless pep_ok
       else
-        puts section_title("PEP8 CONFORMANCE")
-        system "pep-check #{get_script}"
+        log section_title("SKIPPING PEP8 CONFORMANCE")
       end
-
-
-      # puts section_title("BOILERPLATE DOCUMENTATION")
-      # system "snow-check-boilerplate #{get_script}"
     end
-
-    # ----------------------------------------------------------------------
-    # Pre-check the file -- this has no fix, it's just a warning to be aware
-    # that whenever we run the job we must include --skip_upload
-    # ----------------------------------------------------------------------
-    # check for --skip_upload
-    # 2022-11-21 - removing; snow run picks this up automatically
-    # detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
 
     # ======================================================================
     # BEGIN SQL CHANGES - Stuff that runs in Redshift but not in Snowflake
@@ -1231,11 +1221,6 @@ Options:
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    # Hidden blockers (depends on an unmigrated table)
-    # ----------------------------------------------------------------------
-    detect_potentially_unmigrated_tables lines, essential: true
-
-    # ----------------------------------------------------------------------
     # main() bootstrapper
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
@@ -1278,10 +1263,15 @@ Options:
       # ----------------------------------------------------------------------
       detect_and_print_lines lines, "TABS", /\t/
     end
+
+    # return error status, if we saw any errors
+    !seen_errors?
   end
 end
 
 
 if __FILE__ == $0
-  SnowflakeManglerApp.new.run
+  success = SnowflakeManglerApp.new.run
+
+  exit(-1) unless success
 end
