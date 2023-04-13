@@ -41,9 +41,9 @@ where = if opts[:where_given] && !wheres.empty?
         end
 
 command = if opts[:simple]
-            %Q(dsquery --csv --warehouse snowflake --query "SELECT host, job, start_time, end_time, DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS elapsed_seconds, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}").gsub(/\s+/, ' ')
+            %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "SELECT host, job, start_time, end_time, DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS elapsed_seconds, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}").gsub(/\s+/, ' ')
           else
-            %Q(dsquery --csv --warehouse snowflake --query "WITH jobs1 AS (SELECT host, job, CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_mst, CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_mst, DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS duration, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}) SELECT host, job, start_time_mst, end_time_mst, LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed, success, job_failed_count, retry_count FROM jobs1").gsub(/\s+/, ' ')
+            %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "WITH jobs1 AS (SELECT host, job, CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_mst, CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_mst, DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS duration, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}) SELECT host, job, start_time_mst, end_time_mst, LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed, success, job_failed_count, retry_count FROM jobs1").gsub(/\s+/, ' ')
           end
 
 puts command.cyan
