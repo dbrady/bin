@@ -145,7 +145,7 @@ class SnowflakeManglerApp
   end
 
   def run_timezone_detectors?
-    opts[:tz]
+    opts[:timezone]
   end
 
   def run_test_detectors?
@@ -178,11 +178,18 @@ class SnowflakeManglerApp
 
   def run_date_detectors?
     opts[:dates]
-    # Should I maybe do opts[:disable].split(/,/).include?("date")
+    # 2023-03-08: Should I maybe do opts[:disable].split(/,/).include?("date")
     # So I can say --disable=date,json etc?
     #
     # Right now I kinda like --no-json --no-dates, so eh. But if it tuns into 20
     # different --no-foo options, this might be the way.
+    #
+    # 2023-04-13: Dear March Dave, This is April Dave. Hello from the future!
+    # Yeah, it's turning into a shipwreck of options.
+  end
+
+  def run_days_detectors?
+    opts[:days]
   end
 
   def run_exception_detectors?
@@ -191,6 +198,10 @@ class SnowflakeManglerApp
 
   def use_test_mode?
     opts[:test]
+  end
+
+  def run_trunc_detectors?
+    opts[:trunc]
   end
 
   # ----------------------------------------------------------------------
@@ -499,14 +510,10 @@ Options:
     #
     # in a subselect with double quotes and doubled single quotes
     # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
-
-    # My nex regex chokes on this special case which is uncommon but not rare
-    getdate_regex = %r|^(.*)GETDATE\(\) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver'(.*)$|i
+    getdate_regex = %r|^(.*)GETDATE\(\) AT TIME ZONE '+UTC'+ AT TIME ZONE '+America/Denver'+(.*)$|i
     if line =~ getdate_regex
-      log "MATCH!!!".white.bold.on_green
+      # if we find a match to this, return it now
       return line.sub(getdate_regex, %q|\1CONVERT_TIMEZONE('UTC', 'America/Denver', GETDATE())\2|)
-    else
-      log "NO MATCH".white.bold.on_red
     end
 
     regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
@@ -615,7 +622,10 @@ Options:
       opt :quick, "(run only) Only show output from failing detectors"
       opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass", short: "Q", default: false
 
+      # TODO: change these to arguments to a --skip command? That would make it
+      # easier to write an --only command...
       opt :char, "Run TO_CHAR detectors", default: true
+      opt :days, "Run DAYS AS detectors", default: true
       opt :exception, "Run exception detectors", default: true
       opt :json, "Run JSON detectors", short: :none, default: true
       opt :missing, "Run missing detectors", short: :none, default: true
@@ -623,14 +633,17 @@ Options:
       opt :quote, "Run double-quote detectors", default: true
       opt :test, "Run test mode detector", default: true
       opt :timezone, "Run time zone detectors", default: true
+      opt :trunc, "Run trunc detectors", default: true
 
       opt :"no-2", "same as --no-python2", short: :none, default: false
       opt :"no-c", "same as --no-char", short: :none, default: false
+      opt :"no-d", "same as --no-days", short: :none, default: false
       opt :"no-j", "same as --no-json", short: :none, default: false
       opt :"no-m", "same as --no-missing", short: :none, default: false
       opt :"no-q", "same as --no-quotes", short: :none, default: false
       opt :"no-s", "same as --no-space", short: :none, default: false
       opt :"no-t", "same as --no-test", short: :none, default: false
+      opt :"no-tr", "same ass --no-trunc", short: :none, default: false
       opt :"no-tz", "same as --no-timezone", short: :none, default: false
       opt :"no-x", "same as --no-exception", short: :none, default: false
       opt :space, "Run unmanaged whitespace detectors", default: true
@@ -638,6 +651,7 @@ Options:
     # copy alternate args over, so that e.g. --no-j will set --no-json to true
     {
       char: "c",
+      days: "d",
       exception: "x",
       json: "j",
       missing: "m",
@@ -646,6 +660,7 @@ Options:
       space: "s",
       test: "t",
       timezone: "tz",
+      trunc: "tr",
     }.each do |option, shortcode|
       # opts[:json] = opts[:"no-j"] if opts[:"no-j_given"]
       opts[option] = opts[:"no-#{shortcode}"] if opts[:"no-#{shortcode}_given"]
@@ -917,40 +932,40 @@ Options:
     # GEOGRAPHY data type: change to GEOMETRY data type
     detect_and_print_lines lines, "GEOGRAPHY", /\bGEOGRAPHY\b/i, essential: true
 
-    # ----------------------------------------------------------------------
-    # Illegal Snowflake Syntax: AT TIME ZONE
-    # ----------------------------------------------------------------------
-    # AT TIME ZONE '<zone>': change to CONVERT_TIMEZONE('<to_zone>', source_timestamp)
-    #
-    # Can this be automated? NO, this is some serious bullshit.
-    #
-    # DANGER DANGER DANGER:  Investigate. My snowflake sessions in DataGrip are
-    # set to MST timezone. I fixed this (for how long? Guessing for the length
-    # of "the session") with ALTER SESSION SET TIMEZONE = 'UTC'.
-    #
-    # let's say time = TO_TIMESTAMP('2022-09-13 09:00:00 +00:00'). That works in
-    # both databases.
-    #
-    # Redshift's TO_TIMESTAMP will return a timestamp WITH TIMEZONE, so later on
-    # doing time AT TIME ZONE 'MST' convert TO MST, subtract 7 hours, and drop
-    # the TZ part. BUT!  Snowflake's TO_TIMESTAMP will return a timestamp
-    # WITHOUT a timezone, which means doing CONVERT_TIMEZONE('MST', time) is
-    # telling the database "hey!  This timestamp is already in MST, please tack
-    # a timezone on it and convert it to UTC". That means Snowflake will ADD
-    # seven hours, not subtract. UGH.
-
-    # Okay. Okay. Okay. I found a thing that works.
-    # First, we need to send "ALTER SESSION SET TIMEZONE = 'UTC' as often as we
-    # need to. I'm guessing every script should start off that way.
-
-    # TEST THIS: It might be DataGrip that was messing that up by "helpfully"
-    # reading my laptop's local settings. So when we run a script, it might
-    # already be in UTC. Nope. Maybe? The server appears to be in the US/Los
-    # Angeles time zone, which is PT with DST. UGH.
-
-    # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
-    # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
     if run_timezone_detectors?
+      # ----------------------------------------------------------------------
+      # Illegal Snowflake Syntax: AT TIME ZONE
+      # ----------------------------------------------------------------------
+      # AT TIME ZONE '<zone>': change to CONVERT_TIMEZONE('<to_zone>', source_timestamp)
+      #
+      # Can this be automated? NO, this is some serious bullshit.
+      #
+      # DANGER DANGER DANGER:  Investigate. My snowflake sessions in DataGrip are
+      # set to MST timezone. I fixed this (for how long? Guessing for the length
+      # of "the session") with ALTER SESSION SET TIMEZONE = 'UTC'.
+      #
+      # let's say time = TO_TIMESTAMP('2022-09-13 09:00:00 +00:00'). That works in
+      # both databases.
+      #
+      # Redshift's TO_TIMESTAMP will return a timestamp WITH TIMEZONE, so later on
+      # doing time AT TIME ZONE 'MST' convert TO MST, subtract 7 hours, and drop
+      # the TZ part. BUT!  Snowflake's TO_TIMESTAMP will return a timestamp
+      # WITHOUT a timezone, which means doing CONVERT_TIMEZONE('MST', time) is
+      # telling the database "hey!  This timestamp is already in MST, please tack
+      # a timezone on it and convert it to UTC". That means Snowflake will ADD
+      # seven hours, not subtract. UGH.
+
+      # Okay. Okay. Okay. I found a thing that works.
+      # First, we need to send "ALTER SESSION SET TIMEZONE = 'UTC' as often as we
+      # need to. I'm guessing every script should start off that way.
+
+      # TEST THIS: It might be DataGrip that was messing that up by "helpfully"
+      # reading my laptop's local settings. So when we run a script, it might
+      # already be in UTC. Nope. Maybe? The server appears to be in the US/Los
+      # Angeles time zone, which is PT with DST. UGH.
+
+      # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
+      # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
       detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
     end
 
@@ -971,10 +986,12 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "UNLOAD", /\bUNLOAD\b\s*\(/i, essential: true
 
-    # ----------------------------------------------------------------------
-    # TRUNC
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, warning: true
+    if run_trunc_detectors?
+      # ----------------------------------------------------------------------
+      # TRUNC
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, warning: true
+    end
 
     # ----------------------------------------------------------------------
     # SIMILAR TO -> RLIKE
@@ -1076,13 +1093,15 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!CAUTION: UNTESTED!!!) sed -i -E 's/\bBOOL\b/BOOLEAN/ig' #{get_script}"
 
-    # ----------------------------------------------------------------------
-    # [WITH] days AS
-    #
-    # You can have a CTE named days in redshift, but in snowflake it's a
-    # keyword.
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "DAYS AS", /\bdays\s+as\b/i, essential: true
+    if run_days_detectors?
+      # ----------------------------------------------------------------------
+      # [WITH] days AS
+      #
+      # You can have a CTE named days in redshift, but in snowflake it's a
+      # keyword.
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "DAYS AS", /\bdays\s+as\b/i, essential: true
+    end
 
     # ======================================================================
     # END SQL CHANGES
@@ -1225,10 +1244,6 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
 
-    # ----------------------------------------------------------------------
-    # WARN if job is mcloud or sf but does not have --skip_upload
-    # Or if it's gsheet or API and does not have --test
-    # ----------------------------------------------------------------------
     if run_missing_detectors?
       detect_missing_skip_upload
       detect_missing_test_mode if run_test_detectors?
