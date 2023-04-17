@@ -2,8 +2,8 @@
 
 # echo_color(color, text)
 echo_color() {
-    echo "Color is $1"
-    echo "Text is $@"
+    # echo "Color is $1"
+    # echo "Text is $@"
     echo -e "${1}${@}\033[0m"
 }
 
