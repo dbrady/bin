@@ -18,7 +18,7 @@ lines = if opts[:input]
           ARGF.readlines.map(&:rstrip)
         end
 
-lines.pop while lines.last.strip.empty?
+lines.pop while lines.last&.strip&.empty?
 
 if opts[:output]
   File.open(opts[:output], "w").puts lines
