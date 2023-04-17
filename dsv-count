@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# dsv-count <table> - get count from <table>_migration_check
+# dsv-count <table> - get simple count of all errors in <table>_migration_check
 require "optimist"
 
 opts = Optimist.options do

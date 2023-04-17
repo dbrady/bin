@@ -1,10 +1,11 @@
 #!/usr/bin/env ruby
 # dsv-error-counts <table> - get validation error counts from <table>_migration_check
+# tl;dr It's "this field is bad, here's the count" for all bad fields
 require "optimist"
 
 opts = Optimist.options do
   opt :csv, type: :boolean, default: false
-  opt :finance, "Use (snowflake_)finance warehouse", type: :boolean, default: false
+  opt :finance, "Use snowflake_finance warehouse", type: :boolean, default: false
 end
 table = ARGV[0]
 Optimist::die "Must specify a table name." if !table || table.empty?
