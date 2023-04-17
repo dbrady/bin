@@ -46,6 +46,7 @@
 # - snow-fix-* will modify the script AND commit it.
 
 require 'colorize'
+require 'fileutils'
 require 'io/console'
 require 'json'
 require 'optimist'
@@ -348,6 +349,8 @@ class SnowflakeManglerApp
     autofix = autofix.gsub(%r|sql/|, '')
 
     autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
+    autofix_folder = File.dirname(autofix_filename)
+    FileUtils.mkdir_p(autofix_folder) unless Dir.exists?(autofix_folder)
     if !File.exists?(autofix_filename)
       File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
     end
