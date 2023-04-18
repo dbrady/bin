@@ -1,0 +1,30 @@
+For Whom The Bell Tolls - Metallica
+
+Notes cadged from UG: https://tabs.ultimate-guitar.com/tab/metallica/for-whom-the-bell-tolls-guitar-pro-2670516
+Inspiration from Kfir Ochaion's Cover: https://www.youtube.com/watch?v=3iiArtIy_Mk&list=PLa9MOc1rbCG_YM-GVncMsckscGpE3PCXj&index=10
+
+The open melody riff is played on bass, but Kfir does it on guitar and the tuning is the same (EADG <-> EADGBe), so eh.
+
+Just the opening riff(s)
+
+Rhythm opens on F#5 -> E5
+
+| 1 & 2 & 3 &   4 &    | 1 & 2 & 3 & 4 & |
+         |--3---|--3---|
+e|---------------------|-----------------|
+B|---------------------|-----------------|
+G|---------------------|-----------------|
+D|------------_------_-|-2---------------|
+A|--------4-4----4-4---|-2---------------|
+E|--------2-2----2-2---|-0---------------|
+
+Lead (Dist + Wah)
+
+ |  1  &  2  &  3  &  4  &  |  1  &  2  &  3  &  4  &  |
+
+e|--------------------------|--------------------------|
+B|--------------------------|--------------------------|
+G|---19-18-17-16-19-0-------|-------19-----------------|
+D|--------------------------|-17-16--------------------|
+A|--------------------------|----------17-16-----------|
+E|-0------------------------|--------------------------|
