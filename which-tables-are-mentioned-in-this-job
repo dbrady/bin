@@ -11,6 +11,6 @@ if script.empty?
   exit -1
 end
 
-command = "cat #{script} | ruby -ne 'puts $1 if $_=~/\\b((lms|mp|d|f|s)_.*?)\\b/' | sort | uniq"
+command = "cat #{script} | ruby -ne 'puts $1 if $_=~/\\b((lms|mp|uw|ecom|d|f|s)_.*?)\\b/' | sort | uniq"
 puts command.cyan unless quiet
 system command

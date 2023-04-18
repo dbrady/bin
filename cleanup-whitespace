@@ -1,7 +1,27 @@
-#!/bin/bash
-# cleanup-whitespace <args> - clean out trailing whitespace
-#
-# Args will be passed to find, e.g. cleanup-whitespace -name '*.rb'
+#!/usr/bin/env ruby
+# cleanup-whitespace <file> - get rid of trailing whitespace and extra blank lines at EOF
 
-echo "Stripping trailing whitespace, but only if line is not blank (i.e. dont screw up indented blockquotes)"
-find . -type f $@ | while read file; do ruby -ne 'if $_.strip.empty?; puts $_; else; puts $_.rstrip; end' -i "$file"; done
+require "optimist"
+opts = Optimist.options do
+  opt :output, "Specify output file instead of stdout", short: "o", type: String
+  opt :input, "Specify input file instead of stdin", short: "i", type: String
+end
+Optimist.die "Input file does not exist" if opts[:input] && !File.exists?(opts[:input])
+
+# This could be done more efficiently but it's 2023, what's a gig of ram between
+# friends. Just imblart it into memory, fiddle with it, and exblart it to
+# disk. If you're programming an Arduino or reading tarfiles from tape, you
+# already know you need to keep your head down.
+lines = if opts[:input]
+          File.readlines(opts[:input]).map(&:rstrip)
+        else
+          ARGF.readlines.map(&:rstrip)
+        end
+
+lines.pop while lines.last.strip.empty?
+
+if opts[:output]
+  File.open(opts[:output], "w").puts lines
+else
+  $stdout.puts lines
+end

@@ -1,0 +1,3 @@
+#!/bin/bash
+# snow-table - tidy up csv output from snowflake (e.g. dsquery --csv)
+cleanup-whitespace | csv-to-table

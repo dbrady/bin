@@ -1,6 +1,21 @@
 #!/usr/bin/env ruby
 # snow - Command suite to support moving to snowflake
 #
+# This script grew into the monstrosity you see before you now: the center of a
+# command/workflow suite. The quick and dirty version:
+#
+# 1. Run this from inside your docker container.
+# 2. $ set-ds-script path/to/job_file.py
+# 3. $ snow
+#
+# Running `snow` will run all of the redshift->snowflake problem detectors and print their output.
+#
+# `snow run` will run the current script, and will try to autodetect necessary
+# parameters: if the script accepts a --test or --recipients option, this script
+# will add those parameters.
+
+# a job name.
+#
 # DONE: snow -q, --quick emits only the detectors that fail, so you can see
 # remaining work
 #
@@ -31,8 +46,9 @@
 # - snow-fix-* will modify the script AND commit it.
 
 require 'colorize'
-require 'optimist'
 require 'io/console'
+require 'json'
+require 'optimist'
 
 class SnowflakeManglerApp
   attr_reader :opts
@@ -76,6 +92,10 @@ class SnowflakeManglerApp
   # Own Thing Man(TM)
   # ----------------------------------------------------------------------
 
+  def explicitly_allow_redshift?
+    opts[:redshift_given] && opts[:redshift]
+  end
+
   # force: proceed in the face of warnings
   def force?
     opts[:force]
@@ -86,6 +106,11 @@ class SnowflakeManglerApp
     opts[:quick]
   end
 
+  # Quiet: Suppress output, return bash success status only
+  def quiet?
+    opts[:quiet]
+  end
+
   # For job config only: show the default job config AND this job config (to show complete config)
   def defaults?
     opts[:defaults]
@@ -94,6 +119,16 @@ class SnowflakeManglerApp
   # Was this script invoked with --essential?
   def essential?
     opts[:essential]
+  end
+
+  # Was this script invoked with --test?
+  def test?
+    opts[:test]
+  end
+
+  # Was this script invoked with --send-test (or --no-send-test)?
+  def send_test?
+    opts[:"send-test"]
   end
 
   # Was this script invoked with --list?
@@ -110,7 +145,15 @@ class SnowflakeManglerApp
   end
 
   def run_timezone_detectors?
-    opts[:tz]
+    opts[:timezone]
+  end
+
+  def run_test_detectors?
+    opts[:test]
+  end
+
+  def run_to_char_detectors?
+    opts[:char]
   end
 
   def run_python2_detectors?
@@ -135,11 +178,18 @@ class SnowflakeManglerApp
 
   def run_date_detectors?
     opts[:dates]
-    # Should I maybe do opts[:disable].split(/,/).include?("date")
+    # 2023-03-08: Should I maybe do opts[:disable].split(/,/).include?("date")
     # So I can say --disable=date,json etc?
     #
     # Right now I kinda like --no-json --no-dates, so eh. But if it tuns into 20
     # different --no-foo options, this might be the way.
+    #
+    # 2023-04-13: Dear March Dave, This is April Dave. Hello from the future!
+    # Yeah, it's turning into a shipwreck of options.
+  end
+
+  def run_days_detectors?
+    opts[:days]
   end
 
   def run_exception_detectors?
@@ -150,6 +200,10 @@ class SnowflakeManglerApp
     opts[:test]
   end
 
+  def run_trunc_detectors?
+    opts[:trunc]
+  end
+
   # ----------------------------------------------------------------------
   # END OPTIONS ACCESSORS
   # ----------------------------------------------------------------------
@@ -158,9 +212,26 @@ class SnowflakeManglerApp
     "====%s" % " #{title} ".ljust(80, "=").cyan
   end
 
+  def seen_errors!
+    @seen_errors = true
+  end
+
+  def seen_errors?
+    !!@seen_errors
+  end
+
+  def log_error(msg)
+    seen_errors!
+    log(msg)
+  end
+
+  def log(msg)
+    puts msg unless quiet?
+  end
+
   def log_ok
     return if quick?
-    puts " OK ".bold.light_white.on_green
+    log " OK ".bold.light_white.on_green
   end
 
   # ======================================================================
@@ -195,13 +266,13 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title unless quick?
+    log section_title title unless quick?
     # OOF.
     # match the regex AND (we have no unmatch, or line is not unmatched)
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
-      puts section_title title if quick?
+      log section_title title if quick?
       if autofix
-        puts "Autofix with:\n#{autofix.cyan}"
+        log "Autofix with:\n#{autofix.cyan}"
         fixlog "#{get_script}: autofix #{title}", autofix
       end
 
@@ -210,15 +281,16 @@ class SnowflakeManglerApp
       # pass in custom finder methods for multiline and trickier stuff
       lines.each.with_index do |line, index|
         if line =~ regex && (!unmatch || line !~ unmatch)
-          puts "%4d: %s" % [index+1, line]
+          seen_errors!
+          log "%4d: %s" % [index+1, line]
           if suggest && suggestion = send(suggest, line)
-            puts "Replacement:"
-            puts line.red
-            puts suggestion.green
+            log "Replacement:"
+            log line.red
+            log suggestion.green
             sed_replacement = suggestion.gsub(%r|/|, "\\/").gsub('"', '\"')
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
-            puts sed_command.cyan
+            log sed_command.cyan
             fixlog "#{get_script}: replacement for #{title}", sed_command
           end
         end
@@ -240,7 +312,7 @@ class SnowflakeManglerApp
       )
     return if disabled
     return if essential? && !essential
-    puts section_title title unless quick?
+    log section_title title unless quick?
 
     # given n regexes, at line[m], then...
     # Simple Match For Now:
@@ -261,13 +333,13 @@ class SnowflakeManglerApp
         if first
           first = false
         else
-          puts "--"
+          log "--"
         end
-        puts (0...regexes.size).map {|j| "#{main_offset+j}: #{lines[main_offset+j]}" }
+        log (0...regexes.size).map {|j| "#{main_offset+j}: #{lines[main_offset+j]}" }
       end
     end
 
-    log_ok if no_matches
+    no_matches ? log_ok : seen_errors!
   end
 
   # Let's start capturing the fixes and suggests to a script/log
@@ -283,20 +355,22 @@ class SnowflakeManglerApp
   end
 
   def detect_missing_skip_upload
-    puts section_title "Skip Upload" unless quick?
+    log section_title "Skip Upload" unless quick?
     if should_have_skip_upload? && !has_skip_upload?
-      puts section_title "Skip Upload" if quick?
-      puts "File is mccloud or salesforce but does not have --skip_upload option"
+      seen_errors!
+      log section_title "Skip Upload" if quick?
+      log "File is mccloud or salesforce but does not have --skip_upload option"
     else
       log_ok
     end
   end
 
   def detect_missing_test_mode
-    puts section_title "--test" unless quick?
+    log section_title "--test" unless quick?
     if should_have_test_mode? && !has_test_mode?
-      puts section_title "--test" if quick?
-      puts "File mentions portal, gsheet, facebook, or commissions but does not have --test option"
+      seen_errors!
+      log section_title "--test" if quick?
+      log "File mentions portal, gsheet, facebook, or commissions but does not have --test option"
     else
       log_ok
     end
@@ -304,48 +378,23 @@ class SnowflakeManglerApp
 
   def detect_missing_recipients_override
     if should_have_recipients_override? && !has_recipients_override?
-      puts section_title "--recipients" if quick?
-      puts "File sends email but does not have --recipients override option"
+      seen_errors!
+      log section_title "--recipients" if quick?
+      log "File sends email but does not have --recipients override option"
     else
       log_ok
-    end
-  end
-
-  def detect_potentially_unmigrated_tables(lines, essential: false, disabled: false)
-    return
-    zack_casey_tables = %w(
-      f_collections_chargeoffs
-    )
-    # {yellow: diy_tables, red: zack_casey_tables}.each do |color, tables|
-      {red: zack_casey_tables}.each do |color, tables|
-      regex = /(#{tables.join('|')})/
-
-      puts section_title "Potentially Unmigrated Tables (#{color})" unless quick?
-      if lines.any? {|line| line =~ regex }
-        puts section_title "Potentially Unmigrated Tables (#{color})" if quick?
-        lines.each.with_index do |line, index|
-          problem_tables = tables.find_all {|table| line =~ /\b#{table}\b/ }
-          next if problem_tables.size.zero?
-
-          problem_tables.each do |table|
-            line = line.gsub(/#{table}/, table.send(color))
-          end
-          puts "%4d: %s" % [index+1, line]
-        end
-      else
-        log_ok
-      end
     end
   end
 
   def detect_unmanaged_whitespace(lines)
-    puts section_title "UNMANAGED WHITESPACE" unless quick?
+    log section_title "UNMANAGED WHITESPACE" unless quick?
     if lines.any? {|line| line =~ /\s+$/}
-      puts section_title "Unmanaged whitespace" if quick?
+      seen_errors!
+      log section_title "Unmanaged whitespace" if quick?
       lines.each.with_index do |line, index|
         if line =~ /(\s+)$/
           colorized_line = line.sub(/\s+$/, $1.on_red)
-          puts "%d: %s" % [index+1, colorized_line]
+          log "%d: %s" % [index+1, colorized_line]
         end
       end
     else
@@ -353,13 +402,18 @@ class SnowflakeManglerApp
     end
   end
 
-  def skip_pep_check?
-    true
+  def run_pep_check?
+    opts[:pep]
   end
 
   # ======================================================================
   # END DETECTORS
   # ======================================================================
+
+  def pointed_at_redshift?
+    `snow-job-show-config`.strip.each_line.any? {|line| line =~ /"dst_conn": .*redshift/ }
+  end
+
 
   def has_skip_upload?
     IO.readlines(get_script).any? { |line| line.include?("parser.add_argument('--skip_upload") }
@@ -410,28 +464,38 @@ snow - master control script for snowflake job migration
 
 snow [<command> [<options>]]
 
-Most commands use get-ds-script, and/or check the last line of ~/.ds_script for
-the name of the script filename. For legacy reasons this is called the SCRIPT
-file. It should point to the job file relative from the warehouse
-directory. E.g. for ~/dataservices/etl/warehouse/rac/rac_job1.py, do
-set-ds-script rac/rac_job1.py
+Most commands use get-ds-script, which checks the last line of ~/.ds_script for
+the name of the script filename, you'll want to set this with `set-ds-script
+path/to/job.py` beforehand.
 
-Many jobs check that the current branch matches the SCRIPT file. This puts an
-extra bit of bookkeeping on you, but it's actually there to ensure that you're
-not accidentally merging to master or snowflake-moveover. Again.
+Many jobs check that the current branch matches the output of
+get-ds-script. This is mostly to prevent jamming changes directly into master or
+feature/snowflake-moveover. This log an extra bit of bookkeeping on you, but
+it's actually there to ensure that I'm not accidentally merging to master or
+snowflake-moveover. Again.
+
+Many commands now accept a job override, notably job (shows the job config) and preview (
+
+Run snow -l to get a checklist of the workflow.
 
 Commands/options:
-check [-e|--essential] [job.py]  Check the [current] job for [only essential] coding violations
-job [job]                        Show current [or specified] job's configuration
-job s[nowflake]                  Convert job configuration to snowflake
-job r[edshift]                   Convert job configuration back to redshift
-run                              Run the current job
-main                             Checkout the snowflake main branch in both repos
-master                           Checkout master in both repos
-go <ticket>|<job_name>           Checkout the branch containing this search term
-new <ticket> <job.py>            Create a new feature branch in both repos
-link <pr> <finance_pr> [pkg_pr]  Create links template for Zack
-slam                             Commit finance config change and open PRs for both repos
+auto                                 Automatically fix and commit as much as possible
+backlog                              Show backlog file
+check [-e|--essential] [job.py]      Check the [current] job for [only essential] coding violations
+complexity|cplx [job.py]             Give a rough complexity estimate for porting this job
+go <ticket>|<job_name>               Checkout (in both repos) the branch containing this search term
+job [job]                            Show current [or specified] job's configuration
+job r[edshift]                       Convert job configuration back to redshift
+job s[nowflake]                      Convert job configuration to snowflake
+link <pr> <finance_pr> [package_pr]  Create Slackable links for Zack
+link <pr> <finance_pr> [pkg_pr]      Create links template for pasting to Zack in slack
+main                                 Checkout the snowflake main branch in both repos
+master                               Checkout master in both repos
+new <ticket> <job.py>                Create a new feature branch in both repos
+preview job.py                       Run check on a job other that the current script
+rebase [parent_branch]               Run snow-rebase
+run                                  Run the current job
+slam                                 Commit finance config change, push both repos, and generate click-to-open-PR links
 
 If no commands are given, snow will run check.
 
@@ -446,14 +510,10 @@ Options:
     #
     # in a subselect with double quotes and doubled single quotes
     # ,cc.updated_at AT TIME ZONE ''UTC'' AT TIME ZONE ''America/Denver'' AS "Updated Date"
-
-    # My nex regex chokes on this special case which is uncommon but not rare
-    getdate_regex = %r|^(.*)GETDATE\(\) AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver'(.*)$|i
+    getdate_regex = %r|^(.*)GETDATE\(\) AT TIME ZONE '+UTC'+ AT TIME ZONE '+America/Denver'+(.*)$|i
     if line =~ getdate_regex
-      puts "MATCH!!!".white.bold.on_green
+      # if we find a match to this, return it now
       return line.sub(getdate_regex, %q|\1CONVERT_TIMEZONE('UTC', 'America/Denver', GETDATE())\2|)
-    else
-      puts "NO MATCH".white.bold.on_red
     end
 
     regex = /^(\s*,?)([^,]+) AT TIME ZONE ('+[^']+'+) AT TIME ZONE ('+[^']+'+)/i
@@ -552,44 +612,61 @@ Options:
 
       @ignore_invalid_options = true
 
-      opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
-      opt :quick, "Only show output from failing detectors"
-      opt :debug, "Output extra debug info"
+      opt :"send-test", "Send --test in snow run to jobs that offer it", short: :none, default: true
+      opt :debug, "Output extra debug info", short: :none
+      opt :defaults, "(job only) Include job config defaults with job config (to see complete config)", short: :d
       opt :essential, "Only run essential detectors"
+      opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
       opt :list, "Show PR workflow checklist"
-      opt :defaults, "(job only) Include job config defaults with job config (to see complete config)"
+      opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
+      opt :quick, "(run only) Only show output from failing detectors"
+      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass", short: "Q", default: false
+
+      # TODO: change these to arguments to a --skip command? That would make it
+      # easier to write an --only command...
+      opt :char, "Run TO_CHAR detectors", default: true
+      opt :days, "Run DAYS AS detectors", default: true
       opt :exception, "Run exception detectors", default: true
       opt :json, "Run JSON detectors", short: :none, default: true
       opt :missing, "Run missing detectors", short: :none, default: true
-      opt :quote, "Run double-quote detectors", default: true
-      opt :timezone, "Run time zone detectors", default: true
       opt :python2, "Run python2 string formatting detectors", default: true
-      opt :test, "Send --test mode to jobs that offer it", short: :none, default: true
+      opt :quote, "Run double-quote detectors", default: true
+      opt :test, "Run test mode detector", default: true
+      opt :timezone, "Run time zone detectors", default: true
+      opt :trunc, "Run trunc detectors", default: true
+
       opt :"no-2", "same as --no-python2", short: :none, default: false
+      opt :"no-c", "same as --no-char", short: :none, default: false
+      opt :"no-d", "same as --no-days", short: :none, default: false
       opt :"no-j", "same as --no-json", short: :none, default: false
       opt :"no-m", "same as --no-missing", short: :none, default: false
       opt :"no-q", "same as --no-quotes", short: :none, default: false
       opt :"no-s", "same as --no-space", short: :none, default: false
-      opt :"no-t", "same as --no-timezone", short: :none, default: false
+      opt :"no-t", "same as --no-test", short: :none, default: false
+      opt :"no-tr", "same ass --no-trunc", short: :none, default: false
+      opt :"no-tz", "same as --no-timezone", short: :none, default: false
       opt :"no-x", "same as --no-exception", short: :none, default: false
       opt :space, "Run unmanaged whitespace detectors", default: true
-      opt :wat, "Dump options and exit", default: false
     end
-    # copy alternate args over
+    # copy alternate args over, so that e.g. --no-j will set --no-json to true
     {
+      char: "c",
+      days: "d",
       exception: "x",
       json: "j",
       missing: "m",
+      python2: "2",
       quote: "q",
       space: "s",
-      timezone: "t",
-      python2: "2"
+      test: "t",
+      timezone: "tz",
+      trunc: "tr",
     }.each do |option, shortcode|
       # opts[:json] = opts[:"no-j"] if opts[:"no-j_given"]
       opts[option] = opts[:"no-#{shortcode}"] if opts[:"no-#{shortcode}_given"]
     end
 
-    puts opts.inspect if opts[:debug]
+    log JSON.pretty_generate(opts) if opts[:debug]
     @argv = ARGV.dup
 
     # Optimist::die :dynos, "must be a non-negative number" unless opts[:dynos] >= 0.0
@@ -597,7 +674,7 @@ Options:
     # if -l or --list, show checklist and exit
     if list?
       checklist
-      # puts "HIT ENTER TO EXIT"
+      # log "HIT ENTER TO EXIT"
       # $stdin.gets
       exit 0
     end
@@ -618,7 +695,7 @@ Options:
 
     # 2.2 If you do not have SCRIPT set, I tell you about SCRIPT and exit
     if need_script? && (get_script.nil? || get_script.empty?)
-      puts "You must run set-ds-script <path/to/job.py> first."
+      log "You must run set-ds-script <path/to/job.py> first."
       usage
       exit -1
     end
@@ -633,7 +710,21 @@ Options:
     # ----------------------------------------------------------------------
     if argv.first == "run"
       if !docker?
-        puts "This script must be run from inside docker.".bold.red
+        log "ETL jobs must be run from inside docker.".bold.red
+        exit -1
+      end
+
+      # Don't run if the dst_conn is redshift UNLESS I specify --redshift
+      if pointed_at_redshift? && !explicitly_allow_redshift?
+        log "JOB IS POINTED AT REDSHIFT. Fix this with snow job s or override with --redshift".bold.red
+        exit -1
+      end
+
+      # You must be in the warehouse folder. Too many of the quick-and-dirty
+      # early versions of these scripts assume this and reference files
+      # relatively.
+      if File.expand_path(Dir.pwd) != File.expand_path("~/data_services/etl/warehouse/")
+        log "You must be in the warehouse folder for snow run to work reliably.".bold.red
         exit -1
       end
 
@@ -643,13 +734,13 @@ Options:
       # "If I had a nickel for every time [git has trashed etl_nightly.py], I'd
       # have two nickels - which isn't a lot, but it's weird that it happened
       # twice."
-      if !system("grep -- '--retry_count' etl_nightly.py > /dev/null")
-        puts "etl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?".bold.white.on_red
-        puts
+      if !system("grep -- '--retry_count' ~/data_services/etl/warehouse/etl_nightly.py > /dev/null")
+        log "etl_nightly.py has no mention of the retry_count parameter. Is the finance submodule out of sync?".bold.white.on_red
+        log
       end
 
       # print dst_conn warehouse name in top-right corner
-      dsannouncewarehouse unless quick?
+      system("dsannouncewarehouse") unless quick?
 
       # TODO: I would like to add -c to 'snow run' to "show command only",
       # but the showing of the command is entirely inside dsetl_nightly. So we
@@ -660,10 +751,10 @@ Options:
       command = "dsetl_nightly"
       command += " --skip_upload" if has_skip_upload?
       command += " --force" if force?
-      command += " --test" if has_test_mode? && use_test_mode?
+      command += " --test" if has_test_mode? && use_test_mode? && send_test?
       command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !argv.include?('--start_date')
       command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !argv.include?('--end_date')
-      command += " --recipients david.brady@acima.com" if has_recipients_override? && !argv.include?('--recipients')
+      command += " --recipients #{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
       command += " " + argv.join(" ")
       run_and_exit! command
     end
@@ -754,24 +845,23 @@ Options:
     end
 
     # ----------------------------------------------------------------------
-    # snow-slam - git cram both repos and emit create pr links
+    # snow slam - git cram both repos and emit create pr links
     # ----------------------------------------------------------------------
     if argv.first == "slam"
       run_and_exit! "snow-slam #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
-    # snow-auto - automatically fix what can be automatically fixed
+    # snow auto - automatically fix what can be automatically fixed
     # ----------------------------------------------------------------------
     if argv.first == "auto"
       run_and_exit! "snow-autofix-all-the-things"
     end
 
     # ----------------------------------------------------------------------
-    # Start the actual checking process
+    # snow check - run detectors against job
     # ----------------------------------------------------------------------
-
-    puts "Checking #{get_script}..."
+    log "Checking #{get_script}..."
 
     # load file
     lines = IO.readlines(get_script).map(&:chomp)
@@ -785,25 +875,14 @@ Options:
     # Check for PEP8 Conformance
     # ----------------------------------------------------------------------
     if !essential? && !quick?
-      if skip_pep_check?
-        puts section_title("SKIPPING PEP8 CONFORMANCE")
+      if run_pep_check?
+        log section_title("PEP8 CONFORMANCE")
+        pep_ok = system "pep-check #{get_script}"
+        seen_errors! unless pep_ok
       else
-        puts section_title("PEP8 CONFORMANCE")
-        system "pep-check #{get_script}"
+        log section_title("SKIPPING PEP8 CONFORMANCE")
       end
-
-
-      # puts section_title("BOILERPLATE DOCUMENTATION")
-      # system "snow-check-boilerplate #{get_script}"
     end
-
-    # ----------------------------------------------------------------------
-    # Pre-check the file -- this has no fix, it's just a warning to be aware
-    # that whenever we run the job we must include --skip_upload
-    # ----------------------------------------------------------------------
-    # check for --skip_upload
-    # 2022-11-21 - removing; snow run picks this up automatically
-    # detect_and_print_lines lines, "skip_upload", /--skip_upload/, essential: true
 
     # ======================================================================
     # BEGIN SQL CHANGES - Stuff that runs in Redshift but not in Snowflake
@@ -853,40 +932,40 @@ Options:
     # GEOGRAPHY data type: change to GEOMETRY data type
     detect_and_print_lines lines, "GEOGRAPHY", /\bGEOGRAPHY\b/i, essential: true
 
-    # ----------------------------------------------------------------------
-    # Illegal Snowflake Syntax: AT TIME ZONE
-    # ----------------------------------------------------------------------
-    # AT TIME ZONE '<zone>': change to CONVERT_TIMEZONE('<to_zone>', source_timestamp)
-    #
-    # Can this be automated? NO, this is some serious bullshit.
-    #
-    # DANGER DANGER DANGER:  Investigate. My snowflake sessions in DataGrip are
-    # set to MST timezone. I fixed this (for how long? Guessing for the length
-    # of "the session") with ALTER SESSION SET TIMEZONE = 'UTC'.
-    #
-    # let's say time = TO_TIMESTAMP('2022-09-13 09:00:00 +00:00'). That works in
-    # both databases.
-    #
-    # Redshift's TO_TIMESTAMP will return a timestamp WITH TIMEZONE, so later on
-    # doing time AT TIME ZONE 'MST' convert TO MST, subtract 7 hours, and drop
-    # the TZ part. BUT!  Snowflake's TO_TIMESTAMP will return a timestamp
-    # WITHOUT a timezone, which means doing CONVERT_TIMEZONE('MST', time) is
-    # telling the database "hey!  This timestamp is already in MST, please tack
-    # a timezone on it and convert it to UTC". That means Snowflake will ADD
-    # seven hours, not subtract. UGH.
-
-    # Okay. Okay. Okay. I found a thing that works.
-    # First, we need to send "ALTER SESSION SET TIMEZONE = 'UTC' as often as we
-    # need to. I'm guessing every script should start off that way.
-
-    # TEST THIS: It might be DataGrip that was messing that up by "helpfully"
-    # reading my laptop's local settings. So when we run a script, it might
-    # already be in UTC. Nope. Maybe? The server appears to be in the US/Los
-    # Angeles time zone, which is PT with DST. UGH.
-
-    # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
-    # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
     if run_timezone_detectors?
+      # ----------------------------------------------------------------------
+      # Illegal Snowflake Syntax: AT TIME ZONE
+      # ----------------------------------------------------------------------
+      # AT TIME ZONE '<zone>': change to CONVERT_TIMEZONE('<to_zone>', source_timestamp)
+      #
+      # Can this be automated? NO, this is some serious bullshit.
+      #
+      # DANGER DANGER DANGER:  Investigate. My snowflake sessions in DataGrip are
+      # set to MST timezone. I fixed this (for how long? Guessing for the length
+      # of "the session") with ALTER SESSION SET TIMEZONE = 'UTC'.
+      #
+      # let's say time = TO_TIMESTAMP('2022-09-13 09:00:00 +00:00'). That works in
+      # both databases.
+      #
+      # Redshift's TO_TIMESTAMP will return a timestamp WITH TIMEZONE, so later on
+      # doing time AT TIME ZONE 'MST' convert TO MST, subtract 7 hours, and drop
+      # the TZ part. BUT!  Snowflake's TO_TIMESTAMP will return a timestamp
+      # WITHOUT a timezone, which means doing CONVERT_TIMEZONE('MST', time) is
+      # telling the database "hey!  This timestamp is already in MST, please tack
+      # a timezone on it and convert it to UTC". That means Snowflake will ADD
+      # seven hours, not subtract. UGH.
+
+      # Okay. Okay. Okay. I found a thing that works.
+      # First, we need to send "ALTER SESSION SET TIMEZONE = 'UTC' as often as we
+      # need to. I'm guessing every script should start off that way.
+
+      # TEST THIS: It might be DataGrip that was messing that up by "helpfully"
+      # reading my laptop's local settings. So when we run a script, it might
+      # already be in UTC. Nope. Maybe? The server appears to be in the US/Los
+      # Angeles time zone, which is PT with DST. UGH.
+
+      # Some cases, maybe. E.g. field ATZ 'MST' ATZ 'EST'
+      # would convert to CONVERT_TIMEZONE('EST', 'MST', field)
       detect_and_print_lines lines, "AT TIME ZONE", /\bAT TIME ZONE\b/i, essential: true, suggest: :replace_at_time_zone
     end
 
@@ -907,10 +986,12 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "UNLOAD", /\bUNLOAD\b\s*\(/i, essential: true
 
-    # ----------------------------------------------------------------------
-    # TRUNC
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, warning: true
+    if run_trunc_detectors?
+      # ----------------------------------------------------------------------
+      # TRUNC
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "TRUNC (Check by hand, must have 2 args)", /\bTRUNC\b\s*\(/i, warning: true
+    end
 
     # ----------------------------------------------------------------------
     # SIMILAR TO -> RLIKE
@@ -998,7 +1079,9 @@ Options:
     # match will unmatch if there is a last argument in quotes that's like
     # 999,999D99 or YYYY-MM-DD etc.
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "TO_CHAR (with numeric format)", /to_char/i, unmatch: /'[YMD\-9,]+'/
+    if run_to_char_detectors?
+      detect_and_print_lines lines, "TO_CHAR (with numeric format)", /to_char/i, unmatch: /'[YMD\-9,]+'/
+    end
 
     # ----------------------------------------------------------------------
     # WITH NO SCHEMA BINDING -> just delete the line
@@ -1010,13 +1093,15 @@ Options:
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!CAUTION: UNTESTED!!!) sed -i -E 's/\bBOOL\b/BOOLEAN/ig' #{get_script}"
 
-    # ----------------------------------------------------------------------
-    # [WITH] days AS
-    #
-    # You can have a CTE named days in redshift, but in snowflake it's a
-    # keyword.
-    # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "DAYS AS", /\bdays\s+as\b/i, essential: true
+    if run_days_detectors?
+      # ----------------------------------------------------------------------
+      # [WITH] days AS
+      #
+      # You can have a CTE named days in redshift, but in snowflake it's a
+      # keyword.
+      # ----------------------------------------------------------------------
+      detect_and_print_lines lines, "DAYS AS", /\bdays\s+as\b/i, essential: true
+    end
 
     # ======================================================================
     # END SQL CHANGES
@@ -1155,22 +1240,13 @@ Options:
     # ----------------------------------------------------------------------
 
     # ----------------------------------------------------------------------
-    # Hidden blockers (depends on an unmigrated table)
-    # ----------------------------------------------------------------------
-    detect_potentially_unmigrated_tables lines, essential: true
-
-    # ----------------------------------------------------------------------
     # main() bootstrapper
     # ----------------------------------------------------------------------
     detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
 
-    # ----------------------------------------------------------------------
-    # WARN if job is mcloud or sf but does not have --skip_upload
-    # Or if it's gsheet or API and does not have --test
-    # ----------------------------------------------------------------------
     if run_missing_detectors?
       detect_missing_skip_upload
-      detect_missing_test_mode
+      detect_missing_test_mode if run_test_detectors?
       detect_missing_recipients_override
     end
 
@@ -1202,10 +1278,15 @@ Options:
       # ----------------------------------------------------------------------
       detect_and_print_lines lines, "TABS", /\t/
     end
+
+    # return error status, if we saw any errors
+    !seen_errors?
   end
 end
 
 
 if __FILE__ == $0
-  SnowflakeManglerApp.new.run
+  success = SnowflakeManglerApp.new.run
+
+  exit(-1) unless success
 end

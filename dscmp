@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# dscmp <query> - Compare query results in both warehouses
+#
+# TODO: This --redshift="full query" --snowflake="full query" is very
+# cumbersome. Maybe we could try something like this instead:
+#
+# --query="SELECT * FROM foo WHERE id=<id>" --redshift=42 --snowflake=13
+
+require "optimist"
+
+opts = Optimist.options do
+  opt :csv, type: :boolean, default: false
+  opt :finance, "Use finance warehouses", type: :boolean, default: false
+  opt :redshift, "Custom query for redshift", type: :string
+  opt :snowflake, "Custom query for snowflake", type: :string
+end
+
+warehouses = if opts[:finance]
+               %w(redshift_finance snowflake_finance)
+             else
+               %w(redshift snowflake)
+             end
+
+warehouses.each do |warehouse|
+  # override query if given
+  query = ARGV.last
+  query = opts[:redshift] if opts[:redshift_given] && warehouse =~ /redshift/
+  query = opts[:snowflake] if opts[:snowflake_given] && warehouse =~ /snowflake/
+
+  command = %Q|dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{query}"|
+  puts command
+  system command
+end

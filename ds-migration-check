@@ -1,0 +1,94 @@
+#!/usr/bin/env ruby
+
+# ds-migration-check - Quick and dirty script to compare migration check rows between
+# redshift and snowflake. Given a table, an id column, and a csv of the relevant
+# columns, grabs n rows from the _migration_check table, pulls the ids of each
+# mismatched pair, then gets the respective row from the source table in both
+# warehouses.
+#
+# TODO: take args from CLI
+#
+# TODO: read the information_schema and exclude the id column, and read/display
+# all the other columns. The csv column arg then becomes just the order
+# column. IF we do this, add --display-columns or similar to override this
+# behavior, since some of our tables have a bazillion columns. We'll want to
+# compare them all before we trust the migration but for debugging just 2 or 3
+# would be nice.
+#
+# DONE: Do this in 3 reads -- get all the ids in one read, then get all the
+# redshift rows in 1 read (where id in (a,b,c) vs. where id=a, etc.)
+
+require 'colorize'
+require 'csv'
+require 'optimist'
+require 'text-table'
+
+opts = Optimist.options do
+  opt :limit, "Number of rows to compare (gratuitously clever usage: --limit='10 OFFSET 2000')", :default => "10"
+  opt :table, "Table name to check", type: :string, required: true
+  opt :id, "Name of id column", default: 'id'
+  opt :order, "CSV of columns to order in other table", type: :string, required: true
+
+  # this dumps ALL the columns out of migration check
+  opt :check, "Get results of migration check table only", default: false
+
+  # This option will run the select field_name, count(*) query instead
+  opt :summary, "Summarize results of migration check table (NOT YET IMPLEMENTED)", default: false
+  opt :debug, "Additional debug logging", default: false
+
+end
+
+# GET MIGRATION CHECK IDS
+command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT  LEASE_NUMBER, FIELD_NAME, SNOW_VALUE, REDSHIFT_VALUE FROM #{opts[:table]}_migration_check WHERE field_name='#{opts[:id]}' LIMIT #{opts[:limit]}")
+# command = %Q(dsquery --csv --warehouse snowflake_finance --query "SELECT  * FROM #{opts[:table]}_migration_check WHERE field_name='#{opts[:id]}' LIMIT #{opts[:limit]}")
+puts command.cyan
+
+output = `#{command}`.strip
+if opts[:debug]
+  puts CSV.parse(output, headers: true).to_table(first_row_is_head: true)
+end
+
+exit if opts[:check]
+ids = CSV.parse(output, headers: true).map do |row|
+  # row is 0-based but remember python dataframe prepends an index column
+  [row[4], row[3]]
+end
+
+redshift_ids = ids.map(&:first)
+snowflake_ids = ids.map(&:last)
+  puts "redshift_ids: #{redshift_ids.inspect}" if opts[:debug]
+puts "snowflake_ids: #{snowflake_ids.inspect}" if opts[:debug]
+
+
+# get colums to check
+
+# GET REDSHIFT ROWS
+columns_to_check=opts[:order]
+redshift_query = "SELECT #{columns_to_check} FROM #{opts[:table]} WHERE id IN (#{redshift_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
+command = %Q{dsquery --warehouse redshift_finance --csv --query "#{redshift_query}"| snow-table}
+puts command.cyan
+redshift_result = `#{command}`.strip
+
+redshift_result = redshift_result.each_line.to_a.tap {|rows| rows[1].upcase! }.join
+puts redshift_result.light_magenta
+
+# GET SNOWFLAKE ROWS
+columns_to_check=opts[:order].upcase
+snowflake_query = "SELECT #{columns_to_check} FROM #{opts[:table]} WHERE id IN (#{snowflake_ids.join(',')}) ORDER BY #{opts[:order]} ASC"
+command = %Q{dsquery --warehouse snowflake_finance --csv --query "#{snowflake_query}"| snow-table}
+puts command.cyan
+snowflake_result = `#{command}`.strip
+
+snowflake_result = snowflake_result.each_line.to_a.tap {|rows| rows[1].upcase! }.join
+puts snowflake_result.light_blue
+
+if redshift_result == snowflake_result
+  puts "MATCH".bold.white.on_green
+else
+  puts "MISMATCH".bold.white.on_red
+  File.open("ds-migration-check.redshift.log", "w") {|fp| fp.puts redshift_result; fp.puts "^^^^ redshift" }
+  File.open("ds-migration-check.snowflake.log", "w") {|fp| fp.puts snowflake_result; fp.puts "^^^^ snowflake" }
+  command="colordiff -y ds-migration-check.redshift.log ds-migration-check.snowflake.log"
+  puts command.cyan
+  system command
+end

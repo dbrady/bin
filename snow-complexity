@@ -29,14 +29,14 @@ line_count = lines.size
 # ticket complexit.  I'm only adding this because it's a measured factor.
 dev_factor_file = File.expand_path("/root/data_services/dev_factors.yml.log")
 dev_factors = if File.exist?(dev_factor_file)
-                YAML::load_file(dev_factor_file)
+                YAML::load_file(dev_factor_file, permitted_classes: [Regexp, Symbol])
               else
                 halp = <<HALP
 No dev factors rc file found. Proceeding with dev_factor = 1.0. Create factor file matching this format:
 
 ---
 Firstname Lastname:
-  :regex: !ruby/regexp /(Firstname Lastname|firstname.lastname)/
+  :regex: !ruby/regexp /(Firstname Lastname|firstname.lastname)/i
   :factor: 4.5
   :initials: fl
 HALP

@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# snow-calmdown [<infile.json>] - Downcase json field names
+#
+# Because Snowflake's motto is WE PUT ALL THE INFORMATION SCHEMA IN UPPERCASE SO
+# YOU DON'T HAVE TO
+#
+# cat allcaps.json | snow-calmdown > calm.json
+# snow-calmdown allcaps.json > calm.json
+
+require "json"
+
+data = Array(JSON.parse(ARGF.read))
+new_data = []
+
+new_data = data.map {|row| row.transform_keys(&:downcase) }
+
+puts JSON.pretty_generate(new_data)

@@ -1,4 +1,6 @@
 #!/bin/bash
+# jfmu <file.rb> - make/let rubocop autocorrect your code
+#
 # Because complying with an awful style guide is like winning Employee of the Month at Auschwitz in 1943
 echo "jfmu (Just F[ix] Me Up right quick) is f(ixing) up your code right quick..."
 echo "rubocop --auto-correct $*"

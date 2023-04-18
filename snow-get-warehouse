@@ -26,8 +26,12 @@ if colorize
   puts case warehouse
        when "redshift"
          " 🛢️  #{warehouse} 🛢️  ".bold.light_white.on_red
+       when "redshift_finance"
+         " 🛢️ 💵 #{warehouse} 💵🛢️  ".bold.light_green.on_red
        when "snowflake"
          " ❄️  #{warehouse} ❄️  ".light_white.on_light_blue
+       when "snowflake_finance"
+         " ❄️ 💲 #{warehouse} 💲❄️  ".bold.light_green.on_light_blue
        when /redshift/
          " #{warehouse} ".red
        else
