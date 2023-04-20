@@ -4,7 +4,7 @@
 #
 # Table is required. All other arguments are optional.
 #
-# dsv-get-full-errors --table <t> --csv --warehouse <wh> --rows <per_error> --limit <total_limit> --lease <number>
+# dsv-get-full-errors --table <t> --csv --warehouse <wh> --rows <per_error> --limit <total_limit> --where='clause'
 
 import argparse
 import os
@@ -12,27 +12,29 @@ import sys
 from dataservices import db
 
 def safelen(value):
-    if value is None:
-        return 0
-    else:
-        return len(value)
+    length = 0
+    try:
+        length = len(value)
+    except TypeError:
+        length = len(f"{value}")
+    return length
 
 def build_format(results, headers):
     """Find length of longest item in each field, and return a sprintf format field"""
-    lfn = len(headers[0])
-    lte = len(headers[1])
-    lln = len(headers[2])
-    lsv = len(headers[3])
-    lrv = len(headers[4])
+    longests = [len(h) for h in headers]
 
     for row in results:
-        lfn = max(lfn, safelen(row[0]))
-        lte = max(lte, safelen(f'{row[1]}'))
-        lln = max(lln, safelen(row[2]))
-        lsv = max(lsv, safelen(row[3]))
-        lrv = max(lrv, safelen(row[4]))
+        for index, item in enumerate(row):
+            longests[index] = max(longests[index], safelen(item))
+        # lfn = max(lfn, safelen(row[0]))
+        # lte = max(lte, safelen(f'{row[1]}'))
+        # lln = max(lln, safelen(row[2]))
+        # lsv = max(lsv, safelen(row[3]))
+        # lrv = max(lrv, safelen(row[4]))
 
-    return f"| %-{lfn}s | %{lte}s | %{lln}s |  %{lsv}s |  %{lrv}s |"
+    return '| ' + ' | '.join(["%{l}s".format(l=l) for l in longests]) + " |"
+
+    # return f"| %-{lfn}s | %{lte}s | %{lln}s |  %{lsv}s |  %{lrv}s |"
 
 
 def main(args):
@@ -42,45 +44,72 @@ def main(args):
         csv = args.csv
         rows = args.rows
         limit = args.limit
-        lease = args.lease
+        id = args.id
+        ids = args.ids
+        where = args.where
+        errors = args.errors
+        debug = args.debug
+
+        if debug:
+            print(f"args: {args}")
 
         dbo = db.DB(warehouse)
         conn = dbo.connect(warehouse)
 
-        lease_clause = "1"
+        columns = []
+        clauses = [f'row_num <= {rows}', 'snow_value IS NOT NULL', 'redshift_value IS NOT NULL']
 
-        if lease is not None:
-            lease_clause = f"lease_number IN ({lease})"
+        if id is not None:
+            columns.append(args.id)
+
+            if ids is not None:
+                clauses.append(f"{args.id} IN ({args.ids})")
+
+        if errors is not None:
+            errors = [f"'{e.strip()}'" for e in errors.split(',')]
+            clauses.append(f"field_name IN ({', '.join(errors)})")
+
+        if debug:
+            print(f"clauses: {clauses}")
+
+        if len(columns) > 0:
+            columns = ',' + "\n    ,".join(columns)
+        else:
+            columns = ''
+        clauses = "\n    AND ".join(clauses)
 
         query = f"""
 WITH error_rows AS (
     SELECT
         *
-        ,ROW_NUMBER() OVER (PARTITION BY field_name ORDER BY lease_number) AS row_num
+        ,ROW_NUMBER() OVER (PARTITION BY field_name ORDER BY {id}) AS row_num
         ,COUNT(*) OVER (PARTITION BY field_name) AS total_errors
     FROM {table}_migration_check
 )
 SELECT
     field_name
     ,total_errors
-    ,lease_number
+    {columns}
     ,snow_value
     ,redshift_value
 FROM
     error_rows
-WHERE row_num <= {rows}
-AND {lease_clause}
-AND snow_value IS NOT NULL AND redshift_value IS NOT NULL
+WHERE
+    {clauses}
 ORDER BY total_errors DESC, field_name ASC
 """
         if limit is not None:
             query = query + f"\nLIMIT {limit}"
 
+        if debug:
+            print(f"query: {query}")
+
+
         if csv:
             results = dbo.query(query, return_type='dataframe')
             print(results.to_csv())
         else:
-            headers = ('field_name', 'total_errors', 'lease_number', 'snow_value', 'redshift_value')
+            headers = ('field_name', 'total_errors', id, 'snow_value', 'redshift_value')
             results = dbo.query(query)
             format = build_format(results, headers)
             print((format % ('','','','','')).replace(' ', '-').replace('|', '+'))
@@ -96,12 +125,16 @@ ORDER BY total_errors DESC, field_name ASC
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CLI query executor for snowflake')
-    parser.add_argument('-w', '--warehouse', help='Warehouse (default: snowflake)', required=False)
-    parser.add_argument('-t', '--table', help='Table to check', required=True)
-    parser.add_argument('-c', '--csv', help='Show results as CSV', action='store_true', required=False)
-    parser.add_argument('-r', '--rows', help='Number of rows per error to fetch', default='3')
-    parser.add_argument('-m', '--limit', help='Number of rows total to return', required=False)
-    parser.add_argument('-l', '--lease', help='Lease number', required=False)
+    parser.add_argument('--warehouse', help='Warehouse (default: snowflake)', required=False)
+    parser.add_argument('--table', help='Table to check', required=True)
+    parser.add_argument('--csv', help='Show results as CSV', action='store_true', required=False)
+    parser.add_argument('--rows', help='Number of rows per error to fetch', default='3')
+    parser.add_argument('--limit', help='Number of rows total to return', required=False)
+    parser.add_argument('--id', help='ID column', default='lease_number', required=False)
+    parser.add_argument('--ids', help='ID column values', required=False)
+    parser.add_argument('--where', help='Extra where clause(s)', default='lease_number', required=False)
+    parser.add_argument('--errors', help='CSV of errors to include', required=False)
+    parser.add_argument('-d', '--debug', help='Print extra debugging information', action='store_true', required=False)
 
     args, remaining_args = parser.parse_known_args()
 
