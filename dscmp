@@ -52,7 +52,7 @@ warehouses.each do |warehouse|
           end
 
   command = %Q(dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{query}" | cleanup-whitespace #{opts[:pretty] ? "| snow-table" : ""})
-  command += " | tee dscmp.#{warehouse}.log" if opts[:log]
+  command += " | tee dscmp.#{warehouse}.csv" if opts[:log]
   puts (command  + " # #{warehouse}").send(color)
   system command
 end
