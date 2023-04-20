@@ -1,4 +1,16 @@
 #!/bin/bash
 # ds-docker-setup-3-apt-packages - Customize My Docker Setup
 
-apt-get install -y emacs dnsutils mtr net-tools man iputils-ping silversearcher-ag jq figlet
+apt-get install -y \
+        dnsutils \
+        emacs \
+        figlet \
+        iputils-ping \
+        jq \
+        less \
+        man \
+        mtr \
+        net-tools \
+        python3-autopep8 \
+        silversearcher-ag \
+        tree
