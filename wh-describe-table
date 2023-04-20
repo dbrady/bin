@@ -10,16 +10,19 @@ if __name__ == '__main__':
     allowed_warehouses = {'r': 'redshift', 's': 'snowflake', 'd': 'dataservices', 'rf': 'redshift_finance', 'sf': 'snowflake_finance'}
 
     parser = argparse.ArgumentParser(description='Describe Table in Warehouse')
-    parser.add_argument('--warehouse', help='Warehouse (r or s)', default='s', required=False)
-    parser.add_argument('--pretend', help='Pretend (just prints the dsquery)', default='p', action='store_true', required=False)
-    parser.add_argument('--quiet', help='Quiet (suppress extra logging)', default='q', action='store_true', required=False)
+    parser.add_argument('--warehouse', help='Warehouse (r or s)', required=False)
+    parser.add_argument('--pretend', help='Pretend (just prints the dsquery)', action='store_true', required=False)
+    parser.add_argument('--quiet', help='Quiet (suppress extra logging)', action='store_true', required=False)
+    parser.add_argument('--table', help='Table to describe (uses last argv if omitted)', required=False)
 
     args, remaining_args = parser.parse_known_args()
 
     pretend = args.pretend
     quiet = args.quiet
     warehouse = args.warehouse or 'snowflake'
-    table = remaining_args[0]
+    table = args.table or remaining_args[0]
+
+    print(args)
 
     # Look up warehouse from shorthand
     warehouse = allowed_warehouses.get(warehouse, warehouse)
