@@ -28,7 +28,6 @@ opts = Optimist::options do
   opt :host, "Hostname"
   opt :mine, "Same as --host=#{hostname}", default: false
   opt :notes, "Show notes column", default: false
-  opt :simple, "Show simple select (skip timestamp calculations)", default: false
   opt :where, "Override where clause entirely", type: :string
 end
 Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
@@ -55,10 +54,89 @@ where = if opts[:where_given] && !wheres.empty?
           "WHERE " + wheres.join(" AND ")
         end
 
-command = if opts[:simple]
-            %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "SELECT #{host_case_sql}, job, start_time, end_time, DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS elapsed_seconds, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}").gsub(/\s+/, ' ')
+query = if opts[:warehouse] =~ /redshift/
+          <<QUERY
+WITH jobs1 AS (
+    SELECT
+        host
+        , job
+        , start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS start_time_mst
+        , end_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS end_time_mst
+        , success
+        , job_failed_count
+        , retry_count
+        #{notes}
+    FROM
+        f_etl_job_details
+        #{where}
+        ORDER BY start_time DESC LIMIT #{opts[:limit]}
+)
+, jobs2 AS (
+    SELECT
+        host
+        , job
+        , start_time_mst
+        , end_time_mst
+        , DATEDIFF(second, start_time_mst, end_time_mst) AS duration
+        , success
+        , job_failed_count
+        , retry_count
+        #{notes}
+    FROM
+        jobs1
+)
+SELECT
+    #{host_case_sql}
+    , job
+    , start_time_mst
+    , end_time_mst
+    , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
+    , success
+    , job_failed_count
+    , retry_count
+    #{notes}
+FROM
+    jobs2
+QUERY
+        else
+            <<QUERY
+WITH jobs1 AS (
+    SELECT
+        host
+        , job
+        , CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_mst
+        , CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_mst
+        , DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS duration
+        , success
+        , job_failed_count
+        , retry_count
+        #{notes}
+    FROM
+        f_etl_job_details
+        #{where}
+    ORDER BY start_time DESC
+    LIMIT #{opts[:limit]}
+)
+SELECT
+    #{host_case_sql} AS host
+    , job
+    , start_time_mst
+    , end_time_mst
+    , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
+    , success
+    , job_failed_count
+    , retry_count
+FROM
+    jobs1
+QUERY
+        end
+
+query = query.each_line.map(&:strip).to_a.join(' ').gsub(/\s+/, ' ')
+
+command = if opts[:warehouse] =~ /redshift/
+            %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "#{query}")
           else
-            %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "WITH jobs1 AS (SELECT host, job, CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_mst, CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_mst, DATEDIFF('second', start_time, (CASE WHEN end_time IS NOT NULL THEN end_time ELSE CURRENT_TIMESTAMP END)) AS duration, success, job_failed_count, retry_count#{notes} FROM f_etl_job_details #{where} ORDER BY start_time DESC LIMIT #{opts[:limit]}) SELECT #{host_case_sql} AS host, job, start_time_mst, end_time_mst, LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed, success, job_failed_count, retry_count FROM jobs1").gsub(/\s+/, ' ')
+            %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "#{query}")
           end
 
 puts command.cyan
