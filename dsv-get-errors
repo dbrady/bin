@@ -4,7 +4,7 @@
 #
 # Table is required. All other arguments are optional.
 #
-# dsv-get-full-errors --table <t> --csv --warehouse <wh> --rows <per_error> --limit <total_limit> --where='clause'
+# dsv-get-full-errors --help for options
 
 import argparse
 import os
@@ -26,50 +26,32 @@ def build_format(results, headers):
     for row in results:
         for index, item in enumerate(row):
             longests[index] = max(longests[index], safelen(item))
-        # lfn = max(lfn, safelen(row[0]))
-        # lte = max(lte, safelen(f'{row[1]}'))
-        # lln = max(lln, safelen(row[2]))
-        # lsv = max(lsv, safelen(row[3]))
-        # lrv = max(lrv, safelen(row[4]))
 
     return '| ' + ' | '.join(["%{l}s".format(l=l) for l in longests]) + " |"
-
-    # return f"| %-{lfn}s | %{lte}s | %{lln}s |  %{lsv}s |  %{lrv}s |"
 
 
 def main(args):
     try:
-        warehouse = args.warehouse or 'snowflake'
-        table = args.table
-        csv = args.csv
-        rows = args.rows
-        limit = args.limit
-        id = args.id
-        ids = args.ids
-        where = args.where
-        errors = args.errors
-        debug = args.debug
-
-        if debug:
+        if args.debug:
             print(f"args: {args}")
 
-        dbo = db.DB(warehouse)
-        conn = dbo.connect(warehouse)
+        dbo = db.DB(args.warehouse)
+        conn = dbo.connect(args.warehouse)
 
         columns = []
-        clauses = [f'row_num <= {rows}', 'snow_value IS NOT NULL', 'redshift_value IS NOT NULL']
+        clauses = [f'row_num <= {args.rows}', 'snow_value IS NOT NULL', 'redshift_value IS NOT NULL']
 
-        if id is not None:
+        if args.id is not None:
             columns.append(args.id)
 
-            if ids is not None:
+            if args.ids is not None:
                 clauses.append(f"{args.id} IN ({args.ids})")
 
-        if errors is not None:
+        if args.errors is not None:
             errors = [f"'{e.strip()}'" for e in errors.split(',')]
             clauses.append(f"field_name IN ({', '.join(errors)})")
 
-        if debug:
+        if args.debug:
             print(f"clauses: {clauses}")
 
         if len(columns) > 0:
@@ -84,7 +66,7 @@ WITH error_rows AS (
         *
         ,ROW_NUMBER() OVER (PARTITION BY field_name ORDER BY {id}) AS row_num
         ,COUNT(*) OVER (PARTITION BY field_name) AS total_errors
-    FROM {table}_migration_check
+    FROM {args.table}_migration_check
 )
 SELECT
     field_name
@@ -98,14 +80,16 @@ WHERE
     {clauses}
 ORDER BY total_errors DESC, field_name ASC
 """
-        if limit is not None:
-            query = query + f"\nLIMIT {limit}"
+        if args.limit is not None:
+            query = query + f"\nLIMIT {args.limit}"
 
-        if debug:
+        if args.debug or args.pretend:
             print(f"query: {query}")
 
+        if args.pretend:
+            sys.exit(0)
 
-        if csv:
+        if args.csv:
             results = dbo.query(query, return_type='dataframe')
             print(results.to_csv())
         else:
@@ -125,16 +109,16 @@ ORDER BY total_errors DESC, field_name ASC
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CLI query executor for snowflake')
-    parser.add_argument('--warehouse', help='Warehouse (default: snowflake)', required=False)
+    parser.add_argument('--warehouse', help='Warehouse (default: snowflake)', required=False, default='snowflake')
     parser.add_argument('--table', help='Table to check', required=True)
     parser.add_argument('--csv', help='Show results as CSV', action='store_true', required=False)
     parser.add_argument('--rows', help='Number of rows per error to fetch', default='3')
     parser.add_argument('--limit', help='Number of rows total to return', required=False)
     parser.add_argument('--id', help='ID column', default='lease_number', required=False)
     parser.add_argument('--ids', help='ID column values', required=False)
-    parser.add_argument('--where', help='Extra where clause(s)', default='lease_number', required=False)
-    parser.add_argument('--errors', help='CSV of errors to include', required=False)
+    parser.add_argument('--errors', help='CSV of field_names of errors to include', required=False)
     parser.add_argument('-d', '--debug', help='Print extra debugging information', action='store_true', required=False)
+    parser.add_argument('-p', '--pretend', help='Build and display query but do not execute it', action='store_true', required=False)
 
     args, remaining_args = parser.parse_known_args()
 
