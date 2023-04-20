@@ -1,0 +1,108 @@
+#!/usr/bin/env python
+#
+# dsv-get-full-errors - Look up migration errors in other table
+#
+# Table is required. All other arguments are optional.
+#
+# dsv-get-full-errors --table <t> --csv --warehouse <wh> --rows <per_error> --limit <total_limit> --lease <number>
+
+import argparse
+import os
+import sys
+from dataservices import db
+
+def safelen(value):
+    if value is None:
+        return 0
+    else:
+        return len(value)
+
+def build_format(results, headers):
+    """Find length of longest item in each field, and return a sprintf format field"""
+    lfn = len(headers[0])
+    lte = len(headers[1])
+    lln = len(headers[2])
+    lsv = len(headers[3])
+    lrv = len(headers[4])
+
+    for row in results:
+        lfn = max(lfn, safelen(row[0]))
+        lte = max(lte, safelen(f'{row[1]}'))
+        lln = max(lln, safelen(row[2]))
+        lsv = max(lsv, safelen(row[3]))
+        lrv = max(lrv, safelen(row[4]))
+
+    return f"| %-{lfn}s | %{lte}s | %{lln}s |  %{lsv}s |  %{lrv}s |"
+
+
+def main(args):
+    try:
+        warehouse = args.warehouse or 'snowflake'
+        table = args.table
+        csv = args.csv
+        rows = args.rows
+        limit = args.limit
+        lease = args.lease
+
+        dbo = db.DB(warehouse)
+        conn = dbo.connect(warehouse)
+
+        lease_clause = "1"
+
+        if lease is not None:
+            lease_clause = f"lease_number IN ({lease})"
+
+        query = f"""
+WITH error_rows AS (
+    SELECT
+        *
+        ,ROW_NUMBER() OVER (PARTITION BY field_name ORDER BY lease_number) AS row_num
+        ,COUNT(*) OVER (PARTITION BY field_name) AS total_errors
+    FROM {table}_migration_check
+)
+SELECT
+    field_name
+    ,total_errors
+    ,lease_number
+    ,snow_value
+    ,redshift_value
+FROM
+    error_rows
+WHERE row_num <= {rows}
+AND {lease_clause}
+AND snow_value IS NOT NULL AND redshift_value IS NOT NULL
+ORDER BY total_errors DESC, field_name ASC
+"""
+        if limit is not None:
+            query = query + f"\nLIMIT {limit}"
+
+        if csv:
+            results = dbo.query(query, return_type='dataframe')
+            print(results.to_csv())
+        else:
+            headers = ('field_name', 'total_errors', 'lease_number', 'snow_value', 'redshift_value')
+            results = dbo.query(query)
+            format = build_format(results, headers)
+            print((format % ('','','','','')).replace(' ', '-').replace('|', '+'))
+            print(format % headers)
+            print((format % ('','','','','')).replace(' ', '-').replace('|', '+'))
+            for row in results:
+                print(format % row)
+            print((format % ('','','','','')).replace(' ', '-').replace('|', '+'))
+
+    finally:
+        dbo.close()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='CLI query executor for snowflake')
+    parser.add_argument('-w', '--warehouse', help='Warehouse (default: snowflake)', required=False)
+    parser.add_argument('-t', '--table', help='Table to check', required=True)
+    parser.add_argument('-c', '--csv', help='Show results as CSV', action='store_true', required=False)
+    parser.add_argument('-r', '--rows', help='Number of rows per error to fetch', default='3')
+    parser.add_argument('-m', '--limit', help='Number of rows total to return', required=False)
+    parser.add_argument('-l', '--lease', help='Lease number', required=False)
+
+    args, remaining_args = parser.parse_known_args()
+
+    main(args)
