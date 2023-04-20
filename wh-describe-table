@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # wh-describe-table - describe a table in the warehouse
-#
-# import argparse - No, don't import argparse. BECAUSE YOU SUCK, argparse
+
+import argparse # No, don't import argparse. BECAUSE YOU SUCK, argparse. # No wait, go ahead. I've made my peace. Mostly.
 import sys
 from dataservices import db
 
@@ -17,31 +17,19 @@ Warehouse:
 
 
 if __name__ == '__main__':
-    allowed_warehouses = {'r': 'redshift', 's': 'snowflake', 'd': 'dataservices'}
+    allowed_warehouses = {'r': 'redshift', 's': 'snowflake', 'd': 'dataservices', 'rf': 'redshift_finance', 'sf': 'snowflake_finance'}
 
-    # parser = argparse.ArgumentParser(description='Describe Table in Warehouse')
-    # parser.add_argument('--warehouse', help='Warehouse (r or s)', default='s', required=False)
-    # args, remaining_args = parser.parse_known_args()
+    parser = argparse.ArgumentParser(description='Describe Table in Warehouse')
+    parser.add_argument('--warehouse', help='Warehouse (r or s)', default='s', required=False)
+    parser.add_argument('--pretend', help='Pretend (just prints the dsquery)', default='p', action='store_true', required=False)
+    parser.add_argument('--quiet', help='Quiet (suppress extra logging)', default='q', action='store_true', required=False)
 
-    pretend = False
-    quiet = False
+    args, remaining_args = parser.parse_known_args()
 
-    if "-p" in sys.argv:
-        pretend = True
-        sys.argv.remove("-p")
-
-    if "-q" in sys.argv:
-        quiet = True
-        sys.argv.remove("-q")
-
-    # I keep forgetting to specify the warehouse. Make the tool smarter.
-    if len(sys.argv) == 2:
-        print("No warehouse specified; assuming Snowflake.")
-        table = sys.argv[1]
-        warehouse = 's'
-    else:
-        warehouse = sys.argv[1]
-        table = sys.argv[2]
+    pretend = args.pretend
+    quiet = args.quiet
+    warehouse = args.warehouse or 'snowflake'
+    table = remaining_args[0]
 
     # Look up warehouse from shorthand
     warehouse = allowed_warehouses.get(warehouse, warehouse)
