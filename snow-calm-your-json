@@ -1,11 +1,11 @@
 #!/usr/bin/env ruby
-# snow-calmdown [<infile.json>] - Downcase json field names
+# snow-calm-your-json [<infile.json>] - Downcase json field names
 #
 # Because Snowflake's motto is WE PUT ALL THE INFORMATION SCHEMA IN UPPERCASE SO
 # YOU DON'T HAVE TO
 #
-# cat allcaps.json | snow-calmdown > calm.json
-# snow-calmdown allcaps.json > calm.json
+# cat allcaps.json | snow-calm-your-json > calm.json
+# snow-calm-your-json allcaps.json > calm.json
 
 require "json"
 
