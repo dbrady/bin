@@ -6,16 +6,6 @@ import sys
 from dataservices import db
 
 
-def usage():
-    print(f"""
-wh-describe-table <warehouse> <table>
-
-Warehouse:
-  r, redshift
-  s, snowflake
-""")
-
-
 if __name__ == '__main__':
     allowed_warehouses = {'r': 'redshift', 's': 'snowflake', 'd': 'dataservices', 'rf': 'redshift_finance', 'sf': 'snowflake_finance'}
 
