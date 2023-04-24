@@ -48,7 +48,7 @@ def main(args):
                 clauses.append(f"{args.id} IN ({args.ids})")
 
         if args.errors is not None:
-            errors = [f"'{e.strip()}'" for e in errors.split(',')]
+            errors = [f"'{e.strip()}'" for e in args.errors.split(',')]
             clauses.append(f"field_name IN ({', '.join(errors)})")
 
         if args.debug:
@@ -64,7 +64,7 @@ def main(args):
 WITH error_rows AS (
     SELECT
         *
-        ,ROW_NUMBER() OVER (PARTITION BY field_name ORDER BY {id}) AS row_num
+        ,ROW_NUMBER() OVER (PARTITION BY field_name ORDER BY {args.id}) AS row_num
         ,COUNT(*) OVER (PARTITION BY field_name) AS total_errors
     FROM {args.table}_migration_check
 )
@@ -84,7 +84,7 @@ ORDER BY total_errors DESC, field_name ASC
             query = query + f"\nLIMIT {args.limit}"
 
         if args.debug or args.pretend:
-            print(f"query: {query}")
+            print(f"query: \033[36m{query}\033[0m")
 
         if args.pretend:
             sys.exit(0)
@@ -93,7 +93,7 @@ ORDER BY total_errors DESC, field_name ASC
             results = dbo.query(query, return_type='dataframe')
             print(results.to_csv())
         else:
-            headers = ('field_name', 'total_errors', id, 'snow_value', 'redshift_value')
+            headers = ('field_name', 'total_errors', args.id, 'snow_value', 'redshift_value')
             results = dbo.query(query)
             format = build_format(results, headers)
             print((format % ('','','','','')).replace(' ', '-').replace('|', '+'))
@@ -114,8 +114,8 @@ if __name__ == "__main__":
     parser.add_argument('--csv', help='Show results as CSV', action='store_true', required=False)
     parser.add_argument('--rows', help='Number of rows per error to fetch', default='3')
     parser.add_argument('--limit', help='Number of rows total to return', required=False)
-    parser.add_argument('--id', help='ID column', default='lease_number', required=False)
-    parser.add_argument('--ids', help='ID column values', required=False)
+    parser.add_argument('--id', help='Name of ID column (default: lease_number)', default='lease_number', required=False)
+    parser.add_argument('--ids', help='ID column values (to select specific error rows)', required=False)
     parser.add_argument('--errors', help='CSV of field_names of errors to include', required=False)
     parser.add_argument('-d', '--debug', help='Print extra debugging information', action='store_true', required=False)
     parser.add_argument('-p', '--pretend', help='Build and display query but do not execute it', action='store_true', required=False)
