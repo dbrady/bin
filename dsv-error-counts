@@ -4,10 +4,12 @@
 require "optimist"
 
 opts = Optimist.options do
-  opt :csv, type: :boolean, default: false
+  opt :csv, "Get query results as CSV", type: :boolean, default: false
   opt :finance, "Use snowflake_finance warehouse", type: :boolean, default: false
+  opt :table, "Table name (uses ARGV.last if omitted)", type: :string, required: false
+  opt :debug, "Debug mode (gets chatty)", type: :boolean, default: false
 end
-table = ARGV[0]
+table = opts[:table] || ARGV[0]
 Optimist::die "Must specify a table name." if !table || table.empty?
 
 warehouse = if opts[:finance]
@@ -25,5 +27,5 @@ SQL
 query = query.each_line.map(&:strip).to_a.join(" ")
 
 command = %Q|dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{query}"|
-puts command
+puts command if opts[:debug]
 system command
