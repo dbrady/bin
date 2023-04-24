@@ -59,9 +59,13 @@ def main():
 
     if args.query is not None:
         query = args.query
-    else:
+    elif args.file is not None:
         with open(args.file, "r") as infile:
             query = infile.read()
+    else:
+        # No --query? I probably forgot it and just jammed this onto the end, which feels natural
+        # `dsquery "SELECT 42"` seems like a reasonable DWIM
+        query = sys.argv[-1]
 
     try:
         warehouse = args.warehouse or 'snowflake'
