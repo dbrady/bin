@@ -28,7 +28,7 @@ HALP
   opt :redshift, "Values to use in redshift", type: :string
   opt :snowflake, "Values to use in snowflake", type: :string
 end
-
+opts[:csv] = true if opts[:pretty]
 
 warehouses = if opts[:finance]
                %w(redshift_finance snowflake_finance)
