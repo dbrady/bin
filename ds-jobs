@@ -19,23 +19,32 @@ host_case_sql = "CASE " \
                     .join(' ') \
                 + " ELSE host END"
 
+# TODO: update me with my list of known old hostnames (I have one, sadly)
 hostname=`hostname`.strip
+raise "Hey you have a hardcoded hostname of '31b95b7de045' but your hostname is '#{hostname}', what gives?" if hostname != '31b95b7de045'
 
 opts = Optimist::options do
-  opt :warehouse, "Warehouse", type: :string, default: "snowflake"
-  opt :limit, "Max jobs to return", default: 20
-  opt :job, "Job name or path/to/job.py (or CSV if multiple)", type: :string
-  opt :host, "Hostname"
-  opt :mine, "Same as --host=#{hostname}", default: false
-  opt :notes, "Show notes column", default: false
-  opt :where, "Override where clause entirely", type: :string
-  opt :utc, "Leave times in UTC", default: false
+  opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
+  opt :limit, "Max jobs to return", short: :none, default: 20
+  opt :job, "Job name or path/to/job.py (or CSV if multiple)", short: :none, type: :string
+  opt :start, "Show jobs started on or after this date", short: :none, type: :string
+  opt :end, "Show jobs started (not ended!) on or before this date", short: :none, type: :string
+  opt :host, "Hostname", short: :none, type: :string
+  opt :mine, "Same as --host=#{hostname}", short: :none, default: false
+  opt :notes, "Show notes column", short: :none, default: false
+  opt :where, "Override where clause entirely", short: :none, type: :string
+  opt :utc, "Leave times in UTC", short: :none, default: false
+
+  opt :debug, "Show extra debugging", default: false
+  opt :pretend, "Show query and exit", default: false
+  opt :quiet, "Suppress output other than the jobs results", default: false
 end
 Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
+puts opts.inspect if opts[:debug]
 
 opts[:job] = opts[:job].gsub(%r|/|,".").sub(/\.py$/,'') if opts[:job_given]
 
-# puts opts.inspect
+
 opts[:host] = hostname if opts[:mine]
 
 # optional columns
@@ -43,11 +52,26 @@ notes = ", notes " if opts[:notes]
 
 # where clause
 wheres = []
+
+# job
 if opts[:job_given]
   jobs = opts[:job].split(/,/).map {|job| "'%s'" % job.gsub(%r|/|, '.').sub(/\.py$/, '')}
   wheres << "job IN (#{jobs.join(', ')})"
 end
+
+# host
 wheres << "host='#{opts[:host]}'" if opts[:mine] || opts[:host_given]
+
+# start
+# NOTE: --start and --end are in UTC. I'm not converting time zones
+# based on which warehouse or whether DST was active at the time the job ran.
+wheres << "start_time >= '#{opts[:start]}'" if opts[:start_given]
+
+# end
+wheres << "end_time <= '#{opts[:end]}'" if opts[:end_given]
+
+
+# Pack up the wheres array into a WHERE clause.
 where = if opts[:where_given] && !wheres.empty?
           "WHERE " + wheres.join(" AND ") + " AND " + opts[:where]
         elsif opts[:where_given]
@@ -154,6 +178,9 @@ FROM
 QUERY
         end
 
+puts query.cyan unless opts[:quiet]
+exit(0) if opts[:pretend]
+
 query = query.each_line.map(&:strip).to_a.join(' ').gsub(/\s+/, ' ')
 
 command = if opts[:warehouse] =~ /redshift/
@@ -162,7 +189,7 @@ command = if opts[:warehouse] =~ /redshift/
             %Q(dsquery --csv --warehouse #{opts[:warehouse]} --query "#{query}")
           end
 
-puts command.cyan
+puts command.cyan if opts[:debug]
 results = `#{command}`.strip
 
 puts CSV.parse(results, headers: true).to_table(first_row_is_head: true)
