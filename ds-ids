@@ -1,0 +1,16 @@
+#!/bin/bash
+# ds-ids - given a list of ids, emit them as a single string of quoted ids
+
+# E.g.
+# 1
+# 2
+# 3
+#
+# =>
+# '1','2','3'
+#
+# The idea is to use it like this:
+#
+# dsquery --bare -query="SELECT ids FROM table LIMIT 10" | ds-ids | while read ids; do "...WHERE id IN ($ids)..."; done
+
+xargs ruby -e 'puts ARGV.map(&:inspect).join(",").gsub(34.chr,39.chr)'
