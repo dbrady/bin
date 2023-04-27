@@ -29,7 +29,8 @@ def query_should_be_bare(query):
         or query.lower().startswith("truncate ") \
         or query.lower().startswith("drop table ") \
         or query.lower().startswith("insert ") \
-        or query.lower().startswith("delete ")
+        or query.lower().startswith("delete ") \
+        or query.lower().startswith("create ")
 
 
 def run(query, **attrs):
@@ -62,8 +63,6 @@ def main():
 
     args, remaining_args = parser.parse_known_args()
     query = ""
-
-    print(args)
 
     if args.query is not None:
         query = args.query
