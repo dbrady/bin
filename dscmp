@@ -23,7 +23,7 @@ HALP
   opt :finance, "Use finance warehouses", default: false
   opt :log, "Write query outputs to dscmp.{warehouse}.log", default: false
   opt :pretty, "Format table all pretty-like", default: false
-  opt :query, "Query to use, use {ids} to fill from --redshift=value, --snowflake=value", type: :string, required: true
+  opt :query, "Query to use, use {ids} to fill from --redshift=value, --snowflake=value", type: :string, required: false
 
   opt :redshift, "Values to use in redshift", type: :string
   opt :snowflake, "Values to use in snowflake", type: :string
@@ -38,7 +38,7 @@ warehouses = if opts[:finance]
 
 warehouses.each do |warehouse|
   # override query if given
-  query = opts[:query]
+  query = opts[:query] || ARGV.last
   if opts[:redshift_given] && warehouse =~ /redshift/
     query = query.gsub(/{ids}/, opts[:redshift])
   elsif opts[:snowflake_given] && warehouse =~ /snowflake/
