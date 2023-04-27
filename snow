@@ -1094,7 +1094,7 @@ Options:
     # ----------------------------------------------------------------------
     # BOOL -> BOOLEAN
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!CAUTION: UNTESTED!!!) sed -i -E 's/\bBOOL\b/BOOLEAN/ig' #{get_script}"
+    detect_and_print_lines lines, "BOOL", /\bBOOL\b/i, autofix: "(!!!BEWARE!!! THIS WILL FALSE-TARGET bool(x) IN PYTHON CODE) sed -i -E 's/\\bBOOL\\b/BOOLEAN/ig' #{get_script}"
 
     if run_days_detectors?
       # ----------------------------------------------------------------------
