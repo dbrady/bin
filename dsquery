@@ -23,6 +23,14 @@ import os
 import sys
 from dataservices import db
 
+def query_should_be_bare(query):
+    """returns True if the query would be better-looking with --bare"""
+    return query.lower().startswith("select count(*) from") \
+        or query.lower().startswith("truncate ") \
+        or query.lower().startswith("drop table ") \
+        or query.lower().startswith("insert ") \
+        or query.lower().startswith("delete ")
+
 
 def run(query, **attrs):
     warehouse = attrs.get('warehouse') or 'snowflake'
@@ -30,20 +38,18 @@ def run(query, **attrs):
     dbo = attrs['dbo']
     conn = attrs['conn']
 
-    if attrs.get('bare') is True:
-        results = dbo.query(query)
-    else:
-        results = dbo.query(query, return_type='dataframe')
-    dbo.commit()
+    try:
+        if attrs.get('bare') is True:
+            results = dbo.query(query)
+            for row in results:
+                for value in row:
+                    print(value)
+        else:
+            results = dbo.query(query, return_type='dataframe')
+            print(results.to_csv())
 
-    if attrs.get('bare') is True:
-        for row in results:
-            for value in row:
-                print(value)
-    elif attrs.get('csv') is True:
-        print(results.to_csv())
-    else: # else just print the bare dataframe
-        print(results)
+    finally:
+        dbo.commit()
 
 
 def main():
@@ -51,11 +57,13 @@ def main():
     parser.add_argument('-f', '--file', help='Get SQL query from file', required=False)
     parser.add_argument('-q', '--query', help='SQL query', required=False)
     parser.add_argument('-w', '--warehouse', help='Warehouse (default: snowflake)', required=False)
-    parser.add_argument('-c', '--csv', help='Show results as CSV', action='store_true', required=False)
+    parser.add_argument('-c', '--csv', help='Show results as CSV', action='store_true', required=False, default=True)
     parser.add_argument('-b', '--bare', help='Show results as bare data (e.g. to pipe 1 json column to jq)', action='store_true', required=False)
 
     args, remaining_args = parser.parse_known_args()
     query = ""
+
+    print(args)
 
     if args.query is not None:
         query = args.query
@@ -67,6 +75,10 @@ def main():
         # `dsquery "SELECT 42"` seems like a reasonable DWIM
         query = sys.argv[-1]
 
+    if not args.bare and query_should_be_bare(query):
+        args.bare = True
+
+
     try:
         warehouse = args.warehouse or 'snowflake'
         dbo = db.DB(warehouse)
@@ -76,8 +88,6 @@ def main():
 
     finally:
         dbo.close()
-
-
 
 
 if __name__ == "__main__":
