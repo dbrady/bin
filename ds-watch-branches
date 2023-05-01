@@ -1,0 +1,2 @@
+#!/bin/bash
+watch -d -n 60 'git log-branch -p $HOME/bin; git log-branch -p $HOME/data_services; git log-branch -p $HOME/data_services_package/; git log-branch -p $HOME/data_services/etl/warehouse/finance/; git log-branch -p $HOME/data_services/etl/warehouse/sql'

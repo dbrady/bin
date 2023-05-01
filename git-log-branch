@@ -8,20 +8,26 @@ require 'sqlite3'
 LOGFILE = File.expand_path('~/.git-branch-log.sqlite3')
 LOG_INFO=:white
 LOG_QUERY=:cyan
+LOG_PRINT=:normal
 
 class GitBranchLogger
-  def initialize(debug: false, drop: false)
-    @debug = debug
-    @drop = drop
+  def initialize(opts)
+    @opts = opts
 
-    log "debug: #{debug.inspect}, drop: #{drop.inspect}"
+    log "opts: #{@opts.inspect}"
   end
 
-  def debug?; @debug; end
-  def drop?; @drop; end
+  def opts; @opts; end
+  def debug?; !!opts[:debug]; end
+  def drop?; !!opts[:drop]; end
+  def print?; !!opts[:print]; end
 
-  def log(msg, level: LOG_INFO)
-    puts msg.send(level)
+  def log(msg, level: LOG_INFO, force: false)
+    puts msg.send(level) if force || debug?
+  end
+
+  def print(msg)
+    puts msg if print?
   end
 
   def db
@@ -73,7 +79,6 @@ class GitBranchLogger
   end
 
   def run
-    log "debug?: #{debug?.inspect}, drop?: #{drop?.inspect}"
     path = git_repo_for(File.expand_path(ARGV.last || Dir.pwd))
     exit 0 unless is_git_repo?(path)
 
@@ -84,14 +89,17 @@ class GitBranchLogger
     last_branch = load_most_recent_branch_for(path)
 
     log_branch(path, current_branch) if last_branch != current_branch
+
+    print "Logging branch: #{path.inspect} is on #{current_branch.inspect}"
   end
 end
 
 opts = Optimist.options do
   opt :debug, "Enable extra debugging", default: false
   opt :drop, "Drop and recreate database", default: false
+  opt :print, "Output path and branch to stdout", default: false
 end
 
 puts opts.inspect if opts[:debug]
 
-GitBranchLogger.new(debug: opts[:debug], drop: opts[:drop]).run
+GitBranchLogger.new(debug: opts[:debug], drop: opts[:drop], print: opts[:print]).run
