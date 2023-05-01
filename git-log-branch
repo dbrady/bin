@@ -1,0 +1,97 @@
+#!/usr/bin/env ruby
+# git-log-branch <path/to/repo> - Record current branch of repo in that repo's .git/branch.log
+# ideally set this up to run
+require 'colorize'
+require 'optimist'
+require 'sqlite3'
+
+LOGFILE = File.expand_path('~/.git-branch-log.sqlite3')
+LOG_INFO=:white
+LOG_QUERY=:cyan
+
+class GitBranchLogger
+  def initialize(debug: false, drop: false)
+    @debug = debug
+    @drop = drop
+
+    log "debug: #{debug.inspect}, drop: #{drop.inspect}"
+  end
+
+  def debug?; @debug; end
+  def drop?; @drop; end
+
+  def log(msg, level: LOG_INFO)
+    puts msg.send(level)
+  end
+
+  def db
+    @db ||= SQLite3::Database.new LOGFILE
+  end
+
+  def load_most_recent_branch_for(path)
+    db.execute("SELECT branch FROM branch_history WHERE path=? ORDER BY created_at DESC LIMIT 1;", path) do |row|
+      return row[0]
+    end
+  end
+
+  def log_branch(path, branch)
+    log "Recording branch '#{branch}' for path '#{path}'"
+    db.execute "INSERT INTO branch_history (path, branch) VALUES (?, ?);", [path, branch]
+  end
+
+  def drop_table
+    log "Dropping table branch_history"
+    db.execute "DROP TABLE IF EXISTS branch_history;"
+  end
+
+  def ensure_table_exists
+    log "Creating table branch_history"
+    db.execute <<~SQL
+        CREATE TABLE IF NOT EXISTS branch_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT
+            , path VARCHAR(1024) NOT NULL
+            , branch VARCHAR(256) NOT NULL
+            , created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+    SQL
+  end
+
+  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)
+  def is_git_repo?(path)
+    File.exists?(File.join(path, '.git'))
+  end
+
+  # Walk up file tree looking for a .git folder
+  def git_repo_for(path)
+    oh_noes = 10
+    while !path.empty?
+      oh_noes -= 1
+      raise "CANNOT FIGURE OUT PATH FOR #{path.inspect}" unless oh_noes > 0
+      return path if is_git_repo?(path)
+      path = File.split(path).first
+    end
+  end
+
+  def run
+    log "debug?: #{debug?.inspect}, drop?: #{drop?.inspect}"
+    path = git_repo_for(File.expand_path(ARGV.last || Dir.pwd))
+    exit 0 unless is_git_repo?(path)
+
+    drop_table if drop?
+    ensure_table_exists
+
+    current_branch = `(cd #{path} && git current-branch)`.strip
+    last_branch = load_most_recent_branch_for(path)
+
+    log_branch(path, current_branch) if last_branch != current_branch
+  end
+end
+
+opts = Optimist.options do
+  opt :debug, "Enable extra debugging", default: false
+  opt :drop, "Drop and recreate database", default: false
+end
+
+puts opts.inspect if opts[:debug]
+
+GitBranchLogger.new(debug: opts[:debug], drop: opts[:drop]).run
