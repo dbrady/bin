@@ -1,0 +1,12 @@
+#!/bin/bash
+if [ "$IS_DOCKER_LOCAL" == "1" ]; then
+    FOLDER="/root/data_services_package/dataservices/haxx"
+else
+    FOLDER="/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx"
+fi
+
+DB="$FOLDER/git-branch-history.sqlite3"
+
+echo -e "\033[36msqlite3 $DB 'SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history GROUP BY path ORDER BY path' | csv-to-table -d '|'\033[0m"
+
+sqlite3 $DB 'SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history GROUP BY path ORDER BY path' | csv-to-table -d '|'
