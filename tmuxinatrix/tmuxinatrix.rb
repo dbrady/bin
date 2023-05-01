@@ -6,6 +6,9 @@ class Tmuxinatrix
     end
 
     # this returns truthy if the named session has the specified number of windows open
+    #
+    # TODO: feature creepy, but if we want n windows and we count m could we do
+    # send-keys C-j C-c while n<m?
     def tmux_ready?(session, window_count)
       execute "tmux list-sessions | grep -E '^#{session}: #{window_count} windows '"
     end
