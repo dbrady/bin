@@ -1,2 +1,5 @@
 #!/bin/sh
-git branch | grep '*' | awk '{print $2}'
+# 2023-05-01: this captures "(HEAD detached from /branch)" as "(HEAD"
+
+# Better.
+git branch | grep '*' | cut -d ' ' -f2-
