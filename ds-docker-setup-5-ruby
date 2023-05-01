@@ -14,4 +14,6 @@ RUBY_VERSION=ruby-3.1.1
 rvm install $RUBY_VERSION
 rvm default $RUBY_VERSION
 
-echo "Be sure to add 'rvm default $RUBY_VERSION' to .bashrc or .bash_profile"
+echo "Post-Install Actions:"
+echo "1. Be sure to add 'rvm default $RUBY_VERSION' to .bashrc or .bash_profile"
+echo "2. Also, you probably want to run refdox/gems_i_always_want."
