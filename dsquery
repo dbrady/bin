@@ -1,23 +1,8 @@
 #!/usr/bin/env python
 # dsquery - Run sql query. Basically a CLI console until I can get DataGrip
-# licensed and running again.
-#
-# dsquery [options] --query <query>
-#
-# Options:
-#   -b, --bare             - Output bare result (best for query returning an atomic value)
-#   -c, --csv              - Output results as CSV
-#   -f, --file=<file>      - Get query from file instead of CLI (useful for multiline)
-#   -q, --query=<sql>      - Specify query from command-line instead of file
-#   -w, --warehouse=<wh>   - Run query in this warehouse [default: snowflake]
-#
-# If neither --bare nor --csv are specified, results will be displayed as a
-# DataFrame, which is tidy but will elide if the rows or columns exceed screen
-# height or width, respectively.
-#
-# 2023-04-18 At least, that's the theory. In practice, this thing lives where I
-# do and it is AWESOME. Keeping this around because <3 <3 <3
-
+# licensed and running again. (At least, that's the theory. In practice, this
+# thing lives where I do and it is AWESOME. Keeping this around because CLI
+# makes me swoon. <3 <3 <3)
 import argparse
 import os
 import sys
