@@ -9,4 +9,4 @@
 #
 # sqlite3 ~/.git-branch-log.sqlite3 "SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history GROUP BY path" | csv-to-table -d '|'
 
-watch -d -n 60 'git log-branch -p $HOME/bin; git log-branch -p $HOME/data_services; git log-branch -p $HOME/data_services_package/; git log-branch -p $HOME/data_services/etl/warehouse/finance/; git log-branch -p $HOME/data_services/etl/warehouse/sql'
+watch -d -n 60 "git log-branch -p $HOME/bin; git log-branch -p $HOME/data_services; git log-branch -p $HOME/data_services_package/; git log-branch -p $HOME/data_services/etl/warehouse/finance/; git log-branch -p $HOME/data_services/etl/warehouse/sql"
