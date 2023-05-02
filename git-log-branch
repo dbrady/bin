@@ -5,7 +5,15 @@ require 'colorize'
 require 'optimist'
 require 'sqlite3'
 
-LOGFILE = File.expand_path('~/.git-branch-log.sqlite3')
+# blegh. I gotta set up a clean host/container share...
+SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
+            File.expand_path('/root/data_services_package/dataservices/haxx')
+          else
+            File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
+          end
+
+LOGFILE = File.join(SHARE_FOLDER, 'git-branch-history.sqlite3')
+
 LOG_INFO=:white
 LOG_QUERY=:cyan
 LOG_PRINT=:normal

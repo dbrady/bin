@@ -1,12 +1,100 @@
-#!/bin/bash
-if [ "$IS_DOCKER_LOCAL" == "1" ]; then
-    FOLDER="/root/data_services_package/dataservices/haxx"
-else
-    FOLDER="/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx"
-fi
+#!/usr/bin/env ruby
+require 'colorize'
+require 'date'
+require 'optimist'
+require 'sqlite3'
 
-DB="$FOLDER/git-branch-history.sqlite3"
+opts = Optimist::options do
+  banner <<-USAGE
+git-branch-history - query the branch history log
 
-echo -e "\033[36msqlite3 $DB 'SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history GROUP BY path ORDER BY path' | csv-to-table -d '|'\033[0m"
+If --date is given, --start and --end will be overridden to the Mon-Sun week containing that date.
 
-sqlite3 $DB 'SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history GROUP BY path ORDER BY path' | csv-to-table -d '|'
+If none of --start, --end, or --date are given, defaults to last week.
+USAGE
+
+  opt :start, "Start date", type: :string
+  opt :end, "End date", type: :string
+  opt :date, "Sets --start and --end to week of Mon-Sun containing this date", type: :string
+  opt :latest, "Show only latest/current branches for each path only", default: false
+
+  # TODO: maybe an --all that goes by repo then by date and shows all the branches jumped around?
+end
+
+# Return previous Monday. Returns date if date is already a Monday.
+# TEST: 2023-04-27 through 2023-05-02 should return [2023-04-27, 2023-05-03]
+def start_of_week_for(date)
+  date = Date.parse(date)
+  if date.monday?
+    date
+  else
+    date - (date.wday - 1) % 7
+  end
+end
+
+# Return following Monday, that way datetimes on Sunday night will show up as
+# less that DATE(next monday).
+def end_of_week_for(date)
+  date = Date.parse(date)
+  if date.monday?
+    date + 7
+  else
+    date + (8 - date.wday) % 7
+  end
+end
+
+if !opts[:date_given] && !opts[:start_given] && !opts[:end_given]
+  opts[:date] = Date.today.strftime("%F") # (Date.today - 7).strftime("%F")
+  opts[:date_given] = true # force the date_given math to happen next
+end
+
+if opts[:date_given]
+  opts[:start] = start_of_week_for(opts[:date]).strftime("%F")
+  opts[:end_given] = true
+  opts[:end] = end_of_week_for(opts[:date]).strftime("%F")
+  opts[:start_given] = true
+end
+
+
+SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
+                  File.expand_path('/root/data_services_package/dataservices/haxx')
+                else
+                  File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
+                end
+
+LOGFILE = File.join(SHARE_FOLDER, 'git-branch-history.sqlite3')
+
+wheres = []
+wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start_given]
+wheres << "DATE(created_at) < '#{opts[:end]}'" if opts[:end_given]
+
+where = if wheres.empty?
+          ""
+        else
+          where = "WHERE " + wheres.join(" AND ")
+        end
+
+db = SQLite3::Database.new(LOGFILE)
+
+query = if opts[:latest]
+            <<QUERY
+SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{where} GROUP BY path ORDER BY path
+QUERY
+          else
+            <<QUERY
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, branch
+QUERY
+          end
+
+branches = Hash.new {|h,k| h[k] = []}
+
+puts query.cyan
+
+db.execute(query) do |row|
+  branches[row[0]] << row[1]
+end
+
+branches.each_pair do |repo, branches|
+  puts repo.cyan
+  puts branches.map {|branch| "    #{branch}"}
+end
