@@ -417,6 +417,9 @@ class SnowflakeManglerApp
     `snow-job-show-config`.strip.each_line.any? {|line| line =~ /"dst_conn": .*redshift/ }
   end
 
+  def on_master_branch?
+    `git current-branch`.strip == "master"
+  end
 
   def has_skip_upload?
     IO.readlines(get_script).any? { |line| line.include?("parser.add_argument('--skip_upload") }
@@ -717,8 +720,9 @@ Options:
         exit -1
       end
 
-      # Don't run if the dst_conn is redshift UNLESS I specify --redshift
-      if pointed_at_redshift? && !explicitly_allow_redshift?
+      # If the job config is pointed at redshift, the branch must be master OR I
+      # must explicitly specify --redshift
+      if pointed_at_redshift? && (!on_master_branch? && !explicitly_allow_redshift?)
         log "JOB IS POINTED AT REDSHIFT. Fix this with snow job s or override with --redshift".bold.red
         exit -1
       end
