@@ -27,13 +27,13 @@ opts = Optimist::options do
   opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
   opt :limit, "Max jobs to return", short: :none, default: 20
   opt :job, "Job name or path/to/job.py (or CSV if multiple)", short: :none, type: :string
-  opt :start, "Show jobs started on or after this date", short: :none, type: :string
-  opt :end, "Show jobs started (not ended!) on or before this date", short: :none, type: :string
+  opt :start, "Show jobs started on or after this datetime (always UTC)", short: :none, type: :string
+  opt :end, "Show jobs started (not ended!) on or before this datetime (always UTC)", short: :none, type: :string
   opt :host, "Hostname", short: :none, type: :string
   opt :mine, "Same as --host=#{hostname}", short: :none, default: false
   opt :notes, "Show notes column", short: :none, default: false
   opt :where, "Override where clause entirely", short: :none, type: :string
-  opt :utc, "Leave times in UTC", short: :none, default: false
+  opt :utc, "Show times in UTC", short: :none, default: false
 
   opt :debug, "Show extra debugging", default: false
   opt :pretend, "Show query and exit", default: false
@@ -63,8 +63,10 @@ end
 wheres << "host='#{opts[:host]}'" if opts[:mine] || opts[:host_given]
 
 # start
-# NOTE: --start and --end are in UTC. I'm not converting time zones
-# based on which warehouse or whether DST was active at the time the job ran.
+#
+# NOTE: --start and --end are always in UTC. Changing the search time per
+# warehouse is easy. Knowing whether DST was active when the job ran is
+# considerably less so.
 wheres << "start_time >= '#{opts[:start]}'" if opts[:start_given]
 
 # end
@@ -122,8 +124,8 @@ WITH jobs1 AS (
     SELECT
         host
         , job
-        , #{start_time_sql}
-        , #{end_time_sql}
+        , start_time
+        , end_time
         , DATEDIFF(second, start_time, end_time) AS duration
         , success
         , job_failed_count
@@ -135,8 +137,8 @@ WITH jobs1 AS (
 SELECT
     #{host_case_sql}
     , job
-    , start_time
-    , end_time
+    , #{start_time_sql}
+    , #{end_time_sql}
     , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
     , success
     , job_failed_count
