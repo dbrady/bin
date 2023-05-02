@@ -179,7 +179,8 @@ SELECT
     , success
     , job_failed_count
     , retry_count
-FROM
+    #{notes}
+ FROM
     jobs1
 QUERY
         end
