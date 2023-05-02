@@ -1,0 +1,3 @@
+#!/bin/bash
+# get-ds-table [-f] - get scriptfile and parse it into the related tabe name
+get-ds-script | sed -e 's/\//./g' | sed -E 's/.py$//' | sed -E 's/^etl_//'
