@@ -34,6 +34,7 @@ opts = Optimist::options do
   opt :notes, "Show notes column", short: :none, default: false
   opt :where, "Override where clause entirely", short: :none, type: :string
   opt :utc, "Show times in UTC", short: :none, default: false
+  opt :failures, "Show failures only", short: :none, default: false
 
   opt :debug, "Show extra debugging", default: false
   opt :pretend, "Show query and exit", default: false
@@ -62,6 +63,9 @@ end
 # host
 wheres << "host='#{opts[:host]}'" if opts[:mine] || opts[:host_given]
 
+# failures
+wheres << "success=0" if opts[:failures]
+
 # start
 #
 # NOTE: --start and --end are always in UTC. Changing the search time per
@@ -75,13 +79,13 @@ wheres << "end_time <= '#{opts[:end]}'" if opts[:end_given]
 
 # Pack up the wheres array into a WHERE clause.
 where = if opts[:where_given] && !wheres.empty?
-          "WHERE " + wheres.join(" AND ") + " AND " + opts[:where]
+          "WHERE\n            " + (wheres + [opts[:where]]).join("\n            AND ")
         elsif opts[:where_given]
-          "WHERE " + opts[:where]
+          "WHERE #{opts[:where]}"
         elsif wheres.empty?
           ""
         else
-          "WHERE " + wheres.join(" AND ")
+          "WHERE " + wheres.map {|w| "\n            #{w}"}.join(" AND ")
         end
 
 start_time_sql,
