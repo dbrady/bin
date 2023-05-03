@@ -6,7 +6,7 @@
 
 # CURRENTLY THIS REQUIRES MY HAXX TO sync_data_snowflake.py TO ACCEPT CLI ARGS
 echo_color $ANSI_CYAN "python ~/data_services/utilities/sync_data_snowflake.py $@"
-python ~/data_services/utilities/sync_data_snowflake.py $@
+python ~/data_services/utilities/sync_data_snowflake.dbrady.py $@
 exit
 
 # This version is convenient but for some reason it eats the stdout from the python script. Sadge. Let's allow this to run interactively if no $1.
