@@ -4,57 +4,85 @@ require 'date'
 require 'optimist'
 require 'sqlite3'
 
+# Return previous Monday.
+def start_of_week_for(date)
+  date = Date.parse(date)
+  date - (date.wday-1) % 7
+end
+
+# Return following Monday, that way datetimes on Sunday night will show up as
+# less that DATE(next monday).
+def end_of_week_for(date)
+  start_of_week_for(date) + 7
+end
+
+# Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+def is_git_repo?(path)
+  File.exists?(File.join(path, '.git'))
+end
+
+# Walk up file tree looking for a .git folder
+# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+def git_repo_for(path)
+  starting_path = last_path = path
+
+  while !path.empty?
+    return path if is_git_repo?(path)
+    last_path, path = path, File.split(path).first
+    raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+  end
+end
+
 opts = Optimist::options do
   banner <<-USAGE
 git-branch-history - query the branch history log
+
+By default, gets the branch history of the current repo for last week
 
 If --date is given, --start and --end will be overridden to the Mon-Sun week containing that date.
 
 If none of --start, --end, or --date are given, defaults to last week.
 USAGE
 
-  opt :start, "Start date", type: :string
-  opt :end, "End date", type: :string
-  opt :date, "Sets --start and --end to week of Mon-Sun containing this date", type: :string
+  opt :start, "Start date", short: :none, type: :string
+  opt :end, "End date", short: :none, type: :string
+  opt :date, "Sets --start and --end to week of Mon-Sun containing this date", short: :none, type: :string
+
   opt :latest, "Show only latest/current branches for each path only", default: false
+  opt :all, "Show branch history for all recorded repos", default: false
+  opt :path, "Path to specific repo (defaults to current folder)", type: :string
 
-  # TODO: maybe an --all that goes by repo then by date and shows all the branches jumped around?
+  opt :debug, "Dump extra debug information", short: :d, default: false
+  opt :verbose, "Be a bit extra chatty", default: false
 end
 
-# Return previous Monday. Returns date if date is already a Monday.
-# TEST: 2023-04-27 through 2023-05-02 should return [2023-04-27, 2023-05-03]
-def start_of_week_for(date)
-  date = Date.parse(date)
-  if date.monday?
-    date
-  else
-    date - (date.wday - 1) % 7
-  end
-end
+puts "Opts exactly as given: #{opts.inspect}" if opts[:debug]
 
-# Return following Monday, that way datetimes on Sunday night will show up as
-# less that DATE(next monday).
-def end_of_week_for(date)
-  date = Date.parse(date)
-  if date.monday?
-    date + 7
-  else
-    date + (8 - date.wday) % 7
-  end
-end
+Optimist::die("Cannot specify both --all and --path") if opts[:all_given] && opts[:path_given]
+
+opts[:path] = if opts[:all]
+                nil # force nil; otherwise
+              elsif opts[:path_given]
+                git_repo_for(File.expand_path(opts[:path]))
+              else
+                git_repo_for(Dir.pwd)
+              end
+
+puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
 
 if !opts[:date_given] && !opts[:start_given] && !opts[:end_given]
   opts[:date] = Date.today.strftime("%F") # (Date.today - 7).strftime("%F")
   opts[:date_given] = true # force the date_given math to happen next
 end
 
+opts[:date] = Date.today.strftime("%F") if opts[:date].downcase == "today"
 if opts[:date_given]
   opts[:start] = start_of_week_for(opts[:date]).strftime("%F")
-  opts[:end_given] = true
   opts[:end] = end_of_week_for(opts[:date]).strftime("%F")
-  opts[:start_given] = true
 end
 
+puts "Opts after processing: #{opts.inspect}" if opts[:debug]
 
 SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
                   File.expand_path('/root/data_services_package/dataservices/haxx')
@@ -67,6 +95,7 @@ LOGFILE = File.join(SHARE_FOLDER, 'git-branch-history.sqlite3')
 wheres = []
 wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start_given]
 wheres << "DATE(created_at) < '#{opts[:end]}'" if opts[:end_given]
+wheres << "path = '#{opts[:path]}'" if opts[:path]
 
 where = if wheres.empty?
           ""
@@ -88,7 +117,7 @@ QUERY
 
 branches = Hash.new {|h,k| h[k] = []}
 
-puts query.cyan
+puts query.cyan if opts[:verbose]
 
 db.execute(query) do |row|
   branches[row[0]] << row[1]
