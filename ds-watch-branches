@@ -1,12 +1,7 @@
 #!/bin/bash
-#
-# TODO: Consider retrieving this with a --start=date --end=date query and
-# possibly a --week=date that expands out to the Monday-Sunday that contains
-# that week.
-#
-# Here's how to get the most recent branch, exploiting the sqlite3 bug that you
-# can query nonaggregated columns in an aggregated query:
-#
-# sqlite3 ~/.git-branch-log.sqlite3 "SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history GROUP BY path" | csv-to-table -d '|'
 
-watch -d -n 60 "git log-branch -p $HOME/bin; git log-branch -p $HOME/data_services; git log-branch -p $HOME/data_services_package/; git log-branch -p $HOME/data_services/etl/warehouse/finance/; git log-branch -p $HOME/data_services/etl/warehouse/sql"
+if [ "$IS_DOCKER_LOCAL" == "1" ]; then
+    watch -d -n 60 'git log-branch -p $HOME/bin; git log-branch -p $HOME/data_services; git log-branch -p $HOME/data_services_package/; git log-branch -p $HOME/data_services/etl/warehouse/finance/; git log-branch -p $HOME/data_services/etl/warehouse/sql'
+else
+    watch -d -n 60 'git log-branch -p $HOME/acima/devel/bin; git log-branch -p $HOME/acima/devel/data_services; git log-branch -p $HOME/acima/devel/data_services_package/; git log-branch -p $HOME/acima/devel/data_services/etl/warehouse/finance/; git log-branch -p $HOME/acima/devel/data_services/etl/warehouse/sql'
+fi
