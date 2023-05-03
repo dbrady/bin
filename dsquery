@@ -3,6 +3,9 @@
 # licensed and running again. (At least, that's the theory. In practice, this
 # thing lives where I do and it is AWESOME. Keeping this around because CLI
 # makes me swoon. <3 <3 <3)
+#
+# TODO: SERIOUSLY. Move this to an implementation script, then rewrite dsquery
+# as a ruby script with optimist.
 import argparse
 import os
 import sys
