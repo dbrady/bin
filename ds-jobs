@@ -24,7 +24,7 @@ class DsJobsApp
 
     # TODO: update me with my list of known old hostnames (I have one, sadly)
     hostname=`hostname`.strip
-    raise "Hey you have a hardcoded hostname of '31b95b7de045' but your hostname is '#{hostname}', what gives?" if hostname != '31b95b7de045'
+    raise "Hey you have a hardcoded hostname of '31b95b7de045' but your hostname is '#{hostname}', what gives?" if hostname != '31b95b7de045' && hostname != 'Mac1205Pro.local'
 
     opts = Optimist::options do
       opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
@@ -225,7 +225,11 @@ SELECT
 QUERY
             end
 
-    puts query.cyan unless opts[:quiet]
+    if opts[:pretend] and !opts[:quiet]
+      puts query
+    elsif !opts[:quiet]
+      puts query.cyan
+    end
     exit(0) if opts[:pretend]
 
     query = query.each_line.map(&:strip).to_a.join(' ').gsub(/\s+/, ' ')
