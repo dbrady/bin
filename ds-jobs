@@ -35,6 +35,7 @@ class DsJobsApp
       opt :host, "Hostname", short: :none, type: :string
       opt :mine, "Same as --host=#{hostname}", short: :none, default: false
       opt :prod, "Same as --host=production-dataservices-node", short: :none, default: false
+      opt :id, "Show id column", short: :none, default: false
       opt :notes, "Show notes column", short: :none, default: false
       opt :where, "Override where clause entirely", short: :none, type: :string
       opt :utc, "Show times in UTC", short: :none, default: false
@@ -52,7 +53,8 @@ class DsJobsApp
     opts[:host] = 'production-dataservices-node' if opts[:prod]
 
     # optional columns
-    notes = ", notes " if opts[:notes]
+    show_notes = ", notes " if opts[:notes]
+    show_id = ", id " if opts[:id]
 
     # where clause
     wheres = []
@@ -145,13 +147,14 @@ class DsJobsApp
 WITH jobs1 AS (
     SELECT
         host
+        #{show_id}
         , job
         , start_time
         , end_time
         , success
         , job_failed_count
         , retry_count
-        #{notes}
+        #{show_notes}
     FROM
         f_etl_job_details
         #{where}
@@ -160,6 +163,7 @@ WITH jobs1 AS (
 , jobs2 AS (
     SELECT
         host
+        #{show_id}
         , job
         , start_time
         , end_time
@@ -167,12 +171,13 @@ WITH jobs1 AS (
         , success
         , job_failed_count
         , retry_count
-        #{notes}
+        #{show_notes}
     FROM
         jobs1
 )
 SELECT
     #{host_case_sql}
+    #{show_id}
     , job
     , #{start_time_sql}
     , #{end_time_sql}
@@ -180,7 +185,7 @@ SELECT
     , success
     , job_failed_count
     , retry_count
-    #{notes}
+    #{show_notes}
 FROM
     jobs2
 QUERY
@@ -189,6 +194,7 @@ QUERY
 WITH jobs1 AS (
     SELECT
         host
+        #{show_id}
         , job
         , start_time
         , end_time
@@ -196,7 +202,7 @@ WITH jobs1 AS (
         , success
         , job_failed_count
         , retry_count
-        #{notes}
+        #{show_notes}
     FROM
         f_etl_job_details
         #{where}
@@ -205,6 +211,7 @@ WITH jobs1 AS (
 )
 SELECT
     #{host_case_sql} AS host
+    #{show_id}
     , job
     , #{start_time_sql}
     , #{end_time_sql}
@@ -212,7 +219,7 @@ SELECT
     , success
     , job_failed_count
     , retry_count
-    #{notes}
+    #{show_notes}
  FROM
     jobs1
 QUERY
