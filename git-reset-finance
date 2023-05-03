@@ -1,0 +1,19 @@
+#!/bin/bash
+# git reset-finance - reset the finance branch, discarding any changes. Useful
+# for resetting the job config and/or unpatching etl_nightly.py (such as when
+# bringing --retry_count back in).
+
+echo -e '\033[36mpushd /root/data_services/etl/warehouse/finance\033[0m'
+pushd /root/data_services/etl/warehouse/finance
+
+echo -e '\033[36mgit status\033[0m'
+git status
+
+echo -e "\033[1;35mAre you sure you want to reset the finance branch? Press ENTER to continue, or hit Ctrl-c to abort:\033[0m"
+read
+
+echo -e '\033[36mgit reset --hard\033[0m'
+git reset --hard
+
+echo -e '\033[36mpopd\033[0m'
+popd
