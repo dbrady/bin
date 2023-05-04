@@ -2,7 +2,7 @@
 require 'colorize'
 require 'date'
 require 'optimist'
-require 'sqlite3'
+require 'extralite'
 
 # Return previous Monday.
 def start_of_week_for(date)
@@ -47,9 +47,10 @@ USAGE
 
   opt :start, "Start date", short: :none, type: :string
   opt :end, "End date", short: :none, type: :string
-  opt :date, "Sets --start and --end to week of Mon-Sun containing this date", short: :none, type: :string
+  opt :date, "Sets --start and --end to week of Mon-Sun containing this date, or --date=today for current week", short: :none, type: :string
 
   opt :latest, "Show only latest/current branches for each path only", default: false
+  opt :log, "Show journal/log of branch changes", default: false
   opt :all, "Show branch history for all recorded repos", default: false
   opt :path, "Path to specific repo (defaults to current folder)", type: :string
 
@@ -90,7 +91,7 @@ SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
                   File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
                 end
 
-LOGFILE = File.join(SHARE_FOLDER, 'git-branch-history.sqlite3')
+DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
 wheres = []
 wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start_given]
@@ -103,7 +104,9 @@ where = if wheres.empty?
           where = "WHERE " + wheres.join(" AND ")
         end
 
-db = SQLite3::Database.new(LOGFILE)
+order = opts[:log] ? 'created_at' : 'path, branch'
+
+db = Extralite::Database.new(DATABASE_PATH)
 
 query = if opts[:latest]
             <<QUERY
@@ -111,7 +114,7 @@ SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{
 QUERY
           else
             <<QUERY
-SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, branch
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY #{order}
 QUERY
           end
 
@@ -120,7 +123,7 @@ branches = Hash.new {|h,k| h[k] = []}
 puts query.cyan if opts[:verbose]
 
 db.execute(query) do |row|
-  branches[row[0]] << row[1]
+  branches[row[:path]] << row[:branch]
 end
 
 branches.each_pair do |repo, branches|
