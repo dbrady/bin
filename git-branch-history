@@ -53,6 +53,7 @@ USAGE
   opt :log, "Show journal/log of branch changes", default: false
   opt :all, "Show branch history for all recorded repos", default: false
   opt :path, "Path to specific repo (defaults to current folder)", type: :string
+  opt :journal, "Show all branches with switch times", default: false
 
   opt :debug, "Dump extra debug information", short: :d, default: false
   opt :verbose, "Be a bit extra chatty", default: false
@@ -108,25 +109,45 @@ order = opts[:log] ? 'created_at' : 'path, branch'
 
 db = Extralite::Database.new(DATABASE_PATH)
 
-query = if opts[:latest]
-            <<QUERY
+query = if opts[:journal]
+          <<QUERY
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at
+QUERY
+        elsif opts[:latest]
+          <<QUERY
 SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{where} GROUP BY path ORDER BY path
 QUERY
-          else
-            <<QUERY
+        else
+          <<QUERY
 SELECT path, branch, created_at FROM branch_history #{where} ORDER BY #{order}
 QUERY
-          end
+        end
 
-branches = Hash.new {|h,k| h[k] = []}
+repos = Hash.new {|h,k| h[k] = []}
 
 puts query.cyan if opts[:verbose]
 
-db.execute(query) do |row|
-  branches[row[:path]] << row[:branch]
-end
+if opts[:journal]
+  db.query(query) do |row|
+    repos[row[:path]] << {created_at: row[:created_at], branch: row[:branch]}
+  end
 
-branches.each_pair do |repo, branches|
-  puts repo.cyan
-  puts branches.map {|branch| "    #{branch}"}
+  puts repos.inspect if opts[:debug]
+  repos.each_pair do |repo, branch_changes|
+    puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
+    puts repo.cyan
+    branch_changes.each do |change|
+      puts "    change: #{change.inspect}" if opts[:debug]
+      puts "    #{change[:created_at]} #{change[:branch]}"
+    end
+  end
+else
+  db.execute(query) do |row|
+    repos[row[:path]] << row[:branch]
+  end
+
+  repos.each_pair do |repo, branches|
+    puts repo.cyan
+    puts branches.map {|branch| "    #{branch}"}
+  end
 end
