@@ -7,6 +7,9 @@ if [ `uname -s` == 'Darwin' ]; then
     exit -1
 fi
 
+# If ds table is cached, clear it
+clear-ds-table
+
 echo "# The last line of this file contains the current working ds script." | tee $SCRIPTFILE
 echo "# it is a relative path from the ds/etl/warehouse folder" | tee -a $SCRIPTFILE
 echo "# see ~/bin/get-ds-script, ~/bin/set-ds-script, and ~/bin/clear-ds-script" | tee -a $SCRIPTFILE

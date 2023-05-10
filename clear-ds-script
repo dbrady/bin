@@ -4,3 +4,5 @@ SCRIPTFILE=~/.ds_script
 
 echo "rm -f $SCRIPTFILE"
 rm -f $SCRIPTFILE
+
+clear-ds-table
