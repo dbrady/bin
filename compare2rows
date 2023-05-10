@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# compare2rows - given a JSON export of a query with 2 results, diff the two
+# rows.
+#
+# tl;dr: ```bash
+#   dsquery "SELECT * FROM <table> WHERE id=<id> LIMIT 2" | tee compare.csv &&
+#     csv-to-json compare.csv > compare.json &&
+#     compare2rows
+# ```
+require "json"
+
+filename = ARGV.first || "compare.csv"
+raise "Couldn't open '#{filename}'" unless File.exists?(filename)
+
+json = JSON.parse(File.read(filename))
+raise "I am a very fragile script! Your JSON must have 2 rows, found #{json.size}." unless json.size == 2
+
+[0, 1].each do |row|
+  File.open("compare-#{row}.json", "w") {|fp| fp.puts JSON.pretty_generate(json[row]) }
+  File.open("compare-#{row}.json", "w") {|fp| fp.puts JSON.pretty_generate(json[row]) }
+end
+
+system("colordiff -y compare-0.json compare-1.json")
