@@ -43,7 +43,7 @@ class DsJobsApp
 
       opt :debug, "Show extra debugging", default: false
       opt :pretend, "Show query and exit", default: false
-      opt :quiet, "Suppress output other than the jobs results", default: false
+      opt :verbose, "Print query and other deets", default: false
     end
     Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
     Optimist::die "Cannot specify --host and --prod at same time" if opts[:prod] && opts[:host_given]
@@ -93,6 +93,9 @@ class DsJobsApp
         job_list = jobs.map {|job| "'#{job}'"}.join(', ')
         wheres << "job ILIKE ANY (#{job_list})"
       end
+    elsif !opts[:job_given]
+      job = `get-ds-script`.strip.gsub(%r|/|, '.').sub(/\.py$/, '')
+      wheres << "job IN ('#{job}')"
     end
 
     # host
@@ -225,9 +228,9 @@ SELECT
 QUERY
             end
 
-    if opts[:pretend] and !opts[:quiet]
+    if opts[:pretend]
       puts query
-    elsif !opts[:quiet]
+    elsif opts[:verbose]
       puts query.cyan
     end
     exit(0) if opts[:pretend]
