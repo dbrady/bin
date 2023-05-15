@@ -25,9 +25,12 @@ HALP
   opt :pretty, "Format table all pretty-like", default: false
   opt :query, "Query to use, use {ids} to fill from --redshift=value, --snowflake=value", type: :string, required: false
 
-  opt :redshift, "Values to use in redshift", type: :string
-  opt :snowflake, "Values to use in snowflake", type: :string
+  opt :redshift, "Values to use in redshift as {ids}", type: :string
+  opt :snowflake, "Values to use in snowflake as {ids}", type: :string
+  opt :redshift2, "Query fragment (ids, rs-specific sql) to use in redshift as {query}", type: :string
+  opt :snowflake2, "Query fragment (ids, snow-specific sql) to use in snowflake as {query}", type: :string
 end
+
 opts[:csv] = true if opts[:pretty]
 
 warehouses = if opts[:finance]
@@ -40,9 +43,9 @@ warehouses.each do |warehouse|
   # override query if given
   query = opts[:query] || ARGV.last
   if opts[:redshift_given] && warehouse =~ /redshift/
-    query = query.gsub(/{ids}/, opts[:redshift])
+    query = query.gsub(/{ids}/, opts[:redshift]).gsub(/{query}/, opts[:redshift2])
   elsif opts[:snowflake_given] && warehouse =~ /snowflake/
-    query = query.gsub(/{ids}/, opts[:snowflake])
+    query = query.gsub(/{ids}/, opts[:snowflake]).gsub(/{query}/, opts[:snowflake2])
   end
 
   color = case warehouse
