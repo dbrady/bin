@@ -4,6 +4,19 @@
 # big warning message telling you that you have marked a file as being
 # not committable.
 #
+# Example:
+#
+# # NOCOMMIT: Hacks
+# x / 0 # NOCOMMIT: This is probably a bad idea
+#
+# You can override this by ALSO adding NOCOMMIT_IS_OK_HERE to THE SAME line.
+#
+# Example:
+#
+# def mark_line_as_nocommit(message)
+#     puts '# NOCOMMIT: #{message}' # NOCOMMIT_IS_OK_HERE
+# end
+#
 # Installation:
 #     With this script in your path, cd to the root of your project
 # and run "add-nocommit". This will create the magical pre-commit
@@ -16,14 +29,7 @@
 #
 # and if you forget and accidentally git add the file, the commit will
 # fail, showing you the file and line containing the NOCOMMIT message.
-#
-# TODO: I don't like making this be the "pre-commit" file. I'd much
-# rather see pre-commit shell out to run detect-nocommit or somesuch.
-# Currently git hooks are not very robust, nor do they play well with
-# each other. (I'd also much rather see this be either a global git
-# hook or some kind of hook that could be committed to the repo to be
-# shared with the team. Both of these are still things git doesn't yet
-# do.)
+
 def barf!(msg=nil)
   puts "*** add-nocommit: %s " % msg if msg
   exit -1
@@ -33,7 +39,9 @@ precommit_folder = "./.git/hooks"
 precommit_file = "%s/pre-commit" % precommit_folder
 
 barf! "Pardon me, but I'm lost. Is this a git repo? I don't see .git/hooks/ here!" unless File.directory? precommit_folder
-barf! "Cowardly refusing to overwrite existing pre-commit hook!" if File.exists? precommit_file
+if !ARGV.include?("-f") && !ARGV.include?("--force")
+  barf! "Cowardly refusing to overwrite existing pre-commit hook!" if File.exists? precommit_file
+end
 
 File.open(precommit_file, 'w') do |file|
   file.puts DATA.read
@@ -68,7 +76,7 @@ line_num = 0
     line_num += 1 if line !~ /^- /
   end
 
-  if line =~ /^\+.*NOCOMMIT/
+  if line =~ /^ NOCOMMIT/ && line !~ /NOCOMMIT_IS_OK_HERE/
     puts <<BANNER
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
