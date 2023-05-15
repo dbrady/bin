@@ -39,8 +39,9 @@ class DsJobsApp
       opt :id, "Show id column", short: :none, default: false
       opt :notes, "Show notes column", short: :none, default: false
       opt :where, "Override where clause entirely", short: :none, type: :string
-      opt :utc, "Show times in UTC", short: :none, default: false
+      opt :utc, "Show only times in UTC", short: :none, default: false
       opt :failures, "Show failures only", short: :none, default: false
+      opt :mst, "Show only times in America/Denver (MST/MDT)", short: :none, default: false
 
       opt :debug, "Show extra debugging", default: false
       opt :pretend, "Show query and exit", default: false
@@ -48,6 +49,7 @@ class DsJobsApp
     end
     Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
     Optimist::die "Cannot specify --host and --prod at same time" if opts[:prod] && opts[:host_given]
+    Optimist::die "Cannot specify --utc and --mst at same time" if opts[:utc] && opts[:mst]
     puts opts.inspect if opts[:debug]
 
     opts[:host] = hostname if opts[:mine]
@@ -127,24 +129,33 @@ class DsJobsApp
               "WHERE " + wheres.map {|w| "\n            #{w}"}.join(" AND ")
             end
 
-    start_time_sql,
-    end_time_sql = if opts[:utc]
-                     [
-                       "start_time",
-                       "end_time"
-                     ]
-                   elsif opts[:warehouse] =~ /redshift/
-                     [
-                       "start_time, start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS start_time_mst",
-                       "end_time, end_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS end_time_mst"
-                     ]
-                   else
-                     [
-                       "start_time, CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_mst",
-                       "end_time, CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_mst"
-                     ]
-                   end
+    # if times include utc
+    #   times << ["start_time", "end_time"]
+    # if times include mst
+    #   if redshift?
+    #     times << ["AT TIME ZONE", "AT TIME ZONE"]
+    #   else
+    #     times << ["CONVERT_TIMEZONE", "CONVERT_TIMEZONE"]
 
+    times = []
+
+    if !opts[:mst] # Include UTC because --utc was specified OR no time was.
+      times << ["start_time", "end_time"]
+    elsif !opts[:utc] # Include MST because --mst was specified OR no time was.
+      if opts[:warehouse] =~ /redshift/
+        times << [
+          "start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS start_time_local",
+          "end_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS end_time_local"
+        ]
+      else
+        times << [
+          "CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_local",
+          "CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_local"
+        ]
+      end
+    end
+
+    time_sql = times * ', '
 
     query = if opts[:warehouse] =~ /redshift/
               <<QUERY
@@ -183,8 +194,7 @@ SELECT
     #{host_case_sql}
     #{show_id}
     , job
-    , #{start_time_sql}
-    , #{end_time_sql}
+    , #{time_sql}
     , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
     , success
     , job_failed_count
@@ -217,8 +227,7 @@ SELECT
     #{host_case_sql} AS host
     #{show_id}
     , job
-    , #{start_time_sql}
-    , #{end_time_sql}
+    , #{time_sql}
     , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
     , success
     , job_failed_count
