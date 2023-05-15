@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+# icc-cmp -
+
+# icc-cmp - temp incontact completed calls debug script - compare a 90-day
+# measurement snapshot against the 90-day original, snapshotted on 2023-05-15.
+
+require "colorize"
+require "json"
+
+argv = ARGV.dup
+
+show_json_errors = argv.delete("-e")
+
+old_file = argv[0] || "dscmp.snowflake.90-orig.json"
+new_file = argv[1] || "dscmp.snowflake.90.json"
+
+[old_file, new_file].each do |file|
+  raise "Cannot find file '#{file}'" unless File.exist?(file)
+end
+
+begin
+  old_data = JSON.parse(File.read(old_file))
+rescue JSON::ParserError => e
+  if show_json_errors
+    raise e
+  else
+    puts "Could not parse '#{old_file}'... is it JSON? Rerun with -e to see specific json parser error."
+    exit
+  end
+end
+
+begin
+  new_data = JSON.parse(File.read(new_file))
+rescue JSON::ParserError => e
+  if show_json_errors
+    raise e
+  else
+    puts "Could not parse '#{new_file}'... is it JSON? Rerun with -e to see specific json parser error."
+    exit
+  end
+end
+
+old_data.zip(new_data).each.with_index do |row, index|
+  if row.first["date"] != row.last["date"]
+    puts "OH NO! This data ain't right!"
+    puts row.inspect
+    exit -1
+  end
+
+  if row.first["cnt"] != row.last["cnt"]
+    msg = "BAD: %d %s: was %s, is %s (differenec: %d)" % [
+      index,
+      row.first["date"],
+      row.first["cnt"],
+      row.last["cnt"],
+      row.first["cnt"].to_i-row.last["cnt"].to_i
+    ]
+    puts msg.red
+  else
+    msg = " Ok: %d %s: was %s, is %s" % [index, row.first["date"], row.first["cnt"], row.last["cnt"]]
+    puts msg.cyan
+  end
+end

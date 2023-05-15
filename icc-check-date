@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+
+# icc-check_date - temp incontact completed calls debug script - open the dscmp
+# files for redshift then, redshift now, snowflake then, and snowflake now, and
+# dump the whole hot mess
+
+require "colorize"
+require "json"
+require "text-table"
+
+date = ARGV.first
+
+raise "You must supply a date as YYYY-MM-DD." if date.nil? || date !~ /^\d{4}-\d{2}-\d{2}$/
+
+files = {
+  snowflake_old: "dscmp.snowflake.90-orig.json",
+  snowflake_new: "dscmp.snowflake.90.json",
+  redshift_old: "dscmp.redshift.90-orig.json",
+  redshift_new: "dscmp.redshift.90.json",
+}
+file_data = {}
+
+files.each_pair do |name, file|
+  puts file
+  $stdout.flush
+  file_data[name] = JSON.parse(File.read(file)).detect {|day| day["date"] == date }.fetch("cnt").to_i
+end
+
+table = Text::Table.new
+table.head = [ date, "Redshift", "Snowflake", "Difference"]
+table.rows = []
+
+table.rows << [
+  "Measured on 2023-05-15",
+  file_data[:redshift_old],
+  file_data[:snowflake_old],
+  file_data[:redshift_old] - file_data[:snowflake_old],
+]
+
+table.rows << [
+  "Most Recent Measurement",
+  file_data[:redshift_new],
+  file_data[:snowflake_new],
+  file_data[:redshift_new] - file_data[:snowflake_new],
+]
+
+puts table # .to_s
