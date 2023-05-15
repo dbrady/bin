@@ -1,0 +1,20 @@
+#!/bin/bash
+# icc-rediff - st00pid hack to rerun icc query and diff it against the original from 2023-05-15
+
+echo -e '\033[36mdscmp --log "select contact_start::Date as date ,count(*) as cnt from warehouse.f_incontact_contacts_completed where contact_start > current_date -90 group by 1 order by 1 desc"\033[0m'
+dscmp --log "select contact_start::Date as date ,count(*) as cnt from warehouse.f_incontact_contacts_completed where contact_start > current_date -90 group by 1 order by 1 desc"
+
+echo -e '\033[36mcp dscmp.snowflake.csv dscmp.snowflake.90.csv\033[0m'
+cp dscmp.snowflake.csv dscmp.snowflake.90.csv
+
+echo -e '\033[36mcat dscmp.snowflake.90.csv | csv-to-json dscmp.snowflake.90-orig.json\033[0m'
+cat dscmp.snowflake.90.csv | csv-to-json | snow-calm-your-json > dscmp.snowflake.90.json
+
+echo -e '\033[36mcp dscmp.redshift.csv  dscmp.redshift.90.csv\033[0m'
+cp dscmp.redshift.csv | dscmp.redshift.90.csv
+
+echo -e '\033[36mcat dscmp.redshift.90.csv | csv-to-json dscmp.redshift.90-orig.json\033[0m'
+cat dscmp.redshift.90.csv | csv-to-json dscmp.redshift.90.json
+
+echo -e '\033[36m./then_and_now\033[0m'
+./then_and_now
