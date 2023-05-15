@@ -14,6 +14,7 @@ class DsJobsApp
       "b58cf084a090" => "kym",
       "1bb4fcfc3ac9" => "rikki",
       "98909e115b88" => "zack",
+      "production-dataservices-node" => "production"
     }
     host_case_sql = "CASE " \
                     + users
@@ -22,7 +23,7 @@ class DsJobsApp
                         .join(' ') \
                     + " ELSE host END"
 
-    # TODO: update me with my list of known old hostnames (I have one, sadly)
+    # TODO: update me with my list of known old hostnames (because we haz dem)
     hostname=`hostname`.strip
     raise "Hey you have a hardcoded hostname of '31b95b7de045' but your hostname is '#{hostname}', what gives?" if hostname != '31b95b7de045' && hostname != 'Mac1205Pro.local'
 
