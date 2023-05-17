@@ -1,18 +1,28 @@
 #!/usr/bin/env ruby
-# icc-cmp -
+# icc-cmp - Compare two date/cnt query histogram files
 
 # icc-cmp - temp incontact completed calls debug script - compare a 90-day
 # measurement snapshot against the 90-day original, snapshotted on 2023-05-15.
 
 require "colorize"
 require "json"
+require "optimist"
+require "text-table"
+
+opts = Optimist.options do
+  opt :"json-errors", "Show bare JSON::ParserError exceptions", default: false
+  opt :errors, "Show rows with errors only", default: false
+  opt :table, "Show results as table", default: false
+  opt :debug, "Show extra debug info", default: false
+end
+
+puts opts.inspect if opts[:debug]
 
 argv = ARGV.dup
 
-show_json_errors = argv.delete("-e")
-
-old_file = argv[0] || "dscmp.snowflake.90-orig.json"
-new_file = argv[1] || "dscmp.snowflake.90.json"
+# old_file = argv[0] || "/root/data_services/etl/warehouse/dscmp.snowflake.90-orig.json"
+old_file = argv[0] || "/root/data_services/etl/warehouse/dscmp.redshift.90.json"
+new_file = argv[1] || "/root/data_services/etl/warehouse/dscmp.snowflake.90.json"
 
 [old_file, new_file].each do |file|
   raise "Cannot find file '#{file}'" unless File.exist?(file)
@@ -21,7 +31,7 @@ end
 begin
   old_data = JSON.parse(File.read(old_file))
 rescue JSON::ParserError => e
-  if show_json_errors
+  if opts[:"json_errors"]
     raise e
   else
     puts "Could not parse '#{old_file}'... is it JSON? Rerun with -e to see specific json parser error."
@@ -32,7 +42,7 @@ end
 begin
   new_data = JSON.parse(File.read(new_file))
 rescue JSON::ParserError => e
-  if show_json_errors
+  if opts[:"json_errors"]
     raise e
   else
     puts "Could not parse '#{new_file}'... is it JSON? Rerun with -e to see specific json parser error."
@@ -40,24 +50,41 @@ rescue JSON::ParserError => e
   end
 end
 
+table = Text::Table.new
+
+table.head = [ "Date", File.basename(old_file), File.basename(new_file), "Difference"]
+table.rows = []
+
 old_data.zip(new_data).each.with_index do |row, index|
   if row.first["date"] != row.last["date"]
-    puts "OH NO! This data ain't right!"
+    puts "OH NO! This data ain't right! I'm seeing dates out of order. What gives?"
     puts row.inspect
     exit -1
   end
 
   if row.first["cnt"] != row.last["cnt"]
-    msg = "BAD: %d %s: was %s, is %s (differenec: %d)" % [
-      index,
-      row.first["date"],
-      row.first["cnt"],
-      row.last["cnt"],
-      row.first["cnt"].to_i-row.last["cnt"].to_i
-    ]
-    puts msg.red
+    if opts[:table]
+      table.rows << [row.first["date"], row.first["cnt"], row.last["cnt"], row.first["cnt"].to_i-row.last["cnt"].to_i]
+    else
+      msg = "BAD: %d %s: was %s, is %s (difference: %d)" % [
+        index,
+        row.first["date"],
+        row.first["cnt"],
+        row.last["cnt"],
+        row.first["cnt"].to_i-row.last["cnt"].to_i
+      ]
+      puts msg.red
+    end
   else
-    msg = " Ok: %d %s: was %s, is %s" % [index, row.first["date"], row.first["cnt"], row.last["cnt"]]
-    puts msg.cyan
+    if opts[:table]
+      if !opts[:errors]
+        table.rows << [row.first["date"], row.first["cnt"], row.last["cnt"], "0".cyan]
+      end
+    else
+      msg = " Ok: %d %s: was %s, is %s" % [index, row.first["date"], row.first["cnt"], row.last["cnt"]]
+      puts msg.cyan
+    end
   end
 end
+
+puts table if opts[:table]

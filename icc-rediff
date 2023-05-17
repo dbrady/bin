@@ -11,10 +11,10 @@ echo -e '\033[36mcat dscmp.snowflake.90.csv | csv-to-json dscmp.snowflake.90-ori
 cat dscmp.snowflake.90.csv | csv-to-json | snow-calm-your-json > dscmp.snowflake.90.json
 
 echo -e '\033[36mcp dscmp.redshift.csv  dscmp.redshift.90.csv\033[0m'
-cp dscmp.redshift.csv | dscmp.redshift.90.csv
+cp dscmp.redshift.csv dscmp.redshift.90.csv
 
 echo -e '\033[36mcat dscmp.redshift.90.csv | csv-to-json dscmp.redshift.90-orig.json\033[0m'
-cat dscmp.redshift.90.csv | csv-to-json dscmp.redshift.90.json
+cat dscmp.redshift.90.csv | csv-to-json > dscmp.redshift.90.json
 
-echo -e '\033[36m./then_and_now\033[0m'
-./then_and_now
+echo -e '\033[36micc-cmp\033[0m'
+icc-cmp /root/data_services/etl/warehouse/dscmp.{redshift,snowflake}.90.json
