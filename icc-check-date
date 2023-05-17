@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 
-# icc-check_date - temp incontact completed calls debug script - open the dscmp
-# files for redshift then, redshift now, snowflake then, and snowflake now, and
-# dump the whole hot mess
+# icc-check_date - temp incontact completed calls debug script - look at one
+# specific date in all four logs and grid them then/now vs redshift/snowflake.
+#
+# icc-check-date <date>
 
 require "colorize"
 require "json"
