@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# TODO: Case study in hyperfocus: ds-disconnected does not care about the VPN or
+# the office. It only cares about whether or not the dataservices port forwards
+# have become disconnected.
+
+# ds-office-lan - jam out a big green warning banner page so I know ssh to the
+# dataservices port-forwarding-hydra has office-lan
+
+rubanner --fg=white --bg=green " " &&
+    rubanner --font=ansi-shadow --bold --fg=white --bg=green "OFFICE LAN" &&
+    rubanner --fg=white --bg=green " "
