@@ -12,14 +12,15 @@ settingses = [
   # pure ruby. Could we cleanly make this thing dsstart, then sleep
   # *in ruby*, then send emacs C-m ? Maybe change the final arg from
   # String to array of strings... or perhaps a lambda? Idk.
-  TmuxSettings.new("ds.emacs", "data_services/etl/warehouse/", "dsstart"),
+  TmuxSettings.new(name: "ds.emacs", folder: "data_services/etl/warehouse/", commands: ["dsstart", "emacs"]),
 
   # all subsequent sessions connect with dsexec, but we need to give dsstart enough time to fire up
-  TmuxSettings.new("ds.bash", "data_services/etl/warehouse/", "sleep 10 && dsexec"),
-  TmuxSettings.new("ds.bash2", "data_services/etl/warehouse/", "sleep 10 && dsexec"),
+  TmuxSettings.new(name: "ds.bash", folder: "data_services/etl/warehouse/", commands: ["sleep 10", "dsexec"]),
+  TmuxSettings.new(name: "ds.bash2", folder: "data_services/etl/warehouse/", commands: ["sleep 10", "dsexec"]),
 
-  TmuxSettings.new("osx.emacs", "data_services/etl/warehouse/", "emacs"),
-  TmuxSettings.new("osx.bash", "data_services/etl/warehouse/", ""),
+  TmuxSettings.new(name: "osx.emacs", folder: "data_services/etl/warehouse/", commands: ["emacs"]),
+  TmuxSettings.new(name: "osx.bash", folder: "data_services/etl/warehouse/"),
+  TmuxSettings.new(name: "ds-watch", folder: "data_services/etl/warehouse/", commands: ["sleep 10", "dsexec", "ds-watch-branches"]),
 ]
 $logging = true
 

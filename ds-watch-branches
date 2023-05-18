@@ -1,7 +1,10 @@
 #!/bin/bash
 
 if [ "$IS_DOCKER_LOCAL" == "1" ]; then
+    # DOCKER
     watch -d -n 60 'git log-branch -p $HOME/bin; git log-branch -p $HOME/data_services; git log-branch -p $HOME/data_services_package/; git log-branch -p $HOME/data_services/etl/warehouse/finance/; git log-branch -p $HOME/data_services/etl/warehouse/sql'
 else
-    watch -d -n 60 'git log-branch -p $HOME/acima/devel/bin; git log-branch -p $HOME/acima/devel/data_services; git log-branch -p $HOME/acima/devel/data_services_package/; git log-branch -p $HOME/acima/devel/data_services/etl/warehouse/finance/; git log-branch -p $HOME/acima/devel/data_services/etl/warehouse/sql'
+    # OSX
+    echo -e "\033[31mRUN THIS FROM INSIDE DOCKER (BECAUSE THE HOME PATH IS PART OF THE REPO PATH)\033[0m"
+    # watch -d -n 60 'git log-branch -p $HOME/bin; git log-branch -p $HOME/acima/devel/data_services; git log-branch -p $HOME/acima/devel/data_services_package/; git log-branch -p $HOME/acima/devel/data_services/etl/warehouse/finance/; git log-branch -p $HOME/acima/devel/data_services/etl/warehouse/sql'
 fi
