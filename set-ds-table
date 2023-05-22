@@ -1,0 +1,13 @@
+#!/bin/bash
+# set-ds-table <table> - Record tablefile
+TABLEFILE=~/.ds_table
+
+if [ `uname -s` == 'Darwin' ]; then
+    echo -e "\033[33mYou are in OSX. DS table only makes sense from inside Docker. Aborting.\033[0m"
+    exit -1
+fi
+
+echo "# The last line of this file contains the current working ds table." | tee $TABLEFILE
+echo "# it is a relative path from the ds/etl/warehouse folder" | tee -a $TABLEFILE
+echo "# see ~/bin/get-ds-table, ~/bin/set-ds-table, and ~/bin/clear-ds-table" | tee -a $TABLEFILE
+echo "$@" | tee -a $TABLEFILE

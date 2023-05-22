@@ -2,7 +2,7 @@
 require 'colorize'
 require 'date'
 require 'optimist'
-require 'sqlite3'
+require 'extralite'
 
 # Return previous Monday.
 def start_of_week_for(date)
@@ -34,6 +34,47 @@ def git_repo_for(path)
   end
 end
 
+# Prune duplicate branches from repo. Doesn't happen often, shouldn't happen
+# ever, PITA to clean up from the console, so here's some code for you, Future
+# Me, if you eff things up again like I did today. Love, Past Me. Maybe if I
+# never use this again I can remove the --prune option.
+#
+# Also this is super rarely needed (I hope) so I'm giving you an n+1
+# query. Cache your own ids, I'm tired.
+def prune_branches(path, db)
+  puts "pruning #{path}..."
+  last_branch = nil
+
+  db.query("SELECT id, branch FROM branch_history WHERE path='#{path}' ORDER BY created_at ASC").each do |row|
+    branch = row[:branch]
+    if branch == last_branch
+      puts "Deleting row: #{row.inspect}"
+      db.execute("DELETE FROM branch_history WHERE id=?", row[:id])
+    else
+      puts "Keeping row:  #{row.inspect}"
+    end
+    last_branch = branch
+  end
+end
+
+# prune_and_exit! - Clean up duplicate branches. Shouldn't happen ever. Doesn't happen often. Pain in the ass to clean up.
+# --prune - clean up duplicate branchs from current repo
+# --prune --all - clean up duplicates in all branches
+def prune_and_exit!(opts, db)
+  paths = if opts[:all]
+            db.query("SELECT path FROM branch_history GROUP BY path ORDER BY path").map {|row| row[:path]}
+          else
+            Array(opts[:path])
+          end
+
+  paths.each do |path|
+    prune_branches(path, db)
+  end
+
+  exit
+end
+
+
 opts = Optimist::options do
   banner <<-USAGE
 git-branch-history - query the branch history log
@@ -47,14 +88,17 @@ USAGE
 
   opt :start, "Start date", short: :none, type: :string
   opt :end, "End date", short: :none, type: :string
-  opt :date, "Sets --start and --end to week of Mon-Sun containing this date", short: :none, type: :string
+  opt :date, "Sets --start and --end to week of Mon-Sun containing this date, or --date=today for current week", short: :none, type: :string
 
   opt :latest, "Show only latest/current branches for each path only", default: false
+  opt :log, "Show journal/log of branch changes", default: false
   opt :all, "Show branch history for all recorded repos", default: false
   opt :path, "Path to specific repo (defaults to current folder)", type: :string
+  opt :journal, "Show all branches with switch times", default: false
 
   opt :debug, "Dump extra debug information", short: :d, default: false
   opt :verbose, "Be a bit extra chatty", default: false
+  opt :prune, "Prune duplicate branches (shouldn't need to be done ever, let alone often, but sometimes I write bugs)", default: false
 end
 
 puts "Opts exactly as given: #{opts.inspect}" if opts[:debug]
@@ -90,7 +134,7 @@ SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
                   File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
                 end
 
-LOGFILE = File.join(SHARE_FOLDER, 'git-branch-history.sqlite3')
+DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
 wheres = []
 wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start_given]
@@ -103,27 +147,51 @@ where = if wheres.empty?
           where = "WHERE " + wheres.join(" AND ")
         end
 
-db = SQLite3::Database.new(LOGFILE)
+order = opts[:log] ? 'created_at' : 'path, created_at'
 
-query = if opts[:latest]
-            <<QUERY
+db = Extralite::Database.new(DATABASE_PATH)
+
+prune_and_exit!(opts, db) if opts[:prune]
+
+query = if opts[:journal]
+          <<QUERY
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at
+QUERY
+        elsif opts[:latest]
+          <<QUERY
 SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{where} GROUP BY path ORDER BY path
 QUERY
-          else
-            <<QUERY
-SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, branch
+        else
+          <<QUERY
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY #{order}
 QUERY
-          end
+        end
 
-branches = Hash.new {|h,k| h[k] = []}
+repos = Hash.new {|h,k| h[k] = []}
 
 puts query.cyan if opts[:verbose]
 
-db.execute(query) do |row|
-  branches[row[0]] << row[1]
-end
+if opts[:journal]
+  db.query(query) do |row|
+    repos[row[:path]] << {created_at: row[:created_at], branch: row[:branch]}
+  end
 
-branches.each_pair do |repo, branches|
-  puts repo.cyan
-  puts branches.map {|branch| "    #{branch}"}
+  puts repos.inspect if opts[:debug]
+  repos.each_pair do |repo, branch_changes|
+    puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
+    puts repo.cyan
+    branch_changes.each do |change|
+      puts "    change: #{change.inspect}" if opts[:debug]
+      puts "    #{change[:created_at]} #{change[:branch]}"
+    end
+  end
+else
+  db.execute(query) do |row|
+    repos[row[:path]] << row[:branch]
+  end
+
+  repos.each_pair do |repo, branches|
+    puts repo.cyan
+    puts branches.map {|branch| "    #{branch}"}
+  end
 end

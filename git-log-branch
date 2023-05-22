@@ -3,7 +3,7 @@
 # ideally set this up to run
 require 'colorize'
 require 'optimist'
-require 'sqlite3'
+require 'extralite'
 
 # blegh. I gotta set up a clean host/container share...
 SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
@@ -12,7 +12,7 @@ SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
             File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
           end
 
-LOGFILE = File.join(SHARE_FOLDER, 'git-branch-history.sqlite3')
+DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
 LOG_INFO=:white
 LOG_QUERY=:cyan
@@ -39,18 +39,18 @@ class GitBranchLogger
   end
 
   def db
-    @db ||= SQLite3::Database.new LOGFILE
+    @db ||= Extralite::Database.new DATABASE_PATH
   end
 
   def load_most_recent_branch_for(path)
-    db.execute("SELECT branch FROM branch_history WHERE path=? ORDER BY created_at DESC LIMIT 1;", path) do |row|
-      return row[0]
+    db.query("SELECT branch FROM branch_history WHERE path=? ORDER BY created_at DESC LIMIT 1;", path) do |row|
+      return row[:branch]
     end
   end
 
   def log_branch(path, branch)
     log "Recording branch '#{branch}' for path '#{path}'"
-    db.execute "INSERT INTO branch_history (path, branch) VALUES (?, ?);", [path, branch]
+    db.execute "INSERT INTO branch_history (path, branch) VALUES (?, ?);", path, branch
   end
 
   def drop_table
@@ -98,9 +98,13 @@ class GitBranchLogger
     current_branch = `(cd #{path} && git current-branch)`.strip
     last_branch = load_most_recent_branch_for(path)
 
-    log_branch(path, current_branch) if last_branch != current_branch
 
-    print "Logging branch: #{path.inspect} is on #{current_branch.inspect}"
+    if last_branch != current_branch
+      puts "last_branch was #{last_branch.inspect}, current_branch is #{current_branch}; logging" if debug?
+      print "Logging branch: #{path.inspect} is on #{current_branch.inspect}"
+      log_branch(path, current_branch) if last_branch != current_branch
+    end
+
   end
 end
 

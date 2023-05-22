@@ -1,0 +1,23 @@
+#!/bin/bash
+# crappy temp hack you probably want to just rsdiff
+#
+# rsdiff90
+#
+# Given dscmp log output to dscmp.redshift.csv and dscmp.snowflake.csv
+# Blart them both to .json
+# Calm down the snowflake all-caps column names
+# Colordiff the the json
+
+#
+
+source ~/bin/vars-ansicolors.sh
+
+
+echo -e "\033[36mcsv-to-json dscmp.redshift.90.csv > dscmp.redshift.90.json\033[0m"
+csv-to-json dscmp.redshift.90.csv > dscmp.redshift.90.json
+
+echo -e "\033[36mcsv-to-json dscmp.snowflake.90.csv > dscmp.snowflake.90.json\033[0m"
+csv-to-json dscmp.snowflake.90.csv | snow-calm-your-json > dscmp.snowflake.90.json
+
+echo -e "\033[36mcolordiff -y dscmp.redshift.90.json dscmp.snowflake.90.json\033[0m"
+colordiff -y dscmp.redshift.90.json dscmp.snowflake.90.json

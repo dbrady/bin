@@ -14,6 +14,7 @@ class DsJobsApp
       "b58cf084a090" => "kym",
       "1bb4fcfc3ac9" => "rikki",
       "98909e115b88" => "zack",
+      "production-dataservices-node" => "production"
     }
     host_case_sql = "CASE " \
                     + users
@@ -22,31 +23,33 @@ class DsJobsApp
                         .join(' ') \
                     + " ELSE host END"
 
-    # TODO: update me with my list of known old hostnames (I have one, sadly)
+    # TODO: update me with my list of known old hostnames (because we haz dem)
     hostname=`hostname`.strip
     raise "Hey you have a hardcoded hostname of '31b95b7de045' but your hostname is '#{hostname}', what gives?" if hostname != '31b95b7de045' && hostname != 'Mac1205Pro.local'
 
     opts = Optimist::options do
-      opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
-      opt :limit, "Max jobs to return", short: :none, default: 20
-      opt :job, "Job name or path/to/job.py (can be CSV. Set to * to get all jobs. Set to '.' or omit to defaults to get-ds-script)", short: :none, type: :string
-      opt :start, "Show jobs started on or after this datetime (always UTC)", short: :none, type: :string
       opt :end, "Show jobs started (not ended!) on or before this datetime (always UTC)", short: :none, type: :string
       opt :host, "Hostname", short: :none, type: :string
-      opt :mine, "Same as --host=#{hostname}", short: :none, default: false
-      opt :prod, "Same as --host=production-dataservices-node", short: :none, default: false
-      opt :id, "Show id column", short: :none, default: false
-      opt :notes, "Show notes column", short: :none, default: false
-      opt :where, "Override where clause entirely", short: :none, type: :string
-      opt :utc, "Show times in UTC", short: :none, default: false
+      opt :job, "Job name or path/to/job.py (can be CSV. Set to * to get all jobs. Set to '.' or omit to defaults to get-ds-script)", short: :none, type: :string
+      opt :limit, "Max jobs to return", short: :none, default: 20
+      opt :start, "Show jobs started on or after this datetime (always UTC)", short: :none, type: :string
+      opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
       opt :failures, "Show failures only", short: :none, default: false
+      opt :id, "Show id column", short: :none, default: false
+      opt :mine, "Same as --host=#{hostname}", short: :none, default: false
+      opt :mst, "Show only times in America/Denver (MST/MDT)", short: :none, default: false
+      opt :notes, "Show notes column", short: :none, default: false
+      opt :prod, "Same as --host=production-dataservices-node", short: :none, default: false
+      opt :utc, "Show only times in UTC", short: :none, default: false
+      opt :where, "Override where clause entirely", short: :none, type: :string
 
       opt :debug, "Show extra debugging", default: false
       opt :pretend, "Show query and exit", default: false
-      opt :quiet, "Suppress output other than the jobs results", default: false
+      opt :verbose, "Print query and other deets", default: false
     end
     Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
     Optimist::die "Cannot specify --host and --prod at same time" if opts[:prod] && opts[:host_given]
+    Optimist::die "Cannot specify --utc and --mst at same time" if opts[:utc] && opts[:mst]
     puts opts.inspect if opts[:debug]
 
     opts[:host] = hostname if opts[:mine]
@@ -60,19 +63,6 @@ class DsJobsApp
     wheres = []
 
     # job
-    # blegh.
-
-    # | Case                                                          | Opt
-    # | I want all jobs. Omit the "job in ()" clause.                 | --job=*
-    # | I want specific job or jobs. Massage paths/filenames.         | --job=path/to/job.py,path/to/job2.py
-    # | I want the current job.                                       | --job=.
-    # | I want the current job, and I'm lazy so I want it implicitly. | <nothing>
-    # | I want jobs LIKE the thing I'm saying                         | include a % in the job name
-    # case 1: I want all jobs. Create no "job in ()" clause.
-    # case 2: I want a specific job or jobs. Massage paths/filenames.
-    # case 2: I explicitly want the current job. This is still case 2, just say --job=.
-    # case 3: I implicitly want the current job.
-    # case
     if opts[:job_given] && opts[:job] != "*"
       jobs = opts[:job].split(/,/)
                .map {|job| if job == '.' then `get-ds-script`.strip else job end }         # replace . with get-ds-script
@@ -93,6 +83,9 @@ class DsJobsApp
         job_list = jobs.map {|job| "'#{job}'"}.join(', ')
         wheres << "job ILIKE ANY (#{job_list})"
       end
+    elsif !opts[:job_given]
+      job = `get-ds-script`.strip.gsub(%r|/|, '.').sub(/\.py$/, '')
+      wheres << "job IN ('#{job}')"
     end
 
     # host
@@ -102,15 +95,10 @@ class DsJobsApp
     wheres << "success=0" if opts[:failures]
 
     # start
-    #
-    # NOTE: --start and --end are always in UTC. Changing the search time per
-    # warehouse is easy. Knowing whether DST was active when the job ran is
-    # considerably less so.
     wheres << "start_time >= '#{opts[:start]}'" if opts[:start_given]
 
     # end
     wheres << "end_time <= '#{opts[:end]}'" if opts[:end_given]
-
 
     # Pack up the wheres array into a WHERE clause.
     where = if opts[:where_given] && !wheres.empty?
@@ -123,25 +111,28 @@ class DsJobsApp
               "WHERE " + wheres.map {|w| "\n            #{w}"}.join(" AND ")
             end
 
-    start_time_sql,
-    end_time_sql = if opts[:utc]
-                     [
-                       "start_time",
-                       "end_time"
-                     ]
-                   elsif opts[:warehouse] =~ /redshift/
-                     [
-                       "start_time, start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS start_time_mst",
-                       "end_time, end_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS end_time_mst"
-                     ]
-                   else
-                     [
-                       "start_time, CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_mst",
-                       "end_time, CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_mst"
-                     ]
-                   end
+    # Show times in MST / UTC / BOTH
+    times = []
 
+    if !opts[:mst] # Include UTC because --utc was specified OR no time was.
+      times << ["start_time", "end_time"]
+    elsif !opts[:utc] # Include MST because --mst was specified OR no time was.
+      if opts[:warehouse] =~ /redshift/
+        times << [
+          "start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS start_time_local",
+          "end_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS end_time_local"
+        ]
+      else
+        times << [
+          "CONVERT_TIMEZONE('UTC', 'America/Denver', start_time) AS start_time_local",
+          "CONVERT_TIMEZONE('UTC', 'America/Denver', end_time) AS end_time_local"
+        ]
+      end
+    end
 
+    time_sql = times * ', '
+
+    # Finally, build the query
     query = if opts[:warehouse] =~ /redshift/
               <<QUERY
 WITH jobs1 AS (
@@ -179,8 +170,7 @@ SELECT
     #{host_case_sql}
     #{show_id}
     , job
-    , #{start_time_sql}
-    , #{end_time_sql}
+    , #{time_sql}
     , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
     , success
     , job_failed_count
@@ -213,8 +203,7 @@ SELECT
     #{host_case_sql} AS host
     #{show_id}
     , job
-    , #{start_time_sql}
-    , #{end_time_sql}
+    , #{time_sql}
     , LPAD(FLOOR(duration/3600),2,0)||':'||LPAD(FLOOR(MOD(duration, 3600)/60),2,0)||':'||LPAD(MOD(duration, 60),2,0) AS elapsed
     , success
     , job_failed_count
@@ -225,9 +214,9 @@ SELECT
 QUERY
             end
 
-    if opts[:pretend] and !opts[:quiet]
+    if opts[:pretend]
       puts query
-    elsif !opts[:quiet]
+    elsif opts[:verbose]
       puts query.cyan
     end
     exit(0) if opts[:pretend]

@@ -1,3 +1,9 @@
 #!/bin/bash
-# get-ds-table [-f] - get scriptfile and parse it into the related tabe name
-get-ds-script | sed -e 's/\//./g' | sed -E 's/.py$//' | sed -E 's/^etl_//'
+# get-ds-table [-f] - get scriptfile. If it hasn't been explicitly set or overridden, parse it out from the related tabe name.
+TABLEFILE=~/.ds_table
+
+if [ -e $TABLEFILE ]; then
+    tail -n 1 $TABLEFILE
+else
+    get-ds-script | sed -e 's/\//./g' | sed -E 's/.py$//' | sed -E 's/^etl_//'
+fi

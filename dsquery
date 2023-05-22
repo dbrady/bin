@@ -8,6 +8,7 @@
 # as a ruby script with optimist.
 import argparse
 import os
+import sqlite3
 import sys
 from dataservices import db
 
@@ -21,12 +22,49 @@ def query_should_be_bare(query):
         or query.lower().startswith("create ")
 
 
+def database():
+    # 2023-05-05: wtf, this doesn't work. db_file is supposed to be a path to a
+    # db but this cannot open the db. If we cd to the folder and then open the
+    # filename with no path, it DOES work.
+    db_file = "/root/data_services_package/dataservices/haxx/dsquery-log.db"
+    return sqlite3.connect(db_file).cursor()
+
+
+def ensure_table_exists():
+    return
+    create_sql = """
+CREATE TABLE IF NOT EXISTS queries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT
+    , created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    , query TEXT
+);
+"""
+    database().execute(create_sql)
+
+
+def log_query(query):
+    return
+    ensure_table_exists()
+    query = query.replace("'", "''")
+
+    insert_sql = f"INSERT INTO queries (query, created_at) VALUES ('{query}', CURRENT_TIMESTAMP);"
+    print(f"insert_sql: {insert_sql}")
+    # print(f"len(query): {len(query)}")
+    result = database().execute(insert_sql)
+    print(f"Query ran. Results:")
+    print(result)
+    print(dir(result))
+    for row in result:
+        print(row)
+
+
 def run(query, **attrs):
     warehouse = attrs.get('warehouse') or 'snowflake'
 
     dbo = attrs['dbo']
     conn = attrs['conn']
 
+    log_query(query)
     try:
         if attrs.get('bare') is True:
             results = dbo.query(query)
