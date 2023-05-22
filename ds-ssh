@@ -1,0 +1,5 @@
+#!/bin/bash
+clear
+echo -e "\033[36mclear\nssh dataservices\nds-disconnected\033[0m"
+ssh dataservices
+ds-disconnected
