@@ -653,6 +653,10 @@ Options:
       opt :"no-tz", "same as --no-timezone", short: :none, default: false
       opt :"no-x", "same as --no-exception", short: :none, default: false
       opt :space, "Run unmanaged whitespace detectors", default: true
+
+      # TODO: redo this as sthg like pass_through_args(:start, :end, etc...)
+      opt :start, "Start (pass through to etl_nightly.py)", type: :string
+      opt :end, "End (pass through to etl_nightly.py)", type: :string
     end
     # copy alternate args over, so that e.g. --no-j will set --no-json to true
     {
@@ -759,8 +763,12 @@ Options:
       command += " --skip_upload" if has_skip_upload?
       command += " --force" if force?
       command += " --test" if has_test_mode? && use_test_mode? && send_test?
-      command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !argv.include?('--start_date')
-      command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !argv.include?('--end_date')
+      command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !opts[:start_date_given] # argv.include?('--start_date')
+      command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !opts[:end_date_given] # !argv.include?('--end_date')
+
+      # TODO: redo this as sthg like pass_through_args(:start, :end, etc...)
+      command += " --start=#{opts[:start]}" if opts[:start_given]
+      command += " --end=#{opts[:end]}" if opts[:end_given]
       command += " --recipients #{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
       command += " " + argv.join(" ")
       run_and_exit! command
