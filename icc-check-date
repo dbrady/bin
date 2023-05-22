@@ -22,8 +22,8 @@ files = {
 file_data = {}
 
 files.each_pair do |name, file|
-  puts file
-  $stdout.flush
+  # puts file
+  # $stdout.flush
   file_data[name] = JSON.parse(File.read(file)).detect {|day| day["date"] == date }.fetch("cnt").to_i
 end
 
