@@ -109,8 +109,10 @@ class Tmuxinatrix
         execute %Q|tmux send-keys -t#{target} "cd #{settings.folder}"|
         execute %Q|tmux send-keys -t#{target} "C-m"|
 
-        execute %Q|tmux send-keys -t#{target} "#{settings.command}"|
-        execute %Q|tmux send-keys -t#{target} "C-m"|
+        settings.commands.each do |command|
+          execute %Q|tmux send-keys -t#{target} "#{command}"|
+          execute %Q|tmux send-keys -t#{target} "C-m"|
+        end
       end
     end
   end
