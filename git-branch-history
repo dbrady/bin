@@ -171,11 +171,11 @@ repos = Hash.new {|h,k| h[k] = []}
 
 puts query.cyan if opts[:verbose]
 
-if opts[:journal]
-  db.query(query) do |row|
-    repos[row[:path]] << {created_at: row[:created_at], branch: row[:branch]}
-  end
+db.execute(query) do |row|
+  repos[row[:path]] << row
+end
 
+if opts[:journal]
   puts repos.inspect if opts[:debug]
   repos.each_pair do |repo, branch_changes|
     puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
@@ -186,12 +186,8 @@ if opts[:journal]
     end
   end
 else
-  db.execute(query) do |row|
-    repos[row[:path]] << row[:branch]
-  end
-
-  repos.each_pair do |repo, branches|
+  repos.each_pair do |repo, rows|
     puts repo.cyan
-    puts branches.map {|branch| "    #{branch}"}
+    puts rows.map {|row| "    #{row[:created_at]}: #{row[:branch]}"}
   end
 end
