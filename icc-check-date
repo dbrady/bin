@@ -11,7 +11,7 @@ require "text-table"
 
 date = ARGV.first
 
-raise "You must supply a date as YYYY-MM-DD." if date.nil? || date !~ /^\d{4}-\d{2}-\d{2}$/
+raise "You must supply a date as YYYY-MM-DD." if date !~ /^\d{4}-\d{2}-\d{2}$/
 
 files = {
   snowflake_old: "dscmp.snowflake.90-orig.json",
@@ -24,7 +24,8 @@ file_data = {}
 files.each_pair do |name, file|
   # puts file
   # $stdout.flush
-  file_data[name] = JSON.parse(File.read(file)).detect {|day| day["date"] == date }.fetch("cnt").to_i
+  json = JSON.parse(File.read(file))
+  file_data[name] = json.detect {|day| day["date"] == date }.fetch("cnt").to_i
 end
 
 table = Text::Table.new
