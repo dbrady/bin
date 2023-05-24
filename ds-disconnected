@@ -1,7 +1,0 @@
-#!/bin/bash
-# ds-disconnected - jam out a big red warning banner page so I know ssh to the
-# dataservices port-forwarding-hydra has disconnected
-
-rubanner --fg=white --bg=red " " &&
-    rubanner --font=ansi-shadow --bold --fg=white --bg=red "DISCONNECTED" &&
-    rubanner --fg=white --bg=red " "

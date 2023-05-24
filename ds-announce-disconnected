@@ -1,0 +1,5 @@
+#!/bin/bash
+# ds-announce-disconnected - jam out a big red warning banner page so I know my
+# ssh tunnel has disconnected
+
+rupage --font=ansi-shadow --bold --fg=white --bg=red "DISCONNECTED"

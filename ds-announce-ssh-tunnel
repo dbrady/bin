@@ -1,0 +1,5 @@
+#!/bin/bash
+# ds-announce-ssh-tunnel - jam out a big green page so I know my
+# ssh tunnel has (re)connected
+
+rupage --font=ansi-shadow --bold --fg=white --bg=green "SSH TUNNEL"
