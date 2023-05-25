@@ -40,7 +40,7 @@ class Rubanner
     screen_width.inspect
 
     banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
-    banner_width = banner.each_line.to_a.first.chomp.length
+    banner_width = banner.each_line.to_a.first&.chomp&.length || 0
     left_size = (screen_width - banner_width) / 2
     right_size = screen_width - (banner_width + left_size)
 

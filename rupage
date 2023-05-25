@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # rupage - a fullscreen(ish) rubanner
 
+require "colorize"
 require "optimist"
 colors = [:black, :light_black, :red, :light_red, :green, :light_green, :yellow, :light_yellow, :blue, :light_blue, :magenta, :light_magenta, :cyan, :light_cyan, :white, :light_white]
 
@@ -11,14 +12,22 @@ opts = Optimist.options do
   opt :bold, "Set bold text", default: true
   opt :debug, "Show extra debug info", default: false
 end
-
+message = ARGV.empty? ? " " : ARGV.join(" ")
 puts opts.inspect if opts[:debug]
 
 Optimist::die "Invalid fg #{opts[:fg].inspect} must be one of #{colors.join(', ')}" unless colors.include?(opts[:fg].to_sym)
 Optimist::die "Invalid bg #{opts[:bg].inspect} must be one of #{colors.join(', ')}" unless colors.include?(opts[:bg].to_sym)
 
-padding_command = "rubanner --fg=#{opts[:fg]} --bg=#{opts[:bg]} --font=#{opts[:font]} ' '"
-banner_command = "rubanner --fg=#{opts[:fg]} --bg=#{opts[:bg]} --font=#{opts[:font]} \"#{ARGV * ' '}\""
+command_args = []
+command_args << "--bg=#{opts[:bg]}" if opts[:bg]
+command_args << "--bold" if opts[:bold]
+command_args << "--font=#{opts[:font]}" if opts[:font]
+command_args = command_args.join(" ")
+
+padding_command = "rubanner #{command_args} ' '"
+banner_command = "rubanner #{command_args} '#{message}'"
+puts padding_command.cyan
+puts banner_command.cyan
 
 system padding_command
 system banner_command
