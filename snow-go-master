@@ -7,7 +7,11 @@ if [ `uname -s` == "Darwin" ]; then
 fi
 
 echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41m!!!  MASTER  !!! \033[0m branch, NOT SNOWFLAKE."
-echo "It will also clear ~/.ds_script."
+if [[ $1 == "-c" || $1 == "--clear" ]]; then
+    echo "It will also clear the ~/.ds_script and ~/.ds_table files."
+else
+    echo "Call this script with -c or --clear to also clear the ~/.ds_script and ~/.ds_table files."
+fi
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
 echo starting... &&
@@ -39,8 +43,12 @@ echo starting... &&
          echo -e "\033[36mgit checkout master finance\033[0m" &&
          git checkout master finance) &&
 
-    echo -e "\033[31;40mNOT CLEARING DS-SCRIPT. #GLHF\033[0m" &&
-    # echo -e "\033[36mclear-ds-script\033[0m" &&
-    # clear-ds-script &&
-
-    echo done.
+    (
+        (test "$1" == "-c" || test "$1" == "--clear") &&
+            echo -e "\033[36mclear-ds-script\033[0m" &&
+            echo clearing ~/.ds_script or ~/.ds_table &&
+            clear-ds-script
+    ) || (
+        echo NOT clearing ~/.ds_script or ~/.ds_table
+    ) &&
+        echo done.

@@ -619,6 +619,7 @@ Options:
       @ignore_invalid_options = true
 
       opt :"send-test", "Send --test in snow run to jobs that offer it", short: :none, default: true
+      opt :clear, "Clear ~/.ds_script and ~/.ds_table cache files (snow go only)", short: :none, default: false
       opt :debug, "Output extra debug info", short: :none
       opt :defaults, "(job only) Include job config defaults with job config (to see complete config)", short: :d
       opt :essential, "Only run essential detectors"
@@ -778,21 +779,31 @@ Options:
     # snow main -> snow-go-main
     # ----------------------------------------------------------------------
     if argv.first == "main"
-      run_and_exit! "snow-go-main"
+      command = "snow-go-main"
+      command += " --clear" if opts[:clear]
+      puts command.cyan
+      run_and_exit! command
     end
 
     # ----------------------------------------------------------------------
     # snow master -> snow-go-master
     # ----------------------------------------------------------------------
     if argv.first == "master"
-      run_and_exit! "snow-go-master"
+      command = "snow-go-master"
+      command += " --clear" if opts[:clear]
+      puts command.cyan
+      run_and_exit! command
     end
 
     # ----------------------------------------------------------------------
     # snow go <id> -> snow-go-branch
     # ----------------------------------------------------------------------
     if argv.first == "go"
-      run_and_exit! "snow-go-branch #{force? ? "-f " : ""}#{argv[1..] * ' '}"
+      command = "snow-go-branch"
+      command += " --force" if opts[:force]
+      command += " #{argv[1..] * ' '}"
+      puts command.cyan
+      run_and_exit! command.strip
     end
 
     # ----------------------------------------------------------------------
