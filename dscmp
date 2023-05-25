@@ -1,10 +1,16 @@
 #!/usr/bin/env ruby
 # dscmp <query> - Compare query results in both warehouses
 #
-# TODO: This --redshift="full query" --snowflake="full query" is very
-# cumbersome. Maybe we could try something like this instead:
+
+# TODO: I want to feed in pig-stupid-but-mother-huge queries from BI. I have to
+# put them in a file. I thought about jamming in a --file=<path/to/file.sql>
+# option but this script does too much query manipulation, and my instinct is to
+# either try to support it all or to spend the time documenting to Future Me
+# that it does not do query manipulation on the file.
 #
-# --query="SELECT * FROM foo WHERE id=<id>" --redshift=42 --snowflake=13
+# For now, I'm just doing this:
+#
+# for warehouse in redshift snowflake; do echo querying $warehouse...; dsquery --warehouse=$warehouse --file=ds-3313-one-agent.sql | cleanup-whitespace > dscmp.${warehouse}.csv; done
 
 require "colorize"
 require "optimist"
