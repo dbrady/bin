@@ -619,7 +619,6 @@ Options:
       @ignore_invalid_options = true
 
       opt :"send-test", "Send --test in snow run to jobs that offer it", short: :none, default: true
-      opt :clear, "Clear ~/.ds_script and ~/.ds_table cache files (snow go only)", short: :none, default: false
       opt :debug, "Output extra debug info", short: :none
       opt :defaults, "(job only) Include job config defaults with job config (to see complete config)", short: :d
       opt :essential, "Only run essential detectors"
@@ -628,6 +627,9 @@ Options:
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
       opt :quick, "(run only) Only show output from failing detectors"
       opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass", short: "Q", default: false
+
+      # Commands only for passing through
+      opt :clear, "Clear ~/.ds_script and ~/.ds_table cache files (snow go only)", short: :none, default: false
 
       # TODO: change these to arguments to a --skip command? That would make it
       # easier to write an --only command...
