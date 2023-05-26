@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # wh-describe-table - describe a table in the warehouse
 
-import argparse # No, don't import argparse. BECAUSE YOU SUCK, argparse. # No wait, go ahead. I've made my peace. Mostly.
+import argparse
+import subprocess
 import sys
 from dataservices import db
 
@@ -20,9 +21,7 @@ if __name__ == '__main__':
     pretend = args.pretend
     quiet = args.quiet
     warehouse = args.warehouse or 'snowflake'
-    table = args.table or remaining_args[0]
-
-    print(args)
+    table = args.table or subprocess.run("get-ds-table", capture_output=True, text=True).stdout.strip()
 
     # Look up warehouse from shorthand
     warehouse = allowed_warehouses.get(warehouse, warehouse)
