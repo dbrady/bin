@@ -29,18 +29,19 @@ class DsJobsApp
 
     opts = Optimist::options do
       opt :end, "Show jobs started (not ended!) on or before this datetime (always UTC)", short: :none, type: :string
+      opt :failures, "Show failures only", short: :none, default: false
       opt :host, "Hostname", short: :none, type: :string
+      opt :id, "Show id column", short: :none, default: false
       opt :job, "Job name or path/to/job.py (can be CSV. Set to * to get all jobs. Set to '.' or omit to defaults to get-ds-script)", short: :none, type: :string
       opt :limit, "Max jobs to return", short: :none, default: 20
-      opt :start, "Show jobs started on or after this datetime (always UTC)", short: :none, type: :string
-      opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
-      opt :failures, "Show failures only", short: :none, default: false
-      opt :id, "Show id column", short: :none, default: false
       opt :mine, "Same as --host=#{hostname}", short: :none, default: false
       opt :mst, "Show only times in America/Denver (MST/MDT)", short: :none, default: false
       opt :notes, "Show notes column", short: :none, default: false
       opt :prod, "Same as --host=production-dataservices-node", short: :none, default: false
+      opt :reverse, "Order ascending (and take oldest before limit)", short: :none, default: false
+      opt :start, "Show jobs started (not ended!) on or after this datetime (always UTC)", short: :none, type: :string
       opt :utc, "Show only times in UTC", short: :none, default: false
+      opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
       opt :where, "Override where clause entirely", short: :none, type: :string
 
       opt :debug, "Show extra debugging", default: false
@@ -114,9 +115,16 @@ class DsJobsApp
     # Show times in MST / UTC / BOTH
     times = []
 
+    if opts[:debug]
+      puts "Shouw UTC if !opts[:mst]: #{!opts[:mst]}"
+      puts "Shouw MST if !opts[:utc]: #{!opts[:utc]}"
+    end
+
     if !opts[:mst] # Include UTC because --utc was specified OR no time was.
       times << ["start_time", "end_time"]
-    elsif !opts[:utc] # Include MST because --mst was specified OR no time was.
+    end
+
+    if !opts[:utc] # Include MST because --mst was specified OR no time was.
       if opts[:warehouse] =~ /redshift/
         times << [
           "start_time AT TIME ZONE 'UTC' AT TIME ZONE 'America/Denver' AS start_time_local",
@@ -129,6 +137,8 @@ class DsJobsApp
         ]
       end
     end
+
+    order = opts[:reverse] ? "ASC" : "DESC"
 
     time_sql = times * ', '
 
@@ -149,7 +159,7 @@ WITH jobs1 AS (
     FROM
         f_etl_job_details
         #{where}
-        ORDER BY start_time DESC LIMIT #{opts[:limit]}
+        ORDER BY start_time #{order} LIMIT #{opts[:limit]}
 )
 , jobs2 AS (
     SELECT
@@ -196,7 +206,7 @@ WITH jobs1 AS (
     FROM
         f_etl_job_details
         #{where}
-    ORDER BY start_time DESC
+    ORDER BY start_time #{order}
     LIMIT #{opts[:limit]}
 )
 SELECT
