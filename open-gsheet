@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 
-url = "https://docs.google.com/spreadsheets/d/#{ARGV.first}/edit#gid=0"
+require "colorize"
+require "json"
+
 
 def osx?
   `uname -s`.strip == 'Darwin'
@@ -10,11 +12,20 @@ def dataservices_docker?
   ENV['IS_DOCKER_LOCAL'] == "1"
 end
 
+# read google_sheet_id from current job if no arg given
+gsheet_id = if ARGV.empty?
+              JSON.parse(`snow job | cat`)["google_sheet_id"]
+            else
+              ARGV.first
+            end
+raise "Could not determine google_sheet_id. Pass it explicitly or ensure current job is set and has a gogle_sheet_id in its config" unless gsheet_id
+url = "https://docs.google.com/spreadsheets/d/#{gsheet_id}/edit#gid=0"
+
 if osx?
   system "open #{url}"
 elsif dataservices_docker?
   puts url
-  puts "TODO: Figure out how to have docker tell host OS to open a url".yellow
+  puts "Don't know how to open your browser from inside docker. Cmd+click the url instead.".yellow
 else
   # In theory, sensible-browser is more correct than xdg-open, but in practice
   # it opens Mozilla Firefox even if chromium is my default browser
