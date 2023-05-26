@@ -26,6 +26,14 @@ def color_for(in_defaults, in_job)
   end
 end
 
+def colorize(string, in_defaults, in_job)
+  if $stdout.tty?
+    string.send(color_for(in_defaults, in_job))
+  else
+    string
+  end
+end
+
 def show_legend
   puts "-" * 80
   puts "Color Legend"
@@ -35,7 +43,7 @@ def show_legend
     { name: "in defaults and in job (may be overridden or unchanged)", in_defaults: true, in_job: true },
     { name: "punctuation", in_defaults: false, in_job: false },
   ].each do |item|
-    puts item[:name].send(color_for(item[:in_defaults], item[:in_job]))
+    puts colorize(item[:name], item[:in_defaults], item[:in_job])
   end
   puts "-" * 80
 end
@@ -69,7 +77,7 @@ show_legend if opts[:legend]
 
 # show name of script
 job_name = opts[:defaults] ? "job_defaults" : script
-puts job_name.bold.magenta
+puts job_name.bold.magenta if $stdout.tty?
 
 merged_lines.each do |line|
   # puts "line: #{line.rstrip}"
@@ -79,5 +87,9 @@ merged_lines.each do |line|
   in_defaults = key && default_lines.any? { |l| l.include? key }
   in_job = key && job_lines.any? { |l| l.include? key }
 
-  puts line.rstrip.send(color_for(in_defaults, in_job)).gsub("redshift", "\033[1;37;41mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+  if $stdout.tty?
+    puts colorize(line.rstrip, in_defaults, in_job).gsub("redshift", "\033[1;37;41mredshift\033[0m").gsub("snowflake", "\033[97;104msnowflake\033[0m")
+  else
+    puts line.rstrip
+  end
 end
