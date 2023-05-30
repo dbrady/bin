@@ -73,7 +73,7 @@ def run(query, **attrs):
                     print(value)
         else:
             results = dbo.query(query, return_type='dataframe')
-            print(results.to_csv(index=False))
+            print(results.to_csv(index=False), end="")
 
     finally:
         dbo.commit()
