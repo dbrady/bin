@@ -21,7 +21,11 @@ if __name__ == '__main__':
     pretend = args.pretend
     quiet = args.quiet
     warehouse = args.warehouse or 'snowflake'
-    table = args.table or subprocess.run("get-ds-table", capture_output=True, text=True).stdout.strip()
+    table = args.table
+    if table is None and len(remaining_args) == 0:
+        table = subprocess.run("get-ds-table", capture_output=True, text=True).stdout.strip()
+    else:
+        table = remaining_args[0]
 
     # Look up warehouse from shorthand
     warehouse = allowed_warehouses.get(warehouse, warehouse)
