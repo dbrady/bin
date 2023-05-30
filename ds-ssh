@@ -2,6 +2,7 @@
 clear
 echo -e "\033[36mclear\033[0m"
 ds-announce-ssh-tunnel
-echo -e "\033[36mssh dataservices\nds-announce-disconnected\033[0m"
+echo -e "\033[36mssh dataservices\033[0m"
 ssh dataservices
+echo -e "\033[36mds-announce-disconnected\033[0m"
 ds-announce-disconnected
