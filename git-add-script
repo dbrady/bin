@@ -2,7 +2,7 @@
 SCRIPT=`get-ds-script`
 
 if [ "$SCRIPT" == "" ]; then
-    echo 'No $SCRIPT var found. Please export SCRIPT=<script> before running this script.'
+    echo 'No ds-script. Please run set-ds-script"
 else
     echo git add $SCRIPT
     git add $SCRIPT

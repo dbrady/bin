@@ -1,3 +1,4 @@
 #!/bin/bash
+# gas - git add-script
 echo git add-script
 git add-script
