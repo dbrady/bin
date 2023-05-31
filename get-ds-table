@@ -1,9 +1,18 @@
 #!/bin/bash
-# get-ds-table [-f] - get scriptfile. If it hasn't been explicitly set or overridden, parse it out from the related tabe name.
+# get-ds-table [-v] - get scriptfile. If it hasn't been explicitly set or
+# overridden, parse it out from the related table name.
+#
+# -v - verbose mode, explain where that table name is coming from
 TABLEFILE=~/.ds_table
 
 if [ -e $TABLEFILE ]; then
+    if [ "$1" == "-v" ]; then
+        echo "Table name is cached in $TABLEFILE"
+    fi
     tail -n 1 $TABLEFILE
 else
+    if [ "$1" == "-v" ]; then
+        echo "Table name is not cached; calculating from job."
+    fi
     get-ds-script | sed -e 's/\//./g' | sed -E 's/.py$//' | sed -E 's/^etl_//'
 fi
