@@ -32,7 +32,7 @@ class DsJobsApp
       opt :failures, "Show failures only", short: :none, default: false
       opt :host, "Hostname", short: :none, type: :string
       opt :id, "Show id column", short: :none, default: false
-      opt :job, "Job name or path/to/job.py (can be CSV. Set to * to get all jobs. Set to '.' or omit to defaults to get-ds-script)", short: :none, type: :string
+      opt :job, "Job name or path/to/job.py (Defaults to get-ds-script. Set to * to get all. Use % to pattern match. Can be CSV of multiple jobs.)", short: :none, type: :string
       opt :limit, "Max jobs to return", short: :none, default: 20
       opt :mine, "Same as --host=#{hostname}", short: :none, default: false
       opt :mst, "Show only times in America/Denver (MST/MDT)", short: :none, default: false
