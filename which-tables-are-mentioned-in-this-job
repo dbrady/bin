@@ -1,8 +1,14 @@
 #!/usr/bin/env ruby
 # which-tables-are-mentioned-in-this-job [-q|--quiet] - try to find tables (by prefix) mentioned in this job
+# TODO: require 'optimist'
 require 'colorize'
-argv=ARGV.dup
 
+if `uname -s`.strip == 'Darwin'
+  puts "You are in OSX. DS script only makes sense from inside Docker. Aborting.".light_yellow
+  exit -1
+end
+
+argv=ARGV.dup
 quiet = argv.delete('-q') || argv.delete('--quiet')
 script = argv.first || `get-ds-script`.rstrip
 
