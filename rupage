@@ -2,7 +2,11 @@
 # rupage - a fullscreen(ish) rubanner
 
 require "colorize"
+require 'io/console'
 require "optimist"
+
+screen_y, screen_x = $stdout.winsize
+
 colors = [:black, :light_black, :red, :light_red, :green, :light_green, :yellow, :light_yellow, :blue, :light_blue, :magenta, :light_magenta, :cyan, :light_cyan, :white, :light_white]
 
 opts = Optimist.options do
@@ -26,9 +30,9 @@ command_args = command_args.join(" ")
 
 padding_command = "rubanner #{command_args} ' '"
 banner_command = "rubanner #{command_args} '#{message}'"
-puts padding_command.cyan
+puts padding_command.cyan if screen_y > 20
 puts banner_command.cyan
 
-system padding_command
+system padding_command if screen_y > 20
 system banner_command
-system padding_command
+system padding_command  if screen_y > 20

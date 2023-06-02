@@ -1,5 +1,14 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 # ds-announce-disconnected - jam out a big red warning banner page so I know my
 # ssh tunnel has disconnected
+require 'io/console'
+y,x = $stdout.winsize
 
-rupage --font=ansi-shadow --bold --fg=white --bg=red "DISCONNECTED"
+message = if x > 60
+            "DISCONNECTED"
+          else
+            "DXCON"
+          end
+
+command = "rupage --font=ansi-shadow --bold --fg=white --bg=red '#{message}'"
+system command
