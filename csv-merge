@@ -1,0 +1,55 @@
+#!/usr/bin/env ruby
+# csv-merge - merge csv files with headers (omitting headers from all but first file)
+require "colorize"
+require "csv"
+require "optimist"
+
+String.disable_colorization unless $stdout.tty? && $stderr.tty?
+
+opts = Optimist.options do
+  opt :downcase, "Force headers to be downcased (Calm down, Snowflake!)", default: false
+  opt :"ignore-case", "Ignore case when verifying headers", short: :i, default: false
+end
+
+# Okay this is actually trivial to do without parsing unless we're going to verify the headers.
+# cat the first file, then sed -ne '2,<lines>p' <file> all the rest.
+
+filenames = ARGV.dup
+
+file_headers = {}
+file_sizes = {}
+
+filenames.each do |filename|
+  csv = CSV.parse(File.read(filename), headers: true)
+  file_headers[filename] = csv.headers
+  file_sizes[filename] = csv.size
+end
+
+filenames[1..].each do |filename|
+  headers1, headers2 = file_headers[filename], file_headers[filenames.first]
+
+  headers1 = headers1.map(&:downcase) if opts[:downcase] || opts[:"ignore-case"]
+  headers2 = headers2.map(&:downcase) if opts[:downcase] || opts[:"ignore-case"]
+
+  if headers1 != headers2
+    puts "Header mismatch: headers in file '#{filename}' do not match files in first file '#{filenames.first}'"
+    puts "Header Counts:"
+    puts "  #{filenames.first}: #{file_headers[filenames.first].size}"
+    puts "  #{filename}: #{file_headers[filename].size}"
+
+    puts "Headers:"
+    puts "  #{filenames.first}: #{file_headers[filenames.first].join(',')}"
+    puts "  #{filename}: #{file_headers[filename].join(',')}"
+    exit -1
+  end
+end
+
+if opts[:downcase]
+  puts file_headers[filenames.first].map(&:downcase).join(',')
+else
+  puts file_headers[filenames.first].join(',')
+end
+
+filenames.each do |filename|
+  system "sed -ne '2,#{file_sizes[filename]}p' '#{filename}'"
+end

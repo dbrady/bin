@@ -1,0 +1,131 @@
+#!/usr/bin/env ruby
+# csv-show-diffs - Given a csv of (supposedly) identical data, show
+# differences. Outputs CSV with cells nulled out if they are the same as row 1.
+#
+# Usage:
+#   csv-show-diffs <options> input.csv
+#   cat input.csv | csv-show-diffs <options>
+#
+# Exit Status: success if no changes detected (all rows are the same)
+#
+# cat input.csv
+# a,b,c    # headers
+# 1,2,3
+# 1,5,3
+# 1,2,3    # this row has no changes
+# 1,2,4
+#
+# $ cat input.csv | csv-show-diffs --full
+# a,b,c
+# 1,2,3
+# ,5,
+# ,,
+# ,,4
+#
+# $ cat input.csv | csv-show-diffs
+# b,c
+# 2,3
+# 5,
+# ,
+# ,4
+#
+# cat input.csv --include=a
+# a,b,c    # headers
+# 1,2,3
+# 1,5,3
+# 1,2,3    # this row has no changes
+# 1,2,4
+#
+# $ cat input.csv | csv-show-diffs --quiet && echo "CHANGES FOUND" || echo "NO CHANGES"
+# CHANGES FOUND
+
+require "csv"
+require "optimist"
+require "set"
+
+opts = Optimist.options do
+  banner <<USAGE
+csv-show-diffs - diff all the rows in a CSV with the first row.
+
+Useful for detecting what, if anything, changed when the database thinks it has
+many duplicate rows in a wide table.
+
+Usage:
+  csv-show-diffs <options> input.csv
+  cat input.csv | csv-show-diffs <options>
+USAGE
+  opt :debug, "Print additional debug information", default: false
+  opt :full, "Show all headers (including ones with no changed values)", default: false
+  opt :include, "Always include these columns (csv) even if they don't change", type: :string
+  opt :quiet, "Suppress all output (when you only want exit status)", default: false
+  # TODO: option to entirely suppress printing a row if there are no changes (YAGNI?)
+end
+puts "Options: #{opts.inspect}" if opts[:debug]
+
+infile = ARGV.first
+
+input_csv = CSV.parse(ARGF.readlines.join, headers: true)
+
+exemplar = nil
+headers = input_csv.headers
+columns_to_force_include = if opts[:include]
+                             opts[:include].split(',').map(&:strip)
+                           else
+                             []
+                           end
+columns_to_print = Set.new
+changes_found = false
+
+columns_to_print = if opts[:full]
+                     Set.new(headers)
+                   else
+                     input_csv.each.with_index do |row, index|
+                       if index.zero? # if this is the first, copy the exemplar
+                         exemplar = row
+                       else
+                         headers.each do |column|
+                           columns_to_print << column if (row[column] != exemplar[column] || columns_to_force_include.include?(column))
+                         end
+                       end
+                     end
+                     Set.new(columns_to_print)
+                   end
+columns_to_delete = headers - columns_to_print.to_a
+
+
+columns_to_force_include.each do |column|
+  columns_to_delete.delete(column)
+end
+
+if opts[:debug]
+  puts "columns_to_force_include: #{columns_to_force_include.sort.join(', ')}"
+  puts "columns_to_print: #{columns_to_print.sort.join(', ')}"
+  puts "columns_to_delete: #{columns_to_delete.sort.join(', ')}"
+  puts "--"
+end
+
+
+output_string = CSV.generate(headers: input_csv.headers) do |output_csv|
+  input_csv.each.with_index do |row, index|
+    if index.zero? # if this is the first, copy the exemplar
+      output_csv << columns_to_print
+      exemplar = row
+    else
+      headers.each do |column|
+        if row[column] == exemplar[column]
+          row[column] = nil
+        else
+          changes_found = true
+        end
+      end
+    end
+
+    columns_to_delete.each do |column|
+      row.delete(column)
+    end
+    output_csv << row
+  end
+end
+
+puts output_string unless opts[:quiet]
+exit(changes_found ? 1 : 0)
