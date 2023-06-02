@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # which-tables-are-mentioned-in-this-job [-q|--quiet] - try to find tables (by prefix) mentioned in this job
-# TODO: require 'optimist'
+require 'optimist'
 require 'colorize'
 
 if `uname -s`.strip == 'Darwin'
@@ -8,8 +8,15 @@ if `uname -s`.strip == 'Darwin'
   exit -1
 end
 
+opts = Optimist.options do
+  opt :quiet, "Don't show search commands", default: false
+end
+
+# TODO: Search for and prioritize create table <table> statements
+# TODO: Get the dst_table, if any, from the config
+# TODO: A couple jobs use src_table and routing_table in the config
+
 argv=ARGV.dup
-quiet = argv.delete('-q') || argv.delete('--quiet')
 script = argv.first || `get-ds-script`.rstrip
 
 if script.empty?
@@ -18,5 +25,5 @@ if script.empty?
 end
 
 command = "cat #{script} | ruby -ne 'puts $1 if $_=~/\\b((lms|mp|uw|ecom|d|f|s)_.*?)\\b/' | sort | uniq"
-puts command.cyan unless quiet
+puts command.cyan unless opts[:quiet]
 system command
