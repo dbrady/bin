@@ -1,5 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 # ds-announce-ssh-tunnel - jam out a big green page so I know my
 # ssh tunnel has (re)connected
+require 'io/console'
+y,x = $stdout.winsize
 
-rupage --font=ansi-shadow --bold --fg=white --bg=green "SSH TUNNEL"
+message = if x > 60
+            "SSH TUNNEL"
+          else
+            "SSH"
+          end
+command = "rupage --font=ansi-shadow --bold --fg=white --bg=green '#{message}'"
+system command
