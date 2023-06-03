@@ -6,6 +6,11 @@ import subprocess
 import sys
 from dataservices import db
 
+def colorize(text):
+    if sys.stdout.isatty():
+        return f"\033[36m{text}\033[0m"
+    else:
+        return text
 
 if __name__ == '__main__':
     allowed_warehouses = {'r': 'redshift', 's': 'snowflake', 'd': 'dataservices', 'rf': 'redshift_finance', 'sf': 'snowflake_finance'}
@@ -38,42 +43,26 @@ if __name__ == '__main__':
         print(f"Warehouse: {warehouse}")
         print(f"Table: {table}")
 
-    if warehouse == 'snowflake':
-        table = table.upper()
-    elif warehouse == 'redshift':
-        table = table.lower()
-
     try:
         dbo = db.DB(warehouse)
         conn = dbo.connect(warehouse)
 
-        query = f"SELECT ordinal_position, column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position"
+        query = f"SELECT ordinal_position, LOWER(column_name), data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position"
         if not quiet:
-            print(f"\033[36m{query}\033[0m")
+            print(colorize(query))
         if not pretend:
             results = dbo.query(query)
             dbo.commit()
 
-
-            # TODO: interpret the results
-            # IS_NULLABLE = No / NULL / FALSE : add "NOT NULL"
-            # COLUMN_DEFAULT is not null : add "DEFAULT <value>" if numeric else "DEFAULT '<value>'"
-            # DATA_TYPE
-            #   TEXT - VARCHAR(<CHARACTER_MAXIMUM_LENGTH>)
-            #   BOOLEAN - BOOLEAN
-            #   NUMBER
-            #     NUMERIC_PRECISION=38 && NUMERIC_SCALE=0 - NUMBER
-            #     ELSE - DECIMAL(<NUMERIC_PRECISION>, <NUMERIC_SCALE>)
-            #   FLOAT - DOUBLE PRECISION
+            # TODO: interpret the results and/or generate a create statement
+            # that would create a table identical to this one. ("CREATE TABLE x
+            # LIKE y" hur hur hur. No wait. Dear Future Me: this actually is a
+            # pretty big YAGNI for the Snowflake port. As of June 2023, the
+            # tricky schemata are all ported. Any remaining coolifs assume other
+            # db engines, which doesn't make sense for ds/python arch.)
 
             for row in results:
                 print(row)
-
-            # print()
-            # query = f"SELECT COUNT(*) FROM {table}"
-            # print(f"\033[36m{query}\033[0m")
-            # results = dbo.query(query)
-            # print(results[0][0])
 
     finally:
         dbo.close()
