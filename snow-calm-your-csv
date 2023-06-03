@@ -1,0 +1,8 @@
+#!/bin/bash
+# snow-calm-your-csv - read in a CSV and write it right back out, but downcase
+# the header row.
+#
+# cat test.csv | snow-calm-your-csv
+# snow-calm-your-csv test.csv
+
+ruby -ne 'if $.==1 then puts $_.downcase else puts $_ end' $@
