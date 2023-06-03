@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+# ds-diff-schema <table> - compare redshift and snowflake schemas
+#
+# SELECT
+#     ordinal_position
+#     ,LOWER(column_name)
+#     ,CASE WHEN data_type = 'NUMBER' THEN 'numeric' ELSE LOWER(data_type) END
+#     ,numeric_precision
+#     ,numeric_scale
+# FROM
+#     information_schema.columns
+# WHERE
+#     table_name ILIKE 'S_CS_PERFORMANCE_SUMMARY'
+# ORDER BY ordinal_position
+# select ordinal_position, column_name, from both information_schema tables, downcase the snowflake results,
+# rename number to numeric. SHOULD match up between the two tables.
+#
+# Clever/YAGNI: highlight columns have moved position.
+#
+# YAGNI (by which I mean) It's hard and I'm lazy: Munge "number, 38, 0" into "integer"
+#
+# This is all pretty much yagni right now because the big table I needed it for
+# turned out to be a perfect copy once I'd done all this mess.
+
+require "colorize"
+String.disable_colorization if $stdout.tty?
+
+table = ARGV.first
+
+redshift_command = %Q{wh-describe-table --warehouse=redshift #{table}}
+snowflake_command = %Q{wh-describe-table --warehouse=snowflake #{table} | ruby -ne 'puts $_.downcase.gsub(/number/, "numeric")'}
+
+puts redshift_command.cyan
+redshift_output = `#{redshift_command}`
+puts redshift_output
+File.open("schema.redshift.log", "w") { |fp| fp.puts redshift_output }
+
+puts snowflake_command.cyan
+snowflake_output = `#{snowflake_command}`
+puts snowflake_output
+File.open("schema.snowflake.log", "w") { |fp| fp.puts snowflake_output }
+
+# command = "colordiff --suppress-common-lines -y schema.redshift.log schema.snowflake.log"
+command = "colordiff -y schema.redshift.log schema.snowflake.log"
+puts command.cyan
+system command
