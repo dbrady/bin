@@ -1,0 +1,4 @@
+#!/usr/bin/env ruby
+# dsag - run ag on $(get-ds-script)
+
+system "ag", *ARGV, `get-ds-script -f`.strip
