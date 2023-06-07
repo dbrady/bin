@@ -1,12 +1,15 @@
 #!/usr/bin/env ruby
-# csv-show-diffs - Given a csv of (supposedly) identical data, show
+# csv-diff-rows - Given a csv of (supposedly) identical data, show
 # differences. Outputs CSV with cells nulled out if they are the same as row 1.
 #
 # Usage:
-#   csv-show-diffs <options> input.csv
-#   cat input.csv | csv-show-diffs <options>
+#   csv-diff-rows <options> input.csv
+#   cat input.csv | csv-diff-rows <options>
 #
 # Exit Status: success if no changes detected (all rows are the same)
+#
+# TODO: Diff two Still a YAGNI, but it's starting to be an eye-watering
+# YAGNI. If I want this feature again, consider it.)
 #
 # cat input.csv
 # a,b,c    # headers
@@ -15,14 +18,14 @@
 # 1,2,3    # this row has no changes
 # 1,2,4
 #
-# $ cat input.csv | csv-show-diffs --full
+# $ cat input.csv | csv-diff-rows --full
 # a,b,c
 # 1,2,3
 # ,5,
 # ,,
 # ,,4
 #
-# $ cat input.csv | csv-show-diffs
+# $ cat input.csv | csv-diff-rows
 # b,c
 # 2,3
 # 5,
@@ -36,7 +39,7 @@
 # 1,2,3    # this row has no changes
 # 1,2,4
 #
-# $ cat input.csv | csv-show-diffs --quiet && echo "CHANGES FOUND" || echo "NO CHANGES"
+# $ cat input.csv | csv-diff-rows --quiet && echo "CHANGES FOUND" || echo "NO CHANGES"
 # CHANGES FOUND
 
 require "csv"
@@ -45,14 +48,14 @@ require "set"
 
 opts = Optimist.options do
   banner <<USAGE
-csv-show-diffs - diff all the rows in a CSV with the first row.
+csv-diff-rows - diff all the rows in a CSV with the first row.
 
 Useful for detecting what, if anything, changed when the database thinks it has
 many duplicate rows in a wide table.
 
 Usage:
-  csv-show-diffs <options> input.csv
-  cat input.csv | csv-show-diffs <options>
+  csv-diff-rows <options> input.csv
+  cat input.csv | csv-diff-rows <options>
 USAGE
   opt :debug, "Print additional debug information", default: false
   opt :full, "Show all headers (including ones with no changed values)", default: false
