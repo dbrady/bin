@@ -1,0 +1,19 @@
+#!/usr/bin/env ruby
+
+# csv-tranpose - transpose (pivot) a CSV file so that columns are rows and vice
+# versa. Written because I was diffing a small number of rows (3-10) in a very
+# wide table (62 columns).
+require "csv"
+require "matrix"
+
+csv_in = CSV.parse(ARGF)
+pivoted = Matrix[*csv_in.to_a].transpose
+
+output_string = CSV.generate(headers: false) do |csv_out|
+  csv_out << ["column"] + (1..pivoted.column_count-1).to_a
+  pivoted.each_slice(pivoted.column_count) do |row|
+    csv_out << row
+  end
+end
+
+puts output_string
