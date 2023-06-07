@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# dsv-get-full-errors - Look up migration errors in other table
+# dsv-get-errors - Look up migration errors in other table
 #
 # Table is required. All other arguments are optional.
 #

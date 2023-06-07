@@ -9,8 +9,8 @@ opts = Optimist.options do
   opt :table, "Table name (uses ARGV.last if omitted)", type: :string, required: false
   opt :debug, "Debug mode (gets chatty)", type: :boolean, default: false
 end
-table = opts[:table] || ARGV[0]
-Optimist::die "Must specify a table name." if !table || table.empty?
+table = opts[:table] || ARGV[0] || `get-ds-table`.strip
+Optimist::die "Must specify a table name." if table&.empty?
 
 warehouse = if opts[:finance]
                "snowflake_finance"
