@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+# ds-get-error-values-by-delta <table> <field_name> <precision> <scale>
+require 'colorize'
+require 'optimist'
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  banner <<USAGE
+Usage:
+    ds-get-error-values-by-delta [options] <table> <field_name> <precision> <scale>
+
+E.g.
+    ds-get-error-values-by-delta f_cs_performance_detail_migration_check csat_count 12 4
+USAGE
+  opt :debug, "extra debug info", default: false
+  opt :extra, "extra condition to consider, e.g. --extra=\"completed_date<'2023-06-08'\"", type: :string, required: false
+end
+puts opts.inspect if opts[:debug]
+
+Optimist::die("expected 4 arguments, got #{ARGV.size}") unless ARGV.size == 4
+Optimist::die("precision '#{ARGV[2]}' must be an integer (total number of digits in field)") unless ARGV[2].to_i > 0
+Optimist::die("scale '#{ARGV[3]}' must be an integer (total number of digits in field)") unless ARGV[3].to_i > 0
+Optimist::die("precision must be greater than scale, but #{ARGV[2]} <= #{ARGV[3]}") unless ARGV[2].to_i > ARGV[3].to_i
+
+table, field_name, precision, scale = *ARGV
+delta = 1.0 / 10 ** scale.to_i
+
+query = <<-SQL
+SELECT
+    errors.*,
+    ABS(
+      snow_value::NUMERIC(<% numeric_precision %>,<% numeric_scale %>) -
+      redshift_value::NUMERIC(<% numeric_precision %>,<% numeric_scale %>)
+    ) > <% delta %> AS error
+FROM
+    f_cs_performance_detail_migration_check AS errors
+WHERE
+    errors.field_name = '<% field_name %>'
+    <% extra_conditions %>
+ORDER BY errors.field_name
+SQL
+
+{
+  '<% table %>' => table,
+  '<% field_name %>' => field_name,
+  '<% numeric_precision %>' => precision,
+  '<% numeric_scale %>' => scale,
+  '<% delta %>' => delta.to_s,
+  '<% extra_conditions %>' => opts[:extra_given] ? "AND #{opts[:extra]}" : ""
+}.each do |key, value|
+  query = query.gsub(key, value)
+end
+
+puts query.cyan if opts[:debug]
+query = query.each_line.map(&:strip).join(' ')
+
+command = %Q|dsquery "#{query}"|
+if $stdout.tty?
+  $stdout.puts command.cyan
+  $stdout.flush
+end
+system command
