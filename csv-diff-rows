@@ -8,6 +8,8 @@
 #
 # Exit Status: success if no changes detected (all rows are the same)
 #
+# TODO: If column 1 is present and column 2 is an empty string, emit <''>
+# TODO: If column 1 is present and column 2 is null, emit <NULL>
 # TODO: Diff two Still a YAGNI, but it's starting to be an eye-watering
 # YAGNI. If I want this feature again, consider it.)
 #

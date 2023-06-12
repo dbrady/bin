@@ -1,4 +1,19 @@
 #!/bin/bash
-# gas - git add-script
+# gas - git add-script, prompt to commit.
+# gas -m "[msg]" to automatically commit.
+# gas -p to prompt.
 echo git add-script
 git add-script
+
+if [ "$1" == "-p" ]; then
+    echo -n "Enter commit message: "
+    read msg
+elif [ "$1" == "-m" ]; then
+    msg="$2"
+fi
+
+echo "Your commit message would be:"
+echo "git commit \"$msg\""
+echo "Press Ctrl-C to abort, otherwise press ENTER to commit."
+read _
+git commit -m "$msg"
