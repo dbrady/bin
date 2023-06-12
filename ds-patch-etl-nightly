@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+# ds-patch-etl-nightly [patch|unpatch] - what it says on the tin.
+require "colorize"
+
+reference_folder = File.expand_path("~/data_services_package/dataservices/haxx/")
+target_folder = File.expand_path("~/data_services/etl/warehouse/finance/")
+
+unpatched_file = File.join(reference_folder, "etl_nightly.unpatched.py")
+patched_file = File.join(reference_folder, "etl_nightly.patched.py")
+target_file = File.join(target_folder, "etl_nightly.py")
+
+[
+  unpatched_file,
+  patched_file,
+  target_file
+].each do |file|
+  print "Checking for #{file}..."
+  if !File.exists?(file)
+    puts "NOT FOUND".red
+    puts "File not found; Aborting."
+    exit -1
+  end
+  puts "OK".green
+end
+
+if ARGV.empty? or ARGV.first == "patch"
+  # Check to see if we're already done
+  print "Checking to see if file is already patched..."
+
+  system "diff -q #{patched_file} #{target_file}"
+  if $?.success?
+    puts "yes".yellow
+    puts "File already appears to be patched. Exiting."
+    exit 0
+  end
+
+  puts "no".green
+
+  # To patch the file, ensure that it hasn't been modified upstream
+
+  print "Checking to see if file is unmodified..."
+  system "diff -q #{unpatched_file} #{target_file}"
+  if !$?.success?
+    puts "no".red
+    puts "File appears to have been modified upstream. Verify your changes and consider updating #{patched_file}."
+  end
+  puts "yes".green
+
+  puts "All set, patching file"
+  system "cp #{patched_file} #{target_file}"
+end
