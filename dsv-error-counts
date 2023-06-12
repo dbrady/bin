@@ -2,13 +2,18 @@
 # dsv-error-counts <table> - get validation error counts from <table>_migration_check
 # tl;dr It's "this field is bad, here's the count" for all bad fields
 require "optimist"
+require "colorize"
+String.disable_colorization unless $stdout.tty?
 
 opts = Optimist.options do
-  opt :csv, "Get query results as CSV", type: :boolean, default: false
-  opt :finance, "Use snowflake_finance warehouse", type: :boolean, default: false
+  opt :csv, "Get query results as CSV", default: false
+  opt :finance, "Use snowflake_finance warehouse", default: false
   opt :table, "Table name (uses ARGV.last if omitted)", type: :string, required: false
-  opt :debug, "Debug mode (gets chatty)", type: :boolean, default: false
+  opt :debug, "Debug mode (gets chatty)", default: false
+  opt :sort, "Sort errors by field_name instead of count", default: false
+  opt :diff, "Show errors where field is different, not just missing.", default: false
 end
+puts opts.inspect if opts[:debug]
 table = opts[:table] || ARGV[0] || `get-ds-table`.strip
 Optimist::die "Must specify a table name." if table&.empty?
 
@@ -20,11 +25,14 @@ warehouse = if opts[:finance]
 
 table = "#{table}_migration_check"
 
+order = opts[:sort] ? "field_name" : "count DESC"
+where = opts[:diff] ? "WHERE snow_value != redshift_value" : ""
 query = <<SQL
-    SELECT field_name AS #{table}_field, COUNT(*) FROM #{table} GROUP BY 1 ORDER BY 2 DESC
+    SELECT field_name AS #{table}_field, COUNT(*) AS count FROM #{table} #{where} GROUP BY 1 ORDER BY #{order}
 SQL
 
-query = query.each_line.map(&:strip).to_a.join(" ")
+query = query.each_line.map(&:strip).join(" ")
+puts query.cyan if opts[:debug]
 
 command = %Q|dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{query}"|
 puts command if opts[:debug]
