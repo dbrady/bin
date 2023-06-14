@@ -1,6 +1,17 @@
 #!/usr/bin/env ruby
-# ds-patch-etl-nightly [patch|unpatch] - what it says on the tin.
+# ds-patch-etl-nightly [patch|unpatch] - apply or reset my local patch to etl_nightly.py
 require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  banner <<USAGE
+d-patch-etl-nightly [patch|unpatch] - apply or reset my local patch to etl_nightly.py
+USAGE
+  opt :debug, "Print extra debug info", default: false
+  opt :quiet, "Suppress output, just return success or failure", default: false
+end
+puts opts.inspect if opts[:debug]
 
 reference_folder = File.expand_path("~/data_services_package/dataservices/haxx/")
 target_folder = File.expand_path("~/data_services/etl/warehouse/finance/")
@@ -9,43 +20,52 @@ unpatched_file = File.join(reference_folder, "etl_nightly.unpatched.py")
 patched_file = File.join(reference_folder, "etl_nightly.patched.py")
 target_file = File.join(target_folder, "etl_nightly.py")
 
-[
-  unpatched_file,
-  patched_file,
-  target_file
-].each do |file|
-  print "Checking for #{file}..."
+puts "Checking for existence of files..." unless opts[:quiet]
+{
+  "unpatched file" => unpatched_file,
+  "patched_file" => patched_file,
+  "target_file" => target_file
+}.each_pair do |name, file|
+  print "Checking for #{name} at #{file}..." unless opts[:quiet]
   if !File.exists?(file)
-    puts "NOT FOUND".red
-    puts "File not found; Aborting."
+    puts "NOT FOUND".red unless opts[:quiet]
+    puts "File not found; Aborting." unless opts[:quiet]
     exit -1
   end
-  puts "OK".green
+  puts "OK".green unless opts[:quiet]
 end
 
 if ARGV.empty? or ARGV.first == "patch"
   # Check to see if we're already done
-  print "Checking to see if file is already patched..."
+  print "Checking to see if file is already patched..." unless opts[:quiet]
 
   system "diff -q #{patched_file} #{target_file}"
   if $?.success?
-    puts "yes".yellow
-    puts "File already appears to be patched. Exiting."
+    puts "yes".yellow unless opts[:quiet]
+    puts "File already appears to be patched. Exiting." unless opts[:quiet]
     exit 0
   end
 
-  puts "no".green
+  puts "no".green unless opts[:quiet]
 
   # To patch the file, ensure that it hasn't been modified upstream
 
-  print "Checking to see if file is unmodified..."
-  system "diff -q #{unpatched_file} #{target_file}"
-  if !$?.success?
-    puts "no".red
-    puts "File appears to have been modified upstream. Verify your changes and consider updating #{patched_file}."
+  print "Checking to see if file is unmodified..." unless opts[:quiet]
+  if opts[:quiet]
+    system "diff -q #{unpatched_file} #{target_file} > /dev/null 2>&1"
+  else
+    system "diff -q #{unpatched_file} #{target_file}"
   end
-  puts "yes".green
+  if !$?.success?
+    puts "no".red unless opts[:quiet]
+    puts "File appears to have been modified upstream. Verify your changes and consider updating #{patched_file}." unless opts[:quiet]
+  end
+  puts "yes".green unless opts[:quiet]
 
-  puts "All set, patching file"
+  puts "All set, patching file" unless opts[:quiet]
   system "cp #{patched_file} #{target_file}"
+else
+  print "Unpatching file..." unless opts[:quiet]
+  system "cp #{unpatched_file} #{target_file}"
+  puts "done".green unless opts[:quiet]
 end
