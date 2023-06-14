@@ -1,0 +1,4 @@
+#!/bin/bash
+# csv-cat - cat two csv files together (skipping the header in the second file)
+# Trivial solution for now, doesn't bother to check if the columns match. This is literally "cat file1 and all of file2 after line 1"
+(cat $1 && cat $2 | ruby -ne 'puts $_ if $.>1')

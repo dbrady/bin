@@ -1,0 +1,12 @@
+#!/bin/bash
+# wh-diff-columns <table> - diff the column list for from both warehouse
+
+for w in redshift snowflake; do
+    echo "echo $w > columns_f_cs_performance_detail_actually_in_$w.log"
+    echo $w > columns_f_cs_performance_detail_actually_in_$w.log
+    echo "wh-column-names --warehouse=$w $1 >> columns_f_cs_performance_detail_actually_in_$w.log"
+    wh-column-names --warehouse=$w $1 >> columns_f_cs_performance_detail_actually_in_$w.log
+done
+
+
+colordiff -y --suppress-common-lines columns_f_cs_performance_detail_actually_in_redshift.log columns_f_cs_performance_detail_actually_in_snowflake.log

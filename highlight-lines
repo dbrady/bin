@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# highlight-lines <regex> - Like grep -E --color=always except highlight the entire line instead of just the match.
+# cat file.txt | highlight-lines "pants"
+# highlight-lines "pants" file.txt
+
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :color, "Color name to use, e.g red, green, light_black", default: "green"
+  # TODO: --color option
+end
+puts opts.inspect if opts[:debug]
+
+regex = Regexp.new(ARGV.shift)
+
+ARGF.each_line do |line|
+  line.strip!
+  color = (line =~ regex ? opts[:color] : "normal").to_sym
+  puts line.colorize(color)
+end

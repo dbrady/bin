@@ -1,0 +1,18 @@
+#!/usr/bin/env ruby
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+opt :debug, "Print extra debug info", default: false
+opt :table, "Display as pretty table (--no-table for bare csv)", default: true
+opt :warehouse, "Select target warehouse", default: "snowflake"
+end
+Optimist::die "Expected 1 arg (table name) or 0 (reads from get-ds-table), but got #{ARGV.size}" unless ARGV.size <= 1
+puts opts.inspect if opts[:debug]
+
+table = ARGV.first || `get-ds-table`.strip
+
+command = %(dsquery --warehouse=#{opts[:warehouse]} "SELECT ordinal_position, LOWER(column_name) AS column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '#{table}' ORDER BY ordinal_position" | ruby -ne 'puts $_.split(/,/)[1] if $.>1' | sort)
+puts command.cyan if $stdout.tty?
+system command

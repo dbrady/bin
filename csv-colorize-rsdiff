@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+# csv-colorize-rsdiff - hacky script to compare columns 1 and 2 of a
+# 3-column (0-2) text table.  For highlightling different values
+# between redshift and snowflake when used as directed, which is
+# approximately like so:
+#
+# dscmp --log "somequery" && csv-cat dscmp.redshift.csv dscmp.snowflake.csv | csv-transpose | csv-to-table | csv-colorize-rsdiff
+require "colorize"
+
+ARGF.each.with_index do |line, index|
+  line.strip!
+  color = false
+
+  columns = line.split(/\|/)
+  puts line.colorize(index > 2 && columns[2]&.strip != columns[3]&.strip ? :red : :normal)
+  color = false
+end
