@@ -73,6 +73,8 @@ def run(query, **attrs):
                     print(value)
         else:
             results = dbo.query(query, return_type='dataframe')
+            with open("./_dsquery.csv", "w") as outfile:
+                outfile.write(results.to_csv(index=False))
             print(results.to_csv(index=False), end="")
 
     finally:
