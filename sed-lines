@@ -1,6 +1,8 @@
 #!/usr/bin/env ruby
 # sed-lines - list start..stop lines in a file
 #
+# TODO: Convert to optimist
+#
 # TL;DR:
 # sed -ne '100,150p' file.txt              # without line numbers
 # cat -n file.txt | sed -ne '100,150p'     # with line numbers
@@ -44,6 +46,8 @@ verbose = if argv.include?("-v") || argv.include?("--verbose")
 show_line_numbers = argv.delete("-n")
 
 start, stop, file = *argv
+
+file ||= `get-ds-script`.strip
 
 command = if show_line_numbers
             "cat -n #{file} | sed -ne '#{start},#{stop}p'"

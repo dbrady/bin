@@ -51,4 +51,6 @@ echo starting... &&
     ) || (
         echo NOT clearing ~/.ds_script or ~/.ds_table
     ) &&
+        echo -e "\033[36mds-patch-etl-nightly\033[0m" &&
+        ds-patch-etl-nightly &&
         echo done.

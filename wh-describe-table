@@ -6,13 +6,14 @@ String.disable_colorization unless $stdout.tty?
 opts = Optimist.options do
   opt :debug, "Print extra debug info", default: false
   opt :table, "Display as pretty table (--no-table for bare csv)", default: true
+  opt :warehouse, "Select target warehouse", default: "snowflake"
 end
 puts opts.inspect if opts[:debug]
 
 table = ARGV.first
-query = "SELECT ordinal_position, LOWER(column_name), data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position".gsub(/{table}/, table)
+query = "SELECT ordinal_position, LOWER(column_name) AS column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position".gsub(/{table}/, table)
 
-command = %Q|dsquery "#{query}"|
+command = %Q|dsquery --warehouse=#{opts[:warehouse]} "#{query}"|
 command += " | csv-to-table" if opts[:table]
 
 puts command.cyan if opts[:debug]

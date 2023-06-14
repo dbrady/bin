@@ -30,6 +30,7 @@ HALP
   opt :log, "Write query outputs to dscmp.{warehouse}.log", default: false
   opt :pretty, "Format table all pretty-like", default: false
   opt :query, "Query to use, use {ids} to fill from --redshift=value, --snowflake=value", type: :string, required: false
+  opt :file, "Load query from file. TODO: {ids} fields do not work.", type: :string, required: false
 
   opt :redshift, "Values to use in redshift as {ids}", type: :string
   opt :snowflake, "Values to use in snowflake as {ids}", type: :string
@@ -47,12 +48,17 @@ warehouses = if opts[:finance]
 
 warehouses.each do |warehouse|
   # override query if given
-  query = opts[:query] || ARGV.last
-  if opts[:redshift_given] && warehouse =~ /redshift/
-    query = query.gsub(/{ids}/, opts[:redshift]).gsub(/{query}/, opts[:redshift2])
-  elsif opts[:snowflake_given] && warehouse =~ /snowflake/
-    query = query.gsub(/{ids}/, opts[:snowflake]).gsub(/{query}/, opts[:snowflake2])
-  end
+  query_arg = if opts[:file_given]
+                %Q|--file="#{opts[:file]}"|
+              else
+                query = opts[:query] || ARGV.last
+                if opts[:redshift_given] && warehouse =~ /redshift/
+                  query = query.gsub(/{ids}/, opts[:redshift]).gsub(/{query}/, opts[:redshift2])
+                elsif opts[:snowflake_given] && warehouse =~ /snowflake/
+                  query = query.gsub(/{ids}/, opts[:snowflake]).gsub(/{query}/, opts[:snowflake2])
+                end
+                %Q|--query="#{query}"|
+              end
 
   color = case warehouse
           when /redshift/ then :light_red
@@ -60,7 +66,7 @@ warehouses.each do |warehouse|
           else :white
           end
 
-  command = %Q(dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse #{warehouse} --query "#{query}" | cleanup-whitespace #{opts[:pretty] ? "| snow-table" : ""})
+  command = %Q(dsquery #{opts[:csv] ? '--csv ' : ''}--warehouse=#{warehouse} #{query_arg} | snow-calm-your-csv #{opts[:pretty] ? "| snow-table" : ""})
   command += " | tee dscmp.#{warehouse}.csv" if opts[:log]
   puts (command  + " # #{warehouse}").send(color)
   system command

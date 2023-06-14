@@ -730,7 +730,7 @@ Options:
       # If the job config is pointed at redshift, the branch must be master OR I
       # must explicitly specify --redshift
       if pointed_at_redshift? && (!on_master_branch? && !explicitly_allow_redshift?)
-        log "JOB IS POINTED AT REDSHIFT. Fix this with snow job s or override with --redshift".bold.red
+        log "JOB IS POINTED AT REDSHIFT, AND YOU ARE ON A STORY BRANCH. Should you be on Snowflake? If you're sure you meant redshift, you can override this check with --redshift".bold.red
         exit -1
       end
 

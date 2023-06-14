@@ -8,6 +8,9 @@
 # Calm down the snowflake all-caps column names
 # Colordiff the the json
 
+# ALTERNATE:
+# if they're both one header line and one data line, we can transpose them and show them together
+# (cat dscmp.redshift.csv && cat dscmp.snowflake.csv | ruby -ne 'puts $_ if $.>1')
 #
 
 source ~/bin/vars-ansicolors.sh
