@@ -10,7 +10,7 @@ opts = Optimist.options do
 end
 puts opts.inspect if opts[:debug]
 
-table = ARGV.first
+table = ARGV.first || `get-ds-table`.strip
 query = "SELECT ordinal_position, LOWER(column_name) AS column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position".gsub(/{table}/, table)
 
 command = %Q|dsquery --warehouse=#{opts[:warehouse]} "#{query}"|
