@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# behead - output a file minus n lines of the beginning.
+
+# Works like head -n -1 except actually work on systems where negative lines
+# aren't supported, like OSX, and also work on systems where it's SUPPOSED to be
+# supported but actually isn't, like Ubuntu, which supports it if stdout is a
+# tty, but silently fails if you're piping to a file. (THAT took way too long to
+# track down.)
+
+# Note you can do this from the command line with
+#
+# cat file.csv | ruby -ne 'puts $_ if $.>1' > headless.csv
+require "optimist"
+
+opts = Optimist.options do
+opt :debug, "Print extra debug info", default: false
+opt :lines, "Number of lines to chop off", short: :n, type: :int, default: 1
+end
+puts opts.inspect if opts[:debug]
+
+ARGF.each.with_index do |line, index|
+  puts line if index >= opts[:lines]
+end
