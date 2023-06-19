@@ -8,8 +8,8 @@ if [ "$1" == "" ]; then
     echo -e "\033[36mpython /root/data_services/utilities/google_util.py --share\033[0m"
     python /root/data_services/utilities/google_util.py --share
 else
-    echo "Sharing gsheet with david.brady@acima.com. Run without arguments for interactive mode."
-    echo -e "\033[36mpython /root/data_services/utilities/google_util.py --share\033[0m"
+    echo "Sharing gsheet $1 with david.brady@acima.com. Run without arguments for interactive mode."
+    echo -e "\033[36mprintf \"%s\\\\ndavid.brady@acima.com\\\\nwriter\\\\n\" $1 | python /root/data_services/utilities/google_util.py --share\033[0m"
     printf "%s\ndavid.brady@acima.com\nwriter\n" $1 |
         python /root/data_services/utilities/google_util.py --share
 fi
