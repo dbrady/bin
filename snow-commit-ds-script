@@ -16,5 +16,14 @@ def command(cmd, log_message=nil)
   system cmd
 end
 
-command "git add #{script}"
-command "snow-script-has-changes && git commit -m \"#{commit_message}\" || echo '\033[32mNo changes made to script; not committing.\033[0m'", "git commit -m \"#{commit_message}\""
+# HACK for BI
+if script =~ %r|sql/|
+  sql = script.sub(%r|^.*sql/|, '')
+  commit_message = commit_message.split.tap {|m| m.pop}.join(' ') + " " + sql
+  command = "(cd sql && git add #{sql} && git commit -m \"#{commit_message}\")"
+  puts command
+  system command
+else
+  command "git add #{script}"
+  command "snow-script-has-changes && git commit -m \"#{commit_message}\" || echo '\033[32mNo changes made to script; not committing.\033[0m'", "git commit -m \"#{commit_message}\""
+end
