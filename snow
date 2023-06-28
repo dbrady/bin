@@ -766,8 +766,8 @@ Options:
       command += " --skip_upload" if has_skip_upload?
       command += " --force" if force?
       command += " --test" if has_test_mode? && use_test_mode? && send_test?
-      command += " --start_date #{(Date.today - 60).strftime('%F')}" if has_start_date? && !opts[:start_date_given] # argv.include?('--start_date')
-      command += " --end_date #{(Date.today - 59).strftime('%F')}" if has_end_date? && !opts[:end_date_given] # !argv.include?('--end_date')
+      command += " --start_date=#{(Date.today - 60).strftime('%F')}" if has_start_date? && !opts[:start_date_given] # argv.include?('--start_date')
+      command += " --end_date=#{(Date.today - 59).strftime('%F')}" if has_end_date? && !opts[:end_date_given] # !argv.include?('--end_date')
 
       # TODO: redo this as sthg like pass_through_args(:start, :end, etc...)
       command += " --start=#{opts[:start]}" if opts[:start_given]
