@@ -19,12 +19,14 @@
 # DONE: snow -q, --quick emits only the detectors that fail, so you can see
 # remaining work
 #
-# TODO: port this to Optimist*. The arg processing is killing me here
+# DONE: port this to Optimist*. The arg processing is killing me here
 #
 # TODO: instead of catching individual commands, take ARGV.first and check for
 # an executable "snow-<arg>" script in bin
 #
 # TODO: Document the snow ecosystem for future me:
+#
+#     This space unintentionally, but entirely predictably, left blank
 #
 # TODO: Keep the job name around when off of the branch. Now we have the ability
 # to blast a flash warning on the screen saying "you're off-branch, are you
@@ -50,6 +52,8 @@ require 'fileutils'
 require 'io/console'
 require 'json'
 require 'optimist'
+
+String.disable_colorization unless $stdout.tty?
 
 class SnowflakeManglerApp
   attr_reader :opts
@@ -349,16 +353,19 @@ class SnowflakeManglerApp
 
   # Let's start capturing the fixes and suggests to a script/log
   def fixlog(comment, autofix)
-    comment = comment.gsub(%r|sql/|, '')
-    autofix = autofix.gsub(%r|sql/|, '')
+    # 2023-06-28 This is pretty sketchy and keeps going sideways on me.  Keeping
+    # it around for now because it's for the sql submodule and we're working on
+    # that now, but this code may be past its sell-by date.
+    # comment = comment.gsub(%r|sql/|, '')
+    # autofix = autofix.gsub(%r|sql/|, '')
 
-    autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
-    autofix_folder = File.dirname(autofix_filename)
-    FileUtils.mkdir_p(autofix_folder) unless Dir.exists?(autofix_folder)
-    if !File.exists?(autofix_filename)
-      File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
-    end
-    File.open(autofix_filename, "a") { |file| file.puts "# #{comment}"; file.puts autofix}
+    # autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
+    # autofix_folder = File.dirname(autofix_filename)
+    # FileUtils.mkdir_p(autofix_folder) unless Dir.exists?(autofix_folder)
+    # if !File.exists?(autofix_filename)
+    #   File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
+    # end
+    # File.open(autofix_filename, "a") { |file| file.puts "# #{comment}"; file.puts autofix}
   end
 
   def detect_missing_skip_upload
@@ -630,7 +637,7 @@ Options:
       opt :list, "Show PR workflow checklist"
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
       opt :quick, "(run only) Only show output from failing detectors"
-      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass", short: "Q", default: false
+      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", short: "Q", default: false
       opt :report, "Report file (for etl_automated_excel_reports)", short: :none, type: :string
 
       # Commands only for passing through
@@ -719,6 +726,12 @@ Options:
       log "You must run set-ds-script <path/to/job.py> first."
       usage
       exit -1
+    end
+
+    # If the script is a sql file, disable code and whitespace detectors
+    if get_script.end_with? ".sql"
+      opts[:space] = false
+      opts[:python] = false
     end
 
     # ----------------------------------------------------------------------
@@ -1329,6 +1342,11 @@ Options:
       # TABS
       # ----------------------------------------------------------------------
       detect_and_print_lines lines, "TABS", /\t/
+    end
+
+    # If we're doing quiet mode but stdout isn't being piped, print "OK" or "Errors detected"
+    if quiet? && $stdout.tty?
+      puts seen_errors? ? "Errors detected".red : "OK".green
     end
 
     # return error status, if we saw any errors
