@@ -754,7 +754,7 @@ Options:
       end
 
       # print dst_conn warehouse name in top-right corner
-      system("dsannouncewarehouse") unless quick?
+      system("snow-get-warehouse -c") unless quick?
 
       # TODO: I would like to add -c to 'snow run' to "show command only",
       # but the showing of the command is entirely inside dsetl_nightly. So we
