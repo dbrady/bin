@@ -13,6 +13,6 @@ if [ -z "$SCRIPT" ]; then
     exit -1
 fi
 
-system "cleanup-whitespace"
+cleanup-whitespace --input=$SCRIPT --output=$SCRIPT
 
-snow-commit-ds-script "Clean up whitespace"
+snow-commit-ds-script "Clean up whitespace" $SCRIPT
