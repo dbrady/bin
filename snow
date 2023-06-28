@@ -157,6 +157,10 @@ class SnowflakeManglerApp
     opts[:char]
   end
 
+  def run_python_detectors?
+    opts[:python]
+  end
+
   def run_python2_detectors?
     opts[:python2]
   end
@@ -627,6 +631,7 @@ Options:
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
       opt :quick, "(run only) Only show output from failing detectors"
       opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass", short: "Q", default: false
+      opt :report, "Report file (for etl_automated_excel_reports)", short: :none, type: :string
 
       # Commands only for passing through
       opt :clear, "Clear ~/.ds_script and ~/.ds_table cache files (snow go only)", short: :none, default: false
@@ -638,6 +643,7 @@ Options:
       opt :exception, "Run exception detectors", default: true
       opt :json, "Run JSON detectors", short: :none, default: true
       opt :missing, "Run missing detectors", short: :none, default: true
+      opt :python, "Run python code detectors", default: true
       opt :python2, "Run python2 string formatting detectors", default: true
       opt :quote, "Run double-quote detectors", default: true
       opt :test, "Run test mode detector", default: true
@@ -645,6 +651,7 @@ Options:
       opt :trunc, "Run trunc detectors", default: true
 
       opt :"no-2", "same as --no-python2", short: :none, default: false
+      opt :"no-p", "same as --no-python", short: :none, default: false
       opt :"no-c", "same as --no-char", short: :none, default: false
       opt :"no-d", "same as --no-days", short: :none, default: false
       opt :"no-j", "same as --no-json", short: :none, default: false
@@ -668,6 +675,7 @@ Options:
       exception: "x",
       json: "j",
       missing: "m",
+      python: "p",
       python2: "2",
       quote: "q",
       space: "s",
@@ -719,7 +727,6 @@ Options:
 
     # ----------------------------------------------------------------------
     # snow run -> dsetl_nightly
-    # dsetl_nightly reads SCRIPT from rc file; Use dsetl to specify from CLI
     # ----------------------------------------------------------------------
     if argv.first == "run"
       if !docker?
@@ -773,6 +780,11 @@ Options:
       command += " --start=#{opts[:start]}" if opts[:start_given]
       command += " --end=#{opts[:end]}" if opts[:end_given]
       command += " --recipients=#{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
+      if opts[:report_given]
+        report = opts[:report].sub('sql/', '').sub('.sql', '')
+        command += " --report=#{report}"
+      end
+
       command += " " + argv.join(" ")
       run_and_exit! command
     end
@@ -883,7 +895,7 @@ Options:
     # snow auto - automatically fix what can be automatically fixed
     # ----------------------------------------------------------------------
     if argv.first == "auto"
-      run_and_exit! "snow-autofix-all-the-things"
+      run_and_exit! "snow-autofix-all-the-things #{argv[1..].join(' ')}"
     end
 
     # ----------------------------------------------------------------------
@@ -1151,7 +1163,9 @@ Options:
     # These will probably stay in the project until/unless we can find out who
     # is reading from these s3 buckets.
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Redshift S3 Buckets", %r|s3.*redshift|i, essential: true
+    if run_python_detectors?
+      detect_and_print_lines lines, "Redshift S3 Buckets", %r|s3.*redshift|i, essential: true
+    end
 
     # ----------------------------------------------------------------------
     # Redshift mentioned anywhere
@@ -1168,7 +1182,7 @@ Options:
     # ----------------------------------------------------------------------
     # Update Python String Formatting
     # ----------------------------------------------------------------------
-    if run_python2_detectors?
+    if run_python2_detectors? && run_python_detectors?
       detect_and_print_lines lines, "Python 2 String Formatting", %r|(?<!%)%[\d\.]*[sdf].*|, unmatch: %r{(str[pf]time|%Y-%m-%d|LIKE ANY)}
     end
 
@@ -1180,7 +1194,9 @@ Options:
     #
     # If we see another os.chdir, flag it as a warning.
     # the autofix here is sed -E -i 's/\bos.chdir\b/d'
-    detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i '/\\bos.chdir\\b/d' #{get_script}"
+    if run_python_detectors?
+      detect_and_print_lines lines, "Potentially Useless os.chdir", /\bos.chdir\b/, autofix: "sed -E -i '/\\bos.chdir\\b/d' #{get_script}"
+    end
 
     # ----------------------------------------------------------------------
     # Excessive globals in main
@@ -1195,7 +1211,7 @@ Options:
     # start_date, see where it is used and maybe upgrade it to a parameter
     # instead of a global".
 
-    if run_exception_detectors?
+    if run_exception_detectors? && run_python_detectors?
       # ----------------------------------------------------------------------
       # except Exception
       # ----------------------------------------------------------------------
@@ -1211,17 +1227,23 @@ Options:
     # more time than just weeding the falses out by hand. Looks like there are
     # only 2 that take config=None while all the other true positives are
     # job_config=None, so.
-    detect_and_print_lines lines, "Optional job_config", /def (run|main)\(.*config=/
+    if run_python_detectors?
+      detect_and_print_lines lines, "Optional job_config", /def (run|main)\(.*config=/
+    end
 
     # ----------------------------------------------------------------------
     # testing for job_config == None or job_config is None
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "Testing for presence of job_config", /\bjob_config\s+(is|==)\s+None\b/
+    if run_python_detectors?
+      detect_and_print_lines lines, "Testing for presence of job_config", /\bjob_config\s+(is|==)\s+None\b/
+    end
 
     # ----------------------------------------------------------------------
     # except Exception:
     # ----------------------------------------------------------------------
-    # detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
+    # if run_python_detectors?
+    #   detect_and_print_lines lines, "except Exception:", /except Exception:/, autofix: "sed -E -i 's/except Exception:/except:/' #{get_script}"
+    # end
 
     # ----------------------------------------------------------------------
     # unsize varchars
@@ -1270,9 +1292,11 @@ Options:
     # ----------------------------------------------------------------------
     # main() bootstrapper
     # ----------------------------------------------------------------------
-    detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
+    if run_python_detectors?
+      detect_and_print_lines lines, "main() bootstrapper", /if\s*__name__\s*==\s*["']__main__["']\s*:/
+    end
 
-    if run_missing_detectors?
+    if run_missing_detectors? && run_python_detectors?
       detect_missing_skip_upload
       detect_missing_test_mode if run_test_detectors?
       detect_missing_recipients_override

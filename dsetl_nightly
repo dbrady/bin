@@ -68,5 +68,5 @@ end
 print "\033[1F\033[0K# " if pretty_screenshots?
 
 command = "python etl_nightly.py --retry_count 1 --job #{get_script} #{argv.join(' ')}"
-puts command
+puts command.cyan
 system command
