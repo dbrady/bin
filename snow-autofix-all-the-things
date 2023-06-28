@@ -1,24 +1,29 @@
 #!/bin/bash
 
 echo "This will attempt to fix all the things. Make sure the script you really want to fix up is this file:"
-echo `get-ds-script`
+[ "$1" == "" ] && echo `get-ds-script` || echo $1
 
-git-isclean &&
-    echo "(It looks clean from here.)" || (echo -e "\033[1;37;41mBranch is not clean\033[0m" && exit)
+# 2023-06-28 - temp disable for BI sql/folder
+echo -e "\033[37;41mSkipping git-isclean (disabled 2023-06-28 for sql/ refactoring)\033[0m"
 
-echo "Hit CTRL-C to abort. Otherwise, hit ENTER to begin."
-read
+# git-isclean &&
+#     echo "(It looks clean from here.)" || (echo -e "\033[1;37;41mBranch is not clean\033[0m" && exit)
+# echo "Hit CTRL-C to abort. Otherwise, hit ENTER to begin."
+# read
 
 # now run all the snow-fix-* scripts
-snow-fix-tabs
-snow-fix-whitespace
-snow-fix-pep
-snow-fix-btrim
-snow-fix-distkeys
-snow-fix-chdir
-snow-fix-optional-job-config
-snow-fix-except-exception
-snow-fix-varchar-sizing
+# snow-fix-tabs $1 - 2023-06-28 disabling because BI uses tabs all over the place
+snow-fix-whitespace $1
+snow-fix-pep $1
+snow-fix-btrim $1
+snow-fix-distkeys $1
+snow-fix-chdir $1
+snow-fix-optional-job-config $1
+snow-fix-except-exception $1
+snow-fix-varchar-sizing $1
+
+# TODO: ^^^ make all these scripts support an arg, we don't want them pulling from get-ds-script
+# TODO: Also fix line 4
 
 # This is a partial fix only, and does not commit the fix. Run it manually.
 # snow-fix-timezones

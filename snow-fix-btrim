@@ -4,6 +4,11 @@
 
 SCRIPT=`get-ds-script`
 
+if [ -e "$1" ]; then
+    SCRIPT=$1
+    shift
+fi
+
 if [ -z "$SCRIPT" ]; then
     echo "You must set the SCRIPT variable first."
     exit -1
@@ -12,4 +17,4 @@ fi
 echo -e "\033[36msed -i -E 's/BTRIM\(/TRIM\(/ig' $SCRIPT\033[0m"
 sed -i -E 's/BTRIM\(/TRIM\(/ig' $SCRIPT
 
-snow-commit-ds-script "Change BTRIM to TRIM"
+snow-commit-ds-script "Change BTRIM to TRIM" $SCRIPT
