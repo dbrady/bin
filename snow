@@ -772,7 +772,7 @@ Options:
       # TODO: redo this as sthg like pass_through_args(:start, :end, etc...)
       command += " --start=#{opts[:start]}" if opts[:start_given]
       command += " --end=#{opts[:end]}" if opts[:end_given]
-      command += " --recipients #{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
+      command += " --recipients=#{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
       command += " " + argv.join(" ")
       run_and_exit! command
     end
