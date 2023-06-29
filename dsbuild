@@ -1,11 +1,10 @@
 #!/bin/bash
-# dsbuild - build the docker image
+# dsbuild - build docker image
+#
 # See Also:
-# dsbuild
-# dsrun
-# dsstart
-# dsexec
-# dsremove
+# dsrun - create container from image (also starts it and joins it)
+# dsstart - boots a container (and joins it)
+# dsexec - joins a running container
 if [ `uname -s` != 'Darwin' ]; then
     echo "Must be run from OSX, outside the docker container."
     exit
