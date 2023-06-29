@@ -83,6 +83,14 @@ class SnowflakeManglerApp
     !no_need
   end
 
+  def excel_automation?
+    get_script == "etl_automated_excel_reports.py"
+  end
+
+  def sql_file?
+    argv.last.end_with?(".sql")
+  end
+
   def osx?
     `uname -s`.strip == "Darwin"
   end
@@ -591,11 +599,14 @@ Options:
   end
 
   def replace_similar_to_with_like_any(line)
-    regex = %r{^(.*?)([A-Za-z0-9\._]+)\s+((NOT)\s+)SIMILAR\s+TO\s+(.+)}
+    regex = /^(.*?)([A-Za-z0-9\._]+)\s+((NOT)\s+)SIMILAR\s+TO\s+(.+)/i
+    #    if line =~ regex
     return unless line =~ regex
 
     # column, is_not, patterns = $1, $3, $4
     left, column, is_not, patterns = $1, $2, $4, $5
+
+    return unless line =~ regex
 
     replacement = "column: #{column}, not: #{is_not ? 'NOT!' : 'not-not'}, patterns: #{patterns.inspect}"
 
@@ -648,8 +659,8 @@ Options:
       opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
       opt :list, "Show PR workflow checklist"
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
-      opt :quick, "(run only) Only show output from failing detectors"
-      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", short: "Q", default: false
+      opt :quick, "(run only) Only show output from failing detectors", short: "Q"
+      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", default: false
       opt :report, "(run only) Report file for etl_automated_excel_reports)", short: :none, type: :string
       opt :fixes, "(check|fix only) Only output fixes", default: false
 
@@ -742,7 +753,7 @@ Options:
     end
 
     # If the script is a sql file, disable code and whitespace detectors
-    if get_script.end_with? ".sql"
+    if sql_file?
       opts[:space] = false
       opts[:python] = false
     end
@@ -806,7 +817,11 @@ Options:
       command += " --start=#{opts[:start]}" if opts[:start_given]
       command += " --end=#{opts[:end]}" if opts[:end_given]
       command += " --recipients=#{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
-      if opts[:report_given]
+
+      # snatch report sql into --report if we're running excel automation
+      opts[:report] = argv.pop if excel_automation? && sql_file?
+
+      if opts[:report]
         report = opts[:report].sub('sql/', '').sub('.sql', '')
         command += " --report=#{report}"
       end
@@ -1060,7 +1075,7 @@ Options:
     end
 
     # ----------------------------------------------------------------------
-    # SIMILAR TO -> RLIKE
+    # SIMILAR TO -> RLIKE / LIKE ANY
     #
     # RED: <column> SIMILAR TO <regex>
     # SNOW: RLIKE(<column>, <regex>)
