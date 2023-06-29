@@ -205,6 +205,12 @@ class SnowflakeManglerApp
     opts[:exceptions]
   end
 
+  # show_fixes_only: suppress output except for fixes, i.e. spit out a big list
+  # of sed commands
+  def show_fixes_only?
+    opts[:fixes]
+  end
+
   def use_test_mode?
     opts[:test]
   end
@@ -231,11 +237,16 @@ class SnowflakeManglerApp
 
   def log_error(msg)
     seen_errors!
-    log(msg)
+    log(msg) unless show_fixes_only?
   end
 
   def log(msg)
-    puts msg unless quiet?
+    puts msg unless quiet? || show_fixes_only?
+  end
+
+  # Like log, but doesn't balk at show_fixes_only
+  def log_fix(msg)
+    puts msg
   end
 
   def log_ok
@@ -281,7 +292,8 @@ class SnowflakeManglerApp
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       log section_title title if quick?
       if autofix
-        log "Autofix with:\n#{autofix.cyan}"
+        log "Autofix with:"
+        log_fix autofix.cyan
         fixlog "#{get_script}: autofix #{title}", autofix
       end
 
@@ -299,7 +311,7 @@ class SnowflakeManglerApp
             sed_replacement = suggestion.gsub(%r|/|, "\\/").gsub('"', '\"')
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
-            log sed_command.cyan
+            log_fix sed_command.cyan
             fixlog "#{get_script}: replacement for #{title}", sed_command
           end
         end
@@ -638,7 +650,8 @@ Options:
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
       opt :quick, "(run only) Only show output from failing detectors"
       opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", short: "Q", default: false
-      opt :report, "Report file (for etl_automated_excel_reports)", short: :none, type: :string
+      opt :report, "(run only) Report file for etl_automated_excel_reports)", short: :none, type: :string
+      opt :fixes, "(check|fix only) Only output fixes", default: false
 
       # Commands only for passing through
       opt :clear, "Clear ~/.ds_script and ~/.ds_table cache files (snow go only)", short: :none, default: false
