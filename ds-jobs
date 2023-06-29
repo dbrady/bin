@@ -25,7 +25,8 @@ class DsJobsApp
 
     # TODO: update me with my list of known old hostnames (because we haz dem)
     hostname=`hostname`.strip
-    raise "Hey you have a hardcoded hostname of '31b95b7de045' but your hostname is '#{hostname}', what gives?" if hostname != '31b95b7de045' && hostname != 'Mac1205Pro.local'
+    unexpected_host = hostname != '31b95b7de045' && hostname != 'Mac1205Pro.local'
+    puts "New hostname detected, consider adding #{hostname} to users hash in ds-jobs" if unexpected_host
 
     opts = Optimist::options do
       opt :end, "Show jobs started (not ended!) on or before this datetime (always UTC)", short: :none, type: :string
