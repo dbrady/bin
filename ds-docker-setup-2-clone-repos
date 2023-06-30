@@ -3,12 +3,12 @@
 (
     echo "Cloning Repos" &&
         cd &&
-        [ ! -d ~/bin ] && git clone git@github.com:dbrady/bin.git &&
-        [ ! -d ~/dotfiles ] && git clone git@github.com:dbrady/dotfiles.git &&
-        [ ! -d ~/.emacs.d ] && git clone git@github.com:dbrady/prelude.git .emacs.d &&
-        mkdir -f ~/devel && cd &&
-        [ ! -d ~/devel/scrapbin ] && (cd ~/devel && git clone git@github.com:dbrady/scrapbin.git) &&
-        [ ! -d ~/devel/scrapbin ] && (cd ~/devel && git clone git@github.com:dbrady/refdox.git) &&
+        ([ ! -d ~/bin ] && git clone git@github.com:dbrady/bin.git) &&
+        ([ ! -d ~/dotfiles ] && git clone git@github.com:dbrady/dotfiles.git) &&
+        ([ ! -d ~/.emacs.d ] && git clone git@github.com:dbrady/prelude.git .emacs.d) &&
+        ([ ! -d ~/devel ] && mkdir ~/devel) && cd &&
+        ([ ! -d ~/devel/scrapbin ] && (cd ~/devel && git clone git@github.com:dbrady/scrapbin.git)) &&
+        ([ ! -d ~/devel/scrapbin ] && (cd ~/devel && git clone git@github.com:dbrady/refdox.git)) &&
 
         echo "All done!"
 )
