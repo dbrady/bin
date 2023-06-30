@@ -6,6 +6,11 @@ exit 0
 
 SCRIPT=`get-ds-script`
 
+if [ -e "$1" ]; then
+    SCRIPT=$1
+    shift
+fi
+
 if [ -z "$SCRIPT" ]; then
     echo "You must set the SCRIPT variable first."
     exit -1
@@ -13,4 +18,4 @@ fi
 
 echo -e "\033[36msed -E -i 's/except Exception:/except:/' $SCRIPT\033[0m"
 sed -E -i 's/except Exception:/except:/' $SCRIPT
-snow-commit-ds-script "Remove default Exception"
+snow-commit-ds-script "Remove default Exception" $SCRIPT

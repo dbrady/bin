@@ -1,6 +1,11 @@
 #!/bin/bash
 SCRIPT=`get-ds-script`
 
+if [ -e "$1" ]; then
+    SCRIPT=$1
+    shift
+fi
+
 if [ -z "$SCRIPT" ]; then
     echo "You must set the SCRIPT variable first."
     exit -1
@@ -9,4 +14,4 @@ fi
 echo -e "\033[36mpep-fix $SCRIPT\033[0m"
 pep-fix $SCRIPT
 
-snow-commit-warehouse-pep8-conformance
+snow-commit-ds-script "PEP8 conformance" $SCRIPT

@@ -3,6 +3,11 @@
 
 SCRIPT=`get-ds-script`
 
+if [ -e "$1" ]; then
+    SCRIPT=$1
+    shift
+fi
+
 if [ -z "$SCRIPT" ]; then
     echo "You must set the SCRIPT variable first."
     exit -1
