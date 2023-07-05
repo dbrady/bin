@@ -1,0 +1,9 @@
+#!/bin/bash
+# Use send-keys to tell emacs in window 1 to open a warehouse file
+# subdirs are okay, e.g. "snow-open sql/myreport.sql"
+tmux send-keys -tdata:1 "C-x"
+tmux send-keys -tdata:1 "C-f"
+tmux send-keys -tdata:1 "C-a"
+tmux send-keys -tdata:1 "C-k"
+tmux send-keys -tdata:1 "/root/data_services/etl/warehouse/$1"
+tmux send-keys -tdata:1 "C-m"
