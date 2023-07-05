@@ -4,12 +4,12 @@
 # rub1nner [-l|-r|-c] [-b|--bold] <color> <on_color> "<message>"
 #
 #
-
 require "colorize"
 require "io/console"
 require "optimist"
+String.disable_colorization unless $stdout.tty?
 
-_height,width = $stdout.winsize
+_height,width = $stdout.tty? ? $stdout.winsize : [24, 100]
 
 opts = Optimist.options do
   opt :left, "Align text to the left"
