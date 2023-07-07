@@ -1,10 +1,10 @@
 #!/bin/bash
 # snow-go-master
 
-if [ `uname -s` == "Darwin" ]; then
-    echo -e "\033[31mThis script runs in Docker, not OSX.\033[0m"
-    exit -1
-fi
+# if [ `uname -s` == "Darwin" ]; then
+#     echo -e "\033[31mThis script runs in Docker, not OSX.\033[0m"
+#     exit -1
+# fi
 
 echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41m!!!  MASTER  !!! \033[0m branch, NOT SNOWFLAKE."
 if [[ $1 == "-c" || $1 == "--clear" ]]; then
