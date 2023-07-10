@@ -1,18 +1,63 @@
-#!/bin/bash
-# get-ds-table [-v] - get scriptfile. If it hasn't been explicitly set or
-# overridden, parse it out from the related table name.
-#
-# -v - verbose mode, explain where that table name is coming from
-TABLEFILE=~/.ds_table
+#!/usr/bin/env ruby
+# get-ds-table [-v] - get currently focused table. If it hasn't been explicitly
+# set or overridden, grab it from the config or parse it out from the related
+# table name.
+require "colorize"
+require "optimist"
+require "json"
+String.disable_colorization unless $stdout.tty?
 
-if [ -e $TABLEFILE ]; then
-    if [ "$1" == "-v" ]; then
-        echo "Table name is cached in $TABLEFILE"
-    fi
-    tail -n 1 $TABLEFILE
+opts = Optimist.options do
+  banner <<HALP
+git-ds-table - get currently focused table. If it hasn't been explicitly set or
+overridden, grab it from the config or parse it out from the related table name.
+HALP
+
+  opt :debug, "Print extra debug info", default: false
+  opt :verbose, "Verbose mode - explains how/where the table name is obtained"
+end
+puts opts.inspect if opts[:debug]
+
+SCRIPTFILE=File.expand_path("~/.ds_script")
+TABLEFILE=File.expand_path("~/.ds_table")
+CONFIGFILE=File.join("etl_nightly_config.json")
+
+if File.exist?(TABLEFILE)
+  puts "Table name is cached in #{TABLEFILE}".green if opts[:verbose]
+  puts File.readlines(TABLEFILE).last.strip
 else
-    if [ "$1" == "-v" ]; then
-        echo "Table name is not cached; calculating from job."
-    fi
-    get-ds-script | sed -e 's/\//./g' | sed -E 's/.py$//' | sed -E 's/^etl_//'
-fi
+  puts "Table name is not cached in #{TABLEFILE}, continuing".yellow if opts[:debug]
+
+  if !File.exist?(SCRIPTFILE)
+    puts "Job file does not exist, run set-ds-script first"
+    exit -1 # failure with sadness
+  end
+
+  job = `get-ds-script`.strip.sub(/\.py/,'').gsub(%r|/|, '.')
+
+  begin
+    config = JSON.parse(File.read(CONFIGFILE))
+
+    dst_table = config["jobs"].detect {|job_name, job_config| job_name == job }
+    table_name = dst_table && dst_table.last["dst_table"]
+    if table_name
+      puts "Table name found in job config dst_table".green if opts[:verbose]
+      puts table_name
+      exit 0 # success with happiness
+    else
+      if dst_table
+        puts "Job config did not have dst_table, continuing".yellow if opts[:debug]
+      else
+        puts "Could not find job config for job '#{job}', continuing".yellow if opts[:debug]
+      end
+
+      puts "Table name is not cached; calculating from job".green if opts[:verbose]
+
+      puts job.gsub(/^(.*\.)?(etl_)?/, '')
+    end
+
+  rescue JSON::ParserError => e
+    puts "Could not parse etl_nightly_config.json: #{e}"
+    exit -1
+  end
+end
