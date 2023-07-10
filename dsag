@@ -3,6 +3,6 @@
 require "colorize"
 String.disable_colorization unless $stdout.tty?
 
-command = "ag '#{ARGV.join(' ')}' #{`get-ds-script -f`.strip}"
+command = "ag #{ARGV.join(' ')} #{`get-ds-script -f`.strip}"
 puts command.cyan
 system command
