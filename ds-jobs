@@ -9,7 +9,7 @@ class DsJobsApp
   def run
     users = {
       "31b95b7de045" => "dave",
-      "-1" => "kanav",
+      "5224cd6a771e" => "dave", # loaner laptop
       "5c83d468efbb" => "kenton",
       "b58cf084a090" => "kym",
       "1bb4fcfc3ac9" => "rikki",
