@@ -5,19 +5,26 @@
 
 require "colorize"
 require "optimist"
-String.disable_colorization unless $stdout.tty?
 
 opts = Optimist.options do
+  banner <<HALP
+highlight-lines [options] <regex> [<file> [<file2> [...]]]
+cat <file> | highlight-lines [options] <regex>
+HALP
+
   opt :debug, "Print extra debug info", default: false
   opt :color, "Color name to use, e.g red, green, light_black", default: "green"
-  # TODO: --color option
+  opt :"ignore-case", "Ignore case", default: false
 end
 puts opts.inspect if opts[:debug]
 
-regex = Regexp.new(ARGV.shift)
+options = 0
+options |= Regexp::IGNORECASE if opts[:"ignore-case"]
+
+regex = Regexp.new(ARGV.shift) # ARGV.first but get rid of it so
 
 ARGF.each_line do |line|
-  line.strip!
+  line.rstrip!
   color = (line =~ regex ? opts[:color] : "normal").to_sym
   puts line.colorize(color)
 end
