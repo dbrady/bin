@@ -9,7 +9,7 @@ if args[0] == "-b"
 end
 
 # Don't use any rubies that aren't in the path
-rubies = %w(ruby ruby1.9 jruby rbx tinyrb).select {|ruby| ENV["PATH"].split(/:/).map {|p| File.join(p, ruby) }.any? {|f| File.exists? f}}
+rubies = %w(ruby ruby1.9 jruby rbx tinyrb).select {|ruby| ENV["PATH"].split(/:/).map {|p| File.join(p, ruby) }.any? {|f| File.exist? f}}
 
 longest_label = rubies.map {|n| n.size }.max
 

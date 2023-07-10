@@ -5,7 +5,7 @@
 # repo... heh.  (Don't just hash it like emails in my bash prompt; there are
 # only 10B possible phone numbers. Too easy to force.)
 rcfilename = File.expand_path("~/.phcheck-my-number")
-if !File.exists?(rcfilename) then
+if !File.exist?(rcfilename) then
    puts "Could not find #{rcfilename}, you could probably write that."
    puts "echo '<phonenumber>' > #{rcfilename}"
    exit 1

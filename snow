@@ -382,7 +382,7 @@ class SnowflakeManglerApp
     # autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
     # autofix_folder = File.dirname(autofix_filename)
     # FileUtils.mkdir_p(autofix_folder) unless Dir.exists?(autofix_folder)
-    # if !File.exists?(autofix_filename)
+    # if !File.exist?(autofix_filename)
     #   File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
     # end
     # File.open(autofix_filename, "a") { |file| file.puts "# #{comment}"; file.puts autofix}
@@ -740,7 +740,7 @@ Options:
     # Optionally override script if job is show config for job
     if job?
       # If arg 2 exists and is a file that exists, override it
-      if argv[2] && File.exists?(argv[2])
+      if argv[2] && File.exist?(argv[2])
         set_script(argv[2])
       end
     end

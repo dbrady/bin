@@ -50,7 +50,7 @@ class Slackup
 
     def new_file
       filepath = new_filename_for_today
-      if !File.exists?(filepath)
+      if !File.exist?(filepath)
         template = DATA.read
         File.open(filepath, "w") { |fp| fp.puts template }
       end

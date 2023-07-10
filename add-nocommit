@@ -40,7 +40,7 @@ precommit_file = "%s/pre-commit" % precommit_folder
 
 barf! "Pardon me, but I'm lost. Is this a git repo? I don't see .git/hooks/ here!" unless File.directory? precommit_folder
 if !ARGV.include?("-f") && !ARGV.include?("--force")
-  barf! "Cowardly refusing to overwrite existing pre-commit hook!" if File.exists? precommit_file
+  barf! "Cowardly refusing to overwrite existing pre-commit hook!" if File.exist? precommit_file
 end
 
 File.open(precommit_file, 'w') do |file|

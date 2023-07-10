@@ -95,7 +95,7 @@ cache_filename = "#{birb_filename}.#{x}x#{y}.ansi"
 
 cache_filepath = File.join(BIRBS_CACHE_FOLDER, cache_filename)
 
-if File.exists?(cache_filepath)
+if File.exist?(cache_filepath)
   puts File.read(cache_filepath)
 else
   birb_ansi = `chafa #{birb_filepath}`

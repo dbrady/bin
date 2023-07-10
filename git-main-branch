@@ -8,7 +8,7 @@ def cache_file
 end
 
 def cache
-  @cache ||= if !File.exists?(cache_file)
+  @cache ||= if !File.exist?(cache_file)
                     {}
                   else
                     YAML.load_file(cache_file)

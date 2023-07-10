@@ -27,7 +27,7 @@ puts "Checking for existence of files..." unless opts[:quiet]
   "target_file" => target_file
 }.each_pair do |name, file|
   print "Checking for #{name} at #{file}..." unless opts[:quiet]
-  if !File.exists?(file)
+  if !File.exist?(file)
     puts "NOT FOUND".red unless opts[:quiet]
     puts "File not found; Aborting." unless opts[:quiet]
     exit -1

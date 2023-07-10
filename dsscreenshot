@@ -8,7 +8,7 @@ end
 
 most_recent_screenshot = Dir.glob(File.expand_path("~/Desktop/Screen*(3).png")).last
 
-if !File.exists?(most_recent_screenshot || "")
+if !File.exist?(most_recent_screenshot || "")
   puts "Couldn't find a screenshot to copy out."
   exit -1
 end

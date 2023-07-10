@@ -16,11 +16,11 @@ class RfSaver
   FOCI_FILE = File.expand_path '~/.spec_foci.yml'
 
   def save_focus name
-    if !File.exists? FOCUS_FILE
+    if !File.exist? FOCUS_FILE
       puts "No saved focus. Use rfh to list rspec focus scripts/commands"
       return
     end
-    foci = if File.exists? FOCI_FILE
+    foci = if File.exist? FOCI_FILE
              YAML::load_file FOCI_FILE
            else
              {}

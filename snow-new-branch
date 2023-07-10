@@ -94,7 +94,7 @@ if Dir.pwd != warehouse_dir
   exit -1
 end
 
-if !File.exists?(filename)
+if !File.exist?(filename)
   puts "ERROR: file '#{filename}' does not exist"
   exit -1
 end
