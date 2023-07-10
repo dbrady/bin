@@ -88,7 +88,7 @@ class SnowflakeManglerApp
   end
 
   def sql_file?
-    argv.last.end_with?(".sql")
+    argv.last && argv.last.end_with?(".sql")
   end
 
   def osx?
