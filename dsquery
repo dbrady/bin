@@ -10,6 +10,7 @@ import argparse
 import os
 import sqlite3
 import sys
+from datetime import datetime
 from dataservices import db
 
 def query_should_be_bare(query):
@@ -74,6 +75,12 @@ def run(query, **attrs):
         else:
             results = dbo.query(query, return_type='dataframe')
             with open("/root/data_services/etl/warehouse/_dsquery-last-results.csv", "w") as outfile:
+                outfile.write(results.to_csv(index=False))
+            timestamp = datetime.now().strftime('%F.%T')
+            with open(f"/root/data_services/etl/warehouse/snapshots/dsquery-query.{timestamp}.{warehouse}.sql", "w") as outfile:
+                outfile.write(query)
+                outfile.write("\n")
+            with open(f"/root/data_services/etl/warehouse/snapshots/dsquery-results.{timestamp}.{warehouse}.csv", "w") as outfile:
                 outfile.write(results.to_csv(index=False))
             print(results.to_csv(index=False), end="")
 
