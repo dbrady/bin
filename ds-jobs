@@ -5,23 +5,19 @@ require 'optimist'
 require 'text-table'
 
 class DsJobsApp
+  VALID_SHOW_HOSTS = %w(raw name both)
 
   def run
     users = {
       "31b95b7de045" => "dave",
       "5224cd6a771e" => "dave", # loaner laptop
-      "5c83d468efbb" => "kenton",
+      # "5c83d468efbb" => "kenton",
+      "cba1293f97aa" => "kenton",
       "b58cf084a090" => "kym",
       "1bb4fcfc3ac9" => "rikki",
       "98909e115b88" => "zack",
       "production-dataservices-node" => "production"
     }
-    host_case_sql = "CASE " \
-                    + users
-                        .each_pair
-                        .map {|host, name| "WHEN host='#{host}' THEN '#{name}'" }
-                        .join(' ') \
-                    + " ELSE host END"
 
     # TODO: update me with my list of known old hostnames (because we haz dem)
     hostname=`hostname`.strip
@@ -34,7 +30,7 @@ class DsJobsApp
     opts = Optimist::options do
       opt :end, "Show jobs started (not ended!) on or before this datetime (always UTC)", short: :none, type: :string
       opt :failures, "Show failures only", short: :none, default: false
-      opt :host, "Hostname", short: :none, type: :string
+      opt :host, "Show jobs from this hostname", short: :none, type: :string
       opt :id, "Show id column", short: :none, default: false
       opt :job, "Job name or path/to/job.py (Defaults to get-ds-script. Set to * to get all. Use % to pattern match. Can be CSV of multiple jobs.)", short: :none, type: :string
       opt :limit, "Max jobs to return", short: :none, default: 20
@@ -47,6 +43,7 @@ class DsJobsApp
       opt :utc, "Show only times in UTC", short: :none, default: false
       opt :warehouse, "Warehouse", short: :none, type: :string, default: "snowflake"
       opt :where, "Override where clause entirely", short: :none, type: :string
+      opt :"show-host-as", "How to display host (raw, name, both)", short: :h, type: :string, default: "name"
 
       opt :debug, "Show extra debugging", default: false
       opt :pretend, "Show query and exit", default: false
@@ -55,7 +52,36 @@ class DsJobsApp
     Optimist::die "Cannot specify --host and --mine at same time" if opts[:mine] && opts[:host_given]
     Optimist::die "Cannot specify --host and --prod at same time" if opts[:prod] && opts[:host_given]
     Optimist::die "Cannot specify --utc and --mst at same time" if opts[:utc] && opts[:mst]
+    Optimist::die "--show-host-as invalid. \"#{opts[:'show-host-as']}\" must be one of: #{VALID_SHOW_HOSTS.inspect}" unless VALID_SHOW_HOSTS.include?(opts[:"show-host-as"])
     puts opts.inspect if opts[:debug]
+
+    host_case_sql = case opts[:"show-host-as"]
+                    when "raw"
+                      "host"
+                    when "name"
+                      host_case_sql = "CASE " \
+                                      + users
+                                          .each_pair
+                                          .map {|host, name| "WHEN host='#{host}' THEN '#{name}'" }
+                                          .join(' ') \
+                                      + " ELSE host END"
+                    when "both"
+                      host_case_sql = "CASE " \
+                                      + users
+                                          .each_pair
+                                          .map {|host, name| "WHEN host='#{host}' THEN '#{host} (#{name})'" }
+                                          .join(' ') \
+                                      + " ELSE host END"
+                    end
+
+
+    # host_case_sql = "CASE " \
+    #                 + users
+    #                     .each_pair
+    #                     #                        .map {|host, name| "WHEN host='#{host}' THEN '#{host} (#{name})'" }
+    #                     .map {|host, name| "WHEN host='#{host}' THEN '#{name}'" }
+    #                     .join(' ') \
+    #                 + " ELSE host END"
 
     opts[:host] = hostname if opts[:mine]
     opts[:host] = 'production-dataservices-node' if opts[:prod]
@@ -97,7 +123,7 @@ class DsJobsApp
     wheres << "host='#{opts[:host]}'" if opts[:mine] || opts[:prod] || opts[:host_given]
 
     # failures
-    wheres << "success=0" if opts[:failures]
+    wheres << "success = 0" if opts[:failures]
 
     # start
     wheres << "start_time >= '#{opts[:start]}'" if opts[:start_given]
