@@ -71,3 +71,9 @@ warehouses.each do |warehouse|
   puts (command  + " # #{warehouse}").send(color)
   system command
 end
+
+if opts[:log]
+  # load redshift and snowflake queries and prepend a warehouse column
+  system "ds-combine > dscmp.combined.csv"
+  puts "Wrote dscmp.combined.csv"
+end
