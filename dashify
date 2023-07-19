@@ -2,7 +2,7 @@
 require 'fileutils'
 
 ARGV.each do |filename|
-  unless File.exists?(filename)
+  unless File.exist?(filename)
     puts "Skipping '#{filename}': file does not exist."
   end
 

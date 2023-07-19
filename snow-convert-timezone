@@ -10,7 +10,7 @@ argv = ARGV.dup
 force = !(['-f', '--force'] & argv).empty?
 argv -= ['-f', '--force']
 
-script = File.exists?(argv[1]) ? argv[1] : `get-ds-script`.strip
+script = File.exist?(argv[1]) ? argv[1] : `get-ds-script`.strip
 
 param = argv.first
 

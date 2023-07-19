@@ -6,7 +6,7 @@ opts = Optimist.options do
   opt :output, "Specify output file instead of stdout", short: "o", type: String
   opt :input, "Specify input file instead of stdin", short: "i", type: String
 end
-Optimist.die "Input file does not exist" if opts[:input] && !File.exists?(opts[:input])
+Optimist.die "Input file does not exist" if opts[:input] && !File.exist?(opts[:input])
 
 # This could be done more efficiently but it's 2023, what's a gig of ram between
 # friends. Just imblart it into memory, fiddle with it, and exblart it to

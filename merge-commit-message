@@ -13,7 +13,7 @@ class Authors
 
   CONFIG_FILE = File.expand_path("~/.merge-commit-message.yml")
   def initialize
-    @authors = if File.exists? CONFIG_FILE
+    @authors = if File.exist? CONFIG_FILE
                  YAML.load_file(CONFIG_FILE).fetch "authors", {}
                else
                  {}

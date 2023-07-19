@@ -3,6 +3,12 @@
 # backlog - Show the review backlog, beacuse I've renamed that stupid file twice
 # and keep forgetting where snow-link puts it.
 
+# Historical note: snow-link records the PR because I occasionally get asked to
+# recall from memory every PR I have submitted in the past n days. (Sometimes
+# the reviewer gets so backlogged that he dumps stack.) So
+# ~/data_services/review-backlog.log came into existence so that I would, in
+# fact, be able to recall all of them.
+
 if [ "$IS_DOCKER_LOCAL" == "1" ]; then
     # docker
     FILENAME="/root/data_services/review-backlog.log"

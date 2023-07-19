@@ -1,5 +1,8 @@
 #!/bin/bash
-echo TODO: Check to make sure nothing else is currently staged
+if ! git-isclean; then
+    echo "You have modified files and/or something alreday staged. Commit or stash other changes first. Aborting."
+    exit -1
+fi
 
 # commify args. `git add-new a b c d` -> "a, b, c, d"
 # first time through loop, files and glue expand to empty string.

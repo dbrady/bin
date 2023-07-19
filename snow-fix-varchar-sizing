@@ -3,6 +3,11 @@
 
 SCRIPT=`get-ds-script`
 
+if [ -e "$1" ]; then
+    SCRIPT=$1
+    shift
+fi
+
 if [ -z "$SCRIPT" ]; then
     echo "You must set the SCRIPT variable first."
     exit -1
@@ -11,4 +16,4 @@ fi
 echo -e "\033[36mruby -i -n -e puts \$_.gsub(/varchar\(\d+\)/, \"varchar\").gsub(/VARCHAR\(\d+\)/, \"VARCHAR\")' $SCRIPT\033[0m"
 ruby -i -n -e 'puts $_.gsub(/varchar\(\d+\)/, "varchar").gsub(/VARCHAR\(\d+\)/, "VARCHAR")' $SCRIPT
 
-snow-commit-ds-script "Unsize varchar columns"
+snow-commit-ds-script "Unsize varchar columns" $SCRIPT

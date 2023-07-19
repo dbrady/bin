@@ -13,7 +13,7 @@ end
 
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
-settings = if File.exists? settings_file
+settings = if File.exist? settings_file
              YAML.load_file(settings_file)
            end
 settings ||= {}

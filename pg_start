@@ -5,12 +5,18 @@ if [ `uname -s` == 'Darwin' ]; then
     # pg_ctl -D /usr/local/homebrew/var/postgres start
     # echo pg_ctl -D /usr/local/var/postgres start
     # pg_ctl -D /usr/local/var/postgres start
-    if [ `hostname` == 'MAC0825PRO.local' ]; then
-        echo -e '\033[1;37;41mAcima laptop detected! You installed postgres with the .dmg app instead of homebrew. Use CMD-<SPC> postgres <RET> to launch the PostgreSQL app instead. You monster.\033[0m'
-        if [ -e ~/Documents/acima_postgres_config.txt ]; then
-            echo "cat ~/Documents/acima_postgres_config.txt for more settings"
-        fi
+
+    if [ `hostname` == 'Mac1205Pro.local' ]; then
+        echo "You started postrgres Once And For All with `brew services start postgresql@13`. It should be running already. (If it ain't, you need to debug something. Or maybe restart? Idk. :shrug:)"
     fi
+    # if [ `hostname` == 'MAC0825PRO.local' ]; then
+    #     echo -e '\033[1;37;41mAcima laptop detected! You installed postgres with the .dmg app instead of homebrew. Use CMD-<SPC> postgres <RET> to launch the PostgreSQL app instead. You monster.\033[0m'
+    #     if [ -e ~/Documents/acima_postgres_config.txt ]; then
+    #         echo "cat ~/Documents/acima_postgres_config.txt for more settings"
+    #     fi
+    #     elsif [ `hostname` == 'Mac1205Pro.local']; then
+    # # brew services start postgresql@13
+    # fi
 else
     # linux - current as of Ubuntu 16.04 LTS
     # 2022-04-25 - I've been on 20.04 LTS for a few months now. I assume this works?

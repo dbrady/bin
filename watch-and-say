@@ -16,7 +16,7 @@ watch_file = if ARGV.size.zero?
 watch_file = File.expand_path watch_file
 
 # Clean out anything already in there
-if File.exists? watch_file
+if File.exist? watch_file
     puts "Clearing out existing watch file at #{watch_file}..."
     FileUtils.rm_f watch_file
 end

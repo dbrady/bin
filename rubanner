@@ -21,6 +21,8 @@ require 'io/console'
 require 'optimist'
 require 'yaml'
 
+String.disable_colorization unless $stdout.tty?
+
 class Rubanner
   attr_reader :message, :colors, :output, :screen_width, :font, :clear_screen
 
@@ -98,10 +100,17 @@ Options:
     opt :output, "Output File", type: :string, default: nil
     opt :screen_width, "Screen Width (specify when using --output)", type: :integer, default: nil
     opt :clear_screen, "Clear Screen before printing banner", type: :boolean, default: DEFAULTS[:clear_screen]
+    opt :width, "Use this screen width", type: :integer
   end
 
   opts[:output] ||= $stdout
-  opts[:screen_width] ||= $stdout.winsize[1]
+  opts[:screen_width] ||= if opts[:width_given]
+                            opts[:width]
+                          elsif $stdout.tty?
+                            $stdout.winsize[1]
+                          else
+                            100
+                          end
 
   message = ARGV.join(' ')
   opts[:bg] = opts[:bg].start_with?("on_") ? opts[:bg] : "on_" + opts[:bg]

@@ -9,7 +9,7 @@ require 'fileutils' # don't use system("chmod"), we're not savages
 filename = ARGV[0]
 command_string = ARGV[1]
 
-if File.exists?(ARGV[0])
+if File.exist?(ARGV[0])
   puts "Cowardly refusing to overwrite '#{ARGV[0]}': file already exists"
   exit 1
 end

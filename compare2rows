@@ -10,7 +10,7 @@
 require "json"
 
 filename = ARGV.first || "compare.csv"
-raise "Couldn't open '#{filename}'" unless File.exists?(filename)
+raise "Couldn't open '#{filename}'" unless File.exist?(filename)
 
 json = JSON.parse(File.read(filename))
 raise "I am a very fragile script! Your JSON must have 2 rows, found #{json.size}." unless json.size == 2

@@ -75,7 +75,7 @@ end
 # exists.
 filename = branch.sub(%r|^feature/DS-\d+/|,'').sub(/\.\d+$/, '').gsub(/\./, '/') + ".py"
 
-if force || File.exists?(File.join(warehouse_path, filename))
+if force || File.exist?(File.join(warehouse_path, filename))
   command = "set-ds-script #{filename}"
   puts command.cyan
   system command
