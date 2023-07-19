@@ -14,7 +14,9 @@ HALP
 
   opt :debug, "Print extra debug info", default: false
   opt :color, "Color name to use, e.g red, green, light_black", default: "green"
-  opt :"ignore-case", "Ignore case", default: false
+  opt :"ignore-case", "Ignore case", short: :i, default: false
+  opt :background, "Set background color", short: :b, default: "normal"
+  opt :bold, "Highlight lines in bold", short: :k, default: false
 end
 puts opts.inspect if opts[:debug]
 
@@ -23,8 +25,19 @@ options |= Regexp::IGNORECASE if opts[:"ignore-case"]
 
 regex = Regexp.new(ARGV.shift) # ARGV.first but get rid of it so
 
+color_on = {}
+color_off = {}
+
+color_on = { color: :normal }
+color_on[:color] = opts[:color].to_sym if opts[:color]
+color_on[:mode] = :bold if opts[:bold]
+color_on[:background] = opts[:background].to_sym if opts[:background]
+
+color_off = { color: :normal }
+
 ARGF.each_line do |line|
   line.rstrip!
-  color = (line =~ regex ? opts[:color] : "normal").to_sym
-  puts line.colorize(color)
+  color_params = (line =~ regex) ? color_on : color_off
+  puts color_params.inspect if opts[:debug]
+  puts line.colorize(color_params)
 end
