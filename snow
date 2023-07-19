@@ -660,7 +660,7 @@ Options:
       opt :list, "Show PR workflow checklist"
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
 
-      opt :quick, "(run only) Only show output from failing detectors", short: "Q"
+      opt :quick, "(run only) Only show output from failing detectors", short: :q
       opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", short: :Q, default: false
       opt :report, "(run only) Report file for etl_automated_excel_reports)", short: :none, type: :string
       opt :fixes, "(check|fix only) Only output fixes", short: :none, default: false
