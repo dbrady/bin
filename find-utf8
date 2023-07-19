@@ -2,7 +2,7 @@
 # Find Non-ascii (UTF-8) lines in a file
 file = ARGV.first
 
-if !File.exists? file
+if !File.exist? file
   puts "Could not find file '#{file}'"
   exit -1
 end

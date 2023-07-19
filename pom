@@ -16,7 +16,7 @@ def file_path
 end
 
 def got_watchfile?
-  File.exists?(file_path)
+  File.exist?(file_path)
 end
 
 def say(msg)
@@ -116,7 +116,7 @@ end
 
 require 'yaml'
 CONFIG_FILE = File.expand_path('~/.poms.yml').freeze
-known_poms = if File.exists? CONFIG_FILE
+known_poms = if File.exist? CONFIG_FILE
                YAML.load_file CONFIG_FILE
              else
                {}

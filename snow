@@ -83,6 +83,14 @@ class SnowflakeManglerApp
     !no_need
   end
 
+  def excel_automation?
+    get_script == "etl_automated_excel_reports.py"
+  end
+
+  def sql_file?
+    argv.last && argv.last.end_with?(".sql")
+  end
+
   def osx?
     `uname -s`.strip == "Darwin"
   end
@@ -205,6 +213,12 @@ class SnowflakeManglerApp
     opts[:exceptions]
   end
 
+  # show_fixes_only: suppress output except for fixes, i.e. spit out a big list
+  # of sed commands
+  def show_fixes_only?
+    opts[:fixes]
+  end
+
   def use_test_mode?
     opts[:test]
   end
@@ -231,11 +245,16 @@ class SnowflakeManglerApp
 
   def log_error(msg)
     seen_errors!
-    log(msg)
+    log(msg) unless show_fixes_only?
   end
 
   def log(msg)
-    puts msg unless quiet?
+    puts msg unless quiet? || show_fixes_only?
+  end
+
+  # Like log, but doesn't balk at show_fixes_only
+  def log_fix(msg)
+    puts msg
   end
 
   def log_ok
@@ -281,7 +300,8 @@ class SnowflakeManglerApp
     if lines.any? { |line| line =~ regex && (!unmatch || line !~ unmatch) }
       log section_title title if quick?
       if autofix
-        log "Autofix with:\n#{autofix.cyan}"
+        log "Autofix with:"
+        log_fix autofix.cyan
         fixlog "#{get_script}: autofix #{title}", autofix
       end
 
@@ -299,7 +319,7 @@ class SnowflakeManglerApp
             sed_replacement = suggestion.gsub(%r|/|, "\\/").gsub('"', '\"')
 
             sed_command = "sed -i -E \"#{index+1}s/^.*$/#{sed_replacement}/\" #{get_script}"
-            log sed_command.cyan
+            log_fix sed_command.cyan
             fixlog "#{get_script}: replacement for #{title}", sed_command
           end
         end
@@ -362,7 +382,7 @@ class SnowflakeManglerApp
     # autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
     # autofix_folder = File.dirname(autofix_filename)
     # FileUtils.mkdir_p(autofix_folder) unless Dir.exists?(autofix_folder)
-    # if !File.exists?(autofix_filename)
+    # if !File.exist?(autofix_filename)
     #   File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
     # end
     # File.open(autofix_filename, "a") { |file| file.puts "# #{comment}"; file.puts autofix}
@@ -579,11 +599,14 @@ Options:
   end
 
   def replace_similar_to_with_like_any(line)
-    regex = %r{^(.*?)([A-Za-z0-9\._]+)\s+((NOT)\s+)SIMILAR\s+TO\s+(.+)}
+    regex = /^(.*?)([A-Za-z0-9\._]+)\s+((NOT)\s+)SIMILAR\s+TO\s+(.+)/i
+    #    if line =~ regex
     return unless line =~ regex
 
     # column, is_not, patterns = $1, $3, $4
     left, column, is_not, patterns = $1, $2, $4, $5
+
+    return unless line =~ regex
 
     replacement = "column: #{column}, not: #{is_not ? 'NOT!' : 'not-not'}, patterns: #{patterns.inspect}"
 
@@ -636,9 +659,11 @@ Options:
       opt :force, "Force continuation over warnings, such as get-ds-script not pointing at an actual file. Also send -f to git checkout (for/if submodule errors)"
       opt :list, "Show PR workflow checklist"
       opt :redshift, "Explicitly allow job to target redshift", short: :none, default: false
-      opt :quick, "(run only) Only show output from failing detectors"
-      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", short: "Q", default: false
-      opt :report, "Report file (for etl_automated_excel_reports)", short: :none, type: :string
+
+      opt :quick, "(run only) Only show output from failing detectors", short: "Q"
+      opt :quiet, "Suppress all output if possible, and return success exit status if all detectors pass (or print 'OK' if output is not piped)", short: :Q, default: false
+      opt :report, "(run only) Report file for etl_automated_excel_reports)", short: :none, type: :string
+      opt :fixes, "(check|fix only) Only output fixes", short: :none, default: false
 
       # Commands only for passing through
       opt :clear, "Clear ~/.ds_script and ~/.ds_table cache files (snow go only)", short: :none, default: false
@@ -716,7 +741,7 @@ Options:
     # Optionally override script if job is show config for job
     if job?
       # If arg 2 exists and is a file that exists, override it
-      if argv[2] && File.exists?(argv[2])
+      if argv[2] && File.exist?(argv[2])
         set_script(argv[2])
       end
     end
@@ -729,7 +754,7 @@ Options:
     end
 
     # If the script is a sql file, disable code and whitespace detectors
-    if get_script.end_with? ".sql"
+    if sql_file?
       opts[:space] = false
       opts[:python] = false
     end
@@ -793,7 +818,11 @@ Options:
       command += " --start=#{opts[:start]}" if opts[:start_given]
       command += " --end=#{opts[:end]}" if opts[:end_given]
       command += " --recipients=#{`git config user.email`.strip}" if has_recipients_override? && !argv.include?('--recipients')
-      if opts[:report_given]
+
+      # snatch report sql into --report if we're running excel automation
+      opts[:report] = argv.pop if excel_automation? && sql_file?
+
+      if opts[:report]
         report = opts[:report].sub('sql/', '').sub('.sql', '')
         command += " --report=#{report}"
       end
@@ -1047,7 +1076,7 @@ Options:
     end
 
     # ----------------------------------------------------------------------
-    # SIMILAR TO -> RLIKE
+    # SIMILAR TO -> RLIKE / LIKE ANY
     #
     # RED: <column> SIMILAR TO <regex>
     # SNOW: RLIKE(<column>, <regex>)

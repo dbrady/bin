@@ -20,7 +20,7 @@ class RfLoader
   FOCI_FILE = File.expand_path '~/.spec_foci.yml'
 
   def show_saved_foci
-    if !File.exists? FOCI_FILE
+    if !File.exist? FOCI_FILE
       puts "No saved foci. Save a new one with rfsave"
       return
     end
@@ -48,7 +48,7 @@ class RfLoader
   end
 
   def load_save_focus name
-    if !File.exists? FOCI_FILE
+    if !File.exist? FOCI_FILE
       puts "No saved foci. Save a new one with rfsave"
       return
     end

@@ -36,7 +36,7 @@ end
 
 input = ''
 if ARGV.length > 0
-	if File.exists?(File.expand_path(ARGV[0]))
+	if File.exist?(File.expand_path(ARGV[0]))
 		input = File.new(File.expand_path(ARGV[0])).read
 	else
 		puts "File not found: #{ARGV[0]}"

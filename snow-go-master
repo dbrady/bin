@@ -1,9 +1,15 @@
 #!/bin/bash
 # snow-go-master
 
+# if [ `uname -s` == "Darwin" ]; then
+#     echo -e "\033[31mThis script runs in Docker, not OSX.\033[0m"
+#     exit -1
+# fi
+
 if [ `uname -s` == "Darwin" ]; then
-    echo -e "\033[31mThis script runs in Docker, not OSX.\033[0m"
-    exit -1
+    WAREHOUSE_FOLDER=~/develop/data_services/etl/warehouse
+else
+    WAREHOUSE_FOLDER=~/data_services/etl/warehouse
 fi
 
 echo -e "WARNING! This will reset your warehouse and finance repos to the \033[1;37;41m!!!  MASTER  !!! \033[0m branch, NOT SNOWFLAKE."
@@ -14,10 +20,12 @@ else
 fi
 echo HIT CTRL-C TO ABORT, PRESS ENTER OTHERWISE:
 read
+
+
 echo starting... &&
 
-    echo -e "\033[94mcd ~/data_services/etl/warehouse/\033[0m" &&
-    (cd ~/data_services/etl/warehouse/ &&
+    echo -e "\033[94mcd $WAREHOUSE_FOLDER/\033[0m" &&
+    (cd $WAREHOUSE_FOLDER/ &&
 
          echo -e "\033[36mgit checkout master finance\033[0m" &&
          git checkout master finance &&
@@ -28,8 +36,8 @@ echo starting... &&
          echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    echo -e "\033[94mcd ~/data_services/etl/warehouse/finance/\033[0m" &&
-    (cd ~/data_services/etl/warehouse/finance/ &&
+    echo -e "\033[94mcd $WAREHOUSE_FOLDER/finance/\033[0m" &&
+    (cd $WAREHOUSE_FOLDER/finance/ &&
 
          echo -e "\033[36mgit main\033[0m" &&
          git main &&
@@ -37,8 +45,8 @@ echo starting... &&
          echo -e "\033[36mgit pull\033[0m" &&
          git pull) &&
 
-    echo -e "\033[94mcd ~/data_services/etl/warehouse/\033[0m" &&
-    (cd ~/data_services/etl/warehouse/ &&
+    echo -e "\033[94mcd $WAREHOUSE_FOLDER/\033[0m" &&
+    (cd $WAREHOUSE_FOLDER/ &&
 
          echo -e "\033[36mgit checkout master finance\033[0m" &&
          git checkout master finance) &&

@@ -134,7 +134,7 @@ end
 aliases = []
 if include_aliases
   Dir.glob(File.join(target, 'config/database*.yml')).each do |config_file|
-    if File.exists? config_file
+    if File.exist? config_file
       # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
       output = File.read(config_file)
       config = YAML.load(output)

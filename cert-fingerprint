@@ -4,7 +4,7 @@
 require 'base64'
 require 'digest/md5'
 
-if ARGV.empty? || !File.exists?(ARGV.first)
+if ARGV.empty? || !File.exist?(ARGV.first)
   puts <<USAGE
 cert-fingerprint - Calculate and print certificate fingerprint
 
