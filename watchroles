@@ -6,9 +6,11 @@ String.disable_colorization unless $stdout.tty?
 
 opts = Optimist.options do
   opt :debug, "Print extra debug info", default: false
+
+  opt :direction, "Up or down (migration direciton)", default: "up"
 end
 puts opts.inspect if opts[:debug]
-
+Optmisit::die "direction must be one of up, down" unless %w(up down).include?(opts[:direction])
 
 suffixes = [nil, "_load", "_load_load", "_historical"]
 
@@ -46,7 +48,7 @@ def table_exists?(warehouse, table)
   output_lines.any? {|line| line.include? "mp_user_id" }
 end
 
-def table_has_role_column?(warehouse, table)
+def table_should_have_role_column?(warehouse, table)
   # if it's a load table AND it doesn't exist, this is fine
   return true if table_is_load?(warehouse, table) && !table_exists?(warehouse, table)
 
@@ -55,6 +57,17 @@ def table_has_role_column?(warehouse, table)
   output_lines = cache_command(command)
 
   output_lines.any? {|line| line.include? "role" }
+end
+
+def table_should_not_have_role_column?(warehouse, table)
+  # if it's a load table AND it doesn't exist, this is fine
+  return true if table_is_load?(warehouse, table) && !table_exists?(warehouse, table)
+
+  command = "wh-describe-table --warehouse=#{warehouse} #{table}"
+
+  output_lines = cache_command(command)
+
+  !output_lines.any? {|line| line.include? "role" }
 end
 
 def table_has_data?(warehouse, table)
@@ -68,7 +81,6 @@ end
 def show_test(name, warehouse, table, status)
   message = "#{warehouse}:#{table}: #{name}"
   bg_color = status ? 'on_green' : 'on_red'
-  message = message.sub(/ has /, " HAS NO ") unless status
   command = "rub1nner --vpadding=0 --left --bold white #{bg_color} '#{message}'"
 
   log `#{command}`
@@ -87,11 +99,20 @@ log title
   suffixes.each do |suffix|
     table = "d_team_list_collections_gsheet#{suffix}"
 
-    if !table_is_load?(warehouse, table)
-      show_test "table exists", warehouse, table, table_exists?(warehouse, table)
+    case opts[:direction]
+    when "up"
+      if !table_is_load?(warehouse, table)
+        show_test "table should exist", warehouse, table, table_exists?(warehouse, table)
+      end
+      show_test "table should have role column", warehouse, table, table_should_have_role_column?(warehouse, table)
+      show_test "table should have data", warehouse, table, table_has_data?(warehouse, table)
+    when "down"
+      if !table_is_load?(warehouse, table)
+        show_test "table should exist", warehouse, table, table_exists?(warehouse, table)
+      end
+      show_test "table should not have role column", warehouse, table, table_should_not_have_role_column?(warehouse, table)
+      show_test "table should have data", warehouse, table, table_has_data?(warehouse, table)
     end
-    show_test "table has role column", warehouse, table, table_has_role_column?(warehouse, table)
-    show_test "table has data", warehouse, table, table_has_data?(warehouse, table)
   end
 end
 
