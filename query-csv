@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# query-csv Import csv for querying, then run queries against it
+# query-csv Run a sql-like query against a csv file
 require "csv"
 require "fileutils"
 require "sqlite3"

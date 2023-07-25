@@ -1,2 +1,2 @@
 #!/bin/bash
-ls -rt /root/data_services/etl/warehouse/{_dsquery-last-results.csv,dscmp.combined.csv} | tail -n 1 | xargs cat | csv-to-table
+cat /root/data_services/etl/warehouse/_dsquery-last-results.csv | csv-to-table

@@ -26,7 +26,7 @@ end
 
 # Set to true to rewrite command line for pretty screenshots
 def pretty_screenshots?
-  false
+  true
 end
 
 if get_script.empty?
@@ -65,7 +65,11 @@ end
 # end
 
 # Move up 1 line (1F) and erase to EOL (0K) so the command screenshots correctly
-print "\033[1F\033[0K# " if pretty_screenshots?
+if pretty_screenshots?
+  print "\033[1F\033[0K# "
+  # do this twice now because reasons (something in the chain is adding an extra newline somewhere and it isn't worth fixing)
+  print "\033[1F\033[0K# "
+end
 
 command = "python etl_nightly.py --retry_count 1 --job #{get_script} #{argv.join(' ')}"
 puts command.cyan
