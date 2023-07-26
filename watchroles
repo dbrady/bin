@@ -12,6 +12,13 @@ end
 puts opts.inspect if opts[:debug]
 Optmisit::die "direction must be one of up, down" unless %w(up down).include?(opts[:direction])
 
+width = if $stdout.tty?
+          require "io/console"
+          $stdout.winsize.last
+        else
+          100
+        end
+
 suffixes = [nil, "_load", "_load_load", "_historical"]
 
 # warehouse | table | check
@@ -41,7 +48,7 @@ def table_is_load?(warehouse, table)
 end
 
 def table_exists?(warehouse, table)
-  command = "wh-describe-table --warehouse=#{warehouse} #{table}"
+  command = "wh-describe-table --no-log --warehouse=#{warehouse} #{table}"
 
   output_lines = cache_command(command)
 
@@ -52,7 +59,7 @@ def table_should_have_role_column?(warehouse, table)
   # if it's a load table AND it doesn't exist, this is fine
   return true if table_is_load?(warehouse, table) && !table_exists?(warehouse, table)
 
-  command = "wh-describe-table --warehouse=#{warehouse} #{table}"
+  command = "wh-describe-table --no-log --warehouse=#{warehouse} #{table}"
 
   output_lines = cache_command(command)
 
@@ -63,7 +70,7 @@ def table_should_not_have_role_column?(warehouse, table)
   # if it's a load table AND it doesn't exist, this is fine
   return true if table_is_load?(warehouse, table) && !table_exists?(warehouse, table)
 
-  command = "wh-describe-table --warehouse=#{warehouse} #{table}"
+  command = "wh-describe-table --no-log --warehouse=#{warehouse} #{table}"
 
   output_lines = cache_command(command)
 
@@ -73,7 +80,7 @@ end
 def table_has_data?(warehouse, table)
   return true if table_is_load?(warehouse, table)
 
-  command = "dsquery --warehouse=#{warehouse} 'SELECT COUNT(*) FROM #{table}'"
+  command = "dsquery --nolog --warehouse=#{warehouse} 'SELECT COUNT(*) FROM #{table}'"
 
   !cache_command(command).join("\n").to_i.zero?
 end
@@ -96,6 +103,12 @@ title = `#{command}`.strip
 log title
 
 %w(redshift snowflake).each do |warehouse|
+  if warehouse == "redshift"
+    log warehouse.ljust(width).bold.red.on_white
+  else
+    log warehouse.ljust(width).bold.blue.on_white
+  end
+
   suffixes.each do |suffix|
     table = "d_team_list_collections_gsheet#{suffix}"
 
@@ -114,6 +127,7 @@ log title
       show_test "table should have data", warehouse, table, table_has_data?(warehouse, table)
     end
   end
+  log ""
 end
 
 print_log!
