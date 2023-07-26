@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# Show last mail section from mail_it.log
+
+lines = IO.readlines(File.expand_path("~/data_services/etl/warehouse/mail_it.log")).map(&:rstrip)
+
+index = lines.each.with_index.reverse_each.detect {|line, index| line =~ /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}: sending mail:$/ }.last
+
+
+puts lines[index..-1]
