@@ -1,2 +1,4 @@
 #!/bin/bash
-cat /root/data_services/etl/warehouse/_dsquery-last-results.csv | csv-to-table
+
+# cat /root/data_services/etl/warehouse/_dsquery-last-results.csv | csv-to-table
+csv-to-table $(ls /root/data_services/etl/warehouse/snapshots/*.csv | tail -n 1)
