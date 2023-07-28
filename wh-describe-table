@@ -8,15 +8,20 @@ opts = Optimist.options do
   opt :table, "Display as pretty table (--no-table for bare csv)", default: true
   opt :warehouse, "Select target warehouse", default: "snowflake"
   opt :log, "Permit dsquery to log the query", default: false
+  opt :verbose, "Turn on verbose logging in dsquery", default: false
 end
 puts opts.inspect if opts[:debug]
 
-log_option = opts[:log] ? "" : "--nolog"
+dsquery_options = []
+dsquery_options << "--nolog" if opts[:log]
+dsquery_options << "--verbose" if opts[:verbose]
+
+dsquery_options = dsquery_options.join(' ')
 
 table = ARGV.first || `get-ds-table`.strip
 query = "SELECT ordinal_position, LOWER(column_name) AS column_name, data_type, numeric_precision, numeric_scale FROM information_schema.columns WHERE table_name ILIKE '{table}' ORDER BY ordinal_position".gsub(/{table}/, table)
 
-command = %Q|dsquery #{log_option} --warehouse=#{opts[:warehouse]} "#{query}"|
+command = %Q|dsquery #{dsquery_options} --warehouse=#{opts[:warehouse]} "#{query}"|
 command += " | csv-to-table" if opts[:table]
 
 puts command.cyan if opts[:debug]

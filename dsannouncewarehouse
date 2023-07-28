@@ -7,7 +7,7 @@ require 'io/console'
 require 'json'
 
 job = ARGV.first
-3
+
 _,cols = $stdout.winsize
 command = "snow-get-warehouse -c #{job}"
 warehouse = `#{command}`
