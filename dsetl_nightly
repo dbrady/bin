@@ -72,5 +72,5 @@ if pretty_screenshots?
 end
 
 command = "python etl_nightly.py --retry_count 1 --job #{get_script} #{argv.join(' ')}"
-puts command.cyan
+puts command
 system command
