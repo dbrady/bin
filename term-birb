@@ -24,7 +24,7 @@ BIRBS_CACHE_FOLDER = File.join(File.expand_path('~'), "Documents", "refdox", "bi
 
 # Create bribs cache if needed (only need this once per laptop, but man when it crashes the error comes from a weird place)
 
-Dir.mkdir(BIRBS_CACHE_FOLDER) unless Dir.exists?(BIRBS_CACHE_FOLDER)
+Dir.mkdir(BIRBS_CACHE_FOLDER) unless Dir.exist?(BIRBS_CACHE_FOLDER)
 
 def available_birbs(filter=nil)
   if filter

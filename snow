@@ -381,7 +381,7 @@ class SnowflakeManglerApp
 
     # autofix_filename = File.expand_path("./autofixes/#{get_script}.sh")
     # autofix_folder = File.dirname(autofix_filename)
-    # FileUtils.mkdir_p(autofix_folder) unless Dir.exists?(autofix_folder)
+    # FileUtils.mkdir_p(autofix_folder) unless Dir.exist?(autofix_folder)
     # if !File.exist?(autofix_filename)
     #   File.open(autofix_filename, "w") { |file| file.puts "#!/bin/bash"}
     # end
