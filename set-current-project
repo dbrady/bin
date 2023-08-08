@@ -50,6 +50,14 @@ $known_databases = {
     "long_switches" => { },
     "args" => ["database"]
   },
+  "postgis" => {
+    "adapter" => /postgis/,
+    "command" => "psql",
+    # psql does not accept password at command line. Sorry.
+    "short_switches" => { "username" => "U", "host" => "h", "port" => "p" },
+    "long_switches" => { },
+    "args" => ["database"]
+  },
   "mysql" => {
     "adapter" => /mysql(2)?/,
     "command" => "mysql",
@@ -137,7 +145,7 @@ if include_aliases
     if File.exist? config_file
       # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
       output = File.read(config_file)
-      config = YAML.load(output)
+      config = YAML.load(output, aliases: true)
       prefix = config_filename_prefix(config_file)
       aliases += build_config_aliases config, prefix
     end
