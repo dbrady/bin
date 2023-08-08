@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+# twork-start - hack to workaround my crippled tshare-start script
+
+require_relative 'tmuxinatrix/tmux_settings'
+require_relative 'tmuxinatrix/tmuxinatrix'
+
+settingses = [
+  TmuxSettings.new(name: "emacs", folder: "merchant_portal", commands: "emacs"),
+  TmuxSettings.new(name: "bash", folder: "merchant_portal"),
+  TmuxSettings.new(name: "spec", folder: "merchant_portal"),
+  TmuxSettings.new(name: "console", folder: "merchant_portal", commands: "bin/rails console"),
+  TmuxSettings.new(name: "server", folder: "merchant_portal", commands: "bin/rails server"),
+
+  # TmuxSettings.new("mp", folder: "merchant_portal"),
+  # TmuxSettings.new("mpq", folder: "merchant_portal", "besq"),
+  # TmuxSettings.new("np", "notary_public"),
+  # TmuxSettings.new("uw", "underwriting"),
+]
+$logging = true
+
+Tmuxinatrix.run('work', settingses)
