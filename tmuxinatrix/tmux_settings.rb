@@ -5,6 +5,6 @@ class TmuxSettings
   def initialize(name:, folder:, commands: nil)
     @name = name
     @folder = File.join(ACIMA_DIR, folder)
-    @commands = commands || []
+    @commands = Array(commands)
   end
 end
