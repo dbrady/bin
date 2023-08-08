@@ -24,13 +24,13 @@ require 'yaml'
 String.disable_colorization unless $stdout.tty?
 
 class Rubanner
-  attr_reader :message, :colors, :output, :screen_width, :font, :clear_screen
+  attr_reader :messages, :colors, :output, :screen_width, :font, :clear_screen
 
-  def initialize(message, colors, output, screen_width, font, clear_screen)
+  def initialize(messages, colors, output, screen_width, font, clear_screen)
     @output = output
     @screen_width = screen_width
     @font = font
-    @message = message
+    @messages = Array(messages)
     @colors = colors
     @clear_screen = clear_screen
   end
@@ -38,21 +38,25 @@ class Rubanner
   def run
     ensure_figlet_installed!
 
-    # render message and calculate padding
+    # render messages and calculate padding
     screen_width.inspect
 
-    banner = `figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"`
-    banner_width = banner.each_line.to_a.first&.chomp&.length || 0
-    left_size = (screen_width - banner_width) / 2
-    right_size = screen_width - (banner_width + left_size)
+    messages.each do |message|
+      command = %Q|figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"|
+      banner = `#{command}`
 
-    lpad = ' ' * left_size
-    rpad = ' ' * right_size
+      banner_width = banner.each_line.to_a.first&.chomp&.length || 0
+      left_size = (screen_width - banner_width) / 2
+      right_size = screen_width - (banner_width + left_size)
 
-    # Okay, calculations done, here comes the output!
-    blank_line
-    banner.each_line do |line|
-      output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
+      lpad = ' ' * left_size
+      rpad = ' ' * right_size
+
+      # Okay, calculations done, here comes the output!
+      blank_line
+      banner.each_line do |line|
+        output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
+      end
     end
   end
 
@@ -112,10 +116,10 @@ Options:
                             100
                           end
 
-  message = ARGV.join(' ')
+  messages = ARGV
   opts[:bg] = opts[:bg].start_with?("on_") ? opts[:bg] : "on_" + opts[:bg]
   colors = [opts[:fg], opts[:bg]]
   colors << "bold" if opts[:bold]
 
-  Rubanner.new(message, colors, opts[:output], opts[:screen_width], opts[:font], opts[:clear_screen]).run
+  Rubanner.new(messages, colors, opts[:output], opts[:screen_width], opts[:font], opts[:clear_screen]).run
 end
