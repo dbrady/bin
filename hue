@@ -25,13 +25,28 @@
 # have 30 seconds to physically access the bridge and hit the link button.
 #
 # URL: /api
-
+# Body: {"devicetype":"my_hue_app#my_device"}
+#
 # In Body, CHANGE my_hue_app and my_device to match whatever we're doing. They
 # use "my_hue_app#iphone peter", so I'm thinking we set it to my_hue_app and
-# this laptop hostname.
-
-# Body: {"devicetype":"my_hue_app#my_device"}
-
+# this laptop hostname, e.g. "my_hue_app:Mac1205Pro"
+#
+#
 # POST
-
-# . Before you click POST, you a
+#
+# Step 5. RUN AND PRESS THE BUTTON YOU HAVE 30 SECONDS OR LESS.
+#
+# Step 6. Come back and click POST again, this time you should get a response
+# like:
+#
+# [
+#   {
+#     "success": {
+#         "username": "xyzxyzetc"
+#     }
+#   }
+# ]
+#
+# Step 7. Put this in ~/.private as
+#
+# export HUE=xyzxyzetc
