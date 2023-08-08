@@ -90,6 +90,7 @@ if birb_filepath.nil?
   exit 1
 end
 
+chafa_path = "/opt/homebrew/bin/chafa"
 birb_filename = birb_filepath.split("/").last
 cache_filename = "#{birb_filename}.#{x}x#{y}.ansi"
 
@@ -98,7 +99,7 @@ cache_filepath = File.join(BIRBS_CACHE_FOLDER, cache_filename)
 if File.exist?(cache_filepath)
   puts File.read(cache_filepath)
 else
-  birb_ansi = `chafa #{birb_filepath}`
+  birb_ansi = `#{chafa_path} #{birb_filepath}`
   File.open(cache_filepath, "w") { |fp| fp.puts(birb_ansi) }
   puts birb_ansi
 end
