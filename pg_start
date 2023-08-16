@@ -7,7 +7,8 @@ if [ `uname -s` == 'Darwin' ]; then
     # pg_ctl -D /usr/local/var/postgres start
 
     if [ `hostname` == 'Mac1205Pro.local' ]; then
-        echo "You started postrgres Once And For All with `brew services start postgresql@13`. It should be running already. (If it ain't, you need to debug something. Or maybe restart? Idk. :shrug:)"
+        # echo "You started postrgres Once And For All with `brew services start postgresql@13`. It should be running already. (If it ain't, you need to debug something. Or maybe restart? Idk. :shrug:)"
+        echo "You started postrgres Once And For All by downloading PostGres.app from the app store. If it's not running, go check there :shrug:"
     fi
     # if [ `hostname` == 'MAC0825PRO.local' ]; then
     #     echo -e '\033[1;37;41mAcima laptop detected! You installed postgres with the .dmg app instead of homebrew. Use CMD-<SPC> postgres <RET> to launch the PostgreSQL app instead. You monster.\033[0m'

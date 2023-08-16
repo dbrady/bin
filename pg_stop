@@ -14,7 +14,8 @@ if [ `uname -s` == 'Darwin' ]; then
     # fi
 
     if [ `hostname` == 'Mac1205Pro.local' ]; then
-        echo "You started postrgres Once And For All with `brew services start postgresql@13`, it should always be running as a service now."
+        # echo "You started postrgres Once And For All with `brew services start postgresql@13`. It should be running already. (If it ain't, you need to debug something. Or maybe restart? Idk. :shrug:)"
+        echo "You started postrgres Once And For All by downloading PostGres.app from the app store. It should probably be left running, but if you really do want to stop it, look at your menu bar."
     fi
 
 
