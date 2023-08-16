@@ -1,5 +1,7 @@
 #!/bin/sh
-# 2023-05-01: this captures "(HEAD detached from /branch)" as "(HEAD"
+# git current-branch - display current branch name
 
-# Better.
+# 2023-05-01: TODO: deal with detached head. Right now this captures "(HEAD
+# detached from /branch)" as "(HEAD". Mostly a problem when you have submodules.
+
 git branch | grep '*' | cut -d ' ' -f2-
