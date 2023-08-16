@@ -25,7 +25,7 @@ class RfSaver
            else
              {}
            end
-    focus = File.read FOCUS_FILE
+    focus = File.read(FOCUS_FILE).strip
     foci[name] = focus
     File.open(FOCI_FILE, "w") do |file|
       file.puts foci.to_yaml
