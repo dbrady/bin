@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # git open-pr - open pull request previously set with git-set-pr
 
-if `hostname`.strip != 'MAC0825PRO.local'
+if ENV['IS_DOCKER_LOCAL'] == "1"
   raise "Can't access settings file from Docker. Run on OSX, please."
 end
 
