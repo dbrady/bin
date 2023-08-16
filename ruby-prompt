@@ -1,0 +1,12 @@
+#!/bin/bash
+# ruby-prompt - print [ruby <version>]
+
+# NOTE: This is a cadge from rvm, which displayed the current ruby version and
+# current gemset. HOWEVER, I'm currently (2023-08-16) running on a lobotomized
+# rbenv locked on ruby-3.2.2 and using no gemsets.
+
+# Dear RVM: I love you. I miss you. Please come home. (By which I mean this
+# keyserver poisoning thing is bad, and the M1 compilation woes are worse. Taken
+# together... they are just too much. I've burned up my sysadmin budget.)
+
+ruby --version | awk '{ print "[" $1 "-" $2 "]" }'
