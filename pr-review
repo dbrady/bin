@@ -1,0 +1,47 @@
+#!/usr/bin/env ruby
+# pr-review <branch> - Jump to a teammate's branch to review it. (pull and checkout, with optional stash)
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+branch, pr = *ARGV
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :stash, "Stash local changes if any", default: false
+end
+puts opts.inspect if opts[:debug]
+
+def run_command(command)
+  puts command.cyan
+  system(command)
+end
+
+# Returns true if there are any staged or unstaged changes (but does not care if
+# there are untracked files)
+def branch_is_dirty?
+  puts "Checking to see if branch is clean..."
+  !run_command "git isclean"
+end
+
+
+if branch_is_dirty?
+  if opts[:stash]
+    puts "Stashing changes."
+    run_command "git stash"
+  else
+    puts "Your branch has outstanding changes. Rerun with --stash if you want me te stash them.".red
+    exit -1
+  end
+end
+
+
+commands = <<COMMANDS
+    git checkout master
+    git pull
+    git checkout #{branch}
+COMMANDS
+
+commands.each_line.map(&:strip).each do |command|
+  run_command(command)
+end
