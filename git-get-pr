@@ -6,7 +6,8 @@ require 'yaml'
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
 dir = Dir.pwd
-pr = YAML.load_file(settings_file)[dir]
+current_branch = `git current-branch`.strip
+pr = YAML.load_file(settings_file)[dir][current_branch]
 
 if pr.nil?
   $stderr.puts "No PR for #{dir}"
