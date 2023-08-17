@@ -1,35 +1,68 @@
 #!/usr/bin/env ruby
 # git open-pr - open pull request previously set with git-set-pr
+require "colorize"
+require "optimist"
+require "yaml"
+
+class Logger
+  # This is a terrible name. IT means "allow logging at all", but I don't want
+  # to use the negative accessor "quiet"
+  attr_reader :verbose, :timestamp_format
+
+  def initialize(verbose, timestamp_format="%F %T")
+    @verbose = verbose
+    @timestamp_format = timestamp_format
+  end
+
+  def timestamp(now=Time.now)
+    now.strftime(timestamp_format)
+  end
+
+  def log(message)
+    return unless verbose
+    puts "#{timestamp}: #{message}"
+  end
+end
+
+
+String.disable_colorization unless $stdout.tty?
 
 if ENV['IS_DOCKER_LOCAL'] == "1"
   raise "Can't access settings file from Docker. Run on OSX, please."
 end
 
-require 'yaml'
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :pretend, "Run but do not open browser", default: false
+end
+logger = Logger.new(opts[:debug], "%F %T.%3N")
+logger.log(opts.inspect)
 
 settings_file = File.expand_path("~/.git-set-pr.yml")
+logger.log "settings_file: #{settings_file}"
 
 pwd = Dir.pwd
 current_branch = `git current-branch`.strip
+logger.log "current_branch: #{current_branch}"
 
-pr = YAML.load_file(settings_file).fetch(pwd, {}).fetch(current_branch)
+pr = YAML.load_file(settings_file).fetch(pwd, {}).fetch(current_branch, "")
+logger.log "pr: #{pr}"
 
-path = `git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
-    .sub(/^.+@.+:/, '')
-    .sub(/\.git$/, '')
-    .strip
-
-url = "https://github.com/#{path}/pull/#{pr}"
-puts "PR URL: #{url}"
+fetch_url = `git remote get-url origin`.strip
+pull_url = "#{fetch_url}/pull/#{pr}"
+logger.log "fetch_url: #{fetch_url}"
+logger.log "pull_url: #{pull_url}"
 
 def osx?
   `uname -s`.strip == 'Darwin'
 end
 
+exit if opts[:pretend]
+
 if osx?
-  system "open #{url}"
+  system "open #{pull_url}"
 else
   # In theory, sensible-browser is more correct than xdg-open, but in practice
   # it opens Mozilla Firefox even if chromium is my default browser
-  system "xdg-open #{url} &> /dev/null"
+  system "xdg-open #{pull_url} &> /dev/null"
 end
