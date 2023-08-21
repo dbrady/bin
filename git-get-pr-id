@@ -1,39 +1,35 @@
 #!/usr/bin/env ruby
-# git get-pr-id - display pull request (previously set with git-set-pr)
-#
-# TODO:
-# [x] Follow current branch, not just current directory.
-
-# [ ] Follow repo location, instead of current directory. Otherwise it only
-# works for whichever folder you were in when you ran git-set-pr. Bleh. Perhaps
-# a `git config-location` or `git repo-pwd`? Former would just tell you where
-# the .git/config file is for this repo, etc.
-
-# [ ] Make a git set-pr --clobber [<number>] or similar that lets me delete
-# associated PRs
-
-# [ ] Really want this to be able to run from inside docker. Maybe take a fresh
-# look at my old haxx to watch pipes between host and guest OS?
+# git get-pr-id - display pull request id if one is known
 
 require 'yaml'
 
-if ENV['IS_DOCKER_LOCAL'] == "1"
-  # can only be run on OSX
-  exit 0
+# Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+def is_git_repo?(path)
+  File.exist?(File.join(path, '.git'))
 end
 
-begin
-  settings_file = File.expand_path("~/.git-set-pr.yml")
+# Walk up file tree looking for a .git folder
+# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+def git_repo_for(path)
+  starting_path = last_path = path
 
-  pwd = Dir.pwd
-  current_branch = `git current-branch`.strip
-  pr = YAML.load_file(settings_file).fetch(pwd,{}).fetch(current_branch,'')
-
-  if pr
-    puts pr
-  else
-    exit -1
+  while !path.empty?
+    return path if is_git_repo?(path)
+    last_path, path = path, File.split(path).first
+    raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
   end
-rescue
+end
+
+settings_file = File.expand_path("~/.git-set-pr.yml")
+
+dir = git_repo_for(Dir.pwd)
+current_branch = `git current-branch`.strip
+pr = YAML.load_file(settings_file)[dir][current_branch]
+
+if pr.nil?
+  $stderr.puts "No PR for #{dir}" if $stdout.tty?
   exit -1
 end
+
+puts pr

@@ -38,31 +38,32 @@ end
 logger = Logger.new(opts[:debug], "%F %T.%3N")
 logger.log(opts.inspect)
 
-settings_file = File.expand_path("~/.git-set-pr.yml")
-logger.log "settings_file: #{settings_file}"
+pull_url = if ARGV.size.zero?
+              `git get-pr`
+            else
+              pr = ARGV.first
+              logger.log "pr: #{pr}"
 
-pwd = Dir.pwd
-current_branch = `git current-branch`.strip
-logger.log "current_branch: #{current_branch}"
-
-pr = YAML.load_file(settings_file).fetch(pwd, {}).fetch(current_branch, "")
-logger.log "pr: #{pr}"
-
-fetch_url = `git remote get-url origin`.strip
-pull_url = "#{fetch_url}/pull/#{pr}"
-logger.log "fetch_url: #{fetch_url}"
-logger.log "pull_url: #{pull_url}"
+              fetch_url = `git remote get-url origin`
+                            .strip
+                            .sub(/\.git$/, '')
+                            .sub('git@github.com:', 'https://github.com/')
+              pull_url = "#{fetch_url}/pull/#{pr}"
+              logger.log "fetch_url: #{fetch_url}"
+              logger.log "pull_url: #{pull_url}"
+              pull_url
+            end
 
 def osx?
   `uname -s`.strip == 'Darwin'
 end
 
-exit if opts[:pretend]
+command = if osx?
+            "open #{pull_url}"
+          else
+            "xdg-open #{pull_url} &> /dev/null"
+          end
 
-if osx?
-  system "open #{pull_url}"
-else
-  # In theory, sensible-browser is more correct than xdg-open, but in practice
-  # it opens Mozilla Firefox even if chromium is my default browser
-  system "xdg-open #{pull_url} &> /dev/null"
-end
+puts command.cyan if opts[:debug]
+exit if opts[:pretend]
+system command

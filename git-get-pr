@@ -28,10 +28,13 @@ current_branch = `git current-branch`.strip
 pr = YAML.load_file(settings_file)[dir][current_branch]
 
 if pr.nil?
-  $stderr.puts "No PR for #{dir}"
+  $stderr.puts "No PR for #{dir}" if $stdout.tty?
   exit -1
 end
 
-path = `git remote get-url origin`.strip
+path = `git remote get-url origin`
+         .strip
+         .sub(/\.git$/, '')
+         .sub('git@github.com:', '')
 
 puts "https://github.com/#{path}/pull/#{pr}"
