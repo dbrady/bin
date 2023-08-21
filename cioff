@@ -7,4 +7,4 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":false, "transitiontime": 0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/5/state" -d '{"on":false, "transitiontime": 0}' 2>/dev/null > /dev/null
