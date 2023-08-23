@@ -5,6 +5,9 @@
 #
 # rfg [additional args or focus--will not change focus]
 
+# TODO: if spec_focus contains "rspec", it's the full command, which I use when
+# I need to force an env var like SPEC_SEED=true
+
 # TODO: Feature (may require rewriting in ruby?)
 # IFF:
 #   1. There is exactly one cmd line argument
@@ -48,4 +51,6 @@ cirun
 # e.g. if output includes /[1-9]+ failures/ cifail
 # and if output include /[1-9]+ pending/ ciwarn
 #
-(time bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
+grep -E "\brspec\b" ~/.spec_focus &&
+    ((time $(cat ~/.spec_focus)) && cipass || (cifail && exit -1)) ||
+        (time bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
