@@ -25,7 +25,7 @@ settings_file = File.expand_path("~/.git-set-pr.yml")
 
 dir = git_repo_for(Dir.pwd)
 current_branch = `git current-branch`.strip
-pr = YAML.load_file(settings_file)[dir][current_branch]
+pr = YAML.load_file(settings_file)[dir][current_branch] rescue nil
 
 if pr.nil?
   $stderr.puts "No PR for #{dir}" if $stdout.tty?
