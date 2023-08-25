@@ -15,7 +15,14 @@
 # 11 - Office Light Fixture (South Bulb)
 
 # roman font needs bold, electronic font does not, but it doesn't hurt
-rubanner --font=electronic --bold --fg=white --bg=blue "$(pwd | sed -e 's/^.*\///')" "RUNNING"
+# if pwd has lowercase letters, print "running" instead of "RUNNING"
+if (pwd | grep -E '[a-z]'); then
+    RUNNING=running
+else
+    RUNNING=RUNNING
+fi
+
+rubanner --font=roman --bold --fg=white --bg=blue "$(pwd | sed -e 's/_/ /g' | sed -e 's/^.*\///')" $RUNNING
 if [ -e ~/onsite.touch ]; then
     # echo "You're onsite! Skipping HUE lights."
     exit 0
