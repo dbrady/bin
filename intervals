@@ -7,49 +7,54 @@
 if [ $# == 1 ]; then
     case $1 in
         # Major keys
-        "C")
+        C)
             intervals C D E F G A B
             ;;
-        "D")
+        D)
             intervals D E F# G A B C#
             ;;
-        "E")
+        E)
             intervals E F# G# A B C# D#
             ;;
-        "F")
+        F)
             intervals F G A Bb C D E
             ;;
-        "G")
+        G)
             intervals G A B C D E "F#"
             ;;
-        "A")
+        A)
             intervals A B C# D E F# "G#"
             ;;
-        "B")
+        B)
             intervals B C# D# E F# G# A#
             ;;
 
         # Minor
-        "Am")
+        Am|Amin)
             intervals A B C D E F G
             ;;
-        "Bm")
+        Bm|Bmin)
             intervals B C# D E F# G A
             ;;
-        "Cm")
+        Cm|Cmin)
             intervals C# D# E F# G# A B
             ;;
-        "Dm")
+        Dm|Dmin)
             intervals D E F G A Bb C
             ;;
-        "Em")
+        Em|Emin)
             intervals E "F#" G A B C D
             ;;
-        "Fm")
+        Fm|Fmin)
             intervals F# "G#" A B C# D E
             ;;
-        "Gm")
+        Gm|Gmin)
             intervals G# A# B C# D# E F#
+            ;;
+
+        # hm/harmin - Harmonic Minor
+        Aharmin|Ahm)
+            intervals A B C D E F G#
             ;;
     esac
 else

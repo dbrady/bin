@@ -4,6 +4,10 @@
 # TODO:
 # - [ ] This is getting big. Stop, drop, and ~~roll~~ write tests.
 
+# - [ ] change -i intervals -> -c colorize-intervals
+
+# - [ ]  change -N interval_numbers -> -i intervals
+
 # - [ ] Add --scale option that works like intervals but highlights specific
 # scales, including but not limited to c)hromatic, p)entatonic, b)lues, and
 # h)exatonic, etc. I don't have enough music theory yet to know if I want to/can
@@ -68,18 +72,20 @@ class String
 end
 
 class FretMap
-  attr_reader :naturals_only, :notes_given, :key, :frets, :intervals, :tuning, :chord_map, :show_options
+  attr_reader :naturals_only, :notes_given, :key, :frets, :intervals, :interval_numbers, :mode_number, :tuning, :chord_map, :show_options
 
   FRET_WIDTH = 3
   FRET_JOIN = "|"
   FRET_BLANK_JOIN = FRET_JOIN.gsub(/./, ' ')
 
-  def initialize(naturals_only, notes_given, key, frets, intervals, tuning, chord_map, show_options)
+  def initialize(naturals_only, notes_given, key, frets, intervals, interval_numbers, mode_number, tuning, chord_map, show_options)
     @naturals_only = naturals_only
     @notes_given = notes_given.split(/\s*,\s*/)
     @key = key
     @frets = frets
     @intervals = intervals
+    @interval_numbers = interval_numbers
+    @mode_number = mode_number
     @tuning = tuning.split(//)
     @chord_map = chord_map
     @show_options = show_options
@@ -124,7 +130,11 @@ class FretMap
 
   def print_strings
     tuning.reverse.each do |string_note|
-      print_string(string_note)
+      if interval_numbers
+        print_string_as_interval_numbers(string_note, color: false)
+      else
+        print_string(string_note)
+      end
     end
   end
 
@@ -141,16 +151,41 @@ class FretMap
   # demo/test
   def print_intervals
     tuning.reverse.each do |string_note|
-      print_string_as_intervals(string_note)
+      if interval_numbers
+        print_string_as_interval_numbers(string_note, color: true)
+      else
+        print_string_as_interval_colors(string_note)
+      end
     end
   end
 
-  def print_string_as_intervals(string)
+  def print_string_as_interval_colors(string)
     str = string_begin(string)
     str += 1.upto(frets).to_a.map { |fret|
-      note = note_for_string_at_fret(string, fret)
+      note_index = notes_given.index(note_for_string_at_fret(string, fret))
+      note_index += mode_number if note_index
+      note = note_index.to_s
                .centre(FRET_WIDTH)
                .colorize(color_for_string_at_fret(string, fret))
+    }.join(FRET_JOIN)
+    str += string_end
+    puts str
+  end
+
+  def print_string_as_interval_numbers(string, color: false)
+    @notes_given = Scale.notes_for_key(@key)
+    str = string_begin(string)
+    str += 1.upto(frets).to_a.map { |fret|
+      note_index = notes_given.index(note_for_string_at_fret(string, fret))
+      # KLUDGY HACK - This kinda doesn't work, if you want G Dorian you have to
+      # say -e 2 -k F because the note index is screwed up, otherwise it'll just
+      # print the correct note numbers of G dorian, but in the places of the
+      # notes of G major
+      note_index = ((note_index - (mode_number-1)) % 7)+1  if note_index
+      note = note_index.to_s
+               .centre(FRET_WIDTH)
+      note = note.colorize(color_for_string_at_fret(string, fret)) if color
+      note
     }.join(FRET_JOIN)
     str += string_end
     puts str
@@ -218,6 +253,7 @@ class FretMap
 
   def color_for_string_at_fret(string, fret)
     notes = scale.notes.cycle
+
     # tune note up the scale until we reach string
     note = notes.next until note == string
     # now move it up until we reach the desired fret
@@ -267,7 +303,7 @@ class FretMap
 
     # Now, how many intervals is that from the root note of the key?
 
-    interval_scale = Scale::SCALE.cycle
+    interval_scale = (key_has_sharps? ? Scale::SHARP_SCALE : Scale::FLAT_SCALE).cycle
     # Tune interval note up to base_key
     interval_note = interval_scale.next until interval_note == base_key
 
@@ -278,6 +314,7 @@ class FretMap
     # puts
     semitones = 0
     # puts "        #{semitones} semitones up from #{key} is #{interval_note}..."
+
     until interval_note == note
       semitones += 1
       interval_note = interval_scale.next
@@ -312,15 +349,19 @@ end
 if __FILE__==$0
   require 'optimist'
   opts = Optimist.options do
+    opt :debug, "Show extra debugging info", default: false
     opt :naturals_only, "Show Natural Notes Only", default: false
     opt :notes_given, "Show only these notes (csv)", default: ""
     opt :key, "key (required for intervals and chord-map)", type: :string, default: nil
     opt :frets, "Number of frets", type: :integer, default: 24 # because my guitar shreds by default (/>.>)/ ~woo~
     opt :intervals, "Colorize major triad intervals in green and sustaining (7/9/11) intervals in blue", default: false
+    opt :interval_numbers, "Show notes as their interval number in the scale", type: :boolean, short: :N, default: false
+    opt :mode_number, "Mode number HACK. Adds this number to the index of the interval number", default: 1
     opt :show_options, "Show Options (debug mode and exit)", type: :boolean, short: :o, default: false
     opt :tuning, "Tuning", type: :string, default: "EADGBE"
     opt :chord_map, "Show I-IV-V-vi Chord Map", short: :m, default: false # Still in the works. Need to refactor this mess a bit. Honestly wouldn't mind if this were a string arg, like --map=I,IV,vi,viio etc
   end
+  puts opts.inspect if opts[:debug]
   Optimist.die "Chord maps are not yet implemented, sorry." if opts[:chord_map]
   Optimist.die "You must supply a key to display chord intervals" if opts[:intervals] && !opts[:key]
   Optimist.die "You must supply a root key to display chord maps" if opts[:chord_map] && !opts[:key]
@@ -334,6 +375,8 @@ if __FILE__==$0
     opts[:key],
     opts[:frets],
     opts[:intervals],
+    opts[:interval_numbers],
+    opts[:mode_number],
     opts[:tuning],
     opts[:chord_map],
     opts[:show_options]
