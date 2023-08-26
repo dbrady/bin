@@ -13,4 +13,4 @@
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/9/state" -d '{"on":true, "sat":254, "bri":254, "transitiontime":0}' 2>/dev/null > /dev/null
+curl -X PUT "http://$HUE_IP/api/$HUE/lights/5/state" -d '{"on":true, "sat":254, "bri":254, "transitiontime":0}' 2>/dev/null > /dev/null

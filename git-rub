@@ -1,4 +1,7 @@
 #!/bin/sh
 # rub - Appease/Comply with Rubocop
+
+# TODO: If there are no changes staged AND there are unstaged changes,
+# show me the unstaged changes and offer to stage them
 echo git commit -m '"Rubocop compliance"'
 git commit -m "Rubocop compliance"

@@ -1,7 +1,15 @@
 #!/usr/bin/env ruby
-# git get-pr-id - display pull request id if one is known
+require "colorize"
+require "optimist"
+require "text-table"
+require "yaml"
+String.disable_colorization unless $stdout.tty?
 
-require 'yaml'
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :names, "Sort by names", default: false
+end
+puts opts.inspect if opts[:debug]
 
 # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
 # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
@@ -24,12 +32,17 @@ end
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
 dir = git_repo_for(Dir.pwd)
-current_branch = `git current-branch`.strip
-pr = YAML.load_file(settings_file)[dir][current_branch] rescue nil
+prs = YAML.load_file(settings_file)[dir]
 
-if pr.nil?
-  $stderr.puts "No PR for #{dir}" if $stdout.tty?
-  exit -1
+prs = prs.sort if opts[:names]
+
+
+table = Text::Table.new
+table.head = [ "Branch", "PR" ]
+table.rows = []
+
+prs.each do |branch, pr|
+  table.rows << [branch, pr]
 end
 
-puts pr
+puts table

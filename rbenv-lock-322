@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "Locking rbenv to ruby 3.2.2, ruby will run fast but .ruby-version will not be respected."
+rm -f ~/.rbenv/shims
+ln -s ~/.rbenv/shims.ruby-3.2.2 ~/.rbenv/shims

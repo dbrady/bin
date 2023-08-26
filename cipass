@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # | color   |   hue |
 # |---------+-------|
 # | red     |     0 |
@@ -14,7 +14,7 @@
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
-rubanner --font=electronic --bold --fg=white --bg=green "PASS"
+rubanner --font=ansi-shadow --bold --fg=white --bg=green "PASS"
 if [ -e ~/onsite.touch ]; then
     # echo "You're onsite! Skipping HUE lights."
     exit 0

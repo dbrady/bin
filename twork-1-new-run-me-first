@@ -1,8 +1,5 @@
 #!/bin/bash
-# twork-new - create new session for twork. Run this, jump into window 1 and run twork-start
-echo "tmux new-session -s work"
-tmux new-session -s work
-#!/bin/bash
-# twork-new - create new session for twork. Run this, jump into window 1 and run twork-start
+# twork-new - create new session for twork. Run this, jump into window 1 and run
+# twork-2-start-run-me-next
 echo "tmux new-session -s work"
 tmux new-session -s work

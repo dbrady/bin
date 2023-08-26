@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "Unlocking rbenv shims, returning them to their normal, if slow, function."
+rm -f ~/.rbenv/shims
+ln -s ~/.rbenv/shims.rbenv.normal ~/.rbenv/shims

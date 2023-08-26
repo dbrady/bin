@@ -1,5 +1,4 @@
 #!/bin/sh
-# rmc - Resolve Merge Conflicts
-echo git commit -m "Resolved merge conflicts"
-git commit -m "Resolved merge conflicts"
-
+# rmc - commit changes as "Resolve merge conflicts"
+echo git commit -m "Resolve merge conflicts"
+git commit -m "Resolve merge conflicts"

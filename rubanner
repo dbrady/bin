@@ -24,15 +24,16 @@ require 'yaml'
 String.disable_colorization unless $stdout.tty?
 
 class Rubanner
-  attr_reader :messages, :colors, :output, :screen_width, :font, :clear_screen
+  attr_reader :messages, :colors, :output, :screen_width, :font, :clear_screen, :debug
 
-  def initialize(messages, colors, output, screen_width, font, clear_screen)
+  def initialize(messages:, colors:, output:, screen_width:, font:, clear_screen:, debug:)
     @output = output
     @screen_width = screen_width
     @font = font
     @messages = Array(messages)
     @colors = colors
     @clear_screen = clear_screen
+    @debug = debug
   end
 
   def run
@@ -43,9 +44,14 @@ class Rubanner
 
     messages.each do |message|
       command = %Q|figlet -w #{screen_width} -d ~/bin/figlet-fonts -f "#{font}" "#{message}"|
+      puts command if debug
       banner = `#{command}`
+      banner_lines = banner.each_line.to_a
+      banner_lines.pop while (banner_lines.size > 0 && banner_lines.last.strip.empty?)
+      banner_lines.shift while (banner_lines.size > 0 && banner_lines.first.strip.empty?)
+      banner = banner_lines.join
 
-      banner_width = banner.each_line.to_a.first&.chomp&.length || 0
+      banner_width = banner_lines.map {|line| line.chomp.length }.max || 0
       left_size = (screen_width - banner_width) / 2
       right_size = screen_width - (banner_width + left_size)
 
@@ -57,6 +63,7 @@ class Rubanner
       banner.each_line do |line|
         output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
       end
+      blank_line
     end
   end
 
@@ -73,17 +80,6 @@ class Rubanner
   def blank_line
     output.puts colorize("#{' ' * screen_width}", colors)
   end
-
-  # I live to debug.
-  def dump_args_and_die
-    puts "output: #{output.inspect}"
-    puts "screen_width: #{screen_width.inspect}"
-    puts "font: #{font.inspect}"
-    puts "message: #{message.inspect}"
-    puts "colors: #{colors.inspect}"
-    puts "clear_screen: #{clear_screen.inspect}"
-    exit 0
-  end
 end
 
 if __FILE__==$0
@@ -97,6 +93,8 @@ rubanner [<options>] message
 
 Options:
     BANNER
+    opt :debug, "Show extra debug help and info", default: false
+
     opt :font, "Font (must be installed in #{font_folder})", type: :string, default: DEFAULTS[:font]
     opt :fg, "Foreground color", short: "g", type: :string, default: DEFAULTS[:fg_color]
     opt :bg, "Background color", type: :string, default: DEFAULTS[:bg_color]
@@ -106,6 +104,7 @@ Options:
     opt :clear_screen, "Clear Screen before printing banner", type: :boolean, default: DEFAULTS[:clear_screen]
     opt :width, "Use this screen width", type: :integer
   end
+  puts opts.inspect if opts[:debug]
 
   opts[:output] ||= $stdout
   opts[:screen_width] ||= if opts[:width_given]
@@ -121,5 +120,13 @@ Options:
   colors = [opts[:fg], opts[:bg]]
   colors << "bold" if opts[:bold]
 
-  Rubanner.new(messages, colors, opts[:output], opts[:screen_width], opts[:font], opts[:clear_screen]).run
+  Rubanner.new(
+    messages: messages,
+    colors: colors,
+    output: opts[:output],
+    screen_width: opts[:screen_width],
+    font: opts[:font],
+    clear_screen: opts[:clear_screen],
+    debug: opts[:debug]
+  ).run
 end

@@ -27,7 +27,7 @@ class RfLoader
     foci = YAML::load_file FOCI_FILE
     longest_key = foci.keys.map(&:size).max
     format = "%#{longest_key}s => %s"
-    current_focus = File.read FOCUS_FILE
+    current_focus = File.read(FOCUS_FILE).strip
     found = false
     foci.keys.sort.each do |name|
       selected = "  "

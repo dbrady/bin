@@ -1,0 +1,203 @@
+#!/usr/bin/env ruby
+# slork - Fill out template for slackup
+require "colorize"
+require "erb"
+require "optimist"
+require "text-table"
+String.disable_colorization unless $stdout.tty?
+
+KNOWN_STATUSES = {
+  "b" => "Blocked",
+  "r" => "In Review",
+  "q" => "QA Review",
+  "d" => "In Development",
+  "D" => "Deployed"
+}
+DEFAULT_REPO="merchant_portal"
+DEFAULT_BOARD="CREDIT"
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+
+  opt :jira, "Jira Ticket ID", type: :int
+  opt :board, "Jira Board", type: :string, default: DEFAULT_BOARD
+  opt :title, "Title of PR", type: :string
+  opt :pr, "ID of PR", type: :int
+  opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
+  opt :status, "Status text", type: :string, required: true
+  opt :notes, "Notes text", type: :string
+
+  opt :branch, "Get jira board and id from branch, and if available, get pr id", short: :none, default: false
+end
+puts opts.inspect if opts[:debug]
+
+def get_board_and_ticket_from_branch
+  board, ticket = `git current-branch`
+    .strip
+    .sub(%r|^dbrady/|, "")
+    .sub(%r|/.*$|, "")
+    .split(/-/)
+
+  # puts ">>> #{[board, ticket].inspect} <<<"
+  [board, ticket]
+end
+
+def get_repo_and_pr_from_branch
+  repo, pr_id = `git get-pr`
+                  .strip
+                  .sub(%r|https://github.com/acima-credit/|, "")
+                  .split(%r|/pull/|)
+
+  # puts ">>> #{[repo, pr_id].inspect} <<<"
+  [repo, pr_id]
+end
+
+jira_board, ticket_id = if opts[:jira_given]
+                          [opts[:board], opts[:jira]]
+                        elsif opts[:branch]
+                          get_board_and_ticket_from_branch
+                        end
+jira_url = "https://acima.atlassian.net/browse/#{jira_board}-#{ticket_id}" if jira_board && ticket_id
+
+repo, pr_id = if opts[:pr_given]
+                [opts[:repo], opts[:pr]]
+              else
+                get_repo_and_pr_from_branch
+              end
+pr_url = "https://github.com/acima-credit/#{opts[:repo]}/pull/#{opts[:pr]}" if repo && pr_id
+
+status = KNOWN_STATUSES.fetch(opts[:status], opts[:status])
+
+# opt :jira, "Jira Ticket ID", type: :int
+# opt :board, "Jira Board", type: :string, default: "CREDIT"
+# opt :title, "Title of PR", type: :string
+# opt :pr, "ID of PR", type: :int
+# opt :repo, "Repository slug", type: :string, default: "merchant_portal"
+# opt :status, "Status text", type: :string, required: true
+# opt :notes, "Notes text", type: :string
+
+if opts[:branch]
+  slork_options = {}
+  slork_options[:pr] = pr_id
+  slork_options[:ticket_id] = ticket_id
+  slork_options[:status] = status
+  slork_options[:title] = opts[:title]
+  slork_options[:notes] = opts[:notes]
+
+  table = Text::Table.new
+  table.head = slork_options.keys
+  table.rows << slork_options.values
+  $stderr.puts table
+
+  # $stderr.puts "| " + slork_options.keys.join(" | ") + " |"
+  # $stderr.puts "| " + slork_options.values.join(" | ") + " |"
+
+  # slork_options << "slork --pr=#{pr_id} --jira=#{ticket_id}"
+  # if opts[:status_given]
+  #   if status.include? " "
+  #     slork_options << %Q|--status="#{status}"|
+  #   else
+  #     slork_options << %Q|--status=#{status}|
+  #   end
+  # end
+  # slork_options << %Q|--title="#{opts[:title]}"| if opts[:title]
+  # slork_options << %Q|--notes="#{opts[:notes]}"| if opts[:notes_given]
+  # slork_command = slork_options.join " "
+  # $stderr.puts slork_command.cyan
+end
+
+title = opts[:title] || "DAVE PASTED THIS AND FORGOT TO TYPE THE TITLE".white.on_red.bold
+notes = opts[:notes]
+
+template_lines = []
+template_lines << "*Title:* <%= title %>"
+template_lines << "*Ticket:* <%= jira_url %>" if jira_url
+template_lines << "*PR:* <%= pr_url %>" if pr_url
+template_lines << "*Status:* <%= status %>" if status
+template_lines << "*Notes:* <%= notes %>" if notes
+
+template = template_lines * "\n"
+
+puts ERB.new(template).result(binding)
+
+
+# ========================================================================
+# Turn this next section off until it's ready
+# ======================================================================
+exit
+
+# ========================================================================
+require "active_record"
+
+ActiveRecord.establish_connection(
+  adapter: 'sqlite3',
+  database: 'slork.sqlite3'
+)
+
+#                                    <value> means "reference to another model"
+#
+# boards: name, slug, code           Credit, CREDIT, cr
+# tickets: board_id, number, title   <credit>, 10, Validate Location Initation
+#     url(): string                  -> https://acima.atlassian.net/browse/CREDIT-10
+# repo: name, slug, code             Merchant Portal, merchant_portal, mp
+#     home_url(): string
+# branches: repo_id, name            <mp>, dbrady/CREDIT-10/validate-location-initiation
+# pr: repo_id, branch_id, number     <mp>, <dbrady/etc>, 11041
+#     pr_url(): string
+# statuses: name
+
+# slorks: title, <jira_ticket>, <branch>, <pr>
+#     has_many :slorkups
+
+# slorkups: <task>, <status>, custom_status, notes, created_at is the reported_at
+
+class Board < ActiveRecord::Base
+  has_many :tickets
+end
+
+class Ticket < ActiveRecord::Base
+  belongs_to :board
+end
+#
+# statuses: slorkup_id, string
+# notes: slorkup_id, string
+
+# settings / defaults
+# jira_url_base
+# current_project
+# current_repo
+
+
+# Slackup:
+# Title
+# Ticket (url + project + jira_id)
+# PR (url + repo + pr_id)
+# Status
+# Notes
+# Branch
+
+class Person < ActiveRecord::Base
+  has_many :locations
+end
+
+# Define the Location model
+class Location < ActiveRecord::Base
+  belongs_to :person
+end
+
+
+# Create the database tables if they don't exist
+ActiveRecord::Schema.define do
+  create_table :people do |t|
+    t.string :name
+    # Add any other fields you need for the Person model
+    t.timestamps
+  end
+
+  create_table :locations do |t|
+    t.integer :person_id
+    t.string :address
+    # Add any other fields you need for the Location model
+    t.timestamps
+  end
+end

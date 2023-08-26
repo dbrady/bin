@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+# git-rubocop - run rubocop on modified files
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :rspec, "Include rspec files (omitted by  default)", default: false
+end
+puts opts.inspect if opts[:debug]
+
+files = `git modified`.each_line.map(&:strip)
+
+files = files.grep_v(%r{^spec/}) unless opts[:rspec]
+
+command = "rubocop #{files.join(' ')}"
+
+puts command.cyan
+system command

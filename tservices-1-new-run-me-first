@@ -1,0 +1,5 @@
+#!/bin/bash
+# tservices-new - create new session for tservices. Run this, jump into window 1 and run
+# tservices-2-start-run-me-next
+echo "tmux new-session -s services"
+tmux new-session -s services

@@ -1,0 +1,15 @@
+#!/bin/bash
+md5_hash=$(md5 ~/.rbenv/shims/ruby | awk '{print $4}')
+
+# Use a case statement to echo a message based on the MD5 value
+case "$md5_hash" in
+    "9f0794bf6806a15d1362e2fb79faa18f")
+        echo "LOCKED: ruby 3.2.2"
+        ;;
+    "ebd0a559046be1cbc4dcbb84386680be")
+        echo "Installed normally; rbenv will switch ruby versions as directed"
+        ;;
+    *)
+        echo "UNRECOGNIZED VERSION: investigate and add $md5_hash to #{$0}"
+        ;;
+esac

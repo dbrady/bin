@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # git set-pr <number>
+require 'colorize'
 require 'yaml'
 
 if ENV['IS_DOCKER_LOCAL'] == "1"
@@ -10,6 +11,7 @@ unless ARGV.size == 1 && ARGV.first.to_i > 0
   puts "PR number '#{ARGV.first}' does not look like a PR number"
   exit -1
 end
+pr = ARGV.first.to_i
 
 settings_file = File.expand_path("~/.git-set-pr.yml")
 
@@ -23,8 +25,14 @@ current_branch = `git current-branch`.strip
 
 settings[pwd] ||= {}
 
-settings[pwd][current_branch] = ARGV.first.to_i
+settings[pwd][current_branch] = pr
 
 File.open(settings_file, "w") do |fp|
   fp.puts settings.to_yaml
 end
+
+puts "Recorded. Branch '#{current_branch}' is PR number #{pr}."
+
+# Remind me to run rubocop
+rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
+puts "Did you remember to run #{rubocop}?"

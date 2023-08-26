@@ -6,7 +6,7 @@
 job_name=`echo $1 | sed -e "s/\//./g" | sed -e 's/.py//'`
 
 echo $job_name...
-tmux send-keys -tdata:2 "clear; echo; rub1nner --bold white on_magenta $job_name; echo; echo -n 'Configured warehouse for $job_name: '; show-dst-conn-for-job -c $job_name; echo"
+tmux send-keys -tdata:2 "clear; echo; rub1nner --bold $job_name; echo; echo -n 'Configured warehouse for $job_name: '; show-dst-conn-for-job -c $job_name; echo"
 tmux send-keys -tdata:2 "C-m"
 
 sleep 4

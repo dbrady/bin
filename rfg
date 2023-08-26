@@ -1,9 +1,28 @@
 #!/bin/bash
 # rfg - "rspec go" rus specs focused on a specific subset, set by rff ("rspec focus")
 #
+
+# TODO: Use tee to catch pending and turn on warnings:
+# (rspec | tee ~/.spec_output.log) || cifail
+#
+# Need to thread these together a bit:
+# if rspec fails
+#   cifail
+# elif spec output matches ", 0 pending"
+#   cipass
+# else
+#   ciwarn
+#
+# This is complicated enough to warrant my rewriting it in ruby. It can be done
+# in bash but I'm already past the point of comfort and fluency in maintaining
+# this script.
+
 # usage:
 #
 # rfg [additional args or focus--will not change focus]
+
+# TODO: if spec_focus contains "rspec", it's the full command, which I use when
+# I need to force an env var like SPEC_SEED=true
 
 # TODO: Feature (may require rewriting in ruby?)
 # IFF:
@@ -42,10 +61,14 @@ fi
 
 echo 'Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
 echo "Running focused specs"
-echo time bundle exec rspec $@ $(cat ~/.spec_focus)
+
+grep -E "\brspec\b" ~/.spec_focus && (echo time $(cat ~/.spec_focus)) || (echo time bin/rspec $(cat ~/.spec_focus))
+
 cirun
 # TODO: Bring back the old, better version that parsed the RSpec output,
 # e.g. if output includes /[1-9]+ failures/ cifail
 # and if output include /[1-9]+ pending/ ciwarn
 #
-(time bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
+grep -E "\brspec\b" ~/.spec_focus &&
+    ((echo found rspec running explicitly) && (time bash ~/.spec_focus) && cipass || (cifail && exit -1)) ||
+        (time bin/rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))

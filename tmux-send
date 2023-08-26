@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+# tmux-send - send command(s) to a tmux window
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+class TmuxSendApplication
+  attr_accessor :debug, :quiet
+
+  def self.run
+    new.run
+  end
+
+  def log(message)
+    puts message if debug
+  end
+
+  def run_command(command)
+    puts command.cyan unless quiet
+    system command
+  end
+
+  def run
+    opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :quiet, "Suppress normal logging (e.g. teaching commands)", default: false
+      opt :session, "Session name", type: :string, required: false
+      opt :newline, "Suppress newline character (don't send C-m after message)", default: false
+      opt :window, "Window", default: 1
+    end
+    @debug = opts[:debug]
+    @quiet = opts[:quiet]
+    log opts.inspect
+
+    sessions = `tmux list-sessions`.tap {|s| log s.inspect }.each_line.map {|line| line.sub(/:.*$/, "").strip }
+    log sessions.inspect
+
+    session = if opts[:session_given] && !sessions.include?(opts[:session])
+                puts "Can't send to session #{opts[:session].inspect}, must be one of #{sessions.inspect}"
+              else
+                log "Attempting to determine tmux session name..."
+                if sessions.size == 1
+                  log "Only one session present: #{sessions.first.inspect}; using that"
+                  sessions.first
+                elsif sessions.include? "work"
+                  log "Multiple sessions are present, but one of them is \"work\", using that"
+                  "work"
+                else
+                  log "Multiple sessions are present: #{sessions.inspect}; specify session with -s <session>"
+                end
+              end
+    exit -1 unless session
+
+    window = opts[:window]
+    suppress_newline = opts[:newline]
+
+    ARGV.each do |message|
+      run_command %Q|tmux send-keys -t#{session}:#{window} #{message.inspect}|
+      run_command %Q|tmux send-keys -t#{session}:#{window} "C-m"| unless suppress_newline
+    end
+  end
+end
+
+if __FILE__==$0
+  TmuxSendApplication.run
+end
