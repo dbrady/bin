@@ -22,7 +22,7 @@ else
     RUNNING=RUNNING
 fi
 
-rubanner --font=roman --bold --fg=white --bg=blue "$(pwd | sed -e 's/_/ /g' | sed -e 's/^.*\///')" $RUNNING
+rubanner --font=ansi-shadow --bold --fg=white --bg=blue "$(pwd | sed -e 's/_/ /g' | sed -e 's/^.*\///')" $RUNNING
 if [ -e ~/onsite.touch ]; then
     # echo "You're onsite! Skipping HUE lights."
     exit 0
