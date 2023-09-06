@@ -46,7 +46,7 @@ fi
 echo 'Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
 echo "Running focused specs"
 
-grep -E "\brspec\b" ~/.spec_focus && (echo time $(cat ~/.spec_focus)) || (echo time bundle exec rspec $(cat ~/.spec_focus))
+grep -E "\brspec\b" ~/.spec_focus && (echo time $(cat ~/.spec_focus)) || (echo time bin/rspec $(cat ~/.spec_focus))
 
 cirun
 # TODO: Bring back the old, better version that parsed the RSpec output,
@@ -54,5 +54,5 @@ cirun
 # and if output include /[1-9]+ pending/ ciwarn
 #
 grep -E "\brspec\b" ~/.spec_focus &&
-    ((time bash ~/.spec_focus) && cipass || (cifail && exit -1)) ||
-        (time bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
+    ((echo found rspec running explicitly) && (time bash ~/.spec_focus) && cipass || (cifail && exit -1)) ||
+        (time bin/rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
