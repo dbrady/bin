@@ -7,7 +7,7 @@ puts "Opening the github homepage for this project: "
 #       - Downside: I'd have to write the parser
 require "colorize"
 
-url=`git remote show origin | grep "Fetch URL" | awk '{ print $3 }'`
+url=`git remote get-url origin`
 
 def osx?
   `uname -s`.strip == 'Darwin'
