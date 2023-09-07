@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+# slork - Fill out template for slackup
+require "colorize"
+require "erb"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+
+  opt :jira, "Jira Ticket ID", type: :int
+  opt :board, "Jira Board", type: :string, default: "CREDIT"
+  opt :title, "Title of PR", type: :string
+  opt :pr, "ID of PR", type: :int
+  opt :repo, "Repository slug", type: :string, default: "merchant_portal"
+  opt :status, "Status text", type: :string, required: true
+  opt :notes, "Notes text", type: :string
+end
+puts opts.inspect if opts[:debug]
+
+jira_url = if opts[:jira_given]
+             "https://acima.atlassian.net/browse/#{opts[:board]}-#{opts[:jira]}"
+           end
+title = opts[:title] || "DAVE PASTED THIS AND FORGOT TO TYPE THE TITLE"
+pr_url = "https://github.com/acima-credit/#{opts[:repo]}/pull/#{opts[:pr]}"
+
+template_lines = []
+template_lines << "*Title:* <%= title %>"
+template_lines << "*Ticket:* <%= jira_url %>" if jira_url
+template_lines << "*PR:* <%= pr_url %>" if opts[:pr_given]
+template_lines << "*Status:* <%= opts[:status] %>" if opts[:status_given]
+template_lines << "*Notes:* <%= opts[:notes] %>" if opts[:notes_given]
+
+template = template_lines * "\n"
+
+puts ERB.new(template).result(binding)
