@@ -25,14 +25,23 @@ require 'pg'
 
 def database_name(env: "development")
   folder = Dir.pwd.split(/\//).last
-  case folder
-  when "merchant_portal" then "merchant_portal_development"
-  when "underwriting" then "underwriting_development_leases"
-  when "credit_card_service" then "credit_card_development"
-  else
-    # hail mary
-    "#{folder}_developemnt"
-  end
+
+  db_name = case env
+            when "development"
+              case folder
+              when "merchant_portal" then "merchant_portal_development"
+              when "underwriting" then "underwriting_development_leases"
+              when "credit_card_service" then "credit_card_development"
+              end
+            when "test"
+              case folder
+              when "merchant_portal" then "merchant_portal_test"
+              when "underwriting" then "underwriting_test_leases"
+              when "credit_card_service" then "credit_card_test"
+              end
+            end
+
+  db_name ||= "#{folder}_#{env}"
 end
 
 def seed_migrations_tablename
