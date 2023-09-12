@@ -91,8 +91,8 @@ if [ $QUICK == "false" ]; then
     bundle install
 
     # 5. MIGRATE
-    log remigrate
-    remigrate
+    log "remigrate -f"
+    remigrate -f
 
     # 5.5 sometimes bundle modifies Gemfile.lock and migrate alters db:seeds,
     # and we don't care/want this.  Ideally I'd like to fix these files if they
