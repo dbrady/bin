@@ -25,9 +25,11 @@ class TmuxSendApplication
       opt :debug, "Print extra debug info", default: false
       opt :quiet, "Suppress normal logging (e.g. teaching commands)", default: false
       opt :session, "Session name", type: :string, required: false
+      opt :newline, "Suppress newline character (don't send C-m after message)", default: false
       opt :window, "Window", default: 1
     end
     @debug = opts[:debug]
+    @quiet = opts[:quiet]
     log opts.inspect
 
     sessions = `tmux list-sessions`.tap {|s| log s.inspect }.each_line.map {|line| line.sub(/:.*$/, "").strip }
@@ -50,12 +52,11 @@ class TmuxSendApplication
     exit -1 unless session
 
     window = opts[:window]
-    quiet = opts[:quiet]
-
+    suppress_newline = opts[:newline]
 
     ARGV.each do |message|
       run_command %Q|tmux send-keys -t#{session}:#{window} #{message.inspect}|
-      run_command %Q|tmux send-keys -t#{session}:#{window} "C-m"|
+      run_command %Q|tmux send-keys -t#{session}:#{window} "C-m"| unless suppress_newline
     end
   end
 end
