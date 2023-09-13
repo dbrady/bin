@@ -3,6 +3,7 @@
 require "colorize"
 require "erb"
 require "optimist"
+require "text-table"
 String.disable_colorization unless $stdout.tty?
 
 KNOWN_STATUSES = {
@@ -76,19 +77,33 @@ status = KNOWN_STATUSES.fetch(opts[:status], opts[:status])
 # opt :notes, "Notes text", type: :string
 
 if opts[:branch]
-  slork_options = []
-  slork_options << "slork --pr=#{pr_id} --jira=#{ticket_id}"
-  if opts[:status_given]
-    if status.include? " "
-      slork_options << %Q|--status="#{status}"|
-    else
-      slork_options << %Q|--status=#{status}|
-    end
-  end
-  slork_options << %Q|--title="#{opts[:title]}"| if opts[:title]
-  slork_options << %Q|--notes="#{opts[:notes]}"| if opts[:notes_given]
-  slork_command = slork_options.join " "
-  $stderr.puts slork_command.cyan
+  slork_options = {}
+  slork_options[:pr] = pr_id
+  slork_options[:ticket_id] = ticket_id
+  slork_options[:status] = status
+  slork_options[:title] = opts[:title]
+  slork_options[:notes] = opts[:notes]
+
+  table = Text::Table.new
+  table.head = slork_options.keys
+  table.rows << slork_options.values
+  $stderr.puts table
+
+  # $stderr.puts "| " + slork_options.keys.join(" | ") + " |"
+  # $stderr.puts "| " + slork_options.values.join(" | ") + " |"
+
+  # slork_options << "slork --pr=#{pr_id} --jira=#{ticket_id}"
+  # if opts[:status_given]
+  #   if status.include? " "
+  #     slork_options << %Q|--status="#{status}"|
+  #   else
+  #     slork_options << %Q|--status=#{status}|
+  #   end
+  # end
+  # slork_options << %Q|--title="#{opts[:title]}"| if opts[:title]
+  # slork_options << %Q|--notes="#{opts[:notes]}"| if opts[:notes_given]
+  # slork_command = slork_options.join " "
+  # $stderr.puts slork_command.cyan
 end
 
 title = opts[:title] || "DAVE PASTED THIS AND FORGOT TO TYPE THE TITLE".white.on_red.bold
