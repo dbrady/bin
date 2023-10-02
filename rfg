@@ -1,6 +1,22 @@
 #!/bin/bash
 # rfg - "rspec go" rus specs focused on a specific subset, set by rff ("rspec focus")
 #
+
+# TODO: Use tee to catch pending and turn on warnings:
+# (rspec | tee ~/.spec_output.log) || cifail
+#
+# Need to thread these together a bit:
+# if rspec fails
+#   cifail
+# elif spec output matches ", 0 pending"
+#   cipass
+# else
+#   ciwarn
+#
+# This is complicated enough to warrant my rewriting it in ruby. It can be done
+# in bash but I'm already past the point of comfort and fluency in maintaining
+# this script.
+
 # usage:
 #
 # rfg [additional args or focus--will not change focus]
