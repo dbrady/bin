@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+require "colorize"
+require "optimist"
+require "text-table"
+require "yaml"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :names, "Sort by names", default: false
+end
+puts opts.inspect if opts[:debug]
+
+# Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+def is_git_repo?(path)
+  File.exist?(File.join(path, '.git'))
+end
+
+# Walk up file tree looking for a .git folder
+# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+def git_repo_for(path)
+  starting_path = last_path = path
+
+  while !path.empty?
+    return path if is_git_repo?(path)
+    last_path, path = path, File.split(path).first
+    raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+  end
+end
+
+settings_file = File.expand_path("~/.git-set-pr.yml")
+
+dir = git_repo_for(Dir.pwd)
+prs = YAML.load_file(settings_file)[dir]
+
+prs = prs.sort if opts[:names]
+
+
+table = Text::Table.new
+table.head = [ "Branch", "PR" ]
+table.rows = []
+
+prs.each do |branch, pr|
+  table.rows << [branch, pr]
+end
+
+puts table
