@@ -1,0 +1,26 @@
+#!/usr/bin/env ruby
+# rubuild-and-refresh-mp - refresh/update everything we can think of.
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+end
+puts opts.inspect if opts[:debug]
+#!/usr/bin/env ruby
+
+commands = [
+  "remaster",
+  "bundle",
+  "npm install",
+  "yarn install",
+  "rebuild-assets",
+  "git restore db/seeds.rb yarn.lock", # because these get outta sync alla time
+]
+
+commands.each do |command|
+  system %Q|rub1nner "#{command}"|
+  puts command.cyan
+  system command
+end
