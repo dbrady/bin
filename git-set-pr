@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # git set-pr <number>
+require 'colorize'
 require 'yaml'
 
 if ENV['IS_DOCKER_LOCAL'] == "1"
@@ -31,3 +32,7 @@ File.open(settings_file, "w") do |fp|
 end
 
 puts "Recorded. Branch '#{current_branch}' is PR number #{pr}."
+
+# Remind me to run rubocop
+rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
+puts "Did you remember to run #{rubocop}?"
