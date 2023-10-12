@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# git-files-changed [<n>|<sha>|<sha1>..<sha2>] - Show files changed since sha or in the last n commits
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :verbose, "Run in verbose mode", default: false
+end
+puts opts.inspect if opts[:debug]
+
+range = "-n 10"
+
+range = if ARGV.size == 2
+          # git files-changed abc123 def456
+          ARGV.join('..')
+        elsif ARGV.first =~ /^\d+$/
+          # git files-changed 5
+          # look at last 5 commits
+          "-n #{ARGV.first}"
+        elsif ARGV.first =~ /\.\./
+          # git files-changed abc123..def456
+          # look at commits in that range
+          ARGV.first
+        else
+          # git files-changed abc123
+          # look at abc123..HEAD
+          "#{ARGV.first}..HEAD"
+        end
+
+command = "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq"
+puts command.cyan if opts[:verbose]
+system command
