@@ -1,0 +1,3 @@
+#!/bin/bash
+# sob - search for branch - use grep to filter local branches
+git branch -a | grep -vE "^  remotes/" | grep "$@"
