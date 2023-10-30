@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# open-wiki - open a page on the atlas wiki
+require "colorize"
+require "optimist"
+require "cgi"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  # opt :search, "Given a title fragment, open the matching page", type: :string
+  # - if multiple matches found, ideally open selecta, but at least show the list
+end
+puts opts.inspect if opts[:debug]
+
+WIKI_FOLDER = File.expand_path("~/acima/devel/merchant_portal.wiki")
+arg = ARGv.first
+
+# strip file extension
+
+# does this file exist in the wiki folder? as wiki/arg or wiki/arg.md?
+# -> proceed
+
+# does exactly one file matching wiki/*arg* exist in the wiki?
+# -> proceed
+
+# does more than one file matching wiki/*arg* exist in the wiki?
+# -> choose one with selecta
+
+# do we have a file?
+# -> no, error out / exit script (OR... consider doing in-file search...)
+
+
+
+
+
+# page = CGI.escape(ARGV.first.sub(/\.md$/, ''))
+# puts page.green
+
+# # if --search or if page is not an exact match BUT path/to/wiki/*page* IS, run them into selecta, otherwise carry on...
+# # Dear Smart Dave: leaving this as a problem for you later.
+# # page = `ls ~/acima/devel/merchant_portal.wiki/*#{page}* | selecta`.rstrip
+
+# url = "https://github.com/acima-credit/merchant_portal/wiki/#{page}"
+
+# command = "open #{url}"
+
+# puts command.cyan
+# system command
