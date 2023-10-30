@@ -1,12 +1,12 @@
 #!/bin/bash
 # grc - git rebase --continue
 
-if [[ -d .git/rebase-apply ]] ; then
+# if [[ -d .git/rebase-apply ]] ; then
     echo "Press ENTER to git rebase --continue, or hit Ctrl-C to abort:"
     read
     echo git rebase --continue
     git rebase --continue
-else
-    echo -e "\033[31;40mCannot git rebase --continue: .git/rebase-apply folder does not exist"
-    exit 1
-fi
+# else
+#     echo -e "\033[31;40mCannot git rebase --continue: .git/rebase-apply folder does not exist"
+#     exit 1
+# fi
