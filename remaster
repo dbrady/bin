@@ -1,16 +1,36 @@
 #!/bin/bash
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
 
-# 1. STASH                  : git stash
-# 2. GO                     : go main
-# 3. PULL                   : git pull
-# 4. BUNDLE                 : bundle install
-# 5. MIGRATE                : rails db:migrate (only if schema has changed)
-# 6. RETURN                 : go - (only if we were on a story branch)
-# 7. REBASE                 : git rebase main
-# 8. APPLY                  : git stash apply (only if we stashed changes)
+# TODO: PORT THIS TO RUBY WITH OPTIMIST
+# TODO:  PORT THIS TO RUBY WITH OPTIMIST
+# TODO:   PORT THIS TO RUBY WITH OPTIMIST
+# TODO:    PORT THIS TO RUBY WITH OPTIMIST
+# TODO:     PORT THIS TO RUBY WITH OPTIMIST
+# TODO:      PORT THIS TO RUBY WITH OPTIMIST
+# TODO:       PORT THIS TO RUBY WITH OPTIMIST
+# TODO:        PORT THIS TO RUBY WITH OPTIMIST
+# TODO:         PORT THIS TO RUBY WITH OPTIMIST
+# TODO:          PORT THIS TO RUBY WITH OPTIMIST
+# TODO:           PORT THIS TO RUBY WITH OPTIMIST
+# TODO:            PORT THIS TO RUBY WITH OPTIMIST
+# TODO:             PORT THIS TO RUBY WITH OPTIMIST
+# TODO:              PORT THIS TO RUBY WITH OPTIMIST
+# TODO:               PORT THIS TO RUBY WITH OPTIMIST
+# TODO:                PORT THIS TO RUBY WITH OPTIMIST
+# TODO:                 PORT THIS TO RUBY WITH OPTIMIST
+# TODO:                  PORT THIS TO RUBY WITH OPTIMIST
+# TODO:                   PORT THIS TO RUBY WITH OPTIMIST
+# TODO:                    PORT THIS TO RUBY WITH OPTIMIST
 
-# TODO:
+# 1. SSO LOGIN              : aws-check-sso-login || aws sso login
+# 2. STASH                  : git stash
+# 3. GO                     : go main
+# 4. PULL                   : git pull
+# 5. BUNDLE                 : bundle install
+# 6. MIGRATE                : rails db:migrate (only if schema has changed)
+# 7. RETURN                 : go - (only if we were on a story branch)
+# 8. REBASE                 : git rebase main
+# 9. APPLY                  : git stash apply (only if we stashed changes)
 
 # 1. [TODO] Port this to ruby. The options are just too insane. Also do this, if
 # for no other reason, to give a high-level imperative script at the top like
@@ -71,8 +91,20 @@ BRANCH=`git branch | grep '*' | awk '{print $2}'`
 MAIN_BRANCH=`git main-branch`
 git isclean
 ISCLEAN=$?
+aws-check-sso-login
+IS_LOGGED_IN=$?
 
-# 1. STASH
+# 1. CHECK LOGIN
+if [ "$IS_LOGGED_IN" == "0" ]; then
+    log "You are logged into aws, bundler should not be a problem"
+elif [ "$QUICK" == "true" ]; then
+    log "You are not logged into aws, but we're not going to rebundle so it's fine. Continuing."
+else
+    log "You are NOT logged into aws. Bundler will stop you. Run aws sso login and run this script again."
+    exit -1
+fi
+
+# 2. STASH
 if [ "$ISCLEAN" == "0" ]; then
     log "Branch is clean, NOT stashing..."
 else
@@ -85,22 +117,22 @@ if [ "$MAIN_BRANCH" == "$BRANCH" ]; then
     log "You are already on main branch '$BRANCH', staying put..."
     DONE="true"
 else
-    # 2. GO
+    # 3. GO
     log "You are NOT on main branch, hopping to $MAIN_BRANCH..."
     log_command "go $MAIN_BRANCH"
     go $MAIN_BRANCH
 fi
 
-# 3. PULL
+# 4. PULL
 log_command "git pull"
 git pull
 
 if [ $QUICK == "false" ]; then
-    # 4. BUNDLE
+    # 5. BUNDLE
     log_command "bundle install"
     bundle install
 
-    # 5. MIGRATE
+    # 6. MIGRATE
     log_command "remigrate -f"
     remigrate -f
 
@@ -114,12 +146,12 @@ if [ "$MAIN_BRANCH" == "$BRANCH" ]; then
     log "You were on main branch, staying put..."
 else
     if [ $DONE == "false" ]; then
-        # 6. RETURN
+        # 7. RETURN
         log "You were on $BRANCH, hopping back..."
         log_command "go $BRANCH"
         go $BRANCH
 
-        # 7. REBASE
+        # 8. REBASE
         log "Rebasing branch onto tip of main branch '$MAIN_BRANCH'..."
 
         mp_hack_restore_files_that_should_have_been_committed_but_apparently_were_not
@@ -128,14 +160,14 @@ else
         git rebase $MAIN_BRANCH
 
 else
-        # 6. NO RETURN; REBASE ALREADY DONE
+        # NO RETURN; REBASE ALREADY DONE
         log "Done with that branch; staying on main branch"
     fi
 fi
 
 mp_hack_restore_files_that_should_have_been_committed_but_apparently_were_not
 
-# 8. APPLY
+# 9. APPLY
 if [ "$ISCLEAN" == "0" ]; then
     log "Branch was clean, no stash apply..."
 else
