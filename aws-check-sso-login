@@ -1,6 +1,10 @@
 #!/bin/bash
-# exits with success status if we are logged in
-# exits with failure if we need to aws sso login
+# normal mode: exits silently and returns bash status !!(we are logged in)
+# verbose mode: prints "You are logged in" or not (and return bash status)
 #
-# aws-sso-check-login && echo You are logged in || echo You are NOT logged in
-aws sts get-caller-identity --query "Account" > /dev/null 2>&1
+if [ "$1" == "-v" ]; then
+    aws sts get-caller-identity --query "Account" > /dev/null 2>&1 && echo "You are logged in to AWS." || (echo "You are NOT logged in to AWS" && /usr/bin/false)
+else
+    # aws-check-sso-login && echo You are logged in || echo You are NOT logged in
+    aws sts get-caller-identity --query "Account" > /dev/null 2>&1
+fi
