@@ -1,0 +1,5 @@
+#!/bin/bash
+echo -e '\033[37;1;41mGO LOOK IN YOUR ACIMA/BIN FOLDER DAVE YOU PUT IT THERE (MAYBE MOVE IT)\033[0m'
+
+echo 'YOU HAVE TO GO EDIT ~/.bundle/config, there are TWO entries, this only fixes one!'
+echo 'bundle config set --global rubygems.pkg.github.com dbrady:<new_pat>'
