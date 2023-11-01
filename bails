@@ -1,3 +1,3 @@
-#!/bin/sh
-echo time bundle exec rails @$
-time bundle exec rails @$
+#!/bin/bash
+echo time bundle exec rails $@
+time bundle exec rails $@

@@ -1,0 +1,6 @@
+#!/bin/bash
+# exits with success status if we are logged in
+# exits with failure if we need to aws sso login
+#
+# aws-sso-check-login && echo You are logged in || echo You are NOT logged in
+aws sts get-caller-identity --query "Account" > /dev/null 2>&1

@@ -1,0 +1,4 @@
+#!/bin/bash
+# sob - search for branch - use ag to filter local branches
+# favoring ag over grep because it defaults to full pcre and --color=always
+git branch -a | grep -vE "^  remotes/" | ag "$@"

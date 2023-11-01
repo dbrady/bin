@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "rfr --format=documentation --order=defined $@"
+rfr --format=documentation --order=defined "$@"
