@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+require_relative "scale"
+
+harmonic_minor_keys = {}
+
+notes =  Scale::NOTES_FOR_KEYS_HARMONIC_MINOR['Bb']
+puts notes
+puts '--'
+notes = notes.split
+new_notes = notes[5..] + notes[..4]
+new_notes[6] = if new_notes[6].end_with? "b"
+                 new_notes[6][0]
+               else
+                 new_notes[6] += "#"
+               end
+puts new_notes.inspect
+exit
+
+Scale::NOTES_FOR_KEYS_HARMONIC_MINOR.each do |key, notes|
+  new_key = "#{key} Harmonic Minor"
+  notes = notes.split
+  new_notes = notes[5..] + notes[..4]
+  new_notes[6] = if new_notes[6].end_with? "b"
+               new_notes[6][0]
+             else
+               new_notes[6] += "#"
+             end
+
+  harmonic_minor_keys[new_key] = new_notes
+end
+
+puts harmonic_minor_keys.inspect
+puts '--'
+puts harmonic_minor_keys['G Harmonic Minor'].join(' ')

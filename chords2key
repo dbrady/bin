@@ -1,0 +1,57 @@
+#!/usr/bin/env ruby
+# chords2key [-c <chords>] [-n <notes>] - Find key(s) that include this/these chords
+#
+# chords2key -c C F
+# chords2key -n C E G
+# C => C  D  E  F  G  A  B
+# F => F  G  A  Bb C  D  E
+# G => G  A  B  C  D  E  F#
+
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :notes, "Notes", type: :strings, default: []
+  opt :chords, "Chords", type: :strings, default: []
+end
+puts opts.inspect if opts[:debug]
+
+require_relative "scale"
+
+
+NOTES_FOR_KEYS = {}
+Scale::NOTES_FOR_KEYS.each do |key, notes|
+  NOTES_FOR_KEYS[key] = notes.split
+end
+
+NOTES_FOR_CHORDS = {}
+
+NOTES_FOR_KEYS.each do |key, notes|
+  # Major, Minor
+  NOTES_FOR_CHORDS[key] = [notes[0], notes[2], notes[4]]
+  NOTES_FOR_CHORDS["#{notes[5]}m"] = [notes[5], notes[0], notes[2]]
+
+  # carry on with the weird ones as we need them, e.g. mAdd9, dim, aug, sus4, min5maj7, and so on
+end
+
+notes = opts[:notes]
+opts[:chords].each do |chord|
+  if NOTES_FOR_CHORDS.has_key?(chord)
+    notes = (notes + NOTES_FOR_CHORDS[chord]).uniq.sort
+  else
+    $stderr.puts "Warning: unrecognized chord #{chord}, unable to determine notes."
+  end
+end
+
+keys = NOTES_FOR_KEYS.find_all {|key, key_notes| notes.all? {|note| key_notes.include? note }}
+
+puts "Looking for keys with notes: #{notes.join(', ')}"
+if keys.empty?
+  puts "No keys found with all those notes."
+else
+  keys.each do |key, notes|
+    puts key.ljust(2) + " => " + notes.map {|note| note.ljust(2) }.join(' ')
+  end
+end

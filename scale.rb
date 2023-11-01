@@ -35,7 +35,7 @@ class Scale
   end
 
   # FIXME: These are the notes for the diatonic major / ionian mode
-  # only. There's a BUNCH of keys and scales out there, Cotton!
+  # only. There's a BUNCH of keys and scales out there.
   NOTES_FOR_KEYS = {
       'Cb' => 'Cb Db Eb Fb Gb Ab Bb', # 7 flats
       'C' => 'C D E F G A B', # All natural, baby
@@ -58,6 +58,24 @@ class Scale
       'Bb' => 'Bb C D Eb F G A',
       'B' => 'B C# D# E F# G# A#',
       # 'B#' # 12 sharps. Oh my head. B# and E# are the only not-double-sharp notes.
+  }.freeze
+
+  NOTES_FOR_KEYS_HARMONIC_MINOR = {
+      'Cb' => 'Cb Db Eb Fb Gb Ab Bb',
+      'C' => 'C D E F G A B',
+      'C#' => 'C# D# E# F# G# A# B#',
+      'Db' => 'Db Eb F Gb Ab Bb C',
+      'D' => 'D E F# G A B C#',
+      'Eb' => 'Eb F G Ab Bb C D',
+      'E' => 'E F# G# A B C# D#',
+      'F' => 'F G A Bb C D E',
+      'F#' => 'F# G# A# B C# D# E#',
+      'Gb' => 'Gb Ab Bb Cb Db Eb F',
+      'G' => 'G A B C D E F#',
+      'Ab' => 'Ab Bb C Db Eb F G',
+      'A' => 'A B C# D E F# G#',
+      'Bb' => 'Bb C D Eb F G A',
+      'B' => 'B C# D# E F# G# A#',
   }.freeze
 
   def self.notes_for_key(key)
