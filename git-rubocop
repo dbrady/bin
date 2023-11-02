@@ -1,20 +1,57 @@
 #!/usr/bin/env ruby
-# git-rubocop - run rubocop on modified files
+# git-rubocop [options] <sha|count> - run rubocop on modified files
+# see git-modified for full args; we pass
 require "colorize"
 require "optimist"
 String.disable_colorization unless $stdout.tty?
 
+patterns_to_exclude = [
+  %r{^spec/}, # hack: keep in first position so --rspec can just shift it off
+]
+
+
 opts = Optimist.options do
   opt :debug, "Print extra debug info", default: false
   opt :rspec, "Include rspec files (omitted by  default)", default: false
+  opt :since, "Check all files modified since this commit hash, or in the last n commits", type: :string
+  opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :strings, default: []
+  opt :pretend, "Emit rubocop command and exit", default: false
 end
 puts opts.inspect if opts[:debug]
 
-files = `git modified`.each_line.map(&:strip)
+args = ARGV.map(&:inspect).join(' ')
+files = if opts[:since_given]
+          `git files-changed #{opts[:since]}`
+        else
+          `git modified`
+        end
 
-files = files.grep_v(%r{^spec/}) unless opts[:rspec]
+files = files.each_line.map(&:strip)
+
+patterns_to_exclude.shift if opts[:rspec]
+
+# If we wanna do regex patterns?
+# opts[:exclude].each do |pattern|
+#   patterns_to_exclude << Regexp.new(pattern)
+# end
+
+if opts[:debug]
+  puts "Patterns to exclude:"
+  puts patterns_to_exclude
+end
+
+files = files.reject {|file| patterns_to_exclude.any? {|regex| regex.match(file) }}
+files = files.reject {|file| opts[:exclude].any? {|pattern| file.include?(pattern) }}
+
+# exclude removed files
+files.keep_if {|file| File.exist?(File.expand_path(File.join(".", file))) }
+
+if opts[:debug]
+  puts "files:"
+  puts files
+end
 
 command = "rubocop #{files.join(' ')}"
 
 puts command.cyan
-system command
+system command unless opts[:pretend]
