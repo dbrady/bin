@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # git modified - Emit list of filenames that are in the "modified:" list (staged and not staged)
+# See Also: git-files-changed for files changed in recent commits
 require "colorize"
 require "optimist"
 String.disable_colorization unless $stdout.tty?

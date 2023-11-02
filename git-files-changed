@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # git-files-changed (<n>|<sha>|<sha1>..<sha2>) - Show files changed since sha or in the last n commits
+# See Also: git-modified for uncommitted changed files
 require "colorize"
 require "optimist"
 String.disable_colorization unless $stdout.tty?
