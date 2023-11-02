@@ -1,10 +1,33 @@
 #!/usr/bin/env ruby
-# git-files-changed [<n>|<sha>|<sha1>..<sha2>] - Show files changed since sha or in the last n commits
+# git-files-changed (<n>|<sha>|<sha1>..<sha2>) - Show files changed since sha or in the last n commits
 require "colorize"
 require "optimist"
 String.disable_colorization unless $stdout.tty?
 
 opts = Optimist.options do
+  banner <<~BANNER
+  git files-changed - show list of files changed in a range of commits
+
+  git files-changed [options] (<n>|<sha1>|<sha1>..<sha2>)
+
+  git files-changed <n>                             - Show files changed in the last n commits
+  git files-changed <since_commit>                  - Show files changed since a commit or branch
+  git files-changed <since_comment>..<until_commit> - Show files changed in a range of commits
+
+  Examples:
+
+  git files-changed 7                - Show files changed in the last 7 commits
+  git files-changed abcd1234         - Show files changed since commit abcd1234
+  git files-changed master           - Show files changed since you forked from master
+  git files-changed ab1234..cd5678   - Show files changed in a range of commits
+  git files-changed staging..release - Show files changed from one branch to another
+
+  This tool assumes that <sha1> is an ancestor of <sha2>. I have no clue how
+  undefined the behavior will, won't, or very much spectacularly, will be.
+
+  Options:
+  BANNER
+
   opt :debug, "Print extra debug info", default: false
   opt :verbose, "Run in verbose mode", default: false
 end
