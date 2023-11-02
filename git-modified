@@ -1,3 +1,29 @@
-#!/bin/bash
-# git modified - Emit list of filenames that are in the "modified:" list
-git status | grep 'modified: ' | awk '{ print $2 }'
+#!/usr/bin/env ruby
+# git modified - Emit list of filenames that are in the "modified:" list (staged and not staged)
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :staged, "Only show staged files", default: false
+  opt :unstaged, "Only show unstaged files",default: false
+end
+
+puts opts.inspect if opts[:debug]
+
+status = `git status`.each_line.map(&:rstrip)
+
+divider_index = status.index("Changes not staged for commit:")
+if opts[:staged] && divider_index
+  # discard unstaged changes - everything after "Changes not staged for commit"
+  status.slice!(divider_index..-1)
+
+elsif opts[:unstaged] && divider_index
+  # discard staged changes -- everything before "Changes not staged for commit"
+  status.slice!(0..divider_index)
+end
+
+files = status.keep_if {|line| line =~ /^\s*modified: /}
+files = files.map {|line| line.sub(/^\s*modified:\s*/, '') }
+puts files.sort.uniq
