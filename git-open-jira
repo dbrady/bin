@@ -1,0 +1,23 @@
+#!/usr/bin/env ruby
+# scriptname - new ruby skeleton from refdox. Updated 2023-06-12.
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+end
+puts opts.inspect if opts[:debug]
+
+
+branch = `git current-branch`.strip
+puts "branch: #{branch}" if opts[:debug]
+
+ticket = branch.split('/')[1]
+
+puts "ticket: #{ticket}" if opts[:debug]
+
+command = "open https://acima.atlassian.net/browse/#{ticket}"
+
+puts command.cyan
+system command
