@@ -1,0 +1,3 @@
+#!/bin/bash
+echo -e "\033[36mgit branch -a | grep -vE '^[[:space:]]*remotes/'\033[0m"
+git branch -a | grep -vE '^[[:space:]]*remotes/'
