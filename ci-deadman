@@ -1,0 +1,42 @@
+#!/usr/bin/env ruby
+# ci-deadman - turn off ci lights every so often
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  attr_reader :opts
+
+  def debug?
+    opts[:debug]
+  end
+
+  def cioff
+    system "cioff"
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :n, "Number of seconds between turnoff attempts", type: :int
+      # opt :hourly
+      opt :time, "Display time to next shutoff", default:  false
+    end
+    puts opts.inspect if opts[:debug]
+
+    while true
+      now = Time.now
+      seconds_to_sleep = 3600 - (now.min * 60 + now.sec)
+      last_run_time = Time.now
+      cioff
+      puts now.strftime("%T")
+      puts "Sleeping for #{seconds_to_sleep} seconds..."
+      sleep seconds_to_sleep
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
