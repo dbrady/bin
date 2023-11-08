@@ -1,13 +1,5 @@
 #!/usr/bin/env ruby
 # git-nuke-and-start-over - throw away current branch and re-cut it from master to start over
-
-# [ ] Review steve's branch
-# [ ] finish git nuke-and-start-over
-# [x] ci-deadman [-n <every_n_seconds>] [-h <every_n_hours_on_the_hour>] [-t <cron schedule>]
-# [ ] commit devel/scrapbin/ruby/new-ruby
-# [ ] zob -x <exclude>
-
-
 require "colorize"
 require "optimist"
 String.disable_colorization unless $stdout.tty?
