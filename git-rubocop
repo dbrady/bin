@@ -5,53 +5,81 @@ require "colorize"
 require "optimist"
 String.disable_colorization unless $stdout.tty?
 
-patterns_to_exclude = [
-  %r{^spec/}, # hack: keep in first position so --rspec can just shift it off
-]
+class Application
+  attr_reader :opts
+
+  def debug?
+    opts[:debug]
+  end
+
+  def run
+    patterns_to_exclude = [
+      %r{^spec/}, # hack: keep in first position so --rspec can just shift it off
+    ]
+
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :rspec, "Include rspec files (omitted by  default)", default: false
+      opt :since, "Check all files modified since this commit hash, or in the last n commits", type: :string
+      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :strings, default: []
+      opt :pretend, "Emit rubocop command and exit", default: false
+    end
+    puts opts.inspect if debug?
+
+    # if no arguments and nothing's going on, use git main as the sha
+    if ARGV.empty? && !opts[:since_given]
+      opts[:since] = `git main-branch`.strip
+      opts[:since_given] = true
+      puts "No commit or count given; assuming --since=#{opts[:since]}" if debug?
+    end
+
+    args = ARGV.map(&:inspect).join(' ')
+    files = if opts[:since_given]
+              `git files-changed #{opts[:since]}`
+            else
+              `git modified`
+            end
+
+    files = files.each_line.map(&:strip)
+
+    if debug?
+      puts "files to consider:"
+      puts files.map {|file| "  #{file}"}.inspect
+    end
 
 
-opts = Optimist.options do
-  opt :debug, "Print extra debug info", default: false
-  opt :rspec, "Include rspec files (omitted by  default)", default: false
-  opt :since, "Check all files modified since this commit hash, or in the last n commits", type: :string
-  opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :strings, default: []
-  opt :pretend, "Emit rubocop command and exit", default: false
+    patterns_to_exclude.shift if opts[:rspec]
+
+    # If we wanna do regex patterns?
+    # opts[:exclude].each do |pattern|
+    #   patterns_to_exclude << Regexp.new(pattern)
+    # end
+
+    if debug?
+      puts "Patterns to exclude:"
+      puts patterns_to_exclude
+    end
+
+    files = files.reject {|file| patterns_to_exclude.any? {|regex| regex.match(file) }}
+    files = files.reject {|file| opts[:exclude].any? {|pattern| file.include?(pattern) }}
+
+    # exclude removed files
+    files.keep_if {|file| File.exist?(File.expand_path(File.join(".", file))) }
+
+    if debug?
+      puts "Final files to run rubocop on:"
+      puts files.map {|file| "  #{file}"}.inspect
+    end
+
+    command = "rubocop #{files.join(' ')}"
+
+    puts command.cyan
+    system command unless opts[:pretend]
+  end
 end
-puts opts.inspect if opts[:debug]
 
-args = ARGV.map(&:inspect).join(' ')
-files = if opts[:since_given]
-          `git files-changed #{opts[:since]}`
-        else
-          `git modified`
-        end
-
-files = files.each_line.map(&:strip)
-
-patterns_to_exclude.shift if opts[:rspec]
-
-# If we wanna do regex patterns?
-# opts[:exclude].each do |pattern|
-#   patterns_to_exclude << Regexp.new(pattern)
-# end
-
-if opts[:debug]
-  puts "Patterns to exclude:"
-  puts patterns_to_exclude
+if __FILE__ == $0
+  Application.new.run
+else
+  puts $0.inspect
 end
-
-files = files.reject {|file| patterns_to_exclude.any? {|regex| regex.match(file) }}
-files = files.reject {|file| opts[:exclude].any? {|pattern| file.include?(pattern) }}
-
-# exclude removed files
-files.keep_if {|file| File.exist?(File.expand_path(File.join(".", file))) }
-
-if opts[:debug]
-  puts "files:"
-  puts files
-end
-
-command = "rubocop #{files.join(' ')}"
-
-puts command.cyan
-system command unless opts[:pretend]

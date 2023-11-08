@@ -1,23 +1,33 @@
 #!/usr/bin/env ruby
-# scriptname - new ruby skeleton from refdox. Updated 2023-06-12.
+# git-open-jira -
 require "colorize"
 require "optimist"
+require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
-opts = Optimist.options do
-  opt :debug, "Print extra debug info", default: false
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  attr_reader :opts
+
+
+  def debug?
+    opts[:debug]
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+    end
+    puts opts.inspect if opts[:debug]
+
+    run_command "open #{jira_url}"
+  end
 end
-puts opts.inspect if opts[:debug]
 
-
-branch = `git current-branch`.strip
-puts "branch: #{branch}" if opts[:debug]
-
-ticket = branch.split('/')[1]
-
-puts "ticket: #{ticket}" if opts[:debug]
-
-command = "open https://acima.atlassian.net/browse/#{ticket}"
-
-puts command.cyan
-system command
+if __FILE__ == $0
+  Application.new.run
+end
