@@ -35,10 +35,19 @@ module DbradyCli
     success
   end
 
-  def run_command(command, quiet: false, pretend: false)
+  def run_command(command)
     puts "run_command: #{command.inspect}" if debug?
-    puts command.cyan unless quiet
+    puts command.cyan unless quiet?
     system command unless pretend?
+  end
+
+  def get_command_output_lines(command)
+    get_command_output(command).each_line.map(&:rstrip).to_a
+  end
+
+  # run a command and get its output as a single string (rstripping last line)
+  def get_command_output(command)
+    `#{command}`.rstrip
   end
 
   def osx?
