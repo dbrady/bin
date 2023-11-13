@@ -1,74 +1,85 @@
 #!/usr/bin/env ruby
-# git-rubocop [options] <sha|count> - run rubocop on modified files
-# see git-modified for full args; we pass
+# git-rubocop [options] [--since <count|sha|branch>] - run rubocop on modified files
+# see git-modified --help for full args.
 require "colorize"
 require "optimist"
+require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application
-  attr_reader :opts
+  include DbradyCli
 
-  def debug?
-    opts[:debug]
+  def unstaged?
+    opts[:unstaged]
   end
 
   def run
-    patterns_to_exclude = [
-      %r{^spec/}, # hack: keep in first position so --rspec can just shift it off
-    ]
-
+    main_branch = git_main_branch
     @opts = Optimist.options do
+      banner <<~BANNER
+        git-rubocop [options] [<additional_files>] - run rubocop on relevant files. Defaults to --since master.
+
+        Note: Files are identified by having committed changes, but rubocop runs on files as current constituted.
+
+
+      BANNER
+
       opt :debug, "Print extra debug info", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+
+      opt :since, "Check all files modified since commit or branch. See `git-files-changed --help` for options. If omitted, checks unstaged changes only.", type: :string, default: main_branch
+
       opt :rspec, "Include rspec files (omitted by  default)", default: false
-      opt :since, "Check all files modified since this commit hash, or in the last n commits", type: :string
-      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :strings, default: []
-      opt :pretend, "Emit rubocop command and exit", default: false
+      opt :unstaged, "Consider unstaged files even if they have not been committed in the --since range", default: false
+      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
+      opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
     end
     puts opts.inspect if debug?
 
     # if no arguments and nothing's going on, use git main as the sha
-    if ARGV.empty? && !opts[:since_given]
-      opts[:since] = `git main-branch`.strip
-      opts[:since_given] = true
-      puts "No commit or count given; assuming --since=#{opts[:since]}" if debug?
-    end
+    files = []
+    files += get_command_output_lines "git files-changed #{opts[:since]}"
+    files += get_command_output_lines "git modified" if unstaged?
+    files += ARGV.dup # re-add ARGV so you can exclude *.json then force include filename.json
 
-    args = ARGV.map(&:inspect).join(' ')
-    files = if opts[:since_given]
-              `git files-changed #{opts[:since]}`
-            else
-              `git modified`
-            end
-
-    files = files.each_line.map(&:strip)
+    files = files.map(&:strip).uniq.sort
 
     if debug?
       puts "files to consider:"
-      puts files.map {|file| "  #{file}"}.inspect
+      puts files.map {|file| "  #{file}"}
     end
 
+    fragments_to_exclude = opts[:exclude]
+    patterns_to_exclude = opts[:exclude_pattern].map {|pattern| Regexp.new(pattern) }
 
-    patterns_to_exclude.shift if opts[:rspec]
-
-    # If we wanna do regex patterns?
-    # opts[:exclude].each do |pattern|
-    #   patterns_to_exclude << Regexp.new(pattern)
-    # end
+    patterns_to_exclude << %r{^spec/} unless opts[:rspec]
 
     if debug?
+      puts "Fragments to Exclude:"
+      if fragments_to_exclude.empty?
+        puts "    None"
+      else
+        puts fragments_to_exclude.map {|fragment| "  #{fragment}"}
+      end
+
       puts "Patterns to exclude:"
-      puts patterns_to_exclude
+      if patterns_to_exclude.empty?
+        puts "    None"
+      else
+        puts patterns_to_exclude.map {|pattern| "  #{pattern}"}
+      end
     end
 
-    files = files.reject {|file| patterns_to_exclude.any? {|regex| regex.match(file) }}
-    files = files.reject {|file| opts[:exclude].any? {|pattern| file.include?(pattern) }}
+    files = files.reject {|filename| patterns_to_exclude.any? {|pattern| pattern.match(filename) }}
+    files = files.reject {|filename| fragments_to_exclude.any? {|fragment| filename.include?(fragment) }}
 
     # exclude removed files
     files.keep_if {|file| File.exist?(File.expand_path(File.join(".", file))) }
 
     if debug?
       puts "Final files to run rubocop on:"
-      puts files.map {|file| "  #{file}"}.inspect
+      puts files.map {|file| "  #{file}"}
     end
 
     command = "rubocop #{files.join(' ')}"
