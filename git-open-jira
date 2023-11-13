@@ -11,16 +11,11 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  attr_reader :opts
-
-
-  def debug?
-    opts[:debug]
-  end
-
   def run
     @opts = Optimist.options do
       opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
     end
     puts opts.inspect if opts[:debug]
 

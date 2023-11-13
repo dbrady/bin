@@ -4,17 +4,41 @@
 require "colorize"
 
 module DbradyCli
+  attr_reader :opts
+
+  def debug?
+    opts[:debug]
+  end
+
+  def quiet?
+    opts[:quiet]
+  end
+
+  def pretend?
+    opts[:pretend]
+  end
+
   # ----------------------------------------------------------------------
   # BASH STUFF
   # ----------------------------------------------------------------------
 
   # Log a command to the console, then run it, and raise an exception if fails.
-  def run_command(command, quiet: false, ignore_failure: false, pretend: false)
+  def run_command!(command, quiet: false, pretend: false)
+    puts "run_command!: #{command.inspect}" if debug?
+    puts command.cyan unless quiet?
+    success = if pretend?
+                true
+              else
+                system command
+              end
+    raise "run_command! failed running #{command.inspect}" unless success
+    success
+  end
+
+  def run_command(command, quiet: false, pretend: false)
     puts "run_command: #{command.inspect}" if debug?
     puts command.cyan unless quiet
-    system(command).tap do |success|
-      raise "run_command failed running #{command.inspect}" unless success || ignore_failure
-    end
+    system command unless pretend?
   end
 
   def osx?
@@ -48,5 +72,9 @@ module DbradyCli
   # ----------------------------------------------------------------------
   def git_current_branch
     `git current-branch`.strip
+  end
+
+  def git_main_branch
+    `git main-branch`.strip
   end
 end
