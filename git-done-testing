@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# scriptname - HEY DAVE COME DESCRIBE THIS SCRIPT
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    puts opts.inspect if opts[:debug]
+
+    old_branch = git_current_branch
+    new_branch = ARGV.first || git_main_branch
+    run_command! "go #{new_branch}"
+    run_command! "git branch -d #{old_branch}"
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
