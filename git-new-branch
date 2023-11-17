@@ -36,6 +36,7 @@ Note:
     Options can only be passed in when directly running this script
     (git-new-branch), not when auto-dispatching it from git (git new-branch)
 
+Options:
 USAGE
 
   opt :force, 'Continue even if warnings, e.g. not on master', default: false
@@ -60,8 +61,9 @@ if opts[:debug]
 end
 
 current_branch = `git current-branch`.strip
+main_branch = `git main-branch`.strip
 
-if !(current_branch == 'master' || opts[:force])
+if !(current_branch == main_branch || opts[:force])
   puts "You are not on the master branch. If you meant to branch from here, rerun with --force".yellow
   exit
 end
