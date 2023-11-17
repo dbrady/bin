@@ -1,8 +1,12 @@
 #!/usr/bin/env ruby
-# mixin module to provide all the git/jira I keep reusing everywhere.
-# The including class should define debug?
 require "colorize"
 
+# mixin module to provide all the git/jira stuff I keep reusing everywhere.
+#
+
+# The including class may wish to use opts = Optimist.options { ... }, and
+# capture debug, pretend and/or quiet. See scrapbin/ruby/new-ruby (in my
+# scrapbin repo) for an example.
 module DbradyCli
   attr_reader :opts
 
@@ -68,12 +72,17 @@ module DbradyCli
   def jira_ticket(branch=nil)
     branch ||= git_current_branch
 
-    branch.split(%r{/})[1].to_s
+    branch.split(%r{/})[1].split(%r{-})[0..1].join('-').to_s
   end
 
   # get url to ticket
   def jira_url(ticket=jira_ticket)
     "https://acima.atlassian.net/browse/#{ticket}"
+  end
+
+  # Generate the markdown linkety blurb
+  def markdown_link_to_jira_ticket(ticket=jira_ticket)
+    "Link to Ticket: [#{jira_ticket}](#{jira_url})"
   end
 
   # ----------------------------------------------------------------------
@@ -85,5 +94,18 @@ module DbradyCli
 
   def git_main_branch
     `git main-branch`.strip
+  end
+end
+
+if __FILE__ == $0
+  # This is a clever, but it's a clever
+  # puts Class.new { include DbradyCli }.new.send(ARGV.first)
+
+  class Application
+    include DbradyCli
+  end
+
+  if ARGV.first
+    puts Application.new.send ARGV.first
   end
 end
