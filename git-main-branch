@@ -1,44 +1,68 @@
 #!/usr/bin/env ruby
 # git-main - identify and return the main branch for this repo
+require "colorize"
+require_relative "dbrady_cli"
+require "optimist"
+require "yaml"
+String.disable_colorization unless $stdout.tty?
 
-require 'yaml'
+class Application
+  include DbradyCli
 
-def cache_file
-  File.expand_path("~/.git-main-branches.yml")
-end
-
-def cache
-  @cache ||= if !File.exist?(cache_file)
-                    {}
-                  else
-                    YAML.load_file(cache_file)
-                  end
-end
-
-def save_cache
-  File.open(cache_file, "w") do |fp|
-    fp.puts cache.to_yaml
+  def cache_file
+    File.expand_path("~/.git-main-branches.yml")
   end
+
+  def cache
+    @cache ||= if File.exist?(cache_file)
+                 YAML.load_file(cache_file)
+               else
+                 {}
+               end
+  end
+
+  def save_cache
+    File.open(cache_file, "w") do |fp|
+      fp.puts cache.to_yaml
+    end
+  end
+
+  def cache_lookup(dir)
+    cache[dir]
+  end
+
+  def cache_branch(dir, branch)
+    cache[dir] = branch
+    save_cache
+  end
+
+  def get_main_branch_from_remote
+    `git remote show origin`.each_line.to_a.grep(/^\s*HEAD branch:\s+/).first.split(/: /).last.strip
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    puts opts.inspect if opts[:debug]
+
+    dir = Dir.pwd
+    puts "dir: #{dir.inspect}" if debug?
+
+    if ARGV.include?("-f") || !cache_lookup(dir)
+      puts "Folder is not cached, initializing" if debug?
+      branch = get_main_branch_from_remote
+      cache_branch dir, branch
+    end
+
+    puts cache_lookup(dir)
+  end
+
 end
 
-def cache_lookup(dir)
-  cache[dir]
+
+if __FILE__ == $0
+  Application.new.run
 end
-
-def cache_branch(dir, branch)
-  cache[dir] = branch
-  save_cache
-end
-
-def get_main_branch_from_remote
-  `git remote show origin`.each_line.to_a.grep(/^\s*HEAD branch:\s+/).first.split(/: /).last.strip
-end
-
-dir = Dir.pwd
-
-if ARGV.include?("-f") || !cache_lookup(dir)
-  branch = get_main_branch_from_remote
-  cache_branch dir, branch
-end
-
-puts cache_lookup(dir)
