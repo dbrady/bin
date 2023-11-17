@@ -5,8 +5,9 @@ ps auxw | grep [s]pring | grep -v diespringdie
 echo
 
 echo "Asking spring politely to go quietly into that good night..."
-echo -e "\033[36mps auwx | grep [s]pring | grep -v diespringdie | awk '{ print \$2 }' | while read pid; do echo \"pid: \$pid\"; kill \$pid; done\033[0m"
-ps auwx | grep [s]pring | grep -v diespringdie | awk '{ print $2 }' | while read pid; do echo "pid: $pid"; kill $pid; done
+# TODO: rewrite in ruby and use line.split(/\s+/)[10] to find the exact command name.
+echo -e "\033[36mps auwx | grep [s]pring | grep -v diespringdie | ag '\bspring\s+' | awk '{ print \$2 }' | while read pid; do echo \"pid: \$pid\"; kill \$pid; done\033[0m"
+ps auwx | grep [s]pring | grep -v diespringdie | ag '\bspring\s+' | awk '{ print $2 }' | while read pid; do echo "pid: $pid"; kill $pid; done
 echo
 
 echo "Giving spring a moment to shut itself down..."
