@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+# git-hermes-create-pr - generate the link to create a PR against hermes-master
+require "cgi"
+
+# NOTE: This is cadged from my snow-create-pr-warehouse script
+home = "https://github.com/acima-credit/data_services"
+
+branch_to_merge_into = "hermes-master"
+branch = `git current-branch`.strip
+pr_name = branch.sub(%r|^dbrady/|, '').split(/-/).map.with_index {|word, index| index.zero? ? word : word.capitalize }.join(' ')
+jira_link = `dbrady_cli.rb jira_url`
+
+pr_name = CGI.escapeURIComponent(pr_name)
+
+puts "\033[36m#{home}/compare/#{branch_to_merge_into}...#{branch}?expand=1&title=#{pr_name}\033[0m"
