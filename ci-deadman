@@ -1,18 +1,23 @@
 #!/usr/bin/env ruby
 # ci-deadman - turn off ci lights every so often
 require "colorize"
+require_relative "dbrady_cli"
 require "optimist"
 String.disable_colorization unless $stdout.tty?
 
 class Application
-  attr_reader :opts
-
-  def debug?
-    opts[:debug]
-  end
+  include DbradyCli
 
   def cioff
-    system "cioff"
+    run_command "cioff"
+  end
+
+  def ciwhite
+    run_command "ciwhite"
+  end
+
+  def is_during_work_hours?(time)
+    (8..17).include?(time.hour) && (1..5).include?(time.wday)
   end
 
   def run
@@ -26,11 +31,11 @@ class Application
 
     while true
       now = Time.now
+      if is_during_work_hours?(now) then ciwhite else cioff end
       seconds_to_sleep = 3600 - (now.min * 60 + now.sec)
-      last_run_time = Time.now
-      cioff
-      puts now.strftime("%T")
-      puts "Sleeping for #{seconds_to_sleep} seconds..."
+
+      puts now.strftime("%T") unless quiet?
+      puts "Sleeping for #{seconds_to_sleep} seconds..." unless quiet?
       sleep seconds_to_sleep
     end
   end
