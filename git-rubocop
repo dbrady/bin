@@ -26,6 +26,7 @@ class Application
 
       opt :debug, "Print extra debug info", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :pretend, "Print commands but do not run them", default: false
 
       opt :since, "Check all files modified since commit or branch. See `git-files-changed --help` for options. If omitted, checks unstaged changes only.", type: :string, default: main_branch
@@ -35,6 +36,7 @@ class Application
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
     end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
 
     # if no arguments and nothing's going on, use git main as the sha
@@ -77,7 +79,7 @@ class Application
     # exclude removed files
     files.keep_if {|file| File.exist?(File.expand_path(File.join(".", file))) }
 
-    if debug?
+    if verbose? || debug?
       puts "Final files to run rubocop on:"
       puts files.map {|file| "  #{file}"}
     end
