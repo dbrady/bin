@@ -18,6 +18,10 @@ module DbradyCli
     opts[:quiet]
   end
 
+  def verbose?
+    opts[:verbose]
+  end
+
   def pretend?
     opts[:pretend]
   end
