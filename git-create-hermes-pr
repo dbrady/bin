@@ -3,7 +3,7 @@
 require "cgi"
 
 # NOTE: This is cadged from my snow-create-pr-warehouse script
-home = "https://github.com/acima-credit/data_services"
+home = "https://github.com/acima-credit/merchant_portal"
 
 branch_to_merge_into = "hermes-master"
 branch = `git current-branch`.strip

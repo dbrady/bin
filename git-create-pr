@@ -26,11 +26,10 @@ def osx?
   `uname -s`.strip == "Darwin"
 end
 
-# TODO: get the real PR url for this
-ROOT_URL = "https://github.com/acima-credit/merchant_portal/pull/new/"
+# ROOT_URL = "https://github.com/acima-credit/merchant_portal/pull/new/"
 current_branch = `git current-branch`.strip
-
-url = File.join(ROOT_URL, current_branch)
+main_branch = `git main-branch`.strip
+url = "https://github.com/acima-credit/merchant_portal/compare/#{main_branch}...#{current_branch}?expand=1"
 
 # Set the title of the PR if possible
 # This is PROBABLY going to be segment[1]
