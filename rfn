@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+# rfn <spec> [<spec> [...]] - "rspec new" creates new spec focus
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<-BANNER
+      rfn <spec> [<spec> [...]] - create new spec focus
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :format, "Format (see rspec --help)", default: "documentation"
+      opt :order, "Order (see rspec --help)", default: "defined"
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    args = ARGV.join(" ")
+    rftext = "--format=#{opts[:format]} --order=#{opts[:order]} #{args}"
+    puts rftext
+
+    run_command! "rff #{rftext}"
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
