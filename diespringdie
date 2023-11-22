@@ -1,13 +1,16 @@
 #!/bin/bash
 
 echo "Checking for running spring processes..."
-ps auxw | grep [s]pring | grep -v diespringdie
+ps auwx | grep -v diespringdie | grep [s]pring || echo "Nothing to do, shutting down." && exit 0
+ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts $_ if w[10] == "spring"'
 echo
 
 echo "Asking spring politely to go quietly into that good night..."
 # TODO: rewrite in ruby and use line.split(/\s+/)[10] to find the exact command name.
-echo -e "\033[36mps auwx | grep [s]pring | grep -v diespringdie | ag '\bspring\s+' | awk '{ print \$2 }' | while read pid; do echo \"pid: \$pid\"; kill \$pid; done\033[0m"
-ps auwx | grep [s]pring | grep -v diespringdie | ag '\bspring\s+' | awk '{ print $2 }' | while read pid; do echo "pid: $pid"; kill $pid; done
+echo -e "\033[36mps auwx | grep [s]pring | ruby -ne 'w=\$_.split(/\s+/); puts w[1] if w[10] == \"spring\"' | while read pid; do echo "pid: $pid"; kill $pid; done\033[0m"
+ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts w[1] if w[10] == "spring"' | while read pid; do echo "pid: $pid"; kill $pid; done
+
+
 echo
 
 echo "Giving spring a moment to shut itself down..."
@@ -15,5 +18,9 @@ echo -e "\033[36msleep 5\033[0m"
 sleep 5
 
 echo "Telling the OS to go after spring with a machete..."
-echo -e "\033[36mps auwx | grep [s]pring | grep -v diespringdie | awk '{ print \$2 }' | while read pid; do echo \"pid: \$pid\"; kill -9 \$pid; done\033[0m"
-ps auwx | grep [s]pring | grep -v diespringdie | awk '{ print $2 }' | while read pid; do echo "pid: $pid"; kill -9 $pid; done
+echo -e "\033[36mps auwx | grep [s]pring | ruby -ne 'w=\$_.split(/\s+/); puts w[1] if w[10] == \"spring\"' | while read pid; do echo "pid: $pid"; kill -9 $pid; done\033[0m"
+ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts w[1] if w[10] == "spring"' | while read pid; do echo "pid: $pid"; kill -9 $pid; done
+echo
+
+echo "Looking for survivors..."
+ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts $_ if w[10] == "spring"'
