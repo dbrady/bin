@@ -23,8 +23,11 @@ opts = Optimist.options do
   git files-changed ab1234..cd5678   - Show files changed in a range of commits
   git files-changed staging..release - Show files changed from one branch to another
 
-  This tool assumes that <sha1> is an ancestor of <sha2>. I have no clue how
-  undefined the behavior will, won't, or very much spectacularly, will be.
+  Note: This tool assumes that <sha1> is an ancestor of <sha2>. If they are not,
+  git will cheerfully walk up the logs to of both branches back to their common
+  ancestor, and then show you the commits from one or both branches at its own
+  discretion. In my own tests, it's usually <common>..<sha2> but in once case it
+  gave me <common>..<sha1> followed by <common>..<sha2>. &shrug;
 
   Options:
   BANNER
@@ -36,7 +39,9 @@ puts opts.inspect if opts[:debug]
 
 range = "-n 10"
 
-range = if ARGV.size == 2
+range = if ARGV.empty?
+          `git main-branch`.strip + "..HEAD"
+        elsif ARGV.size == 2
           # git files-changed abc123 def456
           ARGV.join('..')
         elsif ARGV.first =~ /^\d+$/
@@ -46,6 +51,7 @@ range = if ARGV.size == 2
         elsif ARGV.first =~ /\.\./
           # git files-changed abc123..def456
           # look at commits in that range
+          # ARGV.first because "x..y" is one string
           ARGV.first
         else
           # git files-changed abc123
