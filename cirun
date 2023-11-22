@@ -17,12 +17,12 @@
 # roman font needs bold, electronic font does not, but it doesn't hurt
 # if pwd has lowercase letters, print "running" instead of "RUNNING"
 if (pwd | grep -E '[a-z]'); then
-    RUNNING=running
+    RUNNING="specs running"
 else
-    RUNNING=RUNNING
+    RUNNING="SPECS RUNNING"
 fi
 
-rubanner --font=ansi-shadow --bold --fg=white --bg=blue "$(pwd | sed -e 's/_/ /g' | sed -e 's/^.*\///')" $RUNNING
+rubanner --font=ansi-shadow --bold --fg=white --bg=blue "$(pwd | sed -e 's/_/ /g' | sed -e 's/^.*\///')" "$RUNNING"
 if [ -e ~/onsite.touch ]; then
     # echo "You're onsite! Skipping HUE lights."
     exit 0
