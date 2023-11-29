@@ -1,4 +1,4 @@
 #!/bin/bash
 # git restore-all - run git restore on all files currently modified in branch. WILL NOT RESET STAGED CHANGES.
-echo -e "\033[36mgit modified $@ | xargs git restore\033[0m"
-git modified | xargs git restore
+# echo -e "\033[36mgit modified $@ | xargs git restore\033[0m"
+git modified | while read file; do echo -e "\033[36mgit restore $file\033[0m"; git restore $file; done
