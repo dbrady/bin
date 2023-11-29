@@ -20,7 +20,7 @@ fi
 
 echo 'Rspec Focus: RUN! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
 echo "Running specs"
-echo time bundle exec rspec $@
+echo time bundle exec rspec  --format=documentation --order=defined $@
 cirun
 # TODO: Bring back the old, better version that parsed the RSpec output,
 # e.g. if output includes /[1-9]+ failures/ cifail
@@ -29,8 +29,8 @@ cirun
 if [ "$SING" = 'y' ]; then
     echo 'SINGING SPECS ENABLED, YAY!!!'
     singbegin
-    (time bundle exec rspec $@ && cipass && singpass || (cifail && singfail && exit -1))
+    (time bundle exec rspec  --format=documentation --order=defined $@ && cipass && singpass || (cifail && singfail && exit -1))
 else
     echo 'Non-singing specs (you can turn them on with --sing as the first argument)'
-    (time bundle exec rspec $@ && cipass || (cifail && exit -1))
+    (time bundle exec rspec  --format=documentation --order=defined $@ && cipass || (cifail && exit -1))
 fi
