@@ -2,25 +2,47 @@
 # rubuild-and-refresh-mp - refresh/update everything we can think of.
 require "colorize"
 require "optimist"
+require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
-opts = Optimist.options do
-  opt :debug, "Print extra debug info", default: false
+class Application
+  include DbradyCli
+
+  def remaster?
+    opts[:remaster]
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :remaster, "Remaster (pull and rebase from main branch) first", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    commands = [
+      "bundle",
+      "npm install",
+      "yarn install",
+      "bundle exec rails assets:clobber",
+      "bundle exec rails assets:precompile",
+      "git restore db/seeds.rb yarn.lock", # because these get outta sync alla time
+    ]
+
+    commands.unshift("remaster") if remaster?
+
+    commands.each do |command|
+      system %Q|rub1nner "#{command}"|
+      puts command.cyan
+      system command unless pretend?
+    end
+  end
+
 end
-puts opts.inspect if opts[:debug]
-#!/usr/bin/env ruby
 
-commands = [
-  "remaster",
-  "bundle",
-  "npm install",
-  "yarn install",
-  "rebuild-assets",
-  "git restore db/seeds.rb yarn.lock", # because these get outta sync alla time
-]
-
-commands.each do |command|
-  system %Q|rub1nner "#{command}"|
-  puts command.cyan
-  system command
+if __FILE__ == $0
+  Application.new.run
 end
