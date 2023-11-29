@@ -9,18 +9,11 @@ String.disable_colorization unless $stdout.tty?
 opts = Optimist.options do
   opt :debug, "Print extra debug info", default: false
   opt :pretend, "Show create pr link but do not open a browser", default: false
+
+  opt :title, "Title (if omitted, tries to infer from branch)", type: :string
 end
 puts opts.inspect if opts[:debug]
 
-
-# TODO: Set the title in the create PR link?
-#
-# Say I'm on a branch like dbrady/CREDIT-10/safe-location-unformatted.
-#
-# git create-pr -> Creates PR with the title "[CREDIT-10] Safe location unformatted"
-#
-# git create-pr "Guard nil in unformatted_{fax,phone}_number"
-#     -> Creates PR with the title "[CREDIT-10] Guard nil in unformatted_{fax,phone}_number"
 
 def osx?
   `uname -s`.strip == "Darwin"
@@ -34,20 +27,20 @@ url = "https://github.com/acima-credit/merchant_portal/compare/#{main_branch}...
 # Set the title of the PR if possible
 # This is PROBABLY going to be segment[1]
 ticket_id = current_branch.split(%r|/|).find {|segment| segment =~ /^[A-Z]+-\d+$/ }
-branch_title = if ARGV.size.zero?
+branch_title = if opts[:title_given]
+                 opts[:title]
+               else
                  current_branch         # "dbrady/CREDIT-10/these-are-my-pants"
                    .split(ticket_id)    # ["dbrady/", "/these-are-my-pants"]
                    .last                # "/these-are-my-pants"
                    .sub(%r|^/|, "")     # "these-are-my-pants
                    .gsub(/[-_]/, " ")   # "these are my pants"
                    .capitalize          # "These are my pants"
-               else
-                 ARGV.join(" ").capitalize
                end
 
 title = "[#{ticket_id}] #{branch_title}"
 escaped_title = CGI::escape(title)
-url += "?title=#{escaped_title}"
+url += "&title=#{escaped_title}"
 
 if opts[:debug]
   puts "ticket_id: #{ticket_id}"
@@ -59,7 +52,7 @@ end
 
 if osx?
   puts url.cyan
-  cmd = "open #{url}"
+  cmd = "open '#{url}'"
   system cmd unless opts[:pretend]
 else
   # next time I'm on linux, test this out with e.g., xdg-open
