@@ -43,10 +43,12 @@ module DbradyCli
     success
   end
 
+  # Log and run a command, and return its exit status.
+  # Returns true if --pretend
   def run_command(command)
     puts "run_command: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
-    system command unless pretend?
+    pretend? || system(command)
   end
 
   def get_command_output_lines(command)

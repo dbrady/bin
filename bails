@@ -1,3 +1,38 @@
-#!/bin/bash
-echo time bundle exec rails $@
-time bundle exec rails $@
+#!/usr/bin/env ruby
+# bails - bin/bundle exec rails
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    ensure_aws_sso_login
+    run_command "time bundle exec rails #{arglist}"
+  end
+
+  def arglist
+    ARGV.map {|arg| arg.match(/\s+/) ? arg.inspect : arg }.join(' ')
+  end
+
+  def ensure_aws_sso_login
+    run_command("aws sso login") unless run_command("aws-check-sso-login")
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
