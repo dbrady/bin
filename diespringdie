@@ -1,26 +1,62 @@
-#!/bin/bash
+#!/usr/bin/env ruby
+# diespringdie - Hunt down undead spring processes and drive stakes through their heart
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
 
-echo "Checking for running spring processes..."
-ps auwx | grep -v diespringdie | grep [s]pring || echo "Nothing to do, shutting down." && exit 0
-ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts $_ if w[10] == "spring"'
-echo
+class Application
+  include DbradyCli
 
-echo "Asking spring politely to go quietly into that good night..."
-# TODO: rewrite in ruby and use line.split(/\s+/)[10] to find the exact command name.
-echo -e "\033[36mps auwx | grep [s]pring | ruby -ne 'w=\$_.split(/\s+/); puts w[1] if w[10] == \"spring\"' | while read pid; do echo "pid: $pid"; kill $pid; done\033[0m"
-ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts w[1] if w[10] == "spring"' | while read pid; do echo "pid: $pid"; kill $pid; done
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    puts "Checking for running spring processes..."
+    puts spring_is_running?.inspect
+
+    puts "Asking spring politely to go quietly into that good night..."
+    pid_lines = spring_pids
+    pid_lines.each.with_index {|line, index| puts "#{index}: #{line}"}
+    puts pid_lines.map {|pid_line| pid_line.split[1] }
+  end
+
+  def spring_is_running?
+    run_command "ps auwx | grep -v diespringdie | grep [s]pring 2>&1 > /dev/null"
+  end
+
+  def spring_pids
+    lines = get_command_output_lines("ps auwx | grep [s]pring").find_all {|line| line.split[10] == "spring" }
+  end
+end
 
 
-echo
+if __FILE__ == $0
+  Application.new.run
+end
 
-echo "Giving spring a moment to shut itself down..."
-echo -e "\033[36msleep 5\033[0m"
-sleep 5
+# echo "Asking spring politely to go quietly into that good night..."
+# # TODO: rewrite in ruby and use line.split(/\s+/)[10] to find the exact command name.
+# echo -e "\033[36mps auwx | grep [s]pring | ruby -ne 'w=\$_.split(/\s+/); puts w[1] if w[10] == \"spring\"' | while read pid; do echo "pid: $pid"; kill $pid; done\033[0m"
+# ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts w[1] if w[10] == "spring"' | while read pid; do echo "pid: $pid"; kill $pid; done
 
-echo "Telling the OS to go after spring with a machete..."
-echo -e "\033[36mps auwx | grep [s]pring | ruby -ne 'w=\$_.split(/\s+/); puts w[1] if w[10] == \"spring\"' | while read pid; do echo "pid: $pid"; kill -9 $pid; done\033[0m"
-ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts w[1] if w[10] == "spring"' | while read pid; do echo "pid: $pid"; kill -9 $pid; done
-echo
 
-echo "Looking for survivors..."
-ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts $_ if w[10] == "spring"'
+# echo
+
+# echo "Giving spring a moment to shut itself down..."
+# echo -e "\033[36msleep 5\033[0m"
+# sleep 5
+
+# echo "Telling the OS to go after spring with a machete..."
+# echo -e "\033[36mps auwx | grep [s]pring | ruby -ne 'w=\$_.split(/\s+/); puts w[1] if w[10] == \"spring\"' | while read pid; do echo "pid: $pid"; kill -9 $pid; done\033[0m"
+# ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts w[1] if w[10] == "spring"' | while read pid; do echo "pid: $pid"; kill -9 $pid; done
+# echo
+
+# echo "Looking for survivors..."
+# ps auwx | grep [s]pring | ruby -ne 'w=$_.split(/\s+/); puts $_ if w[10] == "spring"'
