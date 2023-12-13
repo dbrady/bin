@@ -1,6 +1,8 @@
 #!/bin/bash
 # rfr - "rspec run" run specs but wrapped with ci lights and timing
-# basically it's rfg without reading ~/.spec_focus
+# basically it's a one-off rfg without reading or changing
+# ~/.spec_focus and automatically add --format=documentation
+# --order=defined
 #
 # usage:
 #
