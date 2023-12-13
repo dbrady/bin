@@ -9,6 +9,9 @@ settingses = [
   TmuxSettings.new(name: "amq", folder: "application_management_system", commands: "bundle exec sidekiq"),
   TmuxSettings.new(name: "mpq", folder: "merchant_portal", commands: "bundle exec sidekiq"),
   TmuxSettings.new(name: "kipper", folder: "kipper", commands: "bin/start"),
+  TmuxSettings.new(name: "anycable", folder: "merchant_portal", commands: "bundle exec anycable --log-grpc"),
+  TmuxSettings.new(name: "anycable-go", folder: "kipper", commands: "anycable-go --host=0.0.0.0 --port=3334 --debug --rpc_host=localhost:50051"),
+  TmuxSettings.new(name: "cf", folder: "contract_funding", commands: "bin/start"),
 ]
 $logging = true
 
