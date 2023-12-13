@@ -35,6 +35,9 @@ class Application
       opt :unstaged, "Consider unstaged files even if they have not been committed in the --since range", default: false
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
+
+      opt :autocorrect, "Automatically fix correctable issues", short: :a, default: false
+      opt :"autocorrect-all", "Automatically fix correctable issues", short: :A, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
@@ -84,7 +87,15 @@ class Application
       puts files.map {|file| "  #{file}"}
     end
 
-    command = "rubocop #{files.join(' ')}"
+    autocorrect_arg = if opts[:autocorrect]
+                        "-a"
+                      elsif opts[:"autocorrect-all"]
+                        "-A"
+                      else
+                        ""
+                      end
+
+    command = "rubocop #{autocorrect_arg} #{files.join(' ')}".sub('rubocop  ', 'rubocop ')
 
     puts command.cyan
     system command unless opts[:pretend]
