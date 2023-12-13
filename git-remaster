@@ -2,65 +2,74 @@
 # git-remaster [<parent-branch-name>] - pull down parent branch and rebase it into this branch
 require "colorize"
 require "optimist"
+require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
-current_branch = `git current-branch`.strip
-parent_branch = ARGV.first || `git main-branch`.strip
+class Application
+  include DbradyCli
 
-opts = Optimist.options do
-  opt :debug, "Print extra debug info", default: false
-  opt :stash, "Stash and reapply changes around rebase", default: false
-end
-if opts[:debug]
-  puts "current_branch: #{current_branch}"
-  puts "parent_branch: #{parent_branch}"
-  puts opts.inspect
-end
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :stash, "Stash and reapply changes around rebase", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    current_branch = `git current-branch`.strip
+    parent_branch = ARGV.first || `git main-branch`.strip
 
-def run_command(command)
-  puts command.cyan
-  system(command)
-end
+    if debug?
+      puts "current_branch: #{current_branch}"
+      puts "parent_branch: #{parent_branch}"
+      puts opts.inspect
+    end
 
-def run_command_chain(commands)
-  commands.each do |command|
-    success = run_command(command)
-    if !success
-      puts "Command failed: #{command}".red
+    if branch_is_dirty? && !opts[:stash_given]
+      puts "Your branch has outstanding changes. Rerun with --stash if you want me to stash/rebase/reapply them, or --no-stash if you want to live dangerously.".red
       exit -1
     end
+
+    stashed = if branch_is_dirty? && opts[:stash]
+                run_command("git stash")
+              end
+
+    commands = <<-COMMANDS
+      git checkout #{parent_branch}
+      git pull
+      git checkout #{current_branch}
+      git rebase #{parent_branch}
+    COMMANDS
+
+    run_command_chain commands.each_line.map(&:strip)
+
+    run_command "git stash apply" if stashed
+  end
+
+  def run_command_chain(commands)
+    commands.each do |command|
+      success = run_command(command)
+      if !success
+        puts "Command failed: #{command}".red
+        exit -1
+      end
+    end
+  end
+
+  # Returns true if there are any staged or unstaged changes (but does not care if
+  # there are untracked files)
+  def branch_is_dirty?
+    return @branch_is_dirty if @branch_is_dirty_is_cached
+
+    puts "Checking to see if branch is clean..."
+    @branch_is_dirty = !run_command("git isclean")
+    @branch_is_dirty_is_cached = true
+    @branch_is_dirty
   end
 end
 
-# Returns true if there are any staged or unstaged changes (but does not care if
-# there are untracked files)
-def branch_is_dirty?
-  return @branch_is_dirty if @branch_is_dirty_is_cached
 
-  puts "Checking to see if branch is clean..."
-  @branch_is_dirty = !run_command("git isclean")
-  @branch_is_dirty_is_cached = true
-  @branch_is_dirty
+if __FILE__ == $0
+  Application.new.run
 end
-
-
-if branch_is_dirty? && !opts[:stash_given]
-  puts "Your branch has outstanding changes. Rerun with --stash if you want me to stash/rebase/reapply them, or --no-stash if you want to live dangerously.".red
-  exit -1
-end
-
-stashed = if branch_is_dirty? && opts[:stash]
-            run_command("git stash")
-          end
-
-commands = <<COMMANDS
-    git checkout #{parent_branch}
-    git pull
-    git checkout #{current_branch}
-    git rebase #{parent_branch}
-COMMANDS
-
-
-run_command_chain commands.each_line.map(&:strip)
-
-run_command "git stash apply" if stashed

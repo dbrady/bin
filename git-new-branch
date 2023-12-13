@@ -64,7 +64,7 @@ current_branch = `git current-branch`.strip
 main_branch = `git main-branch`.strip
 
 if !(current_branch == main_branch || opts[:force])
-  puts "You are not on the master branch. If you meant to branch from here, rerun with --force".yellow
+  puts "You are not on the main branch (#{main_branch}). If you meant to branch from here, rerun with --force".yellow
   exit
 end
 
