@@ -109,17 +109,25 @@ BANNER
   end
 end
 
-# Check to see if we're on master
+  # Check to see if we're on master
 branch=`git current-branch`.strip
 main_branch=`git main-branch`.strip
 
+def log_line(msg="")
+  puts "\033[1;37;41m#{msg}\033[0m"
+end
+
 if branch == "hermes-master" || branch == main_branch
-  puts '\033[1;37;41m                             \033[0m'
-  puts '\033[1;37;41m            STOP!!!          \033[0m'
-  puts '\033[1;37;41m                             \033[0m'
-  puts '\033[1;37;41m  YOU ARE ON A MAIN BRANCH!  \033[0m'
-  puts '\033[1;37;41m STOP TRYING TO COMMIT THIS! \033[0m'
-  puts '\033[1;37;41m                             \033[0m'
+  width = [30, branch.size + 8].max
+  log_line_white "".center(width)
+  log_line_white "STOP!!!".center(width)
+  log_line_white "".center(width)
+  log_line_white "YOU ARE ON A MAIN BRANCH!".center(width)
+  log_line_white "".center(width)
+  log_line_white branch.center(width)
+  log_line_white "".center(width)
+  log_line_white "STOP TRYING TO COMMIT THIS!".center(width)
+  log_line_white "".center(width)
   exit 1
 end
 
