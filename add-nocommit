@@ -119,15 +119,15 @@ end
 
 if branch == "hermes-master" || branch == main_branch
   width = [30, branch.size + 8].max
-  log_line_white "".center(width)
-  log_line_white "STOP!!!".center(width)
-  log_line_white "".center(width)
-  log_line_white "YOU ARE ON A MAIN BRANCH!".center(width)
-  log_line_white "".center(width)
-  log_line_white branch.center(width)
-  log_line_white "".center(width)
-  log_line_white "STOP TRYING TO COMMIT THIS!".center(width)
-  log_line_white "".center(width)
+  log_line "".center(width)
+  log_line "STOP!!!".center(width)
+  log_line "".center(width)
+  log_line "YOU ARE ON A MAIN BRANCH!".center(width)
+  log_line "".center(width)
+  log_line branch.center(width)
+  log_line "".center(width)
+  log_line "STOP TRYING TO COMMIT THIS!".center(width)
+  log_line "".center(width)
   exit 1
 end
 
