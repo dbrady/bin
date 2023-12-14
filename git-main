@@ -1,8 +1,9 @@
 #!/usr/bin/env ruby
 # git-main - identify and check out main branch for this repo
+require "colorize"
 
 main_branch = `git main-branch`.strip
 
 cmd = "git checkout #{main_branch}"
-puts cmd
+puts cmd.cyan
 system cmd

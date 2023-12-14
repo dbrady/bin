@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # git-log-branch <path/to/repo> - Record current branch of repo in that repo's .git/branch.log
-# ideally set this up to run
+# ideally set this up to run regularly; see ds-watch-branches
 require 'colorize'
 require 'optimist'
 require 'extralite'
