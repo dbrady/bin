@@ -1,0 +1,2 @@
+#!/bin/bash
+aws-check-sso-login && echo -e "\033[32mYou are logged into AWS\033[0m" || echo "\033[31mYou are NOT logged into AWS\033[0m"
