@@ -6,12 +6,7 @@ require 'optimist'
 require 'extralite'
 
 # blegh. I gotta set up a clean host/container share...
-SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
-            File.expand_path('/root/data_services_package/dataservices/haxx')
-          else
-            File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
-          end
-
+SHARE_FOLDER = File.expand_path('~/bin/db')
 DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
 LOG_INFO=:white
