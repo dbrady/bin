@@ -1,0 +1,3 @@
+#!/bin/bash
+# TODO: Consider adding git log-branch $(pwd) to cd, so it logs ALL the things?
+watch -d -n 60 "git log-branch -p $HOME/bin; git log-branch -p $HOME/acima/devel/merchant_portal"
