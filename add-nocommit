@@ -117,7 +117,7 @@ def log_line(msg="")
   puts "\033[1;37;41m#{msg}\033[0m"
 end
 
-if branch == "hermes-master" || branch == main_branch
+if branch == main_branch
   width = [30, branch.size + 8].max
   log_line "".center(width)
   log_line "STOP!!!".center(width)
