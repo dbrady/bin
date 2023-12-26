@@ -1,36 +1,189 @@
 #!/usr/bin/env ruby
-require 'colorize'
-require 'date'
-require 'optimist'
-require 'extralite'
+# git-branch-history - query and show history from db/git-branch-history.db
+require "byebug"
+require "colorize"
+require "date"
+require "optimist"
+require "extralite"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
 
-# Return previous Monday.
-def start_of_week_for(date)
-  date = Date.parse(date)
-  date - (date.wday-1) % 7
-end
+class Application
+  include DbradyCli
+  SHARE_FOLDER = File.expand_path('~/bin/db')
+  DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
-# Return following Monday, that way datetimes on Sunday night will show up as
-# less that DATE(next monday).
-def end_of_week_for(date)
-  start_of_week_for(date) + 7
-end
+  attr_reader :db
 
-# Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
-# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-def is_git_repo?(path)
-  File.exist?(File.join(path, '.git'))
-end
+  def prune?
+    opts[:prune]
+  end
 
-# Walk up file tree looking for a .git folder
-# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-def git_repo_for(path)
-  starting_path = last_path = path
+  def journal?
+    opts[:journal]
+  end
 
-  while !path.empty?
-    return path if is_git_repo?(path)
-    last_path, path = path, File.split(path).first
-    raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+  # Return previous Monday.
+  def start_of_week_for(date)
+    date = Date.parse(date)
+    date - (date.wday-1) % 7
+  end
+
+  # Return following Monday, that way datetimes on Sunday night will show up as
+  # less that DATE(next monday).
+  def end_of_week_for(date)
+    start_of_week_for(date) + 7
+  end
+
+  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def is_git_repo?(path)
+    File.exist?(File.join(path, '.git'))
+  end
+
+  # Walk up file tree looking for a .git folder
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def git_repo_for(path)
+    starting_path = last_path = path
+
+    while !path.empty?
+      return path if is_git_repo?(path)
+      last_path, path = path, File.split(path).first
+      raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+    end
+  end
+
+  def run
+    @opts = Optimist::options do
+      banner <<-USAGE
+git-branch-history - query the branch history log
+
+By default, gets the branch history of the current repo for last week
+
+If --date is given, --start and --end will be overridden to the Mon-Sun week containing that date.
+
+If none of --start, --end, or --date are given, defaults to last week.
+USAGE
+
+      opt :start, "Start date", short: :none, type: :string
+      opt :end, "End date", short: :none, type: :string
+      opt :date, "Sets --start and --end to week of Mon-Sun containing this date, --date=recent for week prior, --date=full for all dates, or --date=today for JUST the current day", short: :none, type: :string, default: "recent"
+
+      opt :latest, "Show only latest/current branches for each path only", default: false
+      opt :log, "Show journal/log of branch changes", default: false
+      opt :all, "Show branch history for all recorded repos", default: false
+      opt :path, "Path to specific repo (defaults to current folder)", type: :string
+      opt :journal, "Show all branches with switch times", default: false
+
+      opt :debug, "Dump extra debug information (Also set --verbose to log query results)", short: :d, default: false
+      opt :pretend, "Print queries but do not run them", default: false
+      opt :verbose, "Be a bit extra chatty", default: false
+      opt :prune, "Prune duplicate branches (shouldn't need to be done ever, let alone often, but sometimes I write bugs)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    if debug?
+      puts "debug? #{debug?.inspect}"
+      puts "verbose? #{verbose?.inspect}"
+      puts "quiet? #{quiet?.inspect}"
+      puts "prune? #{prune?.inspect}"
+    end
+
+    Optimist::die("Cannot specify both --all and --path") if opts[:all_given] && opts[:path_given]
+    Optimist::die("Cannot specify --start/--end if --date is given") if (opts[:start_given] || opts[:end_given]) && opts[:date_given]
+
+    opts[:path] = if opts[:all]
+                    nil # force nil; otherwise
+                  elsif opts[:path_given]
+                    git_repo_for(File.expand_path(opts[:path]))
+                  else
+                    git_repo_for(Dir.pwd)
+                  end
+
+    puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
+
+    date_specified = (opts[:date_given] && opts[:date] != /(today|recent)/) || opts[:start_given] || opts[:end_given]
+
+    opts[:date] = nil if opts[:date] == "all"
+    opts[:date] = (Date.today - 7).strftime("%F") if opts[:date] == "recent"
+    # opts[:start] = start_of_week_for(Date.today.strftime("%F")).strftime("%F") if opts[:date] == "recent"
+    if opts[:date] == "today"
+      opts[:start] = Date.today.strftime("%F")
+      opts[:end] = (Date.today + 1).strftime("%F")
+    elsif opts[:date]
+      opts[:start] = start_of_week_for(opts[:date]).strftime("%F")
+      opts[:end] = end_of_week_for(opts[:date]).strftime("%F")
+    end
+
+    puts "Opts after processing: #{opts.inspect}" if opts[:debug]
+
+    wheres = []
+    wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start]
+    wheres << "DATE(created_at) < '#{opts[:end]}'" if opts[:end]
+    wheres << "path = '#{opts[:path]}'" if opts[:path]
+
+    where = if wheres.empty?
+              ""
+            else
+              where = "WHERE " + wheres.join(" AND ")
+            end
+
+    order = opts[:log] ? 'created_at' : 'path, created_at'
+
+    puts "Opening database at: #{DATABASE_PATH}" if opts[:debug]
+    @db = Extralite::Database.new(DATABASE_PATH)
+
+    prune_and_exit!(opts, db) if opts[:prune]
+
+    query = if opts[:journal]
+              <<QUERY
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at
+QUERY
+            elsif opts[:latest]
+              <<QUERY
+SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{where} GROUP BY path ORDER BY path
+QUERY
+            else
+              <<QUERY
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY #{order}
+QUERY
+            end
+
+    query = query.rstrip
+    repos = Hash.new {|h,k| h[k] = []}
+
+    puts query.cyan if pretend? || verbose? || debug?
+
+    if !pretend?
+      db.query(query) do |row|
+        puts row.inspect if debug? && verbose?
+        repos[row[:path]] << row
+      end
+    end
+
+    if opts[:journal]
+      repos.each_pair do |repo, branch_changes|
+        puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
+        puts repo.cyan
+        branch_changes.each do |change|
+          puts "    change: #{change.inspect}" if opts[:debug]
+          puts "    #{change[:created_at]} #{change[:branch]}"
+        end
+      end
+    else
+      repos.each_pair do |repo, rows|
+        puts repo.cyan
+        rows.each do |row|
+          created_at = DateTime.strptime(row[:created_at], "%F %T").strftime("%F %T %a")
+          puts "    #{created_at}: #{row[:branch]}"
+        end
+      end
+    end
+    # ----------------------------------------------------------------------
+    # END MAIN
+    # ----------------------------------------------------------------------
   end
 end
 
@@ -42,14 +195,16 @@ end
 # Also this is super rarely needed (I hope) so I'm giving you an n+1
 # query. Cache your own ids, I'm tired.
 def prune_branches(path, db)
-  puts "pruning #{path}..."
+  puts "pruning branches for #{path}..."
   last_branch = nil
 
-  db.query("SELECT id, branch FROM branch_history WHERE path='#{path}' ORDER BY created_at ASC").each do |row|
+  query = "SELECT id, branch FROM branch_history WHERE path='#{path}' ORDER BY created_at ASC"
+  puts query.cyan if pretend? || verbose? || debug?
+  db.query(query).each do |row|
     branch = row[:branch]
     if branch == last_branch
       puts "Deleting row: #{row.inspect}"
-      db.execute("DELETE FROM branch_history WHERE id=?", row[:id])
+      db.execute("DELETE FROM branch_history WHERE id=?", row[:id]) unless pretend?
     else
       puts "Keeping row:  #{row.inspect}"
     end
@@ -62,7 +217,9 @@ end
 # --prune --all - clean up duplicates in all branches
 def prune_and_exit!(opts, db)
   paths = if opts[:all]
-            db.query("SELECT path FROM branch_history GROUP BY path ORDER BY path").map {|row| row[:path]}
+            query = "SELECT path FROM branch_history GROUP BY path ORDER BY path"
+            puts query.cyan if pretend? || verbose? || debug?
+            db.query(query).map {|row| row[:path]} unless pretend?
           else
             Array(opts[:path])
           end
@@ -75,119 +232,6 @@ def prune_and_exit!(opts, db)
 end
 
 
-opts = Optimist::options do
-  banner <<-USAGE
-git-branch-history - query the branch history log
-
-By default, gets the branch history of the current repo for last week
-
-If --date is given, --start and --end will be overridden to the Mon-Sun week containing that date.
-
-If none of --start, --end, or --date are given, defaults to last week.
-USAGE
-
-  opt :start, "Start date", short: :none, type: :string
-  opt :end, "End date", short: :none, type: :string
-  opt :date, "Sets --start and --end to week of Mon-Sun containing this date, or --date=today for current week", short: :none, type: :string
-
-  opt :latest, "Show only latest/current branches for each path only", default: false
-  opt :log, "Show journal/log of branch changes", default: false
-  opt :all, "Show branch history for all recorded repos", default: false
-  opt :path, "Path to specific repo (defaults to current folder)", type: :string
-  opt :journal, "Show all branches with switch times", default: false
-
-  opt :debug, "Dump extra debug information", short: :d, default: false
-  opt :verbose, "Be a bit extra chatty", default: false
-  opt :prune, "Prune duplicate branches (shouldn't need to be done ever, let alone often, but sometimes I write bugs)", default: false
-end
-
-puts "Opts exactly as given: #{opts.inspect}" if opts[:debug]
-
-Optimist::die("Cannot specify both --all and --path") if opts[:all_given] && opts[:path_given]
-
-opts[:path] = if opts[:all]
-                nil # force nil; otherwise
-              elsif opts[:path_given]
-                git_repo_for(File.expand_path(opts[:path]))
-              else
-                git_repo_for(Dir.pwd)
-              end
-
-puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
-
-if !opts[:date_given] && !opts[:start_given] && !opts[:end_given]
-  opts[:date] = Date.today.strftime("%F") # (Date.today - 7).strftime("%F")
-  opts[:date_given] = true # force the date_given math to happen next
-end
-
-opts[:date] = Date.today.strftime("%F") if opts[:date].downcase == "today"
-if opts[:date_given]
-  opts[:start] = start_of_week_for(opts[:date]).strftime("%F")
-  opts[:end] = end_of_week_for(opts[:date]).strftime("%F")
-end
-
-puts "Opts after processing: #{opts.inspect}" if opts[:debug]
-
-SHARE_FOLDER =  if ENV['IS_DOCKER_LOCAL'] == "1" then
-                  File.expand_path('/root/data_services_package/dataservices/haxx')
-                else
-                  File.expand_path('/Users/davidbrady/acima/devel/data_services_package/dataservices/haxx')
-                end
-
-DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
-
-wheres = []
-wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start_given]
-wheres << "DATE(created_at) < '#{opts[:end]}'" if opts[:end_given]
-wheres << "path = '#{opts[:path]}'" if opts[:path]
-
-where = if wheres.empty?
-          ""
-        else
-          where = "WHERE " + wheres.join(" AND ")
-        end
-
-order = opts[:log] ? 'created_at' : 'path, created_at'
-
-db = Extralite::Database.new(DATABASE_PATH)
-
-prune_and_exit!(opts, db) if opts[:prune]
-
-query = if opts[:journal]
-          <<QUERY
-SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at
-QUERY
-        elsif opts[:latest]
-          <<QUERY
-SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{where} GROUP BY path ORDER BY path
-QUERY
-        else
-          <<QUERY
-SELECT path, branch, created_at FROM branch_history #{where} ORDER BY #{order}
-QUERY
-        end
-
-repos = Hash.new {|h,k| h[k] = []}
-
-puts query.cyan if opts[:verbose]
-
-db.execute(query) do |row|
-  repos[row[:path]] << row
-end
-
-if opts[:journal]
-  puts repos.inspect if opts[:debug]
-  repos.each_pair do |repo, branch_changes|
-    puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
-    puts repo.cyan
-    branch_changes.each do |change|
-      puts "    change: #{change.inspect}" if opts[:debug]
-      puts "    #{change[:created_at]} #{change[:branch]}"
-    end
-  end
-else
-  repos.each_pair do |repo, rows|
-    puts repo.cyan
-    puts rows.map {|row| "    #{row[:created_at]}: #{row[:branch]}"}
-  end
+if __FILE__ == $0
+  Application.new.run
 end
