@@ -4,6 +4,9 @@ require "colorize"
 # mixin module to provide all the git/jira stuff I keep reusing everywhere.
 #
 
+# TODO add an optflag helper function maybe?
+# e.g. optflag :pants would do def pants?; opts[:pants]; end
+
 # The including class may wish to use opts = Optimist.options { ... }, and
 # capture debug, pretend and/or quiet. See scrapbin/ruby/new-ruby (in my
 # scrapbin repo) for an example.
