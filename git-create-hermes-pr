@@ -1,6 +1,11 @@
 #!/usr/bin/env ruby
 # git-hermes-create-pr - generate the link to create a PR against hermes-master
 require "cgi"
+require "colorize"
+
+puts " hermes-master is dead, long live master ".bold.white.on_red
+puts "        USE git-create-pr INSTEAD        ".bold.white.on_red
+exit -1
 
 # NOTE: This is cadged from my snow-create-pr-warehouse script
 home = "https://github.com/acima-credit/merchant_portal"
