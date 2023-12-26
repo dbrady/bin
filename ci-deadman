@@ -31,7 +31,9 @@ class Application
 
     while true
       now = Time.now
-      if is_during_work_hours?(now) then ciwhite else cioff end
+      # if is_during_work_hours?(now) then ciwhite else cioff end
+      system "clear && rubanner --font=miniwi --bg light_black 'ci-deadman' '#{now.strftime('%F %T')}'"
+      cioff
       seconds_to_sleep = 3600 - (now.min * 60 + now.sec)
 
       puts now.strftime("%T") unless quiet?
