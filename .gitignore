@@ -4,3 +4,4 @@ breakglass.log
 vpnwatch_logs/*
 __pycache__/*
 testit
+db/
