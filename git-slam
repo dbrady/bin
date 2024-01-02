@@ -20,6 +20,7 @@ This script is currently documentation checklist only. SO GO DO THIS, OKAY?
   mp-make-github-pr-text | pbcopy   to put the PR template in your clipboard
   git-create-pr                     to open the PR creation page
   git-set-pr <pr>                   to record the PR number after creation
+  @robby assign <pr>
 
 Options:
 BANNER
