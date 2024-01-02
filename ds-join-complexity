@@ -1,0 +1,3 @@
+#!/bin/bash
+# pig stupid scirpt to see the tables and CTE's joined in a query file
+ruby -ne 'puts $_ if @last_line || ($_ =~ /(^,.* as|with|join|union)/i && $_ !~ /^\s*--\s*select/i); @last_line = ($_ !~ /--/ && $_ =~ /from/i)' $1
