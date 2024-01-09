@@ -35,14 +35,14 @@ class Application
                 run_command("git stash")
               end
 
-    commands = <<-COMMANDS
-      git checkout #{parent_branch}
-      git pull
-      git checkout #{current_branch}
-      git rebase #{parent_branch}
-    COMMANDS
+    commands = [
+      "git checkout #{parent_branch}",
+      "git pull",
+      "git checkout #{current_branch}",
+    ]
+    commands << "git rebase #{parent_branch}" unless current_branch == "master" && parent_branch == "master"
 
-    run_command_chain commands.each_line.map(&:strip)
+    run_command_chain commands
 
     run_command "git stash apply" if stashed
   end
