@@ -3,8 +3,10 @@
 require "byebug"
 require "colorize"
 require "date"
-require "optimist"
 require "extralite"
+require "optimist"
+# require "tzinfo" # Grr. As of 2024-01-09 this Just Doesn't Work:tm: if you have concurrent-ruby-edge installed. Dear Future Me: debug this plz
+
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
@@ -21,6 +23,10 @@ class Application
 
   def journal?
     opts[:journal]
+  end
+
+  def utc?
+    opts[:utc]
   end
 
   # Return previous Monday.
@@ -53,6 +59,51 @@ class Application
     end
   end
 
+  # Prune duplicate branches from repo. Doesn't happen often, shouldn't happen
+  # ever, PITA to clean up from the console, so here's some code for you, Future
+  # Me, if you eff things up again like I did today. Love, Past Me. Maybe if I
+  # never use this again I can remove the --prune option.
+  #
+  # Also this is super rarely needed (I hope) so I'm giving you an n+1
+  # query. Cache your own ids, I'm tired.
+  def prune_branches(path, db)
+    puts "pruning branches for #{path}..."
+    last_branch = nil
+
+    query = "SELECT id, branch FROM branch_history WHERE path='#{path}' ORDER BY created_at ASC"
+    puts query.cyan if pretend? || verbose? || debug?
+    db.query(query).each do |row|
+      branch = row[:branch]
+      if branch == last_branch
+        puts "Deleting row: #{row.inspect}"
+        db.execute("DELETE FROM branch_history WHERE id=?", row[:id]) unless pretend?
+      else
+        puts "Keeping row:  #{row.inspect}"
+      end
+      last_branch = branch
+    end
+  end
+
+  # this would be unnecessary if the tzinfo gem wasn't currently incompatible with my current ruby setup
+  def tz_offset
+    puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
+    @tz_offset ||= get_command_output 'date "+%z"'
+  end
+
+  def local_tz_abbrev
+    puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
+    @local_tz_abbrev ||= get_command_output 'date "+%Z"'
+  end
+
+  def convert_to_localtime(time)
+    puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
+    sign, hours, minutes = tz_offset.match(/([+-])(\d{2})(\d{2})/).captures
+    hours = hours.to_i
+    minutes = minutes.to_i
+    days_offset = (hours*60 + minutes) / 1440.0
+    time.public_send(sign, days_offset)
+  end
+
   def run
     @opts = Optimist::options do
       banner <<-USAGE
@@ -74,6 +125,7 @@ USAGE
       opt :all, "Show branch history for all recorded repos", default: false
       opt :path, "Path to specific repo (defaults to current folder)", type: :string
       opt :journal, "Show all branches with switch times", default: false
+      opt :utc, "Show times in UTC rather than local timezone", short: :U, default: false
 
       opt :debug, "Dump extra debug information (Also set --verbose to log query results)", short: :d, default: false
       opt :pretend, "Print queries but do not run them", default: false
@@ -163,6 +215,10 @@ QUERY
       end
     end
 
+    if repos.empty?
+      puts "No repos found for query: #{where}"
+    end
+
     if opts[:journal]
       repos.each_pair do |repo, branch_changes|
         puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
@@ -176,7 +232,12 @@ QUERY
       repos.each_pair do |repo, rows|
         puts repo.cyan
         rows.each do |row|
-          created_at = DateTime.strptime(row[:created_at], "%F %T").strftime("%F %T %a")
+          created_at_utc = DateTime.strptime(row[:created_at], "%F %T")
+          created_at = if utc?
+                         created_at_utc.strftime("%F %T %a UTC")
+                       else
+                         convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
+                       end
           puts "    #{created_at}: #{row[:branch]}"
         end
       end
@@ -187,30 +248,6 @@ QUERY
   end
 end
 
-# Prune duplicate branches from repo. Doesn't happen often, shouldn't happen
-# ever, PITA to clean up from the console, so here's some code for you, Future
-# Me, if you eff things up again like I did today. Love, Past Me. Maybe if I
-# never use this again I can remove the --prune option.
-#
-# Also this is super rarely needed (I hope) so I'm giving you an n+1
-# query. Cache your own ids, I'm tired.
-def prune_branches(path, db)
-  puts "pruning branches for #{path}..."
-  last_branch = nil
-
-  query = "SELECT id, branch FROM branch_history WHERE path='#{path}' ORDER BY created_at ASC"
-  puts query.cyan if pretend? || verbose? || debug?
-  db.query(query).each do |row|
-    branch = row[:branch]
-    if branch == last_branch
-      puts "Deleting row: #{row.inspect}"
-      db.execute("DELETE FROM branch_history WHERE id=?", row[:id]) unless pretend?
-    else
-      puts "Keeping row:  #{row.inspect}"
-    end
-    last_branch = branch
-  end
-end
 
 # prune_and_exit! - Clean up duplicate branches. Shouldn't happen ever. Doesn't happen often. Pain in the ass to clean up.
 # --prune - clean up duplicate branchs from current repo
