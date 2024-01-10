@@ -5,7 +5,13 @@ require "colorize"
 require "date"
 require "extralite"
 require "optimist"
-# require "tzinfo" # Grr. As of 2024-01-09 this Just Doesn't Work:tm: if you have concurrent-ruby-edge installed. Dear Future Me: debug this plz
+$has_tzinfo = true
+begin
+  # Broken on ruby 3.2.2 in MP because it depends on a conflicting version of concurrent-ruby
+  require "tzinfo"
+rescue LoadError
+  $has_tzinfo = false
+end
 
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
@@ -85,6 +91,19 @@ class Application
   end
 
   # this would be unnecessary if the tzinfo gem wasn't currently incompatible with my current ruby setup
+  def convert_to_localtime_poro(time)
+    puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
+    sign, hours, minutes = tz_offset.match(/([+-])(\d{2})(\d{2})/).captures
+    hours = hours.to_i
+    minutes = minutes.to_i
+    days_offset = (hours*60 + minutes) / 1440.0
+    time.public_send(sign, days_offset)
+  end
+
+  def convert_to_localtime_tzinfo(time)
+    TZInfo::Timezone.get('America/Denver').utc_to_local(time)
+  end
+
   def tz_offset
     puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
     @tz_offset ||= get_command_output 'date "+%z"'
@@ -96,12 +115,11 @@ class Application
   end
 
   def convert_to_localtime(time)
-    puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
-    sign, hours, minutes = tz_offset.match(/([+-])(\d{2})(\d{2})/).captures
-    hours = hours.to_i
-    minutes = minutes.to_i
-    days_offset = (hours*60 + minutes) / 1440.0
-    time.public_send(sign, days_offset)
+    if $has_tzinfo
+      convert_to_localtime_tzinfo(time)
+    else
+      convert_to_localtime_poro(time)
+    end
   end
 
   def run
@@ -211,6 +229,12 @@ QUERY
     if !pretend?
       db.query(query) do |row|
         puts row.inspect if debug? && verbose?
+        repos[row[:path]] << row
+      end
+    end
+
+    if repos.empty?
+      db.query("SELECT path, branch, created_at FROM branch_history WHERE path = '#{opts[:path]}' ORDER BY created_at DESC LIMIT 1") do |row|
         repos[row[:path]] << row
       end
     end
