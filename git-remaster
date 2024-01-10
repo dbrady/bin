@@ -15,8 +15,15 @@ class Application
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
       opt :stash, "Stash and reapply changes around rebase", default: false
+      opt :flowchart, "Show mermaid flowchart and exit", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+
+    if opts[:flowchart]
+      puts flowchart
+      exit
+    end
+
     current_branch = `git current-branch`.strip
     parent_branch = ARGV.first || `git main-branch`.strip
 
@@ -45,6 +52,52 @@ class Application
     run_command_chain commands
 
     run_command "git stash apply" if stashed
+  end
+
+  def flowchart
+    tmp = <<PANTS
+graph TD
+    A[Enter Chart Definition] --> B(Preview)
+    B --> C{decide}
+    C --> D[Keep]
+    C --> E[Edit Definition]
+    E --> B
+    D --> F[Save Image and Code]
+    F --> B
+    id
+PANTS
+
+    str = <<FLOWCHART
+---
+Title: git remaster
+---
+flowchart TD
+    start[Start]
+    is_clean{git isclean}
+    git_stash{git stash}
+    go_parent(git checkout parent)
+    git_pull(git_pull)
+    go_branch(git checkout branch)
+    git_rebase(git rebase parent)
+    was_clean{Was git isclean clean?}
+    stash_apply(git stash apply)
+    done[Done]
+
+    start-->is_clean
+    is_clean-->|Yes|go_parent
+    is_clean-->|No|git_stash
+
+    git_stash-->go_parent
+    go_parent-->git_pull
+    git_pull-->go_branch
+    go_branch-->git_rebase
+    git_rebase-->was_clean
+    was_clean-->|Yes|done
+    was_clean-->|No|stash_apply
+    stash_apply-->done
+FLOWCHART
+
+    str
   end
 
   def run_command_chain(commands)
