@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
-# git-log-branch <path/to/repo> - Record current branch of repo in that repo's .git/branch.log
-# ideally set this up to run regularly; see ds-watch-branches
+# git-log-branch [<path/to/repo>] - Record current branch of repo.
+# Log history is kept in ~/bin/db/git-branch-history.db
+#
+
+# TODO: Update to dbrady_cli. This is from before the dbrady_cli lib
+
 require 'colorize'
 require 'optimist'
 require 'extralite'
@@ -9,9 +13,9 @@ require 'extralite'
 SHARE_FOLDER = File.expand_path('~/bin/db')
 DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
-LOG_INFO=:white
-LOG_QUERY=:cyan
-LOG_PRINT=:normal
+LOG_COLOR_INFO=:white
+LOG_COLOR_QUERY=:cyan
+LOG_COLOR_PRINT=:normal
 
 class GitBranchLogger
   def initialize(opts)
@@ -21,16 +25,28 @@ class GitBranchLogger
   end
 
   def opts; @opts; end
-  def debug?; !!opts[:debug]; end
-  def drop?; !!opts[:drop]; end
-  def print?; !!opts[:print]; end
+  def debug?; opts[:debug]; end
+  def drop?; opts[:drop]; end
+  def print?; opts[:print]; end
 
-  def log(msg, level: LOG_INFO, force: false)
-    puts msg.send(level) if force || debug?
+  # Log a message if --debug option is passed.
+  # Call with force: true to make it always print, debug or no.
+  def log(msg, color: LOG_COLOR_INFO, force: false)
+    return unless force || debug?
+
+    timestamp = DateTime.now.strftime("%F %T")
+    message = "%s: %s" % [timestamp, msg.send(color)]
+    puts message
   end
 
+  # Log a message if --print option is passed.
   def print(msg)
-    puts msg if print?
+    return unless print?
+
+    timestamp = DateTime.now.strftime("%F %T")
+    message = "%s: %s" % [timestamp, msg]
+
+    puts message if print?
   end
 
   def db
@@ -74,10 +90,10 @@ class GitBranchLogger
   # Walk up file tree looking for a .git folder
   # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
   def git_repo_for(path)
-    oh_noes = 10
+    attempts_remaining = 10
     while !path.empty?
-      oh_noes -= 1
-      raise "CANNOT FIGURE OUT PATH FOR #{path.inspect}" unless oh_noes > 0
+      attempts_remaining -= 1
+      raise "CANNOT FIGURE OUT PATH FOR #{path.inspect}" unless attempts_remaining > 0
       return path if is_git_repo?(path)
       path = File.split(path).first
     end
@@ -85,7 +101,10 @@ class GitBranchLogger
 
   def run
     path = git_repo_for(File.expand_path(ARGV.last || Dir.pwd))
-    exit 0 unless is_git_repo?(path)
+    if !is_git_repo?(path)
+      print "No git repo detected in #{path} or ancestors. Not logging."
+      exit 0
+    end
 
     drop_table if drop?
     ensure_table_exists
@@ -93,13 +112,14 @@ class GitBranchLogger
     current_branch = `(cd #{path} && git current-branch)`.strip
     last_branch = load_most_recent_branch_for(path)
 
-
     if last_branch != current_branch
-      puts "last_branch was #{last_branch.inspect}, current_branch is #{current_branch}; logging" if debug?
+      print "last_branch was #{last_branch.inspect}, current_branch is #{current_branch}; logging this branch." if debug?
       print "Logging branch: #{path.inspect} is on #{current_branch.inspect}"
       log_branch(path, current_branch) if last_branch != current_branch
+    else
+      log "last_branch and current_branch are both #{current_branch}. Not logging." if debug?
     end
-
+    print "current_branch: #{current_branch}"
   end
 end
 
