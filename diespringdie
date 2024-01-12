@@ -8,23 +8,51 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  def force?
+    opts[:force]
+  end
+
   def run
     @opts = Optimist.options do
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :force, "After asking spring politely to shut down, get real intense if necessary", default: false
       opt :quiet, "Run with minimal output", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
     puts "Checking for running spring processes..."
-    puts spring_is_running?.inspect
+    puts "spring_is_running? #{spring_is_running?.inspect}"
 
     puts "Asking spring politely to go quietly into that good night..."
     pid_lines = spring_pids
-    pid_lines.each.with_index {|line, index| puts "#{index}: #{line}"}
-    puts pid_lines.map {|pid_line| pid_line.split[1] }
+    # pid_lines.each.with_index {|line, index| puts "#{index}: #{line}"}
+    pids = pid_lines.map {|pid_line| pid_line.split[1] }
+    pids.each do |pid|
+      run_command "kill #{pid}"
+    end
+
+    if force?
+      sleep 5
+
+      puts "Telling spring to go, kicking and screaming if necessary..."
+      pid_lines = spring_pids
+      # pid_lines.each.with_index {|line, index| puts "#{index}: #{line}"}
+      pids = pid_lines.map {|pid_line| pid_line.split[1] }
+      pids.each do |pid|
+        run_command "kill -9 #{pid}"
+      end
+    end
+
+    sleep 5
+    puts "All done."
+    puts "spring_is_running? #{spring_is_running?.inspect}"
+
+    if spring_is_running?
+      spring_pids.each.with_index {|line, index| puts "#{index}: #{line}"}
+    end
   end
 
   def spring_is_running?
