@@ -40,6 +40,10 @@ puts opts.inspect if opts[:debug]
 range = "-n 10"
 
 range = if ARGV.empty?
+          # TODO: if `git get-parent` existed (presumably also git set-parent)
+          # we could run this on a branch tipped from something other than main.
+          # You CAN do it by specifying the parent branch explicitly but it's
+          # kind of a drag.
           `git main-branch`.strip + "..HEAD"
         elsif ARGV.size == 2
           # git files-changed abc123 def456
