@@ -38,7 +38,11 @@ class Application
 
       opt :autocorrect, "Automatically fix correctable issues", short: :a, default: false
       opt :"autocorrect-all", "Automatically fix correctable issues", short: :A, default: false
-    end
+      opt :"display-style-guide", "Display style guide in offense messages", short: :S, default: true
+      opt :"extra-details", "Show extra details in offense messages", short: :E, default: true
+      opt :"except", "Exclude the given cop(s)", type: :string
+      opt :"only", "Only run the given cop(s)", type: :string
+   end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
 
@@ -87,15 +91,35 @@ class Application
       puts files.map {|file| "  #{file}"}
     end
 
-    autocorrect_arg = if opts[:autocorrect]
-                        "-a"
-                      elsif opts[:"autocorrect-all"]
-                        "-A"
-                      else
-                        ""
-                      end
+    if files.empty?
+      puts "No files changed since #{opts[:since]}"
+      exit 0
+    end
 
-    command = "rubocop #{autocorrect_arg} #{files.join(' ')}".sub('rubocop  ', 'rubocop ')
+    passthrough_flags = {
+      autocorrect: "-a",
+      "autocorrect-all": "-A",
+      "display-style-guide": "-S",
+      "extra-details": "-E",
+    }.select { |key, _| opts[key] }.values
+
+    passthrough_options = {
+      "except": "--except",
+      "only": "--only",
+    }.select { |key, _| opts[key] }.map { |key, value| "#{value}=#{opts[key]}" }
+
+    passthrough_args = (passthrough_flags + passthrough_options) * ' '
+
+    # autocorrect_arg = if opts[:autocorrect]
+    #                     "-a"
+    #                   elsif opts[:"autocorrect-all"]
+    #                     "-A"
+    #                   else
+    #                     ""
+    #                   end
+
+    # command = "rubocop #{autocorrect_arg} #{files.join(' ')}".sub('rubocop  ', 'rubocop ')
+    command = "rubocop #{passthrough_args} #{files.join(' ')}".sub('rubocop  ', 'rubocop ')
 
     puts command.cyan
     system command unless opts[:pretend]
