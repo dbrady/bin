@@ -9,7 +9,6 @@ require 'colorize'
 require 'optimist'
 require 'extralite'
 
-# blegh. I gotta set up a clean host/container share...
 SHARE_FOLDER = File.expand_path('~/bin/db')
 DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
 
