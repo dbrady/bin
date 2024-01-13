@@ -14,6 +14,8 @@ settingses = [
   TmuxSettings.new(name: "cf", folder: "contract_funding", commands: "bin/start"),
   TmuxSettings.new(name: "ci-deadman", folder: "../../../bin", commands: "ci-deadman"),
   TmuxSettings.new(name: "git-watch", folder: "merchant_portal", commands: "watch -n 60 'git log-branch -p"),
+  # TmuxSettings.new(name: "elasticsearch", folder: "elasticsearch-8.11.3", commands: "bin/elasticsearch"),
+
 ]
 $logging = true
 
