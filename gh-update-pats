@@ -1,0 +1,121 @@
+#!/usr/bin/env ruby
+# gh-update-pats <new_pat> - Update github PATs
+#
+# This script will update
+# ~/.bundle/config and
+# ~/acima/devel/application_management_system/.bundle/config with your new
+# Personal Access Token, since bundle config doesn't bundle config.
+#
+# DevOps has a document on Confluence that says how to create a personal access
+# token, but it is incomplete (doesn't say which permissions are necessary), so
+# I'm dumbing this down so Dave At 4am can follow these instructions.
+#
+# https://acima.atlassian.net/wiki/spaces/DEVOPS/pages/198148163/GitHub+SSH+Personal+Access+Tokens
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+  attr_reader :pat
+
+  # Update this if you don't put your code where I do.
+  ACIMA_DEVEL = "~/acima/devel"
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+gh-update-pats <new_pat> - Update github PATs
+
+This fixes this error:
+
+```
+Fetching source index from https://rubygems.pkg.github.com/acima-credit/
+
+#{'Bad username or password for https://dbrady@rubygems.pkg.github.com/acima-credit/.'.red}
+#{'Please double-check your credentials and correct them.'.red}
+```
+
+1. Go to github, click on your portrait in the upper right, click Settings
+
+2. In the left sidebar click < > Developer Settings
+
+3. On the new page, in the left sidebar, click Personal access tokens to open
+   a dropdown and choose Tokens (classic)
+
+4. In the upper right click the button that says Generate New Token
+
+5. If you get challenged for a 2FA here, the code you want is in Google
+   Authenticator, not Duo
+
+6. Unclear which privileges are needed, there is no documentation and apparently
+   no living witnesses.*
+
+   These privileges were enough the last time I checked, but may be
+   overpermissive: admin:public_key, admin:repo_hook, delete:packages, repo,
+   user, workflow, write:packages
+
+7. Click the Generate New Token button and WATCH OUT: you'll go back to the
+   list of tokens, there will be a green box with your new token in it, right
+   belowe a blue box saying "Make sure to copy this token... you won't see this
+   again!". THEY ARE NOT KIDDING.
+
+8. COPY THE TOKEN NOW
+
+9. Click Configure SSO to open the list of orgs. Click "Authorize" next to
+   acima-credit. THIS WILL REDIRECT TO YOU AWAY FROM THIS PAGE so I really hope
+   you copied the token when I told you to. If you didn't, this was all just for
+   practice. Go back to step 7, you silly goose.
+
+10. Open .bundle/config and update the BUNDLE_HTTPS line with the correct PAT.
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    @pat = ARGV.first
+
+    raise "You must provide a github personal access token!" unless pat =~ /^ghp_/
+
+    files = [
+      "~/.bundle/config",
+      "#{ACIMA_DEVEL}/application_management_system/.bundle/config",
+    ].map {|file| File.expand_path(file)}
+
+    tokens = [
+      "BUNDLE_RUBYGEMS__PKG__GITHUB__COM",
+      "BUNDLE_HTTPS://RUBYGEMS__PKG__GITHUB__COM/ACIMA___CREDIT/"
+    ]
+
+    files.each do |file|
+      puts file
+      lines = File.readlines(File.expand_path(file)).map(&:strip)
+      tokens.each do |token|
+        lines.reject! {|line| line =~ /^\s*#{token}/}
+        lines << "#{token}: #{pat}"
+      end
+      puts lines
+      puts "##############"
+
+      timestamp = Time.now.strftime("%Y%m%s%H%M%S")
+      backupfile = "#{file}.#{timestamp}"
+      run_command "cp #{file} #{backupfile}"
+      File.open(file, "w") {|fp| fp.puts lines }
+      puts "Wrote #{file}"
+    end
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
+# 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
