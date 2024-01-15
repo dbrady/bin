@@ -1,8 +1,5 @@
 #!/bin/bash
-if ! git-isclean; then
-    echo "You have modified files and/or something alreday staged. Commit or stash other changes first. Aborting."
-    exit -1
-fi
+# git add-new <file> [<file2> [...]]
 
 # commify args. `git add-new a b c d` -> "a, b, c, d"
 # first time through loop, files and glue expand to empty string.
@@ -10,6 +7,18 @@ for i in $@; do
     files="$files$glue$i"
     glue=', '
 done
+
+# TODO: Do a git commit --amend if
+# - file I'm adding is already in git
+# - the only modified file is the file I'm adding
+# - the last commit was the add-new for that file
+if ! git-isclean; then
+    echo "You have modified files and/or something alreday staged. Commit or stash other changes first. Or manually add them with"
+    echo "git add $@"
+    echo "git commit -m \"Add $files\""
+    exit -1
+fi
+
 
 echo git add $@
 git add $@
