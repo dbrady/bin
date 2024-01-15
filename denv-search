@@ -1,0 +1,5 @@
+#!/bin/bash
+# Search through your MP env files
+#
+# TODO: Appify this and show "this was set in .env but .dev overrode and then .local.env did too" etc
+grep "$@" .*env
