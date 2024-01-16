@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ `uname -s` != 'Darwin' ]; then
+    echo "Currently this script only works on OSX. Idk what the clipboard command is and/or what apt pkg to install for linux"
+    exit 1
+fi
+
+echo "bin/rspec $(rfv)"
+echo "bin/rspec $(rfv)" | pbcopy
