@@ -1,5 +1,5 @@
 #!/bin/bash
-# rfg - "rspec go" rus specs focused on a specific subset, set by rff ("rspec focus")
+# rfg - "rspec go" run specs focused on a specific subset, set by rff ("rspec focus")
 #
 
 # TODO: Use tee to catch pending and turn on warnings:
@@ -69,6 +69,31 @@ cirun
 # e.g. if output includes /[1-9]+ failures/ cifail
 # and if output include /[1-9]+ pending/ ciwarn
 #
+# ^^^ TODONT: But don't bother until I have a team that cares about warning-free
+# specs. (And then, make it optional. I originally just cut this over rather
+# than trying to make it bimodal.)
+
+# TODO: Swap intelligently between bin/rspec and bundle exec rspec. On my
+# current project, binstubs are smart enough to invoke bundle exec anyway, so
+# the smart version might just be "favor bin/rspec if present, fall back to
+# bundle exec rspec if there's a Gemfile, otherwise run bare rspec
+
+# if .spec_focus contains "rspec" it means I dumped the ENTIRE spec command in
+# there, likely to prepend environment switches like SPEC_SEED=true. This is
+# useful for env seeds but forces me to lock into bin/rspec or bundle exec
+# rspec. For a one-off, that's fine. Especially since I also cut over from
+# bundle exec rspec to bin/rspec.
+#
+# If not, assume spec_focus contains just the args to pass to bin/rspec
+#
+# TODO: If you put SPEC_SEED=true bin/rspec app/models/user_spec.rb, this will
+# blow up trying to execute the command `SPEC_SEED=true`. Right now this is
+# manually overridable with `SPEC_SEED=true rfg`. To make this work the way I
+# want, I might want to port this to ruby and either port spec_foci to a
+# database (like sqlite3 db in the newly-minted ~/bin/db folder) or have ruby
+# split the spec_focus around the rspec command, and anything in front of it, of
+# the form X=Y, gets rolled up into a custom argument to system, like
+# `system(custom_env, rspec_command, args)`
 grep -E "\brspec\b" ~/.spec_focus &&
-    ((echo found rspec running explicitly) && (time bash ~/.spec_focus) && cipass || (cifail && exit -1)) ||
+    ((echo ~/.spec_focus explicitly invokes rspec, honoring full command) && (time bash ~/.spec_focus) && cipass || (cifail && exit -1)) ||
         (time bin/rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
