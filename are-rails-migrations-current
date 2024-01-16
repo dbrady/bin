@@ -32,12 +32,14 @@ def database_name(env: "development")
               when "merchant_portal" then "merchant_portal_development"
               when "underwriting" then "underwriting_development_leases"
               when "credit_card_service" then "credit_card_development"
+              when "contract-funding" then "contract_funding_development"
               end
             when "test"
               case folder
               when "merchant_portal" then "merchant_portal_test"
               when "underwriting" then "underwriting_test_leases"
               when "credit_card_service" then "credit_card_test"
+              when "contract-funding" then "contract_funding_test"
               end
             end
 
