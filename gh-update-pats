@@ -87,6 +87,7 @@ BANNER
     files = [
       "~/.bundle/config",
       "#{ACIMA_DEVEL}/application_management_system/.bundle/config",
+      "#{ACIMA_DEVEL}/merchant_portal/.bundle/config",
     ].map {|file| File.expand_path(file)}
 
     tokens = [
