@@ -33,7 +33,7 @@ BANNER
     puts opts.inspect if opts[:debug]
 
     # APP CODE GOES HERE
-    puts "This script is currently documentation checklist only. RERUN WITH --help AND GO DO THAT, OKAY?"
+    system "git-slam --help" unless opts[:help_given]
   end
 
 end
