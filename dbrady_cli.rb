@@ -33,21 +33,18 @@ module DbradyCli
   # BASH STUFF
   # ----------------------------------------------------------------------
 
-  # Log a command to the console, then run it, and raise an exception if fails.
+  # Log a command to the console, then run it (unless --pretend), and raise an
+  # exception if fails.
   def run_command!(command, quiet: false, pretend: false)
     puts "run_command!: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
-    success = if pretend?
-                true
-              else
-                system command
-              end
+
+    success = pretend? || system(command)
     raise "run_command! failed running #{command.inspect}" unless success
     success
   end
 
-  # Log and run a command, and return its exit status.
-  # Returns true if --pretend
+  # Log and run a command (unless --pretend), and return its exit status.
   def run_command(command)
     puts "run_command: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
