@@ -11,6 +11,16 @@
 # I'm dumbing this down so Dave At 4am can follow these instructions.
 #
 # https://acima.atlassian.net/wiki/spaces/DEVOPS/pages/198148163/GitHub+SSH+Personal+Access+Tokens
+#
+# IF YOU ARE READING THIS AND YOU ARE NOT DAVE:
+#
+# 1. Try just following the instructions down in the BANNER section below.
+#
+# If you still want to use this script, you'll want dbrady_cli.rb from this repo
+# (or just clone the repo), you'll need the optimist and colorize gems, and
+# you'll want to update the ACIMA_DEVEL constant below to point where you keep
+# your acima projects.
+
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
@@ -68,7 +78,8 @@ Fetching source index from https://rubygems.pkg.github.com/acima-credit/
    you copied the token when I told you to. If you didn't, this was all just for
    practice. Go back to step 7, you silly goose.
 
-10. Open .bundle/config and update the BUNDLE_HTTPS line with the correct PAT.
+10. Open .bundle/config and update the BUNDLE_HTTPS line with the correct
+   PAT. THIS SCRIPT WILL DO THIS PART FOR YOU, BUT YOU NEED TO THE REST FIRST.
 
 Options:
 BANNER
