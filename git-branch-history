@@ -18,8 +18,7 @@ String.disable_colorization unless $stdout.tty?
 
 class Application
   include DbradyCli
-  SHARE_FOLDER = File.expand_path('~/bin/db')
-  DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
+  DATABASE_PATH = File.expand_path('~/bin/db/git-branch-history.db')
 
   attr_reader :db
 
@@ -44,7 +43,9 @@ class Application
   # Return following Monday, that way datetimes on Sunday night will show up as
   # less that DATE(next monday).
   def end_of_week_for(date)
-    start_of_week_for(date) + 7
+    (start_of_week_for(date) + 7).tap do |end_date|
+      puts "end_of_week_for(#{date.inspect}) is #{end_date}" if debug?
+    end
   end
 
   # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
@@ -64,6 +65,8 @@ class Application
       raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
     end
   end
+
+  # TODO: Add a pruning option to clear out testing branches
 
   # Prune duplicate branches from repo. Doesn't happen often, shouldn't happen
   # ever, PITA to clean up from the console, so here's some code for you, Future
@@ -175,6 +178,50 @@ USAGE
     puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
 
     date_specified = (opts[:date_given] && opts[:date] != /(today|recent)/) || opts[:start_given] || opts[:end_given]
+
+
+    # fixup the dates
+    # if latest:
+    #   no dates, show last branch no matter what
+
+    # end_date:
+    #   if no end_date, date, today, or latest:
+    #       today
+    #   else
+    #       what was specified
+
+    # start_date:
+    #   if no start_date, date, today, thisweek, lastweek:
+    #     today.monday? ? 3.days.ago : 1.day.ago
+    #   if start_date or date
+    #     use it
+    #   if today
+    #     today
+    #   if thisweek or lastweek
+    #     do the calculation
+
+    # TODO: Add a fallback option to grab latest if there are no branches in
+    # current range, so you never get a blank report
+
+
+    # start_date:
+    #   if no start_date, date, today, recent, or
+    # TODO: BUG - on 2024-01-25 this was backdating a whole week no matter what
+    # --start, --end, or --date I gave it. Running -vd showed the query
+    # selecting between 2024-01-15 and 2024-01-19
+
+    # TDD:
+    # Assuming today is Thursday, January 25, 2024
+    # Last week is Mon 1/15 to Fri 1/19
+    # This week is Mon 1/22 to Fri 1/26
+    #
+    # | Args:                               | Query range                                            |
+    # |                                     |
+    # | --start=2024-01-01 --end=2024-01-31 | DATE(created_at) BETWEEN '2024-01-01' AND '2024-01-31' |
+
+    puts "Date ranges are broken. Fix this script. Until then, here's the last 72 hours.".yellow
+    opts[:start] = (Date.today - 3).strftime("%F")
+    opts[:end] = (Date.today + 3).strftime("%F")
 
     opts[:date] = nil if opts[:date] == "all"
     opts[:date] = (Date.today - 7).strftime("%F") if opts[:date] == "recent"
