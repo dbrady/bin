@@ -19,6 +19,8 @@ class Application
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
       opt :time, "Time command", default: false
+
+      opt :tasks, "List tasks", short: :T, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -29,8 +31,16 @@ class Application
     run_command command
   end
 
+  def passthrough_args
+    # For now we have to whitelist any args we want to pass through to rails
+    # TODO: Is there a way take make Optimist leave args it doesn't recognize in ARGV?
+    {
+      tasks: "-T"
+    }.map {|option, arg| arg if opts[option] }.compact
+  end
+
   def arglist
-    ARGV.map {|arg| arg.match(/\s+/) ? arg.inspect : arg }.join(' ')
+    (passthrough_args + ARGV.map {|arg| arg.match(/\s+/) ? arg.inspect : arg }).join(' ')
   end
 
   def ensure_aws_sso_login

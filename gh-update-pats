@@ -16,10 +16,10 @@
 #
 # 1. Try just following the instructions down in the BANNER section below.
 #
-# If you still want to use this script, you'll want dbrady_cli.rb from this repo
-# (or just clone the repo), you'll need the optimist and colorize gems, and
-# you'll want to update the ACIMA_DEVEL constant below to point where you keep
-# your acima projects.
+# 2. If you still want to use this script, update the ACIMA_DEVEL constant below
+#    to point where you keep your acima projects. You'll also want to `gem
+#    install optimist colorize` and you'll need dbrady_cli.rb from this same
+#    repo.
 
 require "colorize"
 require "optimist"
