@@ -1,27 +1,19 @@
 #!/usr/bin/env ruby
 # git-home - Open the github homepage for the current project
-puts "Opening the github homepage for this project: "
-# TODO: consider reading this directly from .git/config to avoid the 2-3s network delay?
-#       - Upside: fast, I hate waiting
-#       - Downside: breaks if they ever change the parsing structure
-#       - Downside: I'd have to write the parser
 require "colorize"
-
-url=`git remote get-url origin`
 
 def osx?
   `uname -s`.strip == 'Darwin'
 end
 
-# url can be of the form git@server (for ssh mode) or https:// for web mode
-# if it's http mode we're already done; if ssh we need to massage it
-if url !~ /^http/
-  url = url.sub(/:/, "/").sub(/^.*@/, "https://")
+puts "Opening the github homepage for this project: "
+
+url = `git-home-url`.strip
+
+def osx?
+  `uname -s`.strip == 'Darwin'
 end
 
-url = url.sub(/.git$/, '').strip
-
-# Tell user what we're gonna open
 puts url.on_green
 
 if osx?
