@@ -35,7 +35,7 @@ module DbradyCli
 
   # Log a command to the console, then run it (unless --pretend), and raise an
   # exception if fails.
-  def run_command!(command, quiet: false, pretend: false)
+  def run_command!(command, quiet: false)
     puts "run_command!: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
 
@@ -45,10 +45,17 @@ module DbradyCli
   end
 
   # Log and run a command (unless --pretend), and return its exit status.
-  def run_command(command)
+  # if force=true, run the command even if we're in pretend mode (use this
+  # for commands that are not dangerous, like git isclean)
+  def run_command(command, force: true)
     puts "run_command: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
-    pretend? || system(command)
+
+    if force
+      system command
+    else
+      pretend? || system(command)
+    end
   end
 
   def get_command_output_lines(command)
@@ -100,6 +107,11 @@ module DbradyCli
 
   def git_main_branch
     `git main-branch`.strip
+  end
+
+  # returns true if there are no outstanding changes to commit or stash
+  def git_isclean
+    run_command "git isclean", force: true
   end
 end
 
