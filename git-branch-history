@@ -34,20 +34,6 @@ class Application
     opts[:utc]
   end
 
-  # Return previous Monday.
-  def start_of_week_for(date)
-    date = Date.parse(date)
-    date - (date.wday-1) % 7
-  end
-
-  # Return following Monday, that way datetimes on Sunday night will show up as
-  # less that DATE(next monday).
-  def end_of_week_for(date)
-    (start_of_week_for(date) + 7).tap do |end_date|
-      puts "end_of_week_for(#{date.inspect}) is #{end_date}" if debug?
-    end
-  end
-
   # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
   # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
   def is_git_repo?(path)
@@ -103,6 +89,7 @@ class Application
     time.public_send(sign, days_offset)
   end
 
+  # when/if tzinfo isn't broken, this is the cleaaner version
   def convert_to_localtime_tzinfo(time)
     TZInfo::Timezone.get('America/Denver').utc_to_local(time)
   end
@@ -132,16 +119,12 @@ git-branch-history - query the branch history log
 
 By default, gets the branch history of the current repo for last week
 
-If --date is given, --start and --end will be overridden to the Mon-Sun week containing that date.
-
-If none of --start, --end, or --date are given, defaults to last week.
+If --start is not given, assumes three days ago.
 USAGE
 
       opt :start, "Start date", short: :none, type: :string
       opt :end, "End date", short: :none, type: :string
-      opt :date, "Sets --start and --end to week of Mon-Sun containing this date, --date=recent for week prior, --date=full for all dates, or --date=today for JUST the current day", short: :none, type: :string, default: "recent"
 
-      opt :latest, "Show only latest/current branches for each path only", default: false
       opt :log, "Show journal/log of branch changes", default: false
       opt :all, "Show branch history for all recorded repos", default: false
       opt :path, "Path to specific repo (defaults to current folder)", type: :string
@@ -165,7 +148,6 @@ USAGE
     end
 
     Optimist::die("Cannot specify both --all and --path") if opts[:all_given] && opts[:path_given]
-    Optimist::die("Cannot specify --start/--end if --date is given") if (opts[:start_given] || opts[:end_given]) && opts[:date_given]
 
     opts[:path] = if opts[:all]
                     nil # force nil; otherwise
@@ -177,62 +159,8 @@ USAGE
 
     puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
 
-    date_specified = (opts[:date_given] && opts[:date] != /(today|recent)/) || opts[:start_given] || opts[:end_given]
-
-
-    # fixup the dates
-    # if latest:
-    #   no dates, show last branch no matter what
-
-    # end_date:
-    #   if no end_date, date, today, or latest:
-    #       today
-    #   else
-    #       what was specified
-
-    # start_date:
-    #   if no start_date, date, today, thisweek, lastweek:
-    #     today.monday? ? 3.days.ago : 1.day.ago
-    #   if start_date or date
-    #     use it
-    #   if today
-    #     today
-    #   if thisweek or lastweek
-    #     do the calculation
-
-    # TODO: Add a fallback option to grab latest if there are no branches in
-    # current range, so you never get a blank report
-
-
-    # start_date:
-    #   if no start_date, date, today, recent, or
-    # TODO: BUG - on 2024-01-25 this was backdating a whole week no matter what
-    # --start, --end, or --date I gave it. Running -vd showed the query
-    # selecting between 2024-01-15 and 2024-01-19
-
-    # TDD:
-    # Assuming today is Thursday, January 25, 2024
-    # Last week is Mon 1/15 to Fri 1/19
-    # This week is Mon 1/22 to Fri 1/26
-    #
-    # | Args:                               | Query range                                            |
-    # |                                     |
-    # | --start=2024-01-01 --end=2024-01-31 | DATE(created_at) BETWEEN '2024-01-01' AND '2024-01-31' |
-
-    puts "Date ranges are broken. Fix this script. Until then, here's the last 72 hours.".yellow
-    opts[:start] = (Date.today - 3).strftime("%F")
-    opts[:end] = (Date.today + 3).strftime("%F")
-
-    opts[:date] = nil if opts[:date] == "all"
-    opts[:date] = (Date.today - 7).strftime("%F") if opts[:date] == "recent"
-    # opts[:start] = start_of_week_for(Date.today.strftime("%F")).strftime("%F") if opts[:date] == "recent"
-    if opts[:date] == "today"
-      opts[:start] = Date.today.strftime("%F")
-      opts[:end] = (Date.today + 1).strftime("%F")
-    elsif opts[:date]
-      opts[:start] = start_of_week_for(opts[:date]).strftime("%F")
-      opts[:end] = end_of_week_for(opts[:date]).strftime("%F")
-    end
+    opts[:start] ||= (Date.today - 3).strftime("%F")
+    opts[:end] ||= (Date.today + 1).strftime("%F")
 
     puts "Opts after processing: #{opts.inspect}" if opts[:debug]
 
