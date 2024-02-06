@@ -34,6 +34,10 @@ class Application
     opts[:utc]
   end
 
+  def console?
+    opts[:console]
+  end
+
   # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
   # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
   def is_git_repo?(path)
@@ -125,6 +129,8 @@ USAGE
       opt :start, "Start date", short: :none, type: :string
       opt :end, "End date", short: :none, type: :string
 
+      opt :console, "Connect to sqlite database instead of querying", default: false
+
       opt :log, "Show journal/log of branch changes", default: false
       opt :all, "Show branch history for all recorded repos", default: false
       opt :path, "Path to specific repo (defaults to current folder)", type: :string
@@ -148,6 +154,12 @@ USAGE
     end
 
     Optimist::die("Cannot specify both --all and --path") if opts[:all_given] && opts[:path_given]
+
+
+    if console?
+      status = run_command "sqlite3 #{DATABASE_PATH}"
+      exit status
+    end
 
     opts[:path] = if opts[:all]
                     nil # force nil; otherwise
