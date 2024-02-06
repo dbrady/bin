@@ -96,4 +96,4 @@ cirun
 # `system(custom_env, rspec_command, args)`
 grep -E "\brspec\b" ~/.spec_focus &&
     ((echo ~/.spec_focus explicitly invokes rspec, honoring full command) && (time bash ~/.spec_focus) && cipass || (cifail && exit -1)) ||
-        (time bin/rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
+        (time bundle exec rspec $@ $(cat ~/.spec_focus) && cipass || (cifail && exit -1))
