@@ -29,6 +29,31 @@ module DbradyCli
     opts[:pretend]
   end
 
+  module ClassMethods
+    # opt_flag :debug will create `def debug?; opts[:debug]; end`
+    # opt_flag "has-pants", :pants? will create `def pants?; opts[:"has-pants"]; end
+    #
+    # TODO: Any way to add a check for like "you said opt_flag :blep but there is no arg for that?
+    def opt_flag(field, flag=nil)
+      flag ||= "#{field}?"
+      raise "opt_flag '#{flag}' must not have hyphens" if flag.to_s.include? '-'
+      define_method flag do
+        opts[field.to_sym]
+      end
+    end
+  end
+
+  # This just makes opt_flag become a class method without the extend ceremony.
+  # This is peak Spooky Action at a Distance, and I don't do this in
+  # production. But for my private scripts folder... yeah. Minimizing ceremony
+  # FTW.
+  #
+  # include DbradyCli
+  # opt_flag :cheese
+  def self.included(including_module)
+    including_module.extend ClassMethods
+  end
+
   # ----------------------------------------------------------------------
   # BASH STUFF
   # ----------------------------------------------------------------------
