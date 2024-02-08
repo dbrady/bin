@@ -54,11 +54,6 @@ class Application
       exit -1
     end
 
-    path = `git remote get-url origin`
-             .strip
-             .sub(/\.git$/, '')
-             .sub('git@github.com:', '')
-
     puts pr
   end
 end

@@ -7,8 +7,6 @@ require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 
-# TODO: Convert from bare sql to Sequel or AR
-
 class Application
   include DbradyCli
 
@@ -46,19 +44,20 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    repo = git_repo_for(Dir.pwd)
-    current_branch = `git current-branch`.strip
-    query = "SELECT pr FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}' AND deleted_at IS NULL"
-    puts query.cyan if debug?
-    pr = db.query_single_value(query)
+    # repo = git_repo_for(Dir.pwd)
+    # current_branch = `git current-branch`.strip
+    # query = "SELECT pr FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}' AND deleted_at IS NULL"
+    # puts query.cyan if debug?
+    # pr = db.query_single_value(query)
 
-    if pr.nil?
-      $stderr.puts "No PR for #{repo}" if $stdout.tty?
-      exit -1
-    end
+    # if pr.nil?
+    #   $stderr.puts "No PR for #{repo}" if $stdout.tty?
+    #   exit -1
+    # end
 
-    path = `git remote get-url origin`
-             .strip
+    pr = get_command_output "git get-pr-id"
+
+    path = get_command_output("git remote get-url origin")
              .sub(/\.git$/, '')
              .sub('git@github.com:', '')
 
