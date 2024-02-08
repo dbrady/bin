@@ -1,8 +1,18 @@
 #!/usr/bin/env ruby
 # git-list-prs - list known prs for this repo
+#
+# EDIT: This works and it's ok, but it's a lot of ceremony. If I decide to
+# embrace Sequel this high ceremony ratio will be ideal for being an example, as
+# there's very little business logic to clutter up the framework code.
+#
+# TODO: Extract the DATABASE_PATH, DB, and PrHistory code to
+# e.g. "pr_history.rb". This will make the code shareable between the git-x-pr
+# scripts.
+
 require "colorize"
 require "extralite"
 require "optimist"
+require "sequel"
 require "text-table"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
@@ -14,9 +24,10 @@ class Application
   opt_flag :all
 
   DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
+  DB = Sequel::sqlite(DATABASE_PATH)
 
-  def db
-    @db ||= Extralite::Database.new(DATABASE_PATH)
+  class PrHistory < Sequel::Model(DB[:pr_history])
+    plugin :timestamps, update_on_create: true
   end
 
   # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
@@ -51,26 +62,23 @@ class Application
     puts opts.inspect if opts[:debug]
 
     repo = git_repo_for(Dir.pwd)
-    order_by = if names?
-                 "ORDER BY branch"
-               else
-                 "ORDER BY created_at, id"
-               end
-    where = "WHERE repo='#{repo}'"
 
-    where += " AND deleted_at IS NULL" unless all?
-    prs = db.query "SELECT branch, pr FROM pr_history #{where} #{order_by}"
+    prs = PrHistory.where(repo:).order(*(names? ? [:branch] : [:created_at, :id])).all
+    # prs = PrHistory.where(repo:).all
 
-    table = Text::Table.new
-    table.head = [ "Branch", "PR" ]
-    table.rows = []
+    if prs.empty?
+      puts "No PRs found for repo '#{repo}'"
+    else
+      table = Text::Table.new
+      table.head = [ "Branch", "PR", "Created", "Updated"]
+      table.rows = []
 
-    prs.each do |row|
-      table.rows << [row[:branch], row[:pr]]
+      prs.each do |pr|
+        table.rows << [pr.branch, pr.pr, pr.created_at.strftime("%F %T"), pr.updated_at.strftime("%F %T")]
+      end
+
+      puts table
     end
-
-    puts table
-
   end
 
 end
