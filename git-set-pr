@@ -1,38 +1,58 @@
 #!/usr/bin/env ruby
-# git set-pr <number>
-require 'colorize'
-require 'yaml'
+# git set-pr <number> - associate PR with current branch
+require "colorize"
+require "extralite"
+require "optimist"
 
-if ENV['IS_DOCKER_LOCAL'] == "1"
-  raise "Can't access settings file from Docker. Run on OSX, please."
+# TODO: Convert from bare sql to Sequel or AR
+
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
+
+  def db
+    @db ||= Extralite::Database.new(DATABASE_PATH)
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    pr = ARGV.first.to_i
+    Optimist::die("Must supply a PR id") unless pr && pr.to_i > 0
+
+    # Associate folder+branch --> pr
+    pwd = Dir.pwd
+    current_branch = `git current-branch`.strip
+
+    # BEGIN save to db
+    query = "DELETE FROM pr_history WHERE folder='#{pwd}' AND branch='#{current_branch}'"
+    db.execute query
+
+    now = Time.now.strftime("%F %T")
+    query = "INSERT INTO pr_history (folder, branch, pr, created_at, updated_at, deleted_at) VALUES ('#{pwd}', '#{current_branch}', #{pr}, '#{now}', '#{now}', NULL)"
+    db.execute query
+    # END save to db
+
+    puts "Recorded. Branch '#{current_branch}' is PR number #{pr}."
+
+    # Remind me to run rubocop
+    rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
+    puts "Did you remember to run #{rubocop}?"
+  end
 end
 
-unless ARGV.size == 1 && ARGV.first.to_i > 0
-  puts "PR number '#{ARGV.first}' does not look like a PR number"
-  exit -1
+
+if __FILE__ == $0
+  Application.new.run
 end
-pr = ARGV.first.to_i
-
-settings_file = File.expand_path("~/.git-set-pr.yml")
-
-settings = if File.exist? settings_file
-             YAML.load_file(settings_file)
-           end
-settings ||= {}
-
-pwd = Dir.pwd
-current_branch = `git current-branch`.strip
-
-settings[pwd] ||= {}
-
-settings[pwd][current_branch] = pr
-
-File.open(settings_file, "w") do |fp|
-  fp.puts settings.to_yaml
-end
-
-puts "Recorded. Branch '#{current_branch}' is PR number #{pr}."
-
-# Remind me to run rubocop
-rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
-puts "Did you remember to run #{rubocop}?"

@@ -1,48 +1,81 @@
 #!/usr/bin/env ruby
+# git-list-prs - list known prs for this repo
 require "colorize"
+require "extralite"
 require "optimist"
 require "text-table"
-require "yaml"
+require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
-opts = Optimist.options do
-  opt :debug, "Print extra debug info", default: false
-  opt :names, "Sort by names", default: false
-end
-puts opts.inspect if opts[:debug]
+class Application
+  include DbradyCli
 
-# Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
-# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-def is_git_repo?(path)
-  File.exist?(File.join(path, '.git'))
-end
+  opt_flag :names
+  opt_flag :all
 
-# Walk up file tree looking for a .git folder
-# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-def git_repo_for(path)
-  starting_path = last_path = path
+  DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
 
-  while !path.empty?
-    return path if is_git_repo?(path)
-    last_path, path = path, File.split(path).first
-    raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+  def db
+    @db ||= Extralite::Database.new(DATABASE_PATH)
   end
+
+  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def is_git_repo?(path)
+    File.exist?(File.join(path, '.git'))
+  end
+
+  # Walk up file tree looking for a .git folder
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def git_repo_for(path)
+    starting_path = last_path = path
+
+    while !path.empty?
+      return path if is_git_repo?(path)
+      last_path, path = path, File.split(path).first
+      raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+    end
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :names, "Sort by names", default: false
+      opt :all, "Show all results (include soft-deleted prs)", default: false
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    dir = git_repo_for(Dir.pwd)
+    order_by = if names?
+                 "ORDER BY branch"
+               else
+                 "ORDER BY created_at"
+               end
+    where = "WHERE folder='#{dir}'"
+
+    where += " AND deleted_at IS NULL" unless all?
+    prs = db.query "SELECT branch, pr FROM pr_history #{where} #{order_by}"
+
+    table = Text::Table.new
+    table.head = [ "Branch", "PR" ]
+    table.rows = []
+
+    prs.each do |row|
+      table.rows << [row[:branch], row[:pr]]
+    end
+
+    puts table
+
+  end
+
 end
 
-settings_file = File.expand_path("~/.git-set-pr.yml")
 
-dir = git_repo_for(Dir.pwd)
-prs = YAML.load_file(settings_file)[dir]
-
-prs = prs.sort if opts[:names]
-
-
-table = Text::Table.new
-table.head = [ "Branch", "PR" ]
-table.rows = []
-
-prs.each do |branch, pr|
-  table.rows << [branch, pr]
+if __FILE__ == $0
+  Application.new.run
 end
-
-puts table
