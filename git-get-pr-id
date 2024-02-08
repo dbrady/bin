@@ -1,35 +1,69 @@
 #!/usr/bin/env ruby
 # git get-pr-id - display pull request id if one is known
+require "colorize"
+require "extralite"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
 
-require 'yaml'
+class Application
+  include DbradyCli
 
-# Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
-# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-def is_git_repo?(path)
-  File.exist?(File.join(path, '.git'))
-end
+  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def is_git_repo?(path)
+    File.exist?(File.join(path, '.git'))
+  end
 
-# Walk up file tree looking for a .git folder
-# Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-def git_repo_for(path)
-  starting_path = last_path = path
+  # Walk up file tree looking for a .git folder
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def git_repo_for(path)
+    starting_path = last_path = path
 
-  while !path.empty?
-    return path if is_git_repo?(path)
-    last_path, path = path, File.split(path).first
-    raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+    while !path.empty?
+      return path if is_git_repo?(path)
+      last_path, path = path, File.split(path).first
+      raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+    end
+  end
+
+  DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
+
+  def db
+    @db ||= Extralite::Database.new(DATABASE_PATH)
+  end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    repo = git_repo_for(Dir.pwd)
+    current_branch = `git current-branch`.strip
+    query = "SELECT pr FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}' AND deleted_at IS NULL"
+    puts query.cyan if debug?
+    pr = db.query_single_value(query)
+
+    if pr.nil?
+      $stderr.puts "No PR for #{repo}" if $stdout.tty?
+      exit -1
+    end
+
+    path = `git remote get-url origin`
+             .strip
+             .sub(/\.git$/, '')
+             .sub('git@github.com:', '')
+
+    puts pr
   end
 end
 
-settings_file = File.expand_path("~/.git-set-pr.yml")
 
-dir = git_repo_for(Dir.pwd)
-current_branch = `git current-branch`.strip
-pr = YAML.load_file(settings_file)[dir][current_branch] rescue nil
-
-if pr.nil?
-  $stderr.puts "No PR for #{dir}" if $stdout.tty?
-  exit -1
+if __FILE__ == $0
+  Application.new.run
 end
-
-puts pr

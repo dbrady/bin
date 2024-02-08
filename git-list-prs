@@ -50,13 +50,13 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    dir = git_repo_for(Dir.pwd)
+    repo = git_repo_for(Dir.pwd)
     order_by = if names?
                  "ORDER BY branch"
                else
-                 "ORDER BY created_at"
+                 "ORDER BY created_at, id"
                end
-    where = "WHERE folder='#{dir}'"
+    where = "WHERE repo='#{repo}'"
 
     where += " AND deleted_at IS NULL" unless all?
     prs = db.query "SELECT branch, pr FROM pr_history #{where} #{order_by}"
