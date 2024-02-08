@@ -36,6 +36,10 @@ class Application
     current_branch = `git current-branch`.strip
 
     # BEGIN save to db
+    # TODO: Convert to Sequel? And then
+    # pr = PrHistory.where(repo:, branch: current_branch, deleted_at: nil).order(:updated_at.desc).first_or_create
+    # pr.pr = pr
+    # pr.save
     query = "DELETE FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}'"
     db.execute query
 
