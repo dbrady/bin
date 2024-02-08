@@ -138,6 +138,24 @@ module DbradyCli
   def git_isclean
     run_command "git isclean", force: true
   end
+
+  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def is_git_repo?(path)
+    File.exist?(File.join(path, '.git'))
+  end
+
+  # Walk up file tree looking for a .git folder
+  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
+  def git_repo_for(path)
+    starting_path = last_path = path
+
+    while !path.empty?
+      return path if is_git_repo?(path)
+      last_path, path = path, File.split(path).first
+      raise "FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
+    end
+  end
 end
 
 if __FILE__ == $0

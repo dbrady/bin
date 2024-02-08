@@ -1,9 +1,10 @@
 #!/usr/bin/env ruby
 # git-list-prs - list known prs for this repo
 #
-# EDIT: This works and it's ok, but it's a lot of ceremony. If I decide to
-# embrace Sequel this high ceremony ratio will be ideal for being an example, as
-# there's very little business logic to clutter up the framework code.
+# EDIT: This works and it's ok, but it's a lot of ceremony. I'm doing this on
+# purpose: if I decide to embrace Sequel this high ceremony ratio will be ideal
+# to make this be example code, as there's very little business logic here to
+# clutter up the framework code.
 #
 # TODO: Extract the DATABASE_PATH, DB, and PrHistory code to
 # e.g. "pr_history.rb". This will make the code shareable between the git-x-pr
@@ -28,24 +29,6 @@ class Application
 
   class PrHistory < Sequel::Model(DB[:pr_history])
     plugin :timestamps, update_on_create: true
-  end
-
-  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)#
-  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-  def is_git_repo?(path)
-    File.exist?(File.join(path, '.git'))
-  end
-
-  # Walk up file tree looking for a .git folder
-  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-  def git_repo_for(path)
-    starting_path = last_path = path
-
-    while !path.empty?
-      return path if is_git_repo?(path)
-      last_path, path = path, File.split(path).first
-      raise " FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
-    end
   end
 
   def run
