@@ -22,21 +22,10 @@ class Application
 
   attr_reader :db
 
-  def prune?
-    opts[:prune]
-  end
-
-  def journal?
-    opts[:journal]
-  end
-
-  def utc?
-    opts[:utc]
-  end
-
-  def console?
-    opts[:console]
-  end
+  opt_flag :prune
+  opt_flag :journal
+  opt_flag :utc
+  opt_flag :console
 
   # TODO: Add a pruning option to clear out testing branches
 
@@ -114,7 +103,6 @@ USAGE
       opt :console, "Connect to sqlite database instead of querying", default: false
 
       opt :log, "Show journal/log of branch changes", default: false
-      opt :all, "Show branch history for all recorded repos", default: false
       opt :path, "Path to specific repo (defaults to current folder)", type: :string
       opt :journal, "Show all branches with switch times", default: false
       opt :utc, "Show times in UTC rather than local timezone", short: :U, default: false
@@ -135,17 +123,12 @@ USAGE
       puts "prune? #{prune?.inspect}"
     end
 
-    Optimist::die("Cannot specify both --all and --path") if opts[:all_given] && opts[:path_given]
-
-
     if console?
       status = run_command "sqlite3 #{DATABASE_PATH}"
       exit status
     end
 
-    opts[:path] = if opts[:all]
-                    nil # force nil; otherwise
-                  elsif opts[:path_given]
+    opts[:path] = if opts[:path_given]
                     git_repo_for(File.expand_path(opts[:path]))
                   else
                     git_repo_for(Dir.pwd)
