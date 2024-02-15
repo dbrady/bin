@@ -10,7 +10,6 @@
 #     -d<d>, --delimiter=<d>: Use alternate field delimiter
 require "csv"
 require "optimist"
-require "text-table"
 
 opts = Optimist.options do
   opt :org, "Emit table in org-mode style"
