@@ -82,9 +82,6 @@ BANNER
     fragments_to_exclude = opts[:exclude]
     patterns_to_exclude = opts[:exclude_pattern].map {|pattern| Regexp.new(pattern) }
 
-    patterns_to_exclude << %r{^spec/} unless opts[:rspec]
-    patterns_to_exclude << %r{\.(slim|haml|yml)$}
-
     if !only_patterns.empty?
       files = files.select {|filename| only_patterns.any? {|pattern| pattern.match(filename) }}
     end
