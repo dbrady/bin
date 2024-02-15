@@ -33,6 +33,7 @@ class Application
 
       opt :rspec, "Include rspec files (omitted by  default)", default: false
       opt :unstaged, "Consider unstaged files even if they have not been committed in the --since range", default: false
+      opt :only_pattern, "Pattern to include", short: :o, type: :string, multi: true
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
 
@@ -41,7 +42,7 @@ class Application
       opt :"display-style-guide", "Display style guide in offense messages", short: :S, default: true
       opt :"extra-details", "Show extra details in offense messages", short: :E, default: true
       opt :"except", "Exclude the given cop(s)", type: :string
-      opt :"only", "Only run the given cop(s)", type: :string
+      opt :"only", "Only run the given cop(s)", short: :O, type: :string
    end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
@@ -59,12 +60,22 @@ class Application
       puts files.map {|file| "  #{file}"}
     end
 
+    only_patterns = opts[:only_pattern].map {|pattern| Regexp.new(pattern) }
+
     fragments_to_exclude = opts[:exclude]
     patterns_to_exclude = opts[:exclude_pattern].map {|pattern| Regexp.new(pattern) }
 
     patterns_to_exclude << %r{^spec/} unless opts[:rspec]
+    patterns_to_exclude << %r{\.(slim|haml|yml)$}
 
     if debug?
+      puts "Only patterns to consider (exclude all non-matches):"
+      if only_patterns.empty?
+        puts "    None"
+      else
+        puts only_patterns.map {|fragment| "  #{fragment}"}
+      end
+
       puts "Fragments to Exclude:"
       if fragments_to_exclude.empty?
         puts "    None"
@@ -78,6 +89,10 @@ class Application
       else
         puts patterns_to_exclude.map {|pattern| "  #{pattern}"}
       end
+    end
+
+    if !only_patterns.empty?
+      files = files.select {|filename| only_patterns.any? {|pattern| pattern.match(filename) }}
     end
 
     files = files.reject {|filename| patterns_to_exclude.any? {|pattern| pattern.match(filename) }}
