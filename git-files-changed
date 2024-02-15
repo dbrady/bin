@@ -3,66 +3,123 @@
 # See Also: git-modified for uncommitted changed files
 require "colorize"
 require "optimist"
+require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
-opts = Optimist.options do
-  banner <<~BANNER
-  git files-changed - show list of files changed in a range of commits
+class Application
+  include DbradyCli
 
-  git files-changed [options] (<n>|<sha1>|<sha1>..<sha2>)
+  def run
+    @opts = Optimist.options do
+      banner <<~BANNER
+git files-changed - show list of files changed in a range of commits
 
-  git files-changed <n>                             - Show files changed in the last n commits
-  git files-changed <since_commit>                  - Show files changed since a commit or branch
-  git files-changed <since_comment>..<until_commit> - Show files changed in a range of commits
+git files-changed [options] (<n>|<sha1>|<sha1>..<sha2>)
 
-  Examples:
+git files-changed <n>                             - Show files changed in the last n commits
+git files-changed <since_commit>                  - Show files changed since a commit or branch
+git files-changed <since_comment>..<until_commit> - Show files changed in a range of commits
 
-  git files-changed 7                - Show files changed in the last 7 commits
-  git files-changed abcd1234         - Show files changed since commit abcd1234
-  git files-changed master           - Show files changed since you forked from master
-  git files-changed ab1234..cd5678   - Show files changed in a range of commits
-  git files-changed staging..release - Show files changed from one branch to another
+Examples:
 
-  Note: This tool assumes that <sha1> is an ancestor of <sha2>. If they are not,
-  git will cheerfully walk up the logs to of both branches back to their common
-  ancestor, and then show you the commits from one or both branches at its own
-  discretion. In my own tests, it's usually <common>..<sha2> but in once case it
-  gave me <common>..<sha1> followed by <common>..<sha2>. &shrug;
+git files-changed 7                - Show files changed in the last 7 commits
+git files-changed abcd1234         - Show files changed since commit abcd1234
+git files-changed master           - Show files changed since you forked from master
+git files-changed ab1234..cd5678   - Show files changed in a range of commits
+git files-changed staging..release - Show files changed from one branch to another
 
-  Options:
-  BANNER
+Note: This tool assumes that <sha1> is an ancestor of <sha2>. If they are not,
+git will cheerfully walk up the logs to of both branches back to their common
+ancestor, and then show you the commits from one or both branches at its own
+discretion. In my own tests, it's usually <common>..<sha2> but in once case it
+gave me <common>..<sha1> followed by <common>..<sha2>. &shrug;
 
-  opt :debug, "Print extra debug info", default: false
-  opt :verbose, "Run in verbose mode", default: false
+Options:
+BANNER
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :only_pattern, "Pattern to include", short: :o, type: :string, multi: true
+      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
+      opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    range = "-n 10"
+
+    range = if ARGV.empty?
+              # TODO: if `git get-parent` existed (presumably also git set-parent)
+              # we could run this on a branch tipped from something other than main.
+              # You CAN do it by specifying the parent branch explicitly but it's
+              # kind of a drag.
+              `git main-branch`.strip + "..HEAD"
+            elsif ARGV.size == 2
+              # git files-changed abc123 def456
+              ARGV.join('..')
+            elsif ARGV.first =~ /^\d+$/
+              # git files-changed 5
+              # look at last 5 commits
+              "-n #{ARGV.first}"
+            elsif ARGV.first =~ /\.\./
+              # git files-changed abc123..def456
+              # look at commits in that range
+              # ARGV.first because "x..y" is one string
+              ARGV.first
+            else
+              # git files-changed abc123
+              # look at abc123..HEAD
+              "#{ARGV.first}..HEAD"
+            end
+
+    files = get_command_output_lines "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq"
+
+    only_patterns = opts[:only_pattern].map {|pattern| Regexp.new(pattern) }
+
+    fragments_to_exclude = opts[:exclude]
+    patterns_to_exclude = opts[:exclude_pattern].map {|pattern| Regexp.new(pattern) }
+
+    patterns_to_exclude << %r{^spec/} unless opts[:rspec]
+    patterns_to_exclude << %r{\.(slim|haml|yml)$}
+
+    if !only_patterns.empty?
+      files = files.select {|filename| only_patterns.any? {|pattern| pattern.match(filename) }}
+    end
+
+    files = files.reject {|filename| patterns_to_exclude.any? {|pattern| pattern.match(filename) }}
+    files = files.reject {|filename| fragments_to_exclude.any? {|fragment| filename.include?(fragment) }}
+
+    if debug?
+      puts "Only patterns to consider (exclude all non-matches):"
+      if only_patterns.empty?
+        puts "    None"
+      else
+        puts only_patterns.map {|fragment| "  #{fragment}"}
+      end
+
+      puts "Fragments to Exclude:"
+      if fragments_to_exclude.empty?
+        puts "    None"
+      else
+        puts fragments_to_exclude.map {|fragment| "  #{fragment}"}
+      end
+
+      puts "Patterns to exclude:"
+      if patterns_to_exclude.empty?
+        puts "    None"
+      else
+        puts patterns_to_exclude.map {|pattern| "  #{pattern}"}
+      end
+    end
+
+    puts files
+  end
 end
-puts opts.inspect if opts[:debug]
 
-range = "-n 10"
 
-range = if ARGV.empty?
-          # TODO: if `git get-parent` existed (presumably also git set-parent)
-          # we could run this on a branch tipped from something other than main.
-          # You CAN do it by specifying the parent branch explicitly but it's
-          # kind of a drag.
-          `git main-branch`.strip + "..HEAD"
-        elsif ARGV.size == 2
-          # git files-changed abc123 def456
-          ARGV.join('..')
-        elsif ARGV.first =~ /^\d+$/
-          # git files-changed 5
-          # look at last 5 commits
-          "-n #{ARGV.first}"
-        elsif ARGV.first =~ /\.\./
-          # git files-changed abc123..def456
-          # look at commits in that range
-          # ARGV.first because "x..y" is one string
-          ARGV.first
-        else
-          # git files-changed abc123
-          # look at abc123..HEAD
-          "#{ARGV.first}..HEAD"
-        end
-
-command = "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq"
-puts command.cyan if opts[:verbose]
-system command
+if __FILE__ == $0
+  Application.new.run
+end
