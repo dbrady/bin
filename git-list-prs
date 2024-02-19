@@ -46,18 +46,25 @@ class Application
 
     repo = git_repo_for(Dir.pwd)
 
-    prs = PrHistory.where(repo:).order(*(names? ? [:branch] : [:created_at, :id])).all
-    # prs = PrHistory.where(repo:).all
+    pr_query = PrHistory.where(repo:).order(*(names? ? [:branch] : [:updated_at, :id]))
+    pr_query = pr_query.where(deleted_at: nil) unless all?
+    prs = pr_query.all
+
 
     if prs.empty?
       puts "No PRs found for repo '#{repo}'"
     else
+      head = [ "Branch", "PR", "Updated" ]
+      head << "Deleted" if all?
+
       table = Text::Table.new
-      table.head = [ "Branch", "PR", "Created", "Updated"]
+      table.head = head
       table.rows = []
 
       prs.each do |pr|
-        table.rows << [pr.branch, pr.pr, pr.created_at.strftime("%F %T"), pr.updated_at.strftime("%F %T")]
+        row = [pr.branch, {value: pr.pr, align: :right}, pr.updated_at.strftime("%F %T") ]
+        row << pr.deleted_at&.strftime("%F %T") if all?
+        table.rows << row
       end
 
       puts table
