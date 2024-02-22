@@ -18,6 +18,9 @@ require "text-table"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
+
+# CREATE TABLE pr_history (id INTEGER NOT NULL PRIMARY KEY, repo TEXT NOT NULL, branch TEXT NOT NULL, pr INTEGER NOT NULL, created_at TIMESTAMP DEFAULT current_timestamp, updated_at TIMESTAMP DEFAULT current_timestamp, deleted_at TIMESTAMP DEFAULT NULL)
+
 class Application
   include DbradyCli
 
@@ -27,14 +30,36 @@ class Application
   DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
-  class PrHistory < Sequel::Model(DB[:pr_history])
-    plugin :timestamps, update_on_create: true
+  if !ARGV.include?("create")
+    class PrHistory < Sequel::Model(DB[:pr_history])
+      plugin :timestamps, update_on_create: true
+    end
   end
 
   def run
     @opts = Optimist.options do
+      banner <<BANNER
+git-list-prs - list known prs for this repo
+
+git-list-prs [<command>]
+
+Commands:
+
+  console - connect to sqlite3 database
+
+  archive - mark a PR as archived
+
+  search - search for specific PRs
+
+  create - create PR history table (first time install only)
+
+Options:
+BANNER
       opt :names, "Sort by names", default: false
       opt :all, "Show all results (include soft-deleted prs)", default: false
+
+      opt :start, "Start date (List PRs linked on or after date)", short: :none, type: :string
+      opt :end, "End date (List PRs linked on or before date)", short: :none, type: :string
 
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
@@ -44,6 +69,29 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
+    if ARGV.include?("create")
+      ensure_table_exists!
+    elsif ARGV.empty?
+      list
+    elsif ARGV.first == "console" || ARGV.first == "c"
+      run_command "sqlite3 #{DATABASE_PATH}"
+    end
+  end
+
+  def ensure_table_exists!
+    puts "CREATING TABLE WOOO"
+    DB.create_table?(:pr_history, if_not_exists: true) do
+      primary_key :id
+      String :repo, null: false
+      String :branch, null: false
+      Integer :pr, null: false
+      DateTime :created_at
+      DateTime :updated_at
+      DateTime :deleted_at
+    end
+  end
+
+  def list
     repo = git_repo_for(Dir.pwd)
 
     pr_query = PrHistory.where(repo:).order(*(names? ? [:branch] : [:updated_at, :id]))
@@ -71,6 +119,9 @@ class Application
     end
   end
 
+  def pr_link(pr)
+
+  end
 end
 
 
