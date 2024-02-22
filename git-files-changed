@@ -9,6 +9,8 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :ruby
+
   def run
     @opts = Optimist.options do
       banner <<~BANNER
@@ -42,12 +44,15 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
 
-      opt :only_pattern, "Pattern to include", short: :o, type: :string, multi: true
+      opt :ruby, "Sets pattern to include to ruby", default: false
+
+      opt :only, "Pattern to include", short: :o, type: :string, multi: true
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
-      opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
+
+    opts[:only] << '*.rb' if ruby?
 
     range = "-n 10"
 
@@ -77,40 +82,11 @@ BANNER
 
     files = get_command_output_lines "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq"
 
-    only_patterns = opts[:only_pattern].map {|pattern| Regexp.new(pattern) }
-
-    fragments_to_exclude = opts[:exclude]
-    patterns_to_exclude = opts[:exclude_pattern].map {|pattern| Regexp.new(pattern) }
-
-    if !only_patterns.empty?
-      files = files.select {|filename| only_patterns.any? {|pattern| pattern.match(filename) }}
+    # filter files through only_patterns, patterns_to_exclude, fragments_to_exclude
+    opts[:only].each do |pattern|
+      files = files.select {|filename| File.fnmatch(pattern, filename) }
     end
-
-    files = files.reject {|filename| patterns_to_exclude.any? {|pattern| pattern.match(filename) }}
-    files = files.reject {|filename| fragments_to_exclude.any? {|fragment| filename.include?(fragment) }}
-
-    if debug?
-      puts "Only patterns to consider (exclude all non-matches):"
-      if only_patterns.empty?
-        puts "    None"
-      else
-        puts only_patterns.map {|fragment| "  #{fragment}"}
-      end
-
-      puts "Fragments to Exclude:"
-      if fragments_to_exclude.empty?
-        puts "    None"
-      else
-        puts fragments_to_exclude.map {|fragment| "  #{fragment}"}
-      end
-
-      puts "Patterns to exclude:"
-      if patterns_to_exclude.empty?
-        puts "    None"
-      else
-        puts patterns_to_exclude.map {|pattern| "  #{pattern}"}
-      end
-    end
+    files = files.reject {|filename| opts[:exclude].any? {|pattern| File.fnmatch(pattern, filename) }}
 
     puts files
   end
