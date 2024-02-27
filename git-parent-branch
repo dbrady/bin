@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+# git-parent-branch - Get or associate a parent branch with a branch
+require "colorize"
+require "extralite"
+require "optimist"
+require "text-table"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :deleted
+  opt_flag :name
+
+  DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+git-parent-branch - Get or associate a parent branch with a branch
+
+git parent-branch set <parent> [<branch>] - set parent branch to branch
+git parent-branch [<branch>] - get parent branch
+git parent-branch list - list all branches
+
+If branch is omitted, assumes current branch.
+BANNER
+
+      opt :deleted, "Include deleted branches when listing all branches", short: :D, default: false
+      opt :name, "List by name when listing all branches", default: false
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # APP CODE GOES HERE
+    ensure_table_exists
+
+    repo = git_repo_for Dir.pwd
+
+    if ARGV.first == "set"
+      if ARGV.size == 3
+        parent = ARGV[1]
+        branch = ARGV[2]
+      elsif ARGV.size == 2
+        parent = ARGV[1]
+        branch = git_current_branch
+      else
+        puts "Could not parse ARGV: set <parent> [<branch>]"
+        exit -1
+      end
+
+      create_parent_branch repo, parent, branch
+    elsif ARGV.first == "list"
+      get_all_branches_for_repo(repo)
+    else
+      case ARGV.size
+      when 0
+        branch = git_current_branch
+      when 1
+        branch = ARGV[1]
+      else
+        puts "ARGV must have 1 or 0 args <branch> or current branch if omitted"
+        exit -1
+      end
+
+      puts get_parent_branch(repo, branch)
+    end
+  end
+
+  def db
+    @db ||= Extralite::Database.new DATABASE_PATH
+  end
+
+  def ensure_table_exists
+    query = <<SQL
+CREATE TABLE IF NOT EXISTS parent_branches (
+  id INTEGER NOT NULL PRIMARY KEY,
+  repo TEXT NOT NULL,
+  branch TEXT NOT NULL,
+  parent TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  deleted_at TIMESTAMP DEFAULT NULL
+)
+SQL
+
+    db.execute query
+  end
+
+  def create_parent_branch(repo, parent, branch)
+    return if get_parent_branch(repo, branch) == parent
+
+    # Delete any old parents
+    query = "UPDATE parent_branches SET deleted_at=CURRENT_TIMESTAMP WHERE repo='#{repo}' AND branch='#{branch}' AND deleted_at IS NULL"
+    puts query.cyan if debug?
+    db.execute query unless pretend?
+
+    # Set this one
+    query = "INSERT INTO parent_branches (repo, branch, parent) VALUES (?, ?, ?)"
+    puts query.cyan if debug?
+    db.execute query, repo, branch, parent unless pretend?
+  end
+
+  def get_parent_branch(repo, branch)
+    query = "SELECT parent FROM parent_branches WHERE repo='#{repo}' AND branch='#{branch}' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1"
+    puts query.cyan if debug?
+    db.query(query) do |row|
+      return row[:parent]
+    end
+  end
+
+  def get_all_branches_for_repo(repo)
+    delete_clause = deleted? ? "" : "AND deleted_at IS NULL"
+    order_clause = name? ? "ORDER BY parent ASC, branch ASC" : "ORDER BY updated_at ASC"
+    query = "SELECT repo, branch, parent, updated_at, deleted_at FROM parent_branches WHERE repo='#{repo}' #{delete_clause} #{order_clause}"
+    puts query.cyan if debug?
+    table = Text::Table.new
+    table.head = ["updated_at", "deleted_at", "repo", "branch", "parent"]
+    puts "Listing branches for #{repo}:"
+    db.query(query) do |row|
+      table.rows << [row[:updated_at], row[:deleted_at], row[:repo], row[:branch], row[:parent]]
+    end
+    puts table
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end

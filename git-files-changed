@@ -61,7 +61,10 @@ BANNER
               # we could run this on a branch tipped from something other than main.
               # You CAN do it by specifying the parent branch explicitly but it's
               # kind of a drag.
-              `git main-branch`.strip + "..HEAD"
+
+              parent = get_command_output('git parent-branch')
+              parent = get_command_output('git main-branch') if parent.empty?
+              "#{parent}..HEAD"
             elsif ARGV.size == 2
               # git files-changed abc123 def456
               ARGV.join('..')
