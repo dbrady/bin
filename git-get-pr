@@ -10,7 +10,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
+  DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
 
   def db
     @db ||= Extralite::Database.new(DATABASE_PATH)
@@ -25,17 +25,6 @@ class Application
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
-
-    # repo = git_repo_for(Dir.pwd)
-    # current_branch = `git current-branch`.strip
-    # query = "SELECT pr FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}' AND deleted_at IS NULL"
-    # puts query.cyan if debug?
-    # pr = db.query_single_value(query)
-
-    # if pr.nil?
-    #   $stderr.puts "No PR for #{repo}" if $stdout.tty?
-    #   exit -1
-    # end
 
     pr = get_command_output "git get-pr-id"
 

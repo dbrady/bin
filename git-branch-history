@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# git-branch-history - query and show history from db/git-branch-history.db
+# git-branch-history - query and show history from db/git-settings.db
 require "byebug"
 require "colorize"
 require "date"
@@ -18,7 +18,7 @@ String.disable_colorization unless $stdout.tty?
 
 class Application
   include DbradyCli
-  DATABASE_PATH = File.expand_path('~/bin/db/git-branch-history.db')
+  DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
 
   attr_reader :db
 

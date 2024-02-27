@@ -9,7 +9,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
+  DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
 
   def db
     @db ||= Extralite::Database.new(DATABASE_PATH)

@@ -27,7 +27,7 @@ class Application
   opt_flag :names
   opt_flag :all
 
-  DATABASE_PATH = File.expand_path('~/bin/db/git-pr-history.db')
+  DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
   if !ARGV.include?("create")

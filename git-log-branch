@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # git-log-branch [<path/to/repo>] - Record current branch of repo.
-# Log history is kept in ~/bin/db/git-branch-history.db
+# Log history is kept in ~/bin/db/git-settings.db
 #
 
 # TODO: Update to dbrady_cli. This is from before the dbrady_cli lib
@@ -10,7 +10,7 @@ require 'optimist'
 require 'extralite'
 
 SHARE_FOLDER = File.expand_path('~/bin/db')
-DATABASE_PATH = File.join(SHARE_FOLDER, 'git-branch-history.db')
+DATABASE_PATH = File.join(SHARE_FOLDER, 'git-settings.db')
 
 LOG_COLOR_INFO=:white
 LOG_COLOR_QUERY=:cyan
