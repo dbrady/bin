@@ -69,7 +69,8 @@ BANNER
         exit -1
       end
 
-      puts get_parent_branch(repo, branch)
+      parent_branch = get_parent_branch(repo, branch)
+      puts parent_branch if parent_branch && !parent_branch.empty?
     end
   end
 

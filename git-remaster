@@ -25,7 +25,7 @@ class Application
     end
 
     current_branch = `git current-branch`.strip
-    parent_branch = ARGV.first || `git main-branch`.strip
+    parent_branch = ARGV.first || git_parent_or_main_branch
 
     if debug?
       puts "current_branch: #{current_branch}"

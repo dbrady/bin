@@ -14,7 +14,8 @@ class Application
   end
 
   def run
-    main_branch = git_main_branch
+    main_branch = git_parent_or_main_branch # t_command_output("git parent-branch")
+
     @opts = Optimist.options do
       banner <<~BANNER
         git-rubocop [options] [<additional_files>] - run rubocop on relevant files. Defaults to --since master.
@@ -49,7 +50,7 @@ class Application
 
     # if no arguments and nothing's going on, use git main as the sha
     files = []
-    files += get_command_output_lines "git files-changed #{opts[:since]}"
+    files += get_command_output_lines "git files-changed --existing #{opts[:since]}"
     files += get_command_output_lines "git modified" if unstaged?
     files += ARGV.dup # re-add ARGV so you can exclude *.json then force include filename.json
 
