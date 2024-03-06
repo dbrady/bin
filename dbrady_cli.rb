@@ -134,6 +134,19 @@ module DbradyCli
     `git main-branch`.strip
   end
 
+  def git_parent_branch
+    `git parent-branch`.strip
+  end
+
+  def git_parent_or_main_branch
+    parent = git_parent_branch
+    if parent.nil? || parent.empty?
+      git_main_branch
+    else
+      parent
+    end
+  end
+
   # returns true if there are no outstanding changes to commit or stash
   def git_isclean
     run_command "git isclean", force: true
