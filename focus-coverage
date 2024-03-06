@@ -1,0 +1,180 @@
+#!/usr/bin/env ruby
+# focus-coverage - Patch spec coverage to focus on files
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  COVERAGE_CONFIG_FILE = File.expand_path(File.join(Dir.pwd, "spec/support/pre/coverage.rb"))
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+coverage-focus [<files>|clear] - Patch spec coverage to focus on just certain files
+
+Given no args, will run git-files-changed to identify all files changed since
+the parent branch.
+
+Args are processed through File.fnmatch, so if you want all ruby files in app/models
+you can say 'app/models/*.rb', and if you want all ruby files recursively, you
+can say 'app/models/**/*.rb'.
+
+Options:
+BANNER
+
+      opt :exclude, "Filenames/paths to exclude", short: :x, type: :string, multi: true
+      opt :only, "Filenames/paths to consider", short: :o, type: :string, multi: true
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    if !File.exist? COVERAGE_CONFIG_FILE
+      puts "Cannot find #{COVERAGE_CONFIG_FILE}"
+      exit -1
+    end
+
+    if ARGV.include? "clear"
+      if pretend?
+        puts unpatched_coverage_file
+      else
+        File.open(COVERAGE_CONFIG_FILE, "w") do |fp|
+          fp.puts unpatched_coverage_file
+        end
+        puts "Unpatched #{COVERAGE_CONFIG_FILE}" unless quiet?
+      end
+    elsif ARGV.include? "list"
+      puts watched_files
+    else
+      if pretend?
+        puts patched_coverage_file
+      else
+        File.open(COVERAGE_CONFIG_FILE, "w") do |fp|
+          fp.puts patched_coverage_file
+        end
+        puts "Patched #{COVERAGE_CONFIG_FILE}" unless quiet?
+      end
+    end
+  end
+
+  def watched_files
+    @watched_files ||= get_command_output_lines("git files-changed")
+                         .reject {|file| opts[:exclude].any? {|pattern| File.fnmatch(pattern, file) }}
+                         .reject {|file| opts[:only_given] && opts[:only].none? {|pattern| File.fnmatch(pattern, file) }}
+  end
+
+  def watched_files_formatted
+    watched_files.map { |file| "        '#{file}'," }.join("\n")
+  end
+
+  def patched_coverage_file
+    no_commit = "NOCO" "MMIT"
+    str = <<PATCHED
+unless ENV['SUPPRESS_SIMPLECOV'] == 'true'
+  require 'simplecov'
+
+  def rcpth(*attrs)
+    ROOT_PATH.join(*attrs.map { |x| x.to_s }).to_s
+  end
+
+  SimpleCov.start do
+
+    # #{no_commit}: Haxx
+    add_filter do |source_file|
+      [
+#{watched_files_formatted}
+      ].none? { |filename| source_file.filename.include? filename }
+    end
+
+    # add_filter rcpth('vendor/bundle')
+    # add_filter rcpth('.bundle')
+
+    # add_filter rcpth('spec')
+
+    # add_filter rcpth('config')
+    # add_filter rcpth('db')
+
+    # add_group 'Controllers', rcpth('app/controllers')
+    # add_group 'Models', rcpth('app/models')
+    # add_group 'Mailers', rcpth('app/mailers')
+    # add_group 'Helpers', rcpth('app/helpers')
+    # add_group 'Views', rcpth('app/views')
+
+    # add_group 'Concepts', rcpth('app/concepts')
+    # add_group 'Concerns', rcpth('app/concerns')
+    # add_group 'Decorators', rcpth('app/decorators')
+    # add_group 'Policies', rcpth('app/policies')
+    # add_group 'Queries', rcpth('app/queries')
+    # add_group 'Roles', rcpth('app/roles')
+    # add_group 'Services', rcpth('app/services')
+    # add_group 'Validators', rcpth('app/validators')
+
+    # add_group 'Libraries', rcpth('lib')
+
+    coverage_dir ROOT_PATH.join('public', 'coverage').to_s
+  end
+
+  SimpleCov.at_exit do
+    SimpleCov.result.format!
+  end
+end
+PATCHED
+  end
+
+  def unpatched_coverage_file
+    str = <<UNPATCHED
+unless ENV['SUPPRESS_SIMPLECOV'] == 'true'
+  require 'simplecov'
+
+  def rcpth(*attrs)
+    ROOT_PATH.join(*attrs.map { |x| x.to_s }).to_s
+  end
+
+  SimpleCov.start do
+    add_filter rcpth('vendor/bundle')
+    add_filter rcpth('.bundle')
+
+    add_filter rcpth('spec')
+
+    add_filter rcpth('config')
+    add_filter rcpth('db')
+
+    add_group 'Controllers', rcpth('app/controllers')
+    add_group 'Models', rcpth('app/models')
+    add_group 'Mailers', rcpth('app/mailers')
+    add_group 'Helpers', rcpth('app/helpers')
+    add_group 'Views', rcpth('app/views')
+
+    add_group 'Concepts', rcpth('app/concepts')
+    add_group 'Concerns', rcpth('app/concerns')
+    add_group 'Decorators', rcpth('app/decorators')
+    add_group 'Policies', rcpth('app/policies')
+    add_group 'Queries', rcpth('app/queries')
+    add_group 'Roles', rcpth('app/roles')
+    add_group 'Services', rcpth('app/services')
+    add_group 'Validators', rcpth('app/validators')
+
+    add_group 'Libraries', rcpth('lib')
+
+    coverage_dir ROOT_PATH.join('public', 'coverage').to_s
+  end
+
+  SimpleCov.at_exit do
+    SimpleCov.result.format!
+  end
+end
+UNPATCHED
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
