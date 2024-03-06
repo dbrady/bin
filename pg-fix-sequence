@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# pg-fix-sequence - Generate SQL query to uncrash id sequences. Somebody on my team needs a slap
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :table, "Table name to fix", type: :string, required: true
+      opt :column, "Column to fix", default: "id"
+      opt :sequence, "Sequence to fix (defaults to <table>_<column>_seq", type: :string
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    if !opts[:sequence_given]
+      sequence = "#{opts[:table]}_#{opts[:column]}_seq"
+      puts "Sequence not given. Assuming default #{sequence}" if debug?
+      opts[:sequence] = sequence
+    end
+
+    query = "SELECT setval('#{opts[:sequence]}', (SELECT MAX(#{opts[:column]}) FROM #{opts[:table]}));"
+
+    puts query
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
