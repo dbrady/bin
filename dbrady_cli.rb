@@ -31,14 +31,14 @@ module DbradyCli
 
   module ClassMethods
     # opt_flag :debug will create `def debug?; opts[:debug]; end`
-    # opt_flag "has-pants", :pants? will create `def pants?; opts[:"has-pants"]; end
-    #
-    # TODO: Any way to add a check for like "you said opt_flag :blep but there is no arg for that?
-    def opt_flag(field, flag=nil)
-      flag ||= "#{field}?"
-      raise "opt_flag '#{flag}' must not have hyphens" if flag.to_s.include? '-'
-      define_method flag do
-        opts[field.to_sym]
+    # opt_flag :a, :b, :c will create a?, b? and c?
+    def opt_flag(*fields)
+      Array(fields).each do |field|
+        flag ||= "#{field}?"
+        raise "opt_flag '#{flag}' must not have hyphens" if flag.to_s.include? '-'
+        define_method flag do
+          opts[field.to_sym]
+        end
       end
     end
   end

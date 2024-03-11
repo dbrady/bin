@@ -8,9 +8,8 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  def force?
-    opts[:force]
-  end
+
+  opt_flag :force
 
   def run
     @opts = Optimist.options do
@@ -26,20 +25,30 @@ class Application
     puts "Checking for running spring processes..."
     puts "spring_is_running? #{spring_is_running?.inspect}"
 
-    puts "Asking spring politely to go quietly into that good night..."
     pid_lines = spring_pids
-    # pid_lines.each.with_index {|line, index| puts "#{index}: #{line}"}
+    if debug?
+      pid_lines.each.with_index(1) {|line, index| puts "#{index}: #{line}" }
+    end
+
+    if spring_pids.empty?
+      puts "No spring pids found."
+      exit
+    end
+
+    puts "Asking spring politely to go quietly into that good night..."
     pids = pid_lines.map {|pid_line| pid_line.split[1] }
     pids.each do |pid|
       run_command "kill #{pid}"
     end
 
     if force?
+      pid_lines = spring_pids
       sleep 5
 
       puts "Telling spring to go, kicking and screaming if necessary..."
-      pid_lines = spring_pids
-      # pid_lines.each.with_index {|line, index| puts "#{index}: #{line}"}
+      if debug?
+        pid_lines.each.with_index(1) {|line, index| puts "#{index}: #{line}" }
+      end
       pids = pid_lines.map {|pid_line| pid_line.split[1] }
       pids.each do |pid|
         run_command "kill -9 #{pid}"
