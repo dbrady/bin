@@ -8,14 +8,18 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :flowchart, :merge, :stash
+
   def run
     @opts = Optimist.options do
+      opt :merge, "Merge parent branch in instead of rebasing", default: false
+      opt :stash, "Stash and reapply changes around rebase", default: false
+      opt :flowchart, "Show mermaid flowchart and exit", default: false
+
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
-      opt :stash, "Stash and reapply changes around rebase", default: false
-      opt :flowchart, "Show mermaid flowchart and exit", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
 
@@ -33,12 +37,12 @@ class Application
       puts opts.inspect
     end
 
-    if branch_is_dirty? && !opts[:stash_given]
+    if branch_is_dirty? && !stash?
       puts "Your branch has outstanding changes. Rerun with --stash if you want me to stash/rebase/reapply them, or --no-stash if you want to live dangerously.".red
       exit -1
     end
 
-    stashed = if branch_is_dirty? && opts[:stash]
+    stashed = if branch_is_dirty? && stash?
                 run_command("git stash")
               end
 
@@ -47,7 +51,8 @@ class Application
       "git pull",
       "git checkout #{current_branch}",
     ]
-    commands << "git rebase #{parent_branch}" unless current_branch == "master" && parent_branch == "master"
+    rebase_or_merge_command = merge? ? "merge" : "rebase"
+    commands << "git #{rebase_or_merge_command} #{parent_branch}" unless current_branch == "master"
 
     run_command_chain commands
 
