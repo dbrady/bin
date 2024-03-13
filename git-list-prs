@@ -10,6 +10,7 @@
 # e.g. "pr_history.rb". This will make the code shareable between the git-x-pr
 # scripts.
 
+require "byebug"
 require "colorize"
 require "extralite"
 require "optimist"
@@ -18,14 +19,14 @@ require "text-table"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
+# TODO: I don't like "search <allfields>", maybe change to --branch=CREDIT or --pr=23 or --date=2024
 
 # CREATE TABLE pr_history (id INTEGER NOT NULL PRIMARY KEY, repo TEXT NOT NULL, branch TEXT NOT NULL, pr INTEGER NOT NULL, created_at TIMESTAMP DEFAULT current_timestamp, updated_at TIMESTAMP DEFAULT current_timestamp, deleted_at TIMESTAMP DEFAULT NULL)
 
 class Application
   include DbradyCli
 
-  opt_flag :names
-  opt_flag :all
+  opt_flag :all, :names
 
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
@@ -45,11 +46,11 @@ git-list-prs [<command>]
 
 Commands:
 
-  console - connect to sqlite3 database
+  c,console - connect to sqlite3 database
 
-  archive - mark a PR as archived
+  a,archive - mark a PR as archived
 
-  search - search for specific PRs
+  s,search - search for specific PRs
 
   create - create PR history table (first time install only)
 
@@ -61,13 +62,22 @@ BANNER
       opt :start, "Start date (List PRs linked on or after date)", short: :none, type: :string
       opt :end, "End date (List PRs linked on or before date)", short: :none, type: :string
 
+      opt :branch, "Search for branches like %arg%", type: :string
+      opt :pr, "Search for prs like %arg%", type: :string
+      opt :updated, "Search for dates like %arg%", type: :string
+
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if opts[:debug]
+    if opts[:debug]
+      puts opts.inspect
+      puts "branch_like: #{branch_like}"
+      puts "pr_like: #{pr_like}"
+      puts "updated_like: #{updated_like}"
+    end
 
     if ARGV.include?("create")
       ensure_table_exists!
@@ -91,11 +101,33 @@ BANNER
     end
   end
 
+  def branch_like
+    return "%" unless opts[:branch_given]
+    "%#{opts[:branch]}%"
+  end
+
+  def pr_like
+    return "%" unless opts[:pr_given]
+    "%#{opts[:pr]}%"
+  end
+
+  def updated_like
+    return "%" unless opts[:updated_given]
+    "%#{opts[:updated]}%"
+  end
+
   def list
     repo = git_repo_for(Dir.pwd)
 
-    pr_query = PrHistory.where(repo:).order(*(names? ? [:branch] : [:updated_at, :id]))
+    pr_query = PrHistory.where(repo:)
+                 .where(
+                   Sequel.ilike(:branch, branch_like) \
+                   & Sequel.ilike(:pr, pr_like) \
+                   & Sequel.ilike(:updated_at, updated_like)
+                 )
+                 .order(*(names? ? [:branch] : [:updated_at, :id]))
     pr_query = pr_query.where(deleted_at: nil) unless all?
+    puts pr_query.sql.cyan if debug? || verbose?
     prs = pr_query.all
 
 
