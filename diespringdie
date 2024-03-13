@@ -26,7 +26,7 @@ class Application
     puts "spring_is_running? #{spring_is_running?.inspect}"
 
     pid_lines = spring_pids
-    if debug?
+    if !quiet?
       pid_lines.each.with_index(1) {|line, index| puts "#{index}: #{line}" }
     end
 
@@ -46,7 +46,7 @@ class Application
       sleep 5
 
       puts "Telling spring to go, kicking and screaming if necessary..."
-      if debug?
+      if !quiet?
         pid_lines.each.with_index(1) {|line, index| puts "#{index}: #{line}" }
       end
       pids = pid_lines.map {|pid_line| pid_line.split[1] }
