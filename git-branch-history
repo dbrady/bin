@@ -137,7 +137,7 @@ USAGE
     puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
 
     opts[:start] ||= (Date.today - 3).strftime("%F")
-    opts[:end] ||= (Date.today + 1).strftime("%F")
+    opts[:end] ||= (Date.today + 2).strftime("%F")
 
     puts "Opts after processing: #{opts.inspect}" if opts[:debug]
 
