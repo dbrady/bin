@@ -99,6 +99,7 @@ USAGE
 
       opt :start, "Start date", short: :none, type: :string
       opt :end, "End date", short: :none, type: :string
+      opt :index, "Show just one branch at index n/-m (run a search, pick index)", type: :integer
 
       opt :console, "Connect to sqlite database instead of querying", default: false
 
@@ -205,16 +206,20 @@ QUERY
         end
       end
     else
-      repos.each_pair do |repo, rows|
-        puts repo.cyan
-        rows.each do |row|
-          created_at_utc = DateTime.strptime(row[:created_at], "%F %T")
-          created_at = if utc?
-                         created_at_utc.strftime("%F %T %a UTC")
-                       else
-                         convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
-                       end
-          puts "    #{created_at}: #{row[:branch]}"
+      if opts[:index_given]
+        puts repos.values.first[opts[:index]].fetch(:branch)
+      else
+        repos.each_pair do |repo, rows|
+          puts repo.cyan
+          rows.each do |row|
+            created_at_utc = DateTime.strptime(row[:created_at], "%F %T")
+            created_at = if utc?
+                           created_at_utc.strftime("%F %T %a UTC")
+                         else
+                           convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
+                         end
+            puts "    #{created_at}: #{row[:branch]}"
+          end
         end
       end
     end

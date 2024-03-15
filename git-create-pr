@@ -21,11 +21,11 @@ end
 
 # ROOT_URL = "https://github.com/acima-credit/merchant_portal/pull/new/"
 current_branch = `git current-branch`.strip
-main_branch = `git main-branch`.strip
+main_branch = `git parent-branch`.strip
+main_branch = `git main-branch`.strip if main_branch.empty?
 url = "https://github.com/acima-credit/merchant_portal/compare/#{main_branch}...#{current_branch}?expand=1"
 
 # Set the title of the PR if possible
-# This is PROBABLY going to be segment[1]
 ticket_id = current_branch.split(%r|/|).find {|segment| segment =~ /^[A-Z]+-\d+$/ }
 branch_title = if opts[:title_given]
                  opts[:title]
