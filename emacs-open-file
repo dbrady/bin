@@ -1,0 +1,44 @@
+#!/usr/bin/env ruby
+# emacs-open-file - HEY DAVE COME DESCRIBE THIS SCRIPT
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :force
+
+  def run
+    @opts = Optimist.options do
+      opt :force, "Force open even if file does not exist", default: false
+      opt :session, "Name of session emacs is running in", type: :string, default: "work"
+      opt :window, "Window number emacs is running in", type: :integer, default: 1
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # APP CODE GOES HERE
+    # TODO: Dir.pwd instead of hardcoding path?
+    path = File.join(Dir.pwd, ARGV.first)
+
+    if force? || File.exist?(path)
+      run_command = "tmux send-keys -t#{session}:#{window} C-x C-f C-a C-k #{path} C-m"
+    else
+      puts "File does not exist: #{path}"
+      puts "Please fix the path or rerun with --force if you want to create the file"
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
+#!/bin/bash
