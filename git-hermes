@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# git-hermes - check out hermes branch for this repo
+require "colorize"
+
+hermes_branch = 'hermes/Concora2bFeatureCopy'
+
+cmd = "git checkout #{hermes_branch}"
+puts cmd.cyan
+system cmd

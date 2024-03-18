@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+# git-parent - identify and check out parent branch for this repo
+require "colorize"
+
+parent_branch = `git parent-branch`.strip
+
+cmd = "git checkout #{parent_branch}"
+puts cmd.cyan
+system cmd
