@@ -22,10 +22,11 @@ class Application
 
   attr_reader :db
 
-  opt_flag :prune
-  opt_flag :journal
-  opt_flag :utc
-  opt_flag :console
+  opt_flag :console, :journal, :prune, :utc
+
+  def line_numbers?
+    opts[:"line-number"]
+  end
 
   # TODO: Add a pruning option to clear out testing branches
 
@@ -100,6 +101,7 @@ USAGE
       opt :start, "Start date", short: :none, type: :string
       opt :end, "End date", short: :none, type: :string
       opt :index, "Show just one branch at index n/-m (run a search, pick index)", type: :integer
+      opt :"line-number", "Show line numbers (for subsequent --index calls)", short: :n, default: false
 
       opt :console, "Connect to sqlite database instead of querying", default: false
 
@@ -211,14 +213,16 @@ QUERY
       else
         repos.each_pair do |repo, rows|
           puts repo.cyan
-          rows.each do |row|
+          rows.each.with_index do |row, index|
             created_at_utc = DateTime.strptime(row[:created_at], "%F %T")
             created_at = if utc?
                            created_at_utc.strftime("%F %T %a UTC")
                          else
                            convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
                          end
-            puts "    #{created_at}: #{row[:branch]}"
+            line_num = line_numbers? ? "%2d " % index : ""
+            puts "#{line_num}#{created_at}: #{row[:branch]}"
+
           end
         end
       end
