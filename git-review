@@ -1,0 +1,139 @@
+#!/usr/bin/env ruby
+# git-review [<ticket> <branch>]- start/stop reviewing a PR branch
+require "colorize"
+require "optimist"
+require "yaml"
+
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  # TODO: group up all the ~/.git-xyz.yml files, maybe into a Yaml::Store or use sqlite3 in ~/bin/db/
+  SETTINGS_FILE = File.expand_path("~/.git-review.yml")
+  COMMANDS = %w[ start finish status clear ].freeze
+
+  def load_branch_info
+    @branch_info ||= YAML::load_file(SETTINGS_FILE)[Dir.pwd] rescue {}
+  end
+
+  def save_info(pull_request:, original_branch:, target_branch:)
+    info = {pull_request:, original_branch:, target_branch:}
+
+    settings = load_branch_info || {}
+    settings[Dir.pwd] = info
+
+    File.open(SETTINGS_FILE, "w") do |fp|
+      fp.puts settings.to_yaml
+    end
+  end
+
+  def clear_info
+    settings = load_branch_info || {}
+    settings.delete Dir.pwd
+
+    File.open(SETTINGS_FILE, "w") do |fp|
+      fp.puts settings.to_yaml
+    end
+  end
+
+  def load_pull_request
+    load_branch_info[:pull_request]
+  end
+
+  def load_original_branch
+    load_branch_info[:original_branch]
+  end
+
+  def load_target_branch
+    load_branch_info[:target_branch]
+  end
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+git-review start <pull_request_id> <target_branch> - hop to target_branch for testing
+git-review finish
+git-review status
+git-review clear
+
+Options:
+BANNER
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    Optimist::die("Must specify action") unless ARGV.size > 0
+    Optimist::die("start action requires PR and target branch") if ARGV.first == "start" && ARGV.size != 3
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # Action: We are either storing or clearing
+    argv = ARGV.dup
+    action = argv.shift
+
+    puts "action: #{action}" if debug?
+
+    Optimist::die("action must be one of: start, finish, status") unless COMMANDS.include?(action)
+    case action
+    when "start"
+      original_branch = git_current_branch
+      pull_request, target_branch = *argv
+
+      if pull_request.to_i.zero?
+        puts "pull_request must be a number. Run git-review --help for more info."
+      end
+
+      if !git_isclean
+        puts "Outstanding changes detected. Please commit or stash them and try again."
+        exit -1
+      end
+
+      puts "starting review of #{target_branch} for PR#{pull_request}" unless quiet?
+      puts "original branch is #{original_branch}" unless quiet?
+
+      save_info(pull_request:, original_branch:, target_branch:)
+
+      puts "TODO: git co -b #{target_branch}"
+
+    when "finish"
+      puts "finished review of #{target_branch} for PR#{pull_request}" unless quiet?
+
+      if !git_isclean
+        puts "Outstanding changes detected. Please commit/stash/restore them and try again."
+        exit -1
+      end
+
+      settings = load_original_branch
+
+      puts settings.inspect
+
+      puts "TODO: go #{original_branch}".yellow
+
+      puts "TODO: git branch -D #{target_branch}".yellow
+
+    when "status"
+      puts Dir.pwd
+      puts "Original Branch: #{load_original_branch}"
+      puts "Target Branch: #{load_target_branch}"
+      puts "PR: #{load_pull_request}"
+
+    when "clear"
+      puts "Clearing info for #{Dir.pwd}"
+      puts "Original Branch was: #{load_original_branch}"
+      puts "Target Branch was: #{load_target_branch}"
+      puts "PR was: #{load_pull_request}"
+
+      clear_info
+    end
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
