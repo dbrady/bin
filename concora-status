@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# concora-status - Show/change concora status feature flags
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  ENV_FILE=File.expand_path(File.join(Dir.pwd, ".local.env"))
+  DEFAULT_CONCORA_FLAGS = %w(CONCORA_2B CONCORA_LEASE)
+
+  opt_flag :enable, :disable, :all
+
+  def run
+    @opts = Optimist.options do
+      opt :enable, "Enable default concora flags", default: false
+      opt :disable, "Disable default concora flags", short: :x, default: false
+
+      opt :all, "Show all concora fields, not just the feature flags", default: false
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+    Optimist.die("Cannot find env file: #{ENV_FILE}") unless File.exist?(ENV_FILE)
+    Optimist.die("Cannot enable and disable at the same time") if enable? && disable?
+
+    puts "Existing flags:"
+    show_concora_flags
+
+    if enable? || disable?
+      flag_value = enable? ? "true" : "false"
+
+      lines = File.readlines(".local.env").map(&:rstrip).map do |line|
+        flag_name = line.split(/=/).first.to_s.strip
+        if DEFAULT_CONCORA_FLAGS.include?(flag_name)
+          "#{flag_name}=#{flag_value}"
+        else
+          line
+        end
+      end
+
+      File.open(".local.env", "w") {|fp| fp.puts lines }
+
+      puts "Updated flags:"
+      show_concora_flags
+    end
+  end
+
+  def show_concora_flags
+    File.readlines(".local.env").map(&:rstrip).grep(/^\s*CONCORA/).each do |line|
+      flag = line.split(/=/).first.to_s.strip
+
+      if all? || DEFAULT_CONCORA_FLAGS.include?(flag)
+        color = if line =~ /=\s*true\s*$/i
+                  :green
+                elsif line =~ /=\s*false\s*$/i
+                  :red
+                else
+                  :cyan
+                end
+        puts line.send(color)
+      end
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
