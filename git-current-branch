@@ -4,4 +4,5 @@
 # 2023-05-01: TODO: deal with detached head. Right now this captures "(HEAD
 # detached from /branch)" as "(HEAD". Mostly a problem when you have submodules.
 
-git branch | grep '*' | cut -d ' ' -f2-
+# git branch | grep '*' | cut -d ' ' -f2-
+git status | head -n 1 | awk '{ print $3 }'
