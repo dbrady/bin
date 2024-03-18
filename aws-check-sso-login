@@ -1,10 +1,9 @@
 #!/bin/bash
-# normal mode: exits silently and returns bash status !!(we are logged in)
-# verbose mode: prints "You are logged in" or not (and return bash status)
+# quiet mode: exits silently and returns bash status !!(we are logged in)
+# normal mode: prints "You are logged in" or not (and return bash status)
 #
-if [ "$1" == "-v" ]; then
-    aws sts get-caller-identity --query "Account" > /dev/null 2>&1 && echo "You are logged in to AWS." || (echo "You are NOT logged in to AWS" && /usr/bin/false)
-else
-    # aws-check-sso-login && echo You are logged in || echo You are NOT logged in
+if [ "$1" == "-q" ]; then
     aws sts get-caller-identity --query "Account" > /dev/null 2>&1
+else
+    aws sts get-caller-identity --query "Account" > /dev/null 2>&1 && echo "You are logged in to AWS." || (echo "You are NOT logged in to AWS" && /usr/bin/false)
 fi
