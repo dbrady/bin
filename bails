@@ -44,7 +44,7 @@ class Application
   end
 
   def ensure_aws_sso_login
-    run_command("aws sso login") unless run_command("aws-check-sso-login")
+    run_command("aws sso login") unless run_command("aws-check-sso-login -q")
   end
 
 end
