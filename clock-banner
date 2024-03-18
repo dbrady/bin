@@ -1,0 +1,3 @@
+#!/usr/bin/env ruby
+# clockbanner - show current time in a small text banner
+system "rubanner --font=miniwi --bg light_black '#{Time.now.strftime('%F %T')}'"
