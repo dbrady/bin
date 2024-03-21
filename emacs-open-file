@@ -29,7 +29,7 @@ class Application
     path = File.join(Dir.pwd, ARGV.first)
 
     if force? || File.exist?(path)
-      run_command = "tmux send-keys -t#{session}:#{window} C-x C-f C-a C-k #{path} C-m"
+      run_command "tmux send-keys -t#{opts[:session]}:#{opts[:window]} C-x C-f C-a C-k #{path} C-m"
     else
       puts "File does not exist: #{path}"
       puts "Please fix the path or rerun with --force if you want to create the file"
