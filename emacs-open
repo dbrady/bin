@@ -29,6 +29,13 @@ class Application
 
 
     tmux_already_running = run_command "tmux list-sessions | grep -E '^#{opts[:session]}: [[:digit:]]+ windows '"
+    # TODO: Use tmux list-windows -a | grep "emacs" to find which session has a
+    # window named "emacs". Finding the active process in a window is harder,
+    # but window name is easy, and I always name work:1 "emacs" anyway.
+    #
+    # This changes the logic a bit, instead of "is tmux running" I want session,
+    # window = where_is_tmux_running_emacs, and possibly with a check for "is
+    # there ONLY one emacs window running".
 
     if tmux_already_running
       puts "Opening #{path} with emacs in tmux session '#{opts[:session]}:#{opts[:window]}'..."
