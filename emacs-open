@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# emacs-open-file - HEY DAVE COME DESCRIBE THIS SCRIPT
+# emacs-open - Send open-file keychords to emacs in another tmux window
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
@@ -25,11 +25,26 @@ class Application
     puts opts.inspect if opts[:debug]
 
     # APP CODE GOES HERE
-    # TODO: Dir.pwd instead of hardcoding path?
     path = File.join(Dir.pwd, ARGV.first)
 
+
+    tmux_already_running = run_command "tmux list-sessions | grep -E '^#{opts[:session]}: [[:digit:]]+ windows '"
+
+    if tmux_already_running
+      puts "Opening #{path} with emacs in tmux session '#{opts[:session]}:#{opts[:window]}'..."
+    else
+      puts "Could not find a tmux session named '#{opts[:session]}'. These are the running tmuxen:"
+      puts get_command_output_lines "tmux list-sessions"
+      exit -1
+    end
+    puts "Is tmux already running a session named '#{opts[:session]}? #{tmux_already_running.inspect}"
+
+    path, line = path.split(/:/)
+
     if force? || File.exist?(path)
-      run_command "tmux send-keys -t#{opts[:session]}:#{opts[:window]} C-x C-f C-a C-k #{path} C-m"
+      tmux_command = "tmux send-keys -t#{opts[:session]}:#{opts[:window]}"
+      run_command "#{tmux_command} C-x C-f C-a C-k #{path} C-m"
+      run_command "#{tmux_command} M-g M-g #{line} C-m" if line
     else
       puts "File does not exist: #{path}"
       puts "Please fix the path or rerun with --force if you want to create the file"
