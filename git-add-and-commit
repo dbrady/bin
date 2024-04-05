@@ -52,7 +52,7 @@ class Application
     end
 
     run_command! "git add #{file}"
-    run_command! "git commit -m #{message}"
+    run_command! "git commit -m '#{message}'"
   end
 
 end
