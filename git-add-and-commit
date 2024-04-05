@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+# git add-and-commit - Add a path and commit it. STUPID VERSION. WILL COMMIT ANY EXISTING CHANGES. WILL ADD NEW FILES. IF YOU HAVE STAGED CHANGES AND THE PATH YOU WANT TO ADD
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # TEST THIS:
+    # - run this on a file that's in .git-ignore, I think git will balk, and
+    #   that's probably a good thing.
+    # - git mv a file, then modify it. It now shows up in the staged changes as
+    #   a rename. Does that look like "also other changes"?
+
+    # Fancy Version (Does Not Exist Yet):
+    # Can the file be committed (is it present in any of: staged changes,
+    # unstaged changes, new files?), AND are there NO other staged changes?
+    # Yes
+    #   # if it's untracked and there are no other changes, consider git-add
+    #   git add file
+    #   git commit -m "Message"
+    # No
+    #   What went wrong?
+    #     - file doesn't exist
+    #     - file is in the repo but has no unstaged changes
+    #     - file can be committed but there are also other changes already
+    #       staged (TODO: add --force option to add and commit anyway,
+    #       committing the other staged changes?)
+    #     - TEST THIS, NOT SURE IF BUG, BUT PROBABLY: git mv a file, then modify
+    #       it. It now shows up in the staged changes as a rename. Does that
+    #       look like "also other changes"?
+
+    # TODO: Make this be not the pig-stupid implementation
+    file = ARGV.first
+    message = ARGV[1..].join(' ')
+
+    if message.to_s.strip.empty?
+      puts "Commit message is required."
+      exit -1
+    end
+
+    run_command! "git add #{file}"
+    run_command! "git commit -m #{message}"
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
