@@ -16,6 +16,8 @@ class Application
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :quiet, "Run with minimal output", default: false
+
+      opt :project, "Project portion of jira ticket, e.g. CREDIT or ATD", default: "AA"
     end
     puts opts.inspect if opts[:debug]
 
