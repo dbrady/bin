@@ -10,13 +10,26 @@ KNOWN_STATUSES = {
   "b" => "Blocked",
   "r" => "In Review",
   "q" => "QA Review",
-  "d" => "In Development",
+  "p" => "In Progress",
   "D" => "Deployed"
 }
 DEFAULT_REPO="merchant_portal"
 DEFAULT_BOARD="CREDIT"
 
 opts = Optimist.options do
+  banner <<BANNER
+Fill out template for slackup. Use standalone for 1 slackup, or use with slorks,
+which reads slorks.org.
+
+Statuses:
+  b = Blocked
+  r = In Review
+  q = QA Review
+  p = In Progress
+  D = Deployed
+
+Options:
+BANNER
   opt :debug, "Print extra debug info", default: false
 
   opt :jira, "Jira Ticket ID", type: :int
