@@ -115,7 +115,7 @@ module DbradyCli
 
   # get url to ticket
   def jira_url(ticket=jira_ticket)
-    "https://acima.atlassian.net/browse/#{ticket}"
+    "https://upbd.atlassian.net/browse/#{ticket}"
   end
 
   # Generate the markdown linkety blurb
