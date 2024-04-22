@@ -22,7 +22,7 @@ class Application
 
   attr_reader :db
 
-  opt_flag :console, :journal, :prune, :utc
+  opt_flag :console, :go, :journal, :prune, :unique, :utc
 
   def line_numbers?
     opts[:"line-number"]
@@ -101,8 +101,10 @@ USAGE
       opt :start, "Start date", short: :none, type: :string
       opt :end, "End date", short: :none, type: :string
       opt :index, "Show just one branch at index n/-m (run a search, pick index)", type: :integer
-      opt :"line-number", "Show line numbers (for subsequent --index calls)", short: :n, default: false
+      opt :"line-number", "Show line numbers (for subsequent --index calls)", short: :n, default: true
+      opt :unique, "Show unique branches. Suppress branches that have already been mentioned", short: :u, default: false
 
+      opt :go, "Go to branch at index n/-m", default: false
       opt :console, "Connect to sqlite database instead of querying", default: false
 
       opt :log, "Show journal/log of branch changes", default: false
@@ -113,18 +115,11 @@ USAGE
       opt :debug, "Dump extra debug information (Also set --verbose to log query results)", short: :d, default: false
       opt :pretend, "Print queries but do not run them", default: false
       opt :verbose, "Be a bit extra chatty", default: false
-      opt :prune, "Prune duplicate branches (shouldn't need to be done ever, let alone often, but sometimes I write bugs)", default: false
-      opt :quiet, "Run with minimal output", default: false
+      opt :prune, "Prune duplicate branches (shouldn't need to be done ever, let alone often, short option is disabled)", short: :none, default: false
+      opt :quiet, "Run with minimal output (no line numbers or additional suggestions, overridden by -d/-v)", short: :q, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
-
-    if debug?
-      puts "debug? #{debug?.inspect}"
-      puts "verbose? #{verbose?.inspect}"
-      puts "quiet? #{quiet?.inspect}"
-      puts "prune? #{prune?.inspect}"
-    end
 
     if console?
       status = run_command "sqlite3 #{DATABASE_PATH}"
@@ -155,6 +150,8 @@ USAGE
               where = "WHERE " + wheres.join(" AND ")
             end
 
+    group = unique? ? "GROUP BY branch" : ""
+
     order = opts[:log] ? 'created_at' : 'path, created_at'
 
     puts "Opening database at: #{DATABASE_PATH}" if opts[:debug]
@@ -164,15 +161,11 @@ USAGE
 
     query = if opts[:journal]
               <<QUERY
-SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at
-QUERY
-            elsif opts[:latest]
-              <<QUERY
-SELECT path, branch, MAX(created_at) AS newest_created_at FROM branch_history #{where} GROUP BY path ORDER BY path
+SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at #{group}
 QUERY
             else
               <<QUERY
-SELECT path, branch, created_at FROM branch_history #{where} ORDER BY #{order}
+SELECT path, branch, created_at FROM branch_history #{where} #{group} ORDER BY #{order}
 QUERY
             end
 
@@ -209,7 +202,9 @@ QUERY
       end
     else
       if opts[:index_given]
-        puts repos.values.first[opts[:index]].fetch(:branch)
+        branch = repos.values.first[opts[:index]].fetch(:branch)
+        puts branch
+        run_command "go #{branch}" if go?
       else
         repos.each_pair do |repo, rows|
           puts repo.cyan
@@ -220,7 +215,7 @@ QUERY
                          else
                            convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
                          end
-            line_num = line_numbers? ? "%2d " % index : ""
+            line_num = (line_numbers? && !quiet?) ? "%2d " % index : ""
             puts "#{line_num}#{created_at}: #{row[:branch]}"
 
           end
