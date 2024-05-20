@@ -51,8 +51,8 @@ class Application
     puts "Recorded. Branch '#{current_branch}' is PR number #{pr}."
 
     # Remind me to run rubocop
-    rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
-    puts "Did you remember to run #{rubocop}?"
+    # rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
+    # puts "Did you remember to run #{rubocop}?"
   end
 end
 
