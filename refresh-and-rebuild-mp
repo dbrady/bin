@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# rubuild-and-refresh-mp - refresh/update everything we can think of.
+# refresh-and-rebuild-mp - refresh/update everything we can think of.
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
