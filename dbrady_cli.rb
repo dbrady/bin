@@ -60,7 +60,7 @@ module DbradyCli
 
   # Log a command to the console, then run it (unless --pretend), and raise an
   # exception if fails.
-  def run_command!(command, quiet: false)
+  def run_command!(command)
     puts "run_command!: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
 
@@ -126,6 +126,10 @@ module DbradyCli
   # ----------------------------------------------------------------------
   # GIT STUFF
   # ----------------------------------------------------------------------
+  def git_on_main_branch?
+    git_current_branch == git_main_branch
+  end
+
   def git_current_branch
     `git current-branch`.strip
   end
