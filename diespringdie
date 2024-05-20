@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # diespringdie - Hunt down undead spring processes and drive stakes through their heart
+# BONUS: Also kill stray/hung db migrations
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
@@ -9,7 +10,7 @@ class Application
   include DbradyCli
 
 
-  opt_flag :force
+  opt_flag :force, :db
 
   def run
     @opts = Optimist.options do
@@ -18,6 +19,7 @@ class Application
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :force, "After asking spring politely to shut down, get real intense if necessary", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :db, "Kill db:migrate processes as well", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -28,6 +30,14 @@ class Application
     pid_lines = spring_pids
     if !quiet?
       pid_lines.each.with_index(1) {|line, index| puts "#{index}: #{line}" }
+    end
+
+    if db? # && db_migrate_is_running?
+      puts "Killing db:migrate processes"
+      db_migrate_pids.each do |pid|
+        puts "#{pid}"
+        run_command "kill #{pid}"
+      end
     end
 
     if spring_pids.empty?
@@ -69,7 +79,15 @@ class Application
   end
 
   def spring_pids
-    lines = get_command_output_lines("ps auwx | grep [s]pring").find_all {|line| line.split[10] == "spring" }
+    get_command_output_lines("ps auwx | grep [s]pring").find_all {|line| line.split[10] == "spring" }
+  end
+
+  def db_migrate_pids
+    get_command_output_lines("ps auwx | grep db:[m]igrate | awk '{ print $2 }'")
+  end
+
+  def db_migrate_is_running?
+    run_command "ps auwx | grep -v db:[m]igrate | grep [s]pring 2>&1 > /dev/null"
   end
 end
 
