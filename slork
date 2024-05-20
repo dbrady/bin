@@ -11,6 +11,7 @@ KNOWN_STATUSES = {
   "r" => "In Review",
   "q" => "QA Review",
   "p" => "In Progress",
+  "d" => "Ready to Deploy",
   "D" => "Deployed"
 }
 DEFAULT_REPO="merchant_portal"
