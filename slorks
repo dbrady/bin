@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+# slorks - run slork for current/ongoing work
+require "colorize"
+require "optimist"
+String.disable_colorization unless $stdout.tty?
+
+opts = Optimist.options do
+  opt :debug, "Print extra debug info", default: false
+  opt :file, "Input file", default: File.expand_path(File.join(File.dirname(__FILE__), "slorks.org"))
+end
+puts opts.inspect if opts[:debug]
+
+slorks = File.readlines(opts[:file]).reject.with_index {|line, index| index < 2 }.map do |line|
+  words = line.split(/\|/).map(&:strip).tap {|ray| ray.pop; ray.shift}
+  {
+    board: words[0],
+    jira: words[1],
+    repo: words[2],
+    pr: words[3],
+    title: words[4],
+    status: words[5],
+    notes: words[6],
+  }
+  # %i(board, jira, repo, pr, title, status, notes).zip(line.split(/\|/).tap {|ray| ray.pop; ray.shift }.map(&:strip)).flatten
+end
+
+slorks.each.with_index(1) do |slork, index|
+  command = %Q|slork --board=#{slork[:board]} --jira=#{slork[:jira]} --repo=#{slork[:repo]} --title="#{slork[:title]}" --status="#{slork[:status]}"|
+
+  command += %Q| --pr=#{slork[:pr]}| if slork[:pr] != ""
+  command += %Q| --notes="#{slork[:notes]}"| if slork[:notes] != ""
+  # puts command.cyan
+  system command
+  puts "--" unless index == slorks.size
+end
+
+# puts %Q|
+# echo
+# slork --pr=11082 --jira=10 --title="Make CreditSetting location unique" --status q
+# echo ------
+# slork --pr=11089 --jira=10 --status=q --title="Rename all the things (Genesis->Concora, initialized->credit_requested, LocationInitaition->CreditRequest)"
+# echo ------
+# slork --pr=11099 --jira=10 --status="Draft PR" --title="Validate Numericality for Concora" --notes="Draft because it depends on 11089 (Rename all the things) so shows 10x more changes"
+# echo ------
+# slork --jira=10 --status=d --title="Integrate credit request action" --notes="Depends on 11089 (Rename all the things)"
+# |
