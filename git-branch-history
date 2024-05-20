@@ -217,11 +217,11 @@ QUERY
                          end
             line_num = (line_numbers? && !quiet?) ? "%2d " % index : ""
             puts "#{line_num}#{created_at}: #{row[:branch]}"
-
           end
         end
       end
     end
+    puts "Use -gi <id> to go to an index" unless go? || quiet?
     # ----------------------------------------------------------------------
     # END MAIN
     # ----------------------------------------------------------------------
