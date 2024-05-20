@@ -44,3 +44,8 @@ end
 # echo ------
 # slork --jira=10 --status=d --title="Integrate credit request action" --notes="Depends on 11089 (Rename all the things)"
 # |
+
+# Example slorks.org:
+# | board | jira | repo            |    pr | title                                                       | status | notes |
+# |-------+------+-----------------+-------+-------------------------------------------------------------+--------+-------|
+# | COR   |  477 | merchant_portal | 12694 | Show transfer group locations to coworkers, not just users  | r      |       |
