@@ -8,7 +8,7 @@
 # cat -n file.txt | sed -ne '100,150p'     # with line numbers
 #
 # Usage:
-#     sed-lines [-v] [-n] <start> <stop> <file>
+#     sed-lines [-v] [-n] <start> <stop> [<file>]
 #     -n - show line numbers
 #     -v, --verbose - show the native sed command
 
