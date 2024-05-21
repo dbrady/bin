@@ -26,7 +26,7 @@ end
 
 opts = Optimist.options do
   banner <<USAGE
-git new-branch [options] <jira_id> <branch_name>
+git new-branch [options] [<jira_team>-]<jira_id> <branch_name>
 
 Usage:
 
@@ -46,7 +46,7 @@ USAGE
   opt :force, 'Continue even if warnings, e.g. not on master', default: false
   opt :debug, 'Show detail debugging information', default: false
   opt :pretend, 'Show the git command that would be run, but do not run it', default: false
-  opt :"jira-team", 'Jira ticket team prefix', default: 'COR'
+  opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'COR'
 end
 puts opts.inspect if opts[:debug]
 Optimist::die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
@@ -91,4 +91,19 @@ puts command.cyan
 
 if !opts[:pretend]
   puts `#{command}`
+end
+
+# "create-test-branch" => "Create test branch"
+def branch_to_sentence(branch)
+  branch.split(/[-_]/).join(' ').capitalize
+end
+
+# add to slorks?
+repo = Dir.pwd.split('/').last
+slork_text = "| #{opts[:'jira-team']} | #{ticket} | #{repo}            |    pr | #{branch_to_sentence(branch)}                                                       | p |  |"
+
+File.open(File.expand_path("~/bin/slorks.org"), "a") do |fp|
+  puts "Adding to ~/bin/slorks.org:"
+  puts slork_text.cyan
+  fp.puts slork_text unless opts[:pretend]
 end
