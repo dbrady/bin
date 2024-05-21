@@ -1,4 +1,0 @@
-#!/bin/bash
-# awsp - aws but with the profile tweak thing as of 2024-05-2024
-echo -e "\033[36maws --profile NonProdDeveloperAccess-574644123169 $@\033[0m"
-aws --profile NonProdDeveloperAccess-574644123169 $@
