@@ -57,14 +57,21 @@ def filename_to_job_name(name)
 end
 
 ticket, branch = ARGV
+ticket_id = ticket
 
 if ticket =~ /^([A-Z]+)-(\d+)/i
   opts[:'jira-team'] = $1
-  ticket = $2
+  ticket_id = $2
+else
+  ticket_id = ticket
 end
+
+ticket = "#{opts[:'jira-team']}-#{ticket}"
+full_branch_name = "dbrady/#{ticket}/#{branch}"
 
 if opts[:debug]
   puts "ticket: #{ticket}"
+  puts "ticket_id: #{ticket_id}"
   puts "branch: #{branch}"
 end
 
@@ -76,9 +83,6 @@ if !(current_branch == main_branch || opts[:force])
   puts "git-new-branch --force #{ARGV.join(' ')}"
   exit
 end
-
-ticket = "#{opts[:'jira-team']}-#{ticket}" if ticket =~ /^\d+$/
-full_branch_name = "dbrady/#{ticket}/#{branch}"
 
 # Ensure branch name is short enough to fit through the CI mangler
 if full_branch_name.size > 60
@@ -100,7 +104,7 @@ end
 
 # add to slorks?
 repo = Dir.pwd.split('/').last
-slork_text = "| #{opts[:'jira-team']} | #{ticket} | #{repo}            |    pr | #{branch_to_sentence(branch)}                                                       | p |  |"
+slork_text = "| #{opts[:'jira-team']} | #{ticket_id} | #{repo}            |       | #{branch_to_sentence(branch)}                                                       | p |  |"
 
 File.open(File.expand_path("~/bin/slorks.org"), "a") do |fp|
   puts "Adding to ~/bin/slorks.org:"
