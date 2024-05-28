@@ -29,7 +29,7 @@ slorks.each.with_index(1) do |slork, index|
 
   command += %Q| --pr=#{slork[:pr]}| if slork[:pr] != ""
   command += %Q| --notes="#{slork[:notes]}"| if slork[:notes] != ""
-  # puts command.cyan
+  puts command.cyan if opts[:debug]
   system command
   puts "--" unless index == slorks.size
 end

@@ -71,7 +71,7 @@ jira_board, ticket_id = if opts[:jira_given]
                         elsif opts[:branch]
                           get_board_and_ticket_from_branch
                         end
-jira_url = "https://acima.atlassian.net/browse/#{jira_board}-#{ticket_id}" if jira_board && ticket_id
+jira_url = "https://upbd.atlassian.net/browse/#{jira_board}-#{ticket_id}" if jira_board && ticket_id
 
 repo, pr_id = if opts[:pr_given]
                 [opts[:repo], opts[:pr]]
@@ -152,7 +152,7 @@ ActiveRecord.establish_connection(
 #
 # boards: name, slug, code           Credit, CREDIT, cr
 # tickets: board_id, number, title   <credit>, 10, Validate Location Initation
-#     url(): string                  -> https://acima.atlassian.net/browse/CREDIT-10
+#     url(): string                  -> https://upbd.atlassian.net/browse/CREDIT-10
 # repo: name, slug, code             Merchant Portal, merchant_portal, mp
 #     home_url(): string
 # branches: repo_id, name            <mp>, dbrady/CREDIT-10/validate-location-initiation
