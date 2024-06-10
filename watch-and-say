@@ -6,7 +6,8 @@
 require 'fileutils'
 
 watch_file = if ARGV.size.zero?
-               "~/.watch-and-say"
+               # This hardcode must match ~/bin/wsay (which is a bash script)
+               "/Users/davidbrady/.watch-and-say"
              elsif File.directory?(File.dirname(ARGV[0]))
                ARGV[0]
              else
