@@ -31,5 +31,6 @@ fi
 rfsave last
 
 echo 'Rspec Focus: Focus! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
-echo "Focusing specs on $@..."
+echo "Focusing specs:"
+echo "$@"
 echo -n $@ > ~/.spec_focus

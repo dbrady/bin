@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# rfn <spec> [<spec> [...]] - "rspec new" creates new spec focus
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    existing_focus = get_command_output 'rfv'
+
+    @opts = Optimist.options do
+      banner <<-BANNER
+      rfn <spec> [<spec> [...]] - create new spec focus
+
+      run rfh to see other commands
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :format, "Format (see rspec --help)", default: "documentation"
+      opt :order, "Order (see rspec --help)", default: "defined"
+    end
+    Optimist.die "Missing Argument: which spec file(s) do you want to append?" unless ARGV.size > 0
+    ARGV.each do |path|
+      Optimist.die "Path is not a spec file: #{path}" unless path.start_with?("spec/")
+      Optimist.die "Path does not exist: #{path}" unless File.exist?(path)
+      Optimist.die "Path is already in spec focus: #{path}" if existing_focus =~ /\s+#{path}(\s|$)/
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    new_focus = [existing_focus, *ARGV].join(' ')
+
+    run_command! "rff #{new_focus}"
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
