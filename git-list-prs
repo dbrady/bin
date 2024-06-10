@@ -89,7 +89,6 @@ BANNER
   end
 
   def ensure_table_exists!
-    puts "CREATING TABLE WOOO"
     DB.create_table?(:pr_history, if_not_exists: true) do
       primary_key :id
       String :repo, null: false
