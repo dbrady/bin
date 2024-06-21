@@ -1,4 +1,5 @@
 #!/bin/bash
 # echo 'Rspec Focus: View! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
+echo -n 'bundle exec rspec '
 cat ~/.spec_focus
 echo
