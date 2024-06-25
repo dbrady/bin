@@ -8,13 +8,14 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :edit
+  opt_flag :edit, :table
 
   def run
     @opts = Optimist.options do
       opt :debug, "Print extra debug info", default: false
       opt :file, "Input file", default: File.expand_path(File.join(File.dirname(__FILE__), "slorks.org"))
       opt :edit, "Edit input file (Specific to my tmux/emacs setup -- opens with emacs-open)", default: false
+      opt :table, "Quick display as just table", default: false
     end
     puts opts.inspect if debug?
 
@@ -34,6 +35,11 @@ class Application
       # %i(board, jira, repo, pr, title, status, notes).zip(line.split(/\|/).tap {|ray| ray.pop; ray.shift }.map(&:strip)).flatten
     end
 
+    if table?
+      show_table slorks
+      exit
+    end
+
     slorks.each.with_index(1) do |slork, index|
       command = %Q|slork --board=#{slork[:board]} --jira=#{slork[:jira]} --repo=#{slork[:repo]} --title="#{slork[:title]}" --status="#{slork[:status]}"|
 
@@ -43,6 +49,24 @@ class Application
       system command
       puts "--" unless index == slorks.size
     end
+  end
+
+  def show_table(slorks)
+    longests = Hash.new 0
+    keys = %i(board jira repo pr title status notes)
+    keys.each {|key| longests[key] = key.to_s.size }
+
+    slorks.each {|slork| keys.each {|key| longests[key] = [longests[key], slork[key].to_s.size].max }}
+
+    format = "| " + keys.map {|key| "%-#{longests[key]}s" }.join(" | ") + " |"
+
+    puts format % keys
+    puts((format % ([''] * keys.size)).gsub(/\s/, '-'))
+
+    slorks.each do |slork|
+      puts format % (keys.map {|key| slork[key] })
+    end
+
   end
 end
 
