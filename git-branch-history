@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 # git-branch-history - query and show history from db/git-settings.db
+
+# TODO: Consider the git equivalents of pushd and popd? `git checkout -` works
+# for the last branch, but I often hop between two tests branches and master,
+# which forces one of the last branches to be lost.
 require "byebug"
 require "colorize"
 require "date"
@@ -22,37 +26,10 @@ class Application
 
   attr_reader :db
 
-  opt_flag :console, :go, :journal, :prune, :unique, :utc
+  opt_flag :console, :go, :journal, :unique, :utc
 
   def line_numbers?
     opts[:"line-number"]
-  end
-
-  # TODO: Add a pruning option to clear out testing branches
-
-  # Prune duplicate branches from repo. Doesn't happen often, shouldn't happen
-  # ever, PITA to clean up from the console, so here's some code for you, Future
-  # Me, if you eff things up again like I did today. Love, Past Me. Maybe if I
-  # never use this again I can remove the --prune option.
-  #
-  # Also this is super rarely needed (I hope) so I'm giving you an n+1
-  # query. Cache your own ids, I'm tired.
-  def prune_branches(path, db)
-    puts "pruning branches for #{path}..."
-    last_branch = nil
-
-    query = "SELECT id, branch FROM branch_history WHERE path='#{path}' ORDER BY created_at ASC"
-    puts query.cyan if pretend? || verbose? || debug?
-    db.query(query).each do |row|
-      branch = row[:branch]
-      if branch == last_branch
-        puts "Deleting row: #{row.inspect}"
-        db.execute("DELETE FROM branch_history WHERE id=?", row[:id]) unless pretend?
-      else
-        puts "Keeping row:  #{row.inspect}"
-      end
-      last_branch = branch
-    end
   end
 
   # this would be unnecessary if the tzinfo gem wasn't currently incompatible with my current ruby setup
@@ -115,7 +92,6 @@ USAGE
       opt :debug, "Dump extra debug information (Also set --verbose to log query results)", short: :d, default: false
       opt :pretend, "Print queries but do not run them", default: false
       opt :verbose, "Be a bit extra chatty", default: false
-      opt :prune, "Prune duplicate branches (shouldn't need to be done ever, let alone often, short option is disabled)", short: :none, default: false
       opt :quiet, "Run with minimal output (no line numbers or additional suggestions, overridden by -d/-v)", short: :q, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
@@ -156,8 +132,6 @@ USAGE
 
     puts "Opening database at: #{DATABASE_PATH}" if opts[:debug]
     @db = Extralite::Database.new(DATABASE_PATH)
-
-    prune_and_exit!(opts, db) if opts[:prune]
 
     query = if opts[:journal]
               <<QUERY
@@ -227,27 +201,6 @@ QUERY
     # ----------------------------------------------------------------------
   end
 end
-
-
-# prune_and_exit! - Clean up duplicate branches. Shouldn't happen ever. Doesn't happen often. Pain in the ass to clean up.
-# --prune - clean up duplicate branchs from current repo
-# --prune --all - clean up duplicates in all branches
-def prune_and_exit!(opts, db)
-  paths = if opts[:all]
-            query = "SELECT path FROM branch_history GROUP BY path ORDER BY path"
-            puts query.cyan if pretend? || verbose? || debug?
-            db.query(query).map {|row| row[:path]} unless pretend?
-          else
-            Array(opts[:path])
-          end
-
-  paths.each do |path|
-    prune_branches(path, db)
-  end
-
-  exit
-end
-
 
 if __FILE__ == $0
   Application.new.run
