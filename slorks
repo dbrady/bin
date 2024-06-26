@@ -2,6 +2,7 @@
 # slorks - run slork for current/ongoing work
 require "colorize"
 require "optimist"
+require "text-table"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
@@ -52,21 +53,17 @@ class Application
   end
 
   def show_table(slorks)
-    longests = Hash.new 0
+    table = Text::Table.new
+
     keys = %i(board jira repo pr title status notes)
-    keys.each {|key| longests[key] = key.to_s.size }
 
-    slorks.each {|slork| keys.each {|key| longests[key] = [longests[key], slork[key].to_s.size].max }}
-
-    format = "| " + keys.map {|key| "%-#{longests[key]}s" }.join(" | ") + " |"
-
-    puts format % keys
-    puts((format % ([''] * keys.size)).gsub(/\s/, '-'))
+    table.head = keys
 
     slorks.each do |slork|
-      puts format % (keys.map {|key| slork[key] })
+      table.rows << keys.map {|key| slork[key] }
     end
 
+    puts table
   end
 end
 
