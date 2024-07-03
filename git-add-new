@@ -3,7 +3,7 @@
 
 # commify args. `git add-new a b c d` -> "a, b, c, d"
 # first time through loop, files and glue expand to empty string.
-for i in $@; do
+for i in "$@"; do
     files="$files$glue$i"
     glue=', '
 done
@@ -20,8 +20,8 @@ if ! git-isclean; then
 fi
 
 
-echo git add $@
-git add $@
+echo git add "$@"
+git add "$@"
 
 echo git commit -m "Add $files"
 git commit -m "Add $files"
