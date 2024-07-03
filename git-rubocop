@@ -49,10 +49,17 @@ class Application
     puts opts.inspect if debug?
 
     # if no arguments and nothing's going on, use git main as the sha
+    changed_files = get_command_output_lines("git files-changed --existing #{opts[:since]}")
+    modified_files = get_command_output_lines("git modified") || []
+
     files = []
-    files += get_command_output_lines "git files-changed --existing #{opts[:since]}"
-    files += get_command_output_lines "git modified" if unstaged?
-    files += ARGV.dup # re-add ARGV so you can exclude *.json then force include filename.json
+    files += changed_files
+    files += modified_files if unstaged?
+    files += ARGV.dup # re-add ARGV so you can, e.g. exclude *.json, then later add specific json files
+
+    if !unstaged? && !modified_files.empty?
+      $stderr.puts "You have unsaged changes present, consider rerunning with -u/--unstaged.".yellow
+    end
 
     files = files.map(&:strip).uniq.sort
 
