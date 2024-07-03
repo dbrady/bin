@@ -10,10 +10,11 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :auto, :specs
+
   def run
     @opts = Optimist.options do
       banner <<BANNER
-This script is currently documentation checklist only. SO GO DO THIS, OKAY?
   git isclean                       to ensure there are no outstanding changes
   git-rubocop                       to run rubocop on files-changed
   git-cram                          to push the branch up with --set-origin
@@ -22,8 +23,21 @@ This script is currently documentation checklist only. SO GO DO THIS, OKAY?
   git-set-pr <pr>                   to record the PR number after creation
   @robby assign <pr>                to get reviewers assigned
 
+  To start up the automatic portion, run:
+
+  git isclean && git rubocop && git cram && mp-make-github-pr-text | pbcopy && git create-pr
+
+  You can do this automatically with
+
+  git slam --auto --specs
+
+  #{"You will still need to rut git set-pr (TODO: pause for input to collect it, and/or write git-input-pr?)".yellow}
+
+
 Options:
 BANNER
+      opt :auto, "Autorun as much as possible", default: false
+      opt :specs, "Include spec run command in 'How to Test' section", default: false
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
@@ -32,10 +46,31 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
+    Optimist.die "Training wheels: for now, please explicitly specify --no-specs if you don't want me to include the rspec focus command" unless opts[:specs_given]
+
     # APP CODE GOES HERE
-    system "git-slam --help" unless opts[:help_given]
+    if auto?
+      commands = [
+        "git isclean",
+        "git rubocop",
+        "git cram",
+        "mp-make-github-pr-text #{spec_flag} | pbcopy",
+        "git create-pr",
+      ]
+      commands.each do |command|
+        # use run_command! to abort the command chain on failure
+        run_command! command
+      end
+      puts "Don't forget to run git set-pr!".yellow
+      puts "Don't forget to update ~/bin/slorks.org with the PR# and status".yellow
+    else
+      system "git-slam --help" unless opts[:help_given]
+    end
   end
 
+  def spec_flag
+    return "--specs" if specs?
+  end
 end
 
 
