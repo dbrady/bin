@@ -9,7 +9,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :edit, :table
+  opt_flag :edit, :jira, :pr, :table
 
   def run
     @opts = Optimist.options do
@@ -17,6 +17,9 @@ class Application
       opt :file, "Input file", default: File.expand_path(File.join(File.dirname(__FILE__), "slorks.org"))
       opt :edit, "Edit input file (Specific to my tmux/emacs setup -- opens with emacs-open)", default: false
       opt :table, "Quick display as just table", default: false
+      opt :pr, "Show links to pull requests in --table mode", default: false
+      opt :jira, "Show links to jira ticket in --table mode", default: false
+      opt :repo, "Github repo name for --pr", default: "merchant_portal"
     end
     puts opts.inspect if debug?
 
@@ -56,14 +59,28 @@ class Application
     table = Text::Table.new
 
     keys = %i(board jira repo pr title status notes)
+    labels = keys.dup
+    labels << "pr_link" if pr?
+    labels  << "jira_link" if jira?
 
-    table.head = keys
+    table.head = labels
 
     slorks.each do |slork|
-      table.rows << keys.map {|key| slork[key] }
+      row = keys.map {|key| slork[key] }
+      row << pr_link(slork) if pr?
+      row << jira_link(slork) if jira?
+      table.rows << row
     end
 
     puts table
+  end
+
+  def pr_link(slork)
+    pr_url = "https://github.com/acima-credit/#{opts[:repo]}/pull/#{slork[:pr]}"
+  end
+
+  def jira_link(slork)
+    "https://upbd.atlassian.net/browse/#{slork[:board]}-#{slork[:jira]}"
   end
 end
 
