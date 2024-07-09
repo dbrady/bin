@@ -1,0 +1,61 @@
+#!/usr/bin/env ruby
+# boutes - bundle exec rails routes cache
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<~BANNER
+        Usage:
+          boutes           - create boutes cache
+          boutes [<regex>] - search boutes cache
+
+        Options:
+      BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # lock it to mp dir for now
+    if Dir.getwd !~ %r|/merchant_portal$|
+      puts "Currently this only works from the merchant portal folder."
+      exit
+    end
+
+    cache_routes if ARGV.empty? || !boutes_file_exists?
+
+    if ARGV.empty?
+      run_command "bundle exec rails routes > #{boutes_path}"
+      run_command "bundle exec rails grape:routes >> #{boutes_path}"
+    else
+      run_command %Q|ag -i "#{ARGV.first}" "#{boutes_path}"|
+    end
+  end
+
+  def cache_routes
+    puts "Caching routes."
+  end
+
+  def boutes_file_exists?
+    File.exist?(boutes_path)
+  end
+
+  def boutes_path
+    @boutes_path ||= File.expand_path("../boutes.txt")
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
