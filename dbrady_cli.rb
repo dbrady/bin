@@ -60,11 +60,18 @@ module DbradyCli
 
   # Log a command to the console, then run it (unless --pretend), and raise an
   # exception if fails.
+  # if force=true, run the command even if we're in pretend mode (use this
+  # for commands that are not dangerous, like git isclean)
   def run_command!(command)
     puts "run_command!: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
 
-    success = pretend? || system(command)
+    success = if force
+                system command
+              else
+                pretend? || system(command)
+              end
+
     raise "run_command! failed running #{command.inspect}" unless success
     success
   end
