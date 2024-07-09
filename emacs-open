@@ -50,6 +50,7 @@ class Application
     path, line = path.split(/:/)
 
     if force? || File.exist?(path)
+      # TODO: git-new-branch duplicates this code. Refactor this to emacs-send?
       tmux_command = "tmux send-keys -t#{opts[:session]}:#{opts[:window]}"
       run_command "#{tmux_command} C-x C-f C-a C-k #{path} C-m"
       run_command "#{tmux_command} M-g M-g #{line} C-m" if line

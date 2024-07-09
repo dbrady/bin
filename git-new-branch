@@ -7,25 +7,17 @@
 
 # git new-branch COR-5658 set_default_epot_in_merchant_settings
 # => git co -b dbrady/COR-5658/set_default_epot_in_merchant_settings
-
 require "colorize"
 require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
 
-def usage
-  usage=<<USAGE
-USAGE
-end
+class Application
+  include DbradyCli
 
-# TODO: Google harder. Read https://git-scm.com/docs/git-help more
-# thoroughly. All the blogs on custom git commands boil down to
-# "git-foo will give you the 'git foo' command, aren't I clever!" and
-# exactly ZERO of them show how to write a custom HELP command for
-# them. I want to know if 'git help new-branch' could ever work, and
-# if so if it's a simple git-help-new-branch or githelp-new-branch or
-# more involved like installing a custom manpage.
-
-opts = Optimist.options do
-  banner <<USAGE
+  def run
+    @opts = Optimist.options do
+      banner <<USAGE
 git new-branch [options] [<jira_team>-]<jira_id> <branch_name>
 
 Usage:
@@ -43,71 +35,92 @@ Note:
 Options:
 USAGE
 
-  opt :force, 'Continue even if warnings, e.g. not on master', default: false
-  opt :debug, 'Show detail debugging information', default: false
-  opt :pretend, 'Show the git command that would be run, but do not run it', default: false
-  opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'MPS'
+      opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'MPS'
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    Optimist.die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
+    Optimist.die "First argument must be a Jira ticket id" unless (ARGV.first.to_i > 0 || ARGV.first =~ /^([A-Z]+)-(\d+)/i)
+
+    ticket, branch = ARGV
+    ticket_id = ticket
+
+    if ticket =~ /^([A-Z]+)-(\d+)/i
+      opts[:'jira-team'] = $1
+      ticket_id = $2
+    else
+      ticket_id = ticket
+      ticket = "#{opts[:'jira-team']}-#{ticket}"
+    end
+
+    full_branch_name = "dbrady/#{ticket}/#{branch}"
+
+    if opts[:debug]
+      puts "ticket: #{ticket}"
+      puts "ticket_id: #{ticket_id}"
+      puts "branch: #{branch}"
+    end
+
+    current_branch = `git current-branch`.strip
+    main_branch = `git main-branch`.strip
+    slorks_file = File.expand_path("~/bin/slorks.org")
+
+    if !(current_branch == main_branch || opts[:force])
+      puts "You are not on the main branch (#{main_branch}). If you meant to branch from here, rerun with --force, e.g.:".yellow
+      puts "git-new-branch --force #{ARGV.join(' ')}"
+      exit
+    end
+
+    # Ensure branch name is short enough to fit through the CI mangler
+    if full_branch_name.size > 60
+      puts "ERROR: branch name is too long (length = #{full_branch_name.size}, must be <= 60)"
+      exit 2
+    end
+
+    command = "git co -b #{full_branch_name}"
+    puts command.cyan
+
+    puts `#{command}` unless pretend?
+
+    # add to slorks
+    repo = Dir.pwd.split('/').last
+    slork_text = "| #{opts[:'jira-team']} | #{ticket_id} | #{repo}            |       | #{branch_to_sentence(branch)}                                                       | p |  |"
+
+    File.open(slorks_file, "a") do |fp|
+      puts "Adding to ~/bin/slorks.org:"
+      puts slork_text.cyan
+      fp.puts slork_text unless pretend?
+    end
+
+    # Align the slork table
+    run_command "emacs-open -a '#{slorks_file}'"
+
+    # TODO: Refactor this and emacs-open into emacs-send?
+    tmux_command = "tmux send-keys -twork:1"
+    run_command "#{tmux_command} C-u C-u C-p"
+    run_command "#{tmux_command} M-x org-cycle"
+    run_command "#{tmux_command} C-m"
+    # TODO: Save. tmux send-keys is hinky and skittish. If I send C-x C-s, the M-x org-cycle won't work
+    # Even with a sleep 0.5. Maybe try longer?
+  end
+
+  def filename_to_job_name(name)
+    name.gsub(%r|/|, ".").sub(/.py$/, "")
+  end
+
+  # "create-test-branch" => "Create test branch"
+  def branch_to_sentence(branch)
+    branch.split(/[-_]/).join(' ').capitalize
+  end
 end
-puts opts.inspect if opts[:debug]
-Optimist::die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
-Optimist::die "First argument must be a Jira ticket id" unless (ARGV.first.to_i > 0 || ARGV.first =~ /^([A-Z]+)-(\d+)/i)
 
-def filename_to_job_name(name)
-  name.gsub(%r|/|, ".").sub(/.py$/, "")
-end
 
-ticket, branch = ARGV
-ticket_id = ticket
-
-if ticket =~ /^([A-Z]+)-(\d+)/i
-  opts[:'jira-team'] = $1
-  ticket_id = $2
-else
-  ticket_id = ticket
-  ticket = "#{opts[:'jira-team']}-#{ticket}"
-end
-
-full_branch_name = "dbrady/#{ticket}/#{branch}"
-
-if opts[:debug]
-  puts "ticket: #{ticket}"
-  puts "ticket_id: #{ticket_id}"
-  puts "branch: #{branch}"
-end
-
-current_branch = `git current-branch`.strip
-main_branch = `git main-branch`.strip
-
-if !(current_branch == main_branch || opts[:force])
-  puts "You are not on the main branch (#{main_branch}). If you meant to branch from here, rerun with --force, e.g.:".yellow
-  puts "git-new-branch --force #{ARGV.join(' ')}"
-  exit
-end
-
-# Ensure branch name is short enough to fit through the CI mangler
-if full_branch_name.size > 60
-  puts "ERROR: branch name is too long (length = #{full_branch_name.size}, must be <= 60)"
-  exit 2
-end
-
-command = "git co -b #{full_branch_name}"
-puts command.cyan
-
-if !opts[:pretend]
-  puts `#{command}`
-end
-
-# "create-test-branch" => "Create test branch"
-def branch_to_sentence(branch)
-  branch.split(/[-_]/).join(' ').capitalize
-end
-
-# add to slorks?
-repo = Dir.pwd.split('/').last
-slork_text = "| #{opts[:'jira-team']} | #{ticket_id} | #{repo}            |       | #{branch_to_sentence(branch)}                                                       | p |  |"
-
-File.open(File.expand_path("~/bin/slorks.org"), "a") do |fp|
-  puts "Adding to ~/bin/slorks.org:"
-  puts slork_text.cyan
-  fp.puts slork_text unless opts[:pretend]
+if __FILE__ == $0
+  Application.new.run
 end
