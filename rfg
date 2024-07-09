@@ -2,6 +2,12 @@
 # rfg - "rspec go" run specs focused on a specific subset, set by rff ("rspec focus")
 #
 
+# TODO: Port this to DbradyCli
+# TODO: Consider porting rfx to sqlite? Then relations like the current branch
+#       name become usable as inflectors to choose the correct set of specs to run.
+# TODO: I'm considering an equivalent set of apps/commands for rubocop. Refactor
+#       to abstract out the application name? Or is that overkill?
+
 # TODO: Use tee to catch pending and turn on warnings:
 # (rspec | tee ~/.spec_output.log) || cifail
 #
