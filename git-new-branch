@@ -15,6 +15,8 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :slork
+
   def run
     @opts = Optimist.options do
       banner <<USAGE
@@ -36,6 +38,7 @@ Options:
 USAGE
 
       opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'MPS'
+      opt :slork, "Add this branch and ticket to a new entry to the slorks list", default: true
 
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
@@ -69,7 +72,6 @@ USAGE
 
     current_branch = `git current-branch`.strip
     main_branch = `git main-branch`.strip
-    slorks_file = File.expand_path("~/bin/slorks.org")
 
     if !(current_branch == main_branch || opts[:force])
       puts "You are not on the main branch (#{main_branch}). If you meant to branch from here, rerun with --force, e.g.:".yellow
@@ -88,12 +90,16 @@ USAGE
 
     puts `#{command}` unless pretend?
 
-    # add to slorks
+    add_branch_to_slorks(ticket_id, branch) if slork?
+  end
+
+  def add_branch_to_slorks(ticket_id, branch)
+    slorks_file = File.expand_path("~/bin/slorks.org")
     repo = Dir.pwd.split('/').last
     slork_text = "| #{opts[:'jira-team']} | #{ticket_id} | #{repo}            |       | #{branch_to_sentence(branch)}                                                       | p |  |"
 
     File.open(slorks_file, "a") do |fp|
-      puts "Adding to ~/bin/slorks.org:"
+      puts "#{pretend? ? "Not " : ""}Adding to ~/bin/slorks.org:"
       puts slork_text.cyan
       fp.puts slork_text unless pretend?
     end

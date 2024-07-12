@@ -9,7 +9,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :edit, :jira, :pr, :table
+  opt_flag :edit, :jira, :notes, :pr, :table
 
   def run
     @opts = Optimist.options do
@@ -17,8 +17,10 @@ class Application
       opt :file, "Input file", default: File.expand_path(File.join(File.dirname(__FILE__), "slorks.org"))
       opt :edit, "Edit input file (Specific to my tmux/emacs setup -- opens with emacs-open)", default: false
       opt :table, "Quick display as just table", default: false
-      opt :pr, "Show links to pull requests in --table mode", default: false
       opt :jira, "Show links to jira ticket in --table mode", default: false
+      opt :notes, "Show notes column in --table mode", default: false
+      opt :pr, "Show links to pull requests in --table mode", default: false
+
       opt :repo, "Github repo name for --pr", default: "merchant_portal"
     end
     puts opts.inspect if debug?
@@ -58,7 +60,8 @@ class Application
   def show_table(slorks)
     table = Text::Table.new
 
-    keys = %i(board jira repo pr title status notes)
+    keys = %i(board jira repo pr title status)
+    keys << "notes" if notes?
     labels = keys.dup
     labels << "pr_link" if pr?
     labels  << "jira_link" if jira?

@@ -46,7 +46,7 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    Optimist.die "Training wheels: for now, please explicitly specify --no-specs if you don't want me to include the rspec focus command" unless opts[:specs_given]
+    Optimist.die "Training wheels: for now, please explicitly specify --specs or --no-specs to embed or suppress the rspec command in the How To Test section" unless opts[:specs_given]
 
     # APP CODE GOES HERE
     if auto?
@@ -69,7 +69,7 @@ BANNER
   end
 
   def spec_flag
-    return "--specs" if specs?
+    specs? ? "--specs" : "--no-specs"
   end
 end
 
