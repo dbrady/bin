@@ -1,0 +1,3 @@
+# TODO: Consider the git equivalents of pushd and popd? `git checkout -` works
+# for the last branch, but I often hop between two tests branches and master,
+# which forces one of the last branches to be lost.
