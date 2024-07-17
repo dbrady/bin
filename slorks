@@ -9,6 +9,15 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  KNOWN_STATUSES = {
+    "b" => "Blocked",
+    "r" => "In Review",
+    "q" => "QA Review",
+    "p" => "In Progress",
+    "d" => "Ready to Deploy",
+    "D" => "Deployed"
+  }
+
   opt_flag :edit, :jira, :notes, :pr, :table
 
   def run
@@ -17,9 +26,9 @@ class Application
       opt :file, "Input file", default: File.expand_path(File.join(File.dirname(__FILE__), "slorks.org"))
       opt :edit, "Edit input file (Specific to my tmux/emacs setup -- opens with emacs-open)", default: false
       opt :table, "Quick display as just table", default: false
-      opt :jira, "Show links to jira ticket in --table mode", default: false
+      opt :jira, "Show links to jira tickets in --table mode", default: true
       opt :notes, "Show notes column in --table mode", default: false
-      opt :pr, "Show links to pull requests in --table mode", default: false
+      opt :pr, "Show links to pull requests in --table mode", default: true
 
       opt :repo, "Github repo name for --pr", default: "merchant_portal"
     end
@@ -69,6 +78,7 @@ class Application
     table.head = labels
 
     slorks.each do |slork|
+      slork[:status] = KNOWN_STATUSES.fetch(slork[:status], slork[:status])
       row = keys.map {|key| slork[key] }
       row << pr_link(slork) if pr?
       row << jira_link(slork) if jira?
