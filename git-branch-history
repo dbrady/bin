@@ -1,14 +1,12 @@
 #!/usr/bin/env ruby
 # git-branch-history - query and show history from db/git-settings.db
 
-# TODO: Consider the git equivalents of pushd and popd? `git checkout -` works
-# for the last branch, but I often hop between two tests branches and master,
-# which forces one of the last branches to be lost.
 require "byebug"
 require "colorize"
 require "date"
 require "extralite"
 require "optimist"
+
 $has_tzinfo = true
 begin
   # Broken on ruby 3.2.2 in MP because it depends on a conflicting version of concurrent-ruby
