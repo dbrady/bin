@@ -96,7 +96,7 @@ USAGE
     puts opts.inspect if opts[:debug]
 
     if console?
-      status = run_command "sqlite3 #{DATABASE_PATH}"
+      status = run_command "sqlite3 -table #{DATABASE_PATH}"
       exit status
     end
 

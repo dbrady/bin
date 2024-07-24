@@ -3,6 +3,7 @@
 require "colorize"
 require "extralite"
 require "optimist"
+require "text-table"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
@@ -22,19 +23,30 @@ class Application
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+
+      opt :search, "Search for PR by branch or ticket", type: :string
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    pr = get_command_output "git get-pr-id"
+    if opts[:search_given]
+      puts search_for(opts[:search])
+    else
+      pr = get_command_output "git get-pr-id"
 
-    path = get_command_output("git remote get-url origin")
-             .sub(/\.git$/, '')
-             .sub('git@github.com:', '')
-
-    puts "https://github.com/#{path}/pull/#{pr}"
+      path = get_command_output("git remote get-url origin")
+               .sub(/\.git$/, '')
+               .sub('git@github.com:', '')
+    end
+      puts "https://github.com/#{path}/pull/#{pr}"
   end
 
+  def search_for(term)
+    table = Text::Table.new
+    table.head = %W(repo branch pr created_at updated_at deleted_at)
+    table.rows = db.query("SELECT repo,branch,pr,created_at,updated_at,deleted_at FROM pr_history WHERE branch LIKE '%#{term}%'").map(&:values)
+    table
+  end
 end
 
 
