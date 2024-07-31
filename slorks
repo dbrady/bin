@@ -6,6 +6,9 @@ require "text-table"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
+puts "Use slork2!"
+exit
+
 class Application
   include DbradyCli
 
