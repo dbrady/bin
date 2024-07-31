@@ -15,7 +15,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :slork
+  opt_flag :confirm, :slork
 
   def run
     @opts = Optimist.options do
@@ -39,6 +39,7 @@ USAGE
 
       opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'MPS'
       opt :slork, "Add this branch and ticket to a new entry to the slorks list", default: true
+      opt :confirm, "If Jira team is omitted, confirm that the default is correct", short: :y, default: false
 
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
@@ -56,11 +57,14 @@ USAGE
 
     if ticket =~ /^([A-Z]+)-(\d+)/i
       opts[:'jira-team'] = $1
+      opts[:'jira-team_given'] = true
       ticket_id = $2
     else
       ticket_id = ticket
       ticket = "#{opts[:'jira-team']}-#{ticket}"
     end
+
+    pause_and_confirm_jira_team!(opts[:"jira-team"]) unless opts[:"jira-team_given"] || confirm?
 
     full_branch_name = "dbrady/#{ticket}/#{branch}"
 
@@ -91,6 +95,16 @@ USAGE
     puts `#{command}` unless pretend?
 
     add_branch_to_slorks(ticket_id, branch) if slork?
+  end
+
+  def pause_and_confirm_jira_team!(team)
+    puts "You have not specified a jira team. Really use #{opts[:'jira-team']}? [Y/n]"
+    confirm = $stdin.gets.chomp
+    puts confirm.inspect
+    if confirm != "" && confirm.downcase != 'y'
+      puts "Not confirmed. Aborting."
+      exit
+    end
   end
 
   def add_branch_to_slorks(ticket_id, branch)
