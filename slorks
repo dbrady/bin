@@ -1,0 +1,230 @@
+#!/usr/bin/env ruby
+# slork2 - Fill out template for slackup (ver 2: using sqllite) ALSO PORT TO DBRADYCLI
+#
+# General Usage:
+#
+# slork2 [create|edit|update|list|show]
+# $ slork2   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
+#
+#
+
+# TODO:
+# * add/update/remove note
+# * change status
+# * soft delete a slork
+# * set pr
+# *
+require "colorize"
+require "erb"
+require "extralite"
+require "optimist"
+require "sequel"
+require "text-table"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :markdown
+
+  DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
+  DB = Sequel::sqlite(DATABASE_PATH)
+
+  KNOWN_STATUSES = {
+    "b" => "Blocked",
+    "r" => "In Review",
+    "q" => "QA Review",
+    "p" => "In Progress",
+    "d" => "Ready to Deploy",
+    "D" => "Deployed"
+  }
+  DEFAULT_REPO="merchant_portal"
+  DEFAULT_BOARD="CREDIT"
+
+  if !ARGV.include?("create")
+    class Slork < Sequel::Model(DB[:slorks])
+      plugin :timestamps, update_on_create: true
+
+      # https://github.com/acima-credit/merchant_portal/pull/13287 | https://upbd.atlassian.net/browse/ATD-1401
+      def pr_link
+        return nil unless pr
+
+        "https://github.com/acima-credit/#{repo}/pull/#{pr}"
+      end
+
+      def jira_link
+        return nil unless board && ticket
+
+        "https://upbd.atlassian.net/browse/#{board}-#{ticket}"
+      end
+
+      def status_text
+        KNOWN_STATUSES[status] || status
+      end
+    end
+  end
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+Fill out template for slackup. Use standalone for 1 slackup, or use with slorks,
+which reads slorks.org.
+
+Statuses:
+  b = Blocked
+  r = In Review
+  q = QA Review
+  p = In Progress
+  d = Ready to Deploy
+  D = Deployed
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :markdown, "Display output as markdown for Slack", default: false
+
+      # opt :jira, "Jira Ticket ID", type: :int
+      # opt :board, "Jira Board", type: :string, default: DEFAULT_BOARD
+      # opt :title, "Title of PR", type: :string
+      # opt :pr, "ID of PR", type: :int
+      # opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
+      # opt :status, "Status text", type: :string, required: true
+      # opt :notes, "Notes text", type: :string
+
+      # opt :branch, "Get jira board and id from branch, and if available, get pr id", short: :none, default: false
+    end
+    puts opts.inspect if opts[:debug]
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    jira_board, ticket_id = get_board_and_ticket_from_branch
+
+    # jira_board, ticket_id = if opts[:jira_given]
+    #                           [opts[:board], opts[:jira]]
+    #                         elsif opts[:branch]
+    #                           get_board_and_ticket_from_branch
+    #                         end
+    # jira_url = "https://upbd.atlassian.net/browse/#{jira_board}-#{ticket_id}" if jira_board && ticket_id
+
+    # repo, pr_id = if opts[:pr_given]
+    #                 [opts[:repo], opts[:pr]]
+    #               else
+    #                 get_repo_and_pr_from_branch
+    #               end
+    # pr_url = "https://github.com/acima-credit/#{opts[:repo]}/pull/#{opts[:pr]}" if repo && pr_id
+
+    # status = KNOWN_STATUSES.fetch(opts[:status], opts[:status])
+
+    # if opts[:branch]
+    #   slork_options = {}
+    #   slork_options[:pr] = pr_id
+    #   slork_options[:ticket_id] = ticket_id
+    #   slork_options[:status] = status
+    #   slork_options[:title] = opts[:title]
+    #   slork_options[:notes] = opts[:notes]
+
+    #   table = Text::Table.new
+    #   table.head = slork_options.keys
+    #   table.rows << slork_options.values
+    #   $stderr.puts table
+    # end
+
+    # title = opts[:title] || "DAVE PASTED THIS AND FORGOT TO TYPE THE TITLE".white.on_red.bold
+    # notes = opts[:notes]
+
+    # # template_lines = []
+    # # template_lines << "*Title:* <%= title %>"
+    # # template_lines << "*Ticket:* <%= jira_url %>" if jira_url
+    # # template_lines << "*PR:* <%= pr_url %>" if pr_url
+    # # template_lines << "*Status:* <%= status %>" if status
+    # # template_lines << "*Notes:* <%= notes %>" if notes
+
+    # # template = template_lines * "\n"
+
+    # # puts ERB.new(template).result(binding)
+
+
+    if ARGV.include?("create")
+      ensure_table_exists!
+    elsif markdown?
+      list_as_markdown
+    elsif ARGV.first == "console" || ARGV.first == "c"
+      run_command "sqlite3 -table #{DATABASE_PATH}"
+    else
+      list
+    end
+  end
+
+  def list
+    table = Text::Table.new
+    table.head = %i(board ticket repo pr title status notes pr_link jira_link)
+    Slork.where(deleted_at: nil).order(:created_at).all.each do |slork|
+      table.rows << [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text, slork.notes, slork.pr_link, slork.jira_link]
+    end
+    puts table
+  end
+
+  def list_as_markdown
+    Slork.where(deleted_at: nil).order(:created_at).all.each do |slork|
+      template_lines = []
+      template_lines << "*Title:* <%= slork.title %>"
+      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link
+      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link
+      template_lines << "*Status:* <%= slork.status_text %>"
+      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes
+
+      template = template_lines * "\n"
+
+      puts ERB.new(template).result(binding)
+      puts '--'
+    end
+  end
+
+  def ensure_table_exists!
+    DB.create_table?(:slorks, if_not_exists: true) do
+      primary_key :id
+      String :repo, null: false
+      String :board, null: false
+      Integer :ticket, null: false
+      Integer :pr
+      String :title, null: false
+      String :status, null: false
+      String :notes
+
+      DateTime :created_at
+      DateTime :updated_at
+      DateTime :deleted_at
+    end
+  end
+
+  def get_board_and_ticket_from_branch
+    board, ticket = `git current-branch`
+                      .strip
+                      .sub(%r|^dbrady/|, "")
+                      .sub(%r|/.*$|, "")
+                      .split(/-/)
+
+    # puts ">>> #{[board, ticket].inspect} <<<"
+    [board, ticket]
+  end
+
+  def get_repo_and_pr_from_branch
+    repo, pr_id = `git get-pr`
+                    .strip
+                    .sub(%r|https://github.com/acima-credit/|, "")
+                    .split(%r|/pull/|)
+
+    # puts ">>> #{[repo, pr_id].inspect} <<<"
+    [repo, pr_id]
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
