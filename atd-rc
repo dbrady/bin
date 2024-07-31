@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+# atd-rc - Rubocopify
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :autocorrect, :autocorrect_all, :rubocop, :specs
+
+  def run
+    @opts = Optimist.options do
+      banner <<~BANNER
+        1. Given a list of files
+        2. Find the classes in them, and the specs for those classes
+        3. Run and obtain coverage
+        4. Count Rubocop issues
+        5. Rubocop -a
+        6. Count Rubocop issues
+        7. Rubocop -A
+        8. Count Rubocop issues
+        9. Run specs and get coverage
+      BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :specs, "Find and print specs", default: false
+      opt :rubocop, "Run rubocop on files", default: false
+      opt :autocorrect, "Run rubocop -a on files", short: :a, default: false
+      opt :autocorrect_all, "Run rubocop -A on files", short: :A, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # APP CODE GOES HERE
+    files = ARGV.dup
+
+    missing_files = files.reject {|file| File.exist?(file) }
+    Optimist.die "Missing files: #{missing_files * ', '}" unless missing_files.empty?
+
+    if specs?
+      # look for app/x/file.rb -> spec/x/file_spec.rb
+      files.each do |file|
+        spec = spec_file_for(file)
+        puts spec if spec
+      end
+
+      # Bonus Round 1:
+      # look for modules and classes in the source files,
+      # then look for those in describes
+      #
+      # But I gotta figure out what to do with this:
+      # module Support
+      #   module Users
+      #     module ContractStats
+      #       module Calendars
+      #         class HourlyCalendarDay
+
+      # Bonus Round 2:
+      # if HourlyCalendarDay isn't mentioned in the specs, try to track down
+      # usage in the codebase, then find the specs for THOSE files
+    end
+
+
+    run_command "rubocop -SE #{files.map(&:inspect).join(' ')}" if rubocop?
+    run_command "rubocop -SEa #{files.map(&:inspect).join(' ')}" if autocorrect?
+    run_command "rubocop -SEA #{files.map(&:inspect).join(' ')}" if autocorrect_all?
+  end
+
+  def spec_file_for(code_path)
+    spec_path = code_path.sub(/^app/, "spec").sub(/\.rb$/, "_spec.rb")
+
+    File.exist?(spec_path) ? spec_path : nil
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end

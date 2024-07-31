@@ -1,0 +1,69 @@
+#!/usr/bin/env ruby
+# rubocop-find-fixable - Find autofixable files
+#
+# An autofixable file is a file that has violations before running rubocop and
+# has no violations after running it once. I.e. NEEDS help and CAN be helped.
+
+# Find all files with violations
+# Run rubocop on them
+# Find all files needing help
+# Display the list
+
+# Bonus: Find specs for the file and look at the coverage (if any)
+
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def target; opts[:target]; end
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :target, "File or folders to target", default: "app/models"
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    run_time = Time.now.strftime("%F.%T")
+    offenders_file = "offenders.#{run_time}.txt"
+    post_fix_offenders_file = "post_fix_offenders.#{run_time}.txt"
+
+    # RDD: Scriptify this for now, parameterize it later if need be
+    puts "Branch is not clean, stopping" unless git_isclean
+
+    # go scratch branch
+    puts "You are on main branch, stopping" if git_on_main_branch?
+
+    puts "BE PATIENT THIS TAKES 10+ MINUTES TO RUN".white.bold.on_green
+
+    puts "Finding offending files..."
+    "find #{target} | while read file; do rubocop $file || echo $file >> #{offenders_file}; done"
+
+    puts "Test-fixing files..."
+    "rubocop -a #{target}"
+
+    puts "Finding offending files after fixes..."
+    "find #{target} | while read file; do rubocop $file || echo $file >> #{post_fix_offenders_file}; done"
+
+    # Now diff the results
+    offenders = IO.readlines(offenders_file).map(&:strip)
+    post_fix_offenders = IO.readlines(post_fix_offenders_file).map(&:strip)
+
+    puts "These are the files that can be cleaned up automatically:" unless quiet?
+    puts offenders - post_fix_offenders
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
