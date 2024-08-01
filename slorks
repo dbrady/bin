@@ -1,7 +1,13 @@
 #!/usr/bin/env ruby
-# slork2 - Fill out template for slackup (ver 2: using sqllite) ALSO PORT TO DBRADYCLI
+# slorks - Track branch/pr/ticket and show slackups
 #
 # General Usage:
+#
+# slorks - generate table at terminal for my quick review
+# slorks -m, --markdown - generate markdown for slackup
+# slorks add --board=<jira_team> --ticket=<jira_ticket_number> --title=<title> - create new slork
+# slorks delete <ticket_details> - delete a slork (ticket_details must locate exactly 1 ticket)
+# slorks update <ticket_details> <new_ticket_details> (no idea how to do this. Find title then set title what)
 #
 # slork2 [create|edit|update|list|show]
 # $ slork2   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
@@ -46,6 +52,26 @@ class Application
     class Slork < Sequel::Model(DB[:slorks])
       plugin :timestamps, update_on_create: true
 
+      class <<self
+        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil)
+          search = self
+          search = search.where(board:) if board
+          search = search.where(ticket:) if ticket
+          search = search.where(Sequel.ilike(:title, "%#{title}%")) if title
+          search = search.where(pr:) if pr
+          search = search.where(repo:) if repo
+          search = search.where(status:) if status
+          search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
+
+          search.all
+        end
+      end
+
+      # Returns the full jira ticket, like MPS-42 or COR-781 or COVID-19
+      def ticket_key
+        "#{board}-#{ticket}"
+      end
+
       # https://github.com/acima-credit/merchant_portal/pull/13287 | https://upbd.atlassian.net/browse/ATD-1401
       def pr_link
         return nil unless pr
@@ -61,6 +87,11 @@ class Application
 
       def status_text
         KNOWN_STATUSES[status] || status
+      end
+
+      def soft_delete!
+        self.deleted_at = Time.now
+        save
       end
     end
   end
@@ -88,13 +119,13 @@ BANNER
 
       opt :markdown, "Display output as markdown for Slack", default: false
 
-      # opt :jira, "Jira Ticket ID", type: :int
-      # opt :board, "Jira Board", type: :string, default: DEFAULT_BOARD
-      # opt :title, "Title of PR", type: :string
-      # opt :pr, "ID of PR", type: :int
-      # opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
-      # opt :status, "Status text", type: :string, required: true
-      # opt :notes, "Notes text", type: :string
+      opt :board, "Jira board", type: :string, default: DEFAULT_BOARD
+      opt :ticket, "Jira ticket number", type: :int
+      opt :title, "Title of PR", type: :string
+      opt :pr, "ID of PR", type: :int
+      opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
+      opt :status, "Status text", type: :string
+      opt :notes, "Notes text", type: :string
 
       # opt :branch, "Get jira board and id from branch, and if available, get pr id", short: :none, default: false
     end
@@ -102,52 +133,8 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    jira_board, ticket_id = get_board_and_ticket_from_branch
-
-    # jira_board, ticket_id = if opts[:jira_given]
-    #                           [opts[:board], opts[:jira]]
-    #                         elsif opts[:branch]
-    #                           get_board_and_ticket_from_branch
-    #                         end
-    # jira_url = "https://upbd.atlassian.net/browse/#{jira_board}-#{ticket_id}" if jira_board && ticket_id
-
-    # repo, pr_id = if opts[:pr_given]
-    #                 [opts[:repo], opts[:pr]]
-    #               else
-    #                 get_repo_and_pr_from_branch
-    #               end
-    # pr_url = "https://github.com/acima-credit/#{opts[:repo]}/pull/#{opts[:pr]}" if repo && pr_id
-
-    # status = KNOWN_STATUSES.fetch(opts[:status], opts[:status])
-
-    # if opts[:branch]
-    #   slork_options = {}
-    #   slork_options[:pr] = pr_id
-    #   slork_options[:ticket_id] = ticket_id
-    #   slork_options[:status] = status
-    #   slork_options[:title] = opts[:title]
-    #   slork_options[:notes] = opts[:notes]
-
-    #   table = Text::Table.new
-    #   table.head = slork_options.keys
-    #   table.rows << slork_options.values
-    #   $stderr.puts table
-    # end
-
-    # title = opts[:title] || "DAVE PASTED THIS AND FORGOT TO TYPE THE TITLE".white.on_red.bold
-    # notes = opts[:notes]
-
-    # # template_lines = []
-    # # template_lines << "*Title:* <%= title %>"
-    # # template_lines << "*Ticket:* <%= jira_url %>" if jira_url
-    # # template_lines << "*PR:* <%= pr_url %>" if pr_url
-    # # template_lines << "*Status:* <%= status %>" if status
-    # # template_lines << "*Notes:* <%= notes %>" if notes
-
-    # # template = template_lines * "\n"
-
-    # # puts ERB.new(template).result(binding)
-
+    argv = ARGV.dup
+    command = argv.shift&.downcase
 
     if ARGV.include?("create")
       ensure_table_exists!
@@ -155,6 +142,10 @@ BANNER
       list_as_markdown
     elsif ARGV.first == "console" || ARGV.first == "c"
       run_command "sqlite3 -table #{DATABASE_PATH}"
+    elsif command == "add"
+      add_new_ticket
+    elsif command == "delete"
+      soft_delete_ticket
     else
       list
     end
@@ -163,7 +154,7 @@ BANNER
   def list
     table = Text::Table.new
     table.head = %i(board ticket repo pr title status notes pr_link jira_link)
-    Slork.where(deleted_at: nil).order(:created_at).all.each do |slork|
+    Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
       table.rows << [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text, slork.notes, slork.pr_link, slork.jira_link]
     end
     puts table
@@ -200,6 +191,50 @@ BANNER
       DateTime :updated_at
       DateTime :deleted_at
     end
+  end
+
+  def add_new_ticket
+    puts opts.inspect
+    board, ticket = get_board_and_ticket_from_branch
+    board = opts[:board] if opts[:board_given]
+    ticket = opts[:ticket] if opts[:ticket_given]
+
+    slork = Slork.new(
+      board: board,
+      ticket: ticket,
+      repo: opts[:repo],
+      pr: opts[:pr],
+      title: opts[:title],
+      status: opts[:status] || 'p',
+      notes: opts[:notes]
+    )
+
+    puts slork.inspect
+
+    slork.save unless pretend?
+  end
+
+  def soft_delete_ticket
+    tickets = Slork.find_ticket(
+      board: opts[:board],
+      ticket: opts[:ticket],
+      title: opts[:title],
+      pr: opts[:pr],
+      repo: opts[:repo],
+      status: opts[:status],
+      notes: opts[:notes],
+    )
+
+    if tickets.size != 1
+      puts "Expected exactly 1 ticket to be found, got #{tickets.size}"
+      if debug?
+        puts tickets.map(&:inspect)
+      end
+      return
+    end
+
+    tickets.first.soft_delete! unless pretend?
+    puts "Deleted."
   end
 
   def get_board_and_ticket_from_branch
