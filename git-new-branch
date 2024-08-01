@@ -108,26 +108,12 @@ USAGE
   end
 
   def add_branch_to_slorks(ticket_id, branch)
-    slorks_file = File.expand_path("~/bin/slorks.org")
+    title = branch.split(/[_-]/).join(' ').capitalize
+
     repo = Dir.pwd.split('/').last
-    slork_text = "| #{opts[:'jira-team']} | #{ticket_id} | #{repo}            |       | #{branch_to_sentence(branch)}                                                       | p |  |"
+    slork_command = "slorks #{pretend? ? '-p ' : ''} add --board=#{opts[:"jira-team"]} --ticket=#{ticket_id} --title=#{title.inspect}"
 
-    File.open(slorks_file, "a") do |fp|
-      puts "#{pretend? ? "Not " : ""}Adding to ~/bin/slorks.org:"
-      puts slork_text.cyan
-      fp.puts slork_text unless pretend?
-    end
-
-    # Align the slork table
-    run_command "emacs-open -a '#{slorks_file}'"
-
-    # TODO: Refactor this and emacs-open into emacs-send?
-    tmux_command = "tmux send-keys -twork:1"
-    run_command "#{tmux_command} C-u C-u C-p"
-    run_command "#{tmux_command} M-x org-cycle"
-    run_command "#{tmux_command} C-m"
-    # TODO: Save. tmux send-keys is hinky and skittish. If I send C-x C-s, the M-x org-cycle won't work
-    # Even with a sleep 0.5. Maybe try longer?
+    run_command slork_command
   end
 
   def filename_to_job_name(name)
