@@ -34,6 +34,7 @@ class Application
 
   opt_flag :markdown
 
+  COMMANDS = ["add", "delete", "review", "status", "notes"].freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
@@ -93,6 +94,16 @@ class Application
         self.deleted_at = Time.now
         save
       end
+
+      def move_into_review!
+        self.status = 'r'
+        save
+      end
+
+      def set_pr!(pr)
+        self.pr = pr
+        save
+      end
     end
   end
 
@@ -135,6 +146,7 @@ BANNER
 
     argv = ARGV.dup
     command = argv.shift&.downcase
+    Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.inspect}" unless command.nil? || COMMANDS.include?(command)
 
     if ARGV.include?("create")
       ensure_table_exists!
@@ -143,9 +155,15 @@ BANNER
     elsif ARGV.first == "console" || ARGV.first == "c"
       run_command "sqlite3 -table #{DATABASE_PATH}"
     elsif command == "add"
-      add_new_ticket
+      add_new
     elsif command == "delete"
-      soft_delete_ticket
+      soft_delete
+    elsif command == "review"
+      move_into_review
+    elsif command == "status"
+      update_status
+    elsif command == "notes"
+      update_notes
     else
       list
     end
@@ -193,15 +211,15 @@ BANNER
     end
   end
 
-  def add_new_ticket
+  def add_new
     puts opts.inspect
     board, ticket = get_board_and_ticket_from_branch
     board = opts[:board] if opts[:board_given]
     ticket = opts[:ticket] if opts[:ticket_given]
 
     slork = Slork.new(
-      board: board,
-      ticket: ticket,
+      board:,
+      ticket:,
       repo: opts[:repo],
       pr: opts[:pr],
       title: opts[:title],
@@ -214,8 +232,20 @@ BANNER
     slork.save unless pretend?
   end
 
-  def soft_delete_ticket
-    tickets = Slork.find_ticket(
+  def find_one_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil)
+    puts "Finding ticket: #{ {board:, ticket:, title:, pr:, repo:, status:, notes:}.inspect }" if debug?
+    tickets = Slork.find_ticket(board:, ticket:, title:, pr:, repo:, status:, notes:)
+
+    if tickets.size != 1
+      puts tickets.map(&:inspect) if debug?
+      raise "Expected exactly 1 ticket to be found, got #{tickets.size}"
+    end
+
+    tickets.first
+  end
+
+  def soft_delete
+    ticket = find_one_ticket(
       board: opts[:board],
       ticket: opts[:ticket],
       title: opts[:title],
@@ -224,17 +254,57 @@ BANNER
       status: opts[:status],
       notes: opts[:notes],
     )
-
-    if tickets.size != 1
-      puts "Expected exactly 1 ticket to be found, got #{tickets.size}"
-      if debug?
-        puts tickets.map(&:inspect)
-      end
-      return
-    end
-
-    tickets.first.soft_delete! unless pretend?
+    ticket.soft_delete! unless pretend?
     puts "Deleted."
+  end
+
+  def move_into_review
+    board, ticket = if opts[:board_given] && opts[:ticket_given]
+                      [opts[:board], opts[:ticket]]
+                    else
+                      get_board_and_ticket_from_branch
+                    end
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+    Optimist::die "You must specify --pr to move ticket into review" unless opts[:pr_given]
+    ticket.set_pr!(opts[:pr]) unless pretend?
+    puts "Set PR."
+    ticket.move_into_review! unless pretend?
+    puts "Moved into review."
+  end
+
+  def update_notes
+    ticket = find_one_ticket(
+      board: opts[:board],
+      ticket: opts[:ticket],
+      title: opts[:title],
+      pr: opts[:pr],
+      repo: opts[:repo],
+      status: opts[:status],
+    )
+    ticket.notes = opts[:notes]
+    ticket.save
+    puts "Updated note."
+  end
+
+  def update_status
+    ticket = find_one_ticket(
+      board: opts[:board],
+      ticket: opts[:ticket],
+      title: opts[:title],
+      pr: opts[:pr],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+    Optimist::die "New status #{opts[:status].inspect} must be one of #{KNOWN_STATUSES.keys.inspect}" unless KNOWN_STATUSES.include?(opts[:status])
+    ticket.status = opts[:status]
+    ticket.save
+    puts "Updated status."
   end
 
   def get_board_and_ticket_from_branch
