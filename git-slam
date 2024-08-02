@@ -31,7 +31,7 @@ class Application
 
   git slam --auto --specs
 
-  #{"You will still need to rut git set-pr (TODO: pause for input to collect it, and/or write git-input-pr?)".yellow}
+  #{"You will still need to run git set-pr (TODO: pause for input to collect it, and/or write git-input-pr?)".yellow}
 
 
 Options:
@@ -62,7 +62,7 @@ BANNER
         run_command! command
       end
       puts "Don't forget to run git set-pr!".yellow
-      puts "Don't forget to update ~/bin/slorks.org with the PR# and status".yellow
+      puts "Don't forget to update slorks: slorks review --ticket=x --board=board --pr=n".yellow
     else
       system "git-slam --help" unless opts[:help_given]
     end
