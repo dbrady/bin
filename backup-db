@@ -1,0 +1,34 @@
+#!/usr/bin/env ruby
+# backup-db - Back up bin/db databases
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    Dir.glob(File.expand_path("~/bin/db/*.db")).each do |db_filename|
+      date_stamp = Time.now.strftime("%F")
+      backup_filename = "#{db_filename}.#{date_stamp}"
+      run_command "cp #{db_filename.inspect} #{backup_filename.inspect}"
+      run_command "gzip #{backup_filename.inspect}"
+    end
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
