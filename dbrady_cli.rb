@@ -158,6 +158,27 @@ module DbradyCli
     end
   end
 
+  def get_board_and_ticket_from_branch
+    board, ticket = `git current-branch`
+                      .strip
+                      .sub(%r|^dbrady/|, "")
+                      .sub(%r|/.*$|, "")
+                      .split(/-/)
+
+    # puts ">>> #{[board, ticket].inspect} <<<"
+    [board, ticket]
+  end
+
+  def get_repo_and_pr_from_branch
+    repo, pr_id = `git get-pr`
+                    .strip
+                    .sub(%r|https://github.com/acima-credit/|, "")
+                    .split(%r|/pull/|)
+
+    # puts ">>> #{[repo, pr_id].inspect} <<<"
+    [repo, pr_id]
+  end
+
   # returns true if there are no outstanding changes to commit or stash
   def git_isclean
     run_command "git isclean", force: true

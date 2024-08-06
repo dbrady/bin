@@ -12,6 +12,8 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :slork
+
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
 
   def db
@@ -24,6 +26,8 @@ class Application
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+
+      opt :slork, "Update slork", default: true
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -41,18 +45,22 @@ class Application
     # pr.pr = pr
     # pr.save
     query = "DELETE FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}'"
-    db.execute query
+    puts query.cyan if debug?
+    db.execute query unless pretend?
 
     now = Time.now.strftime("%F %T")
     query = "INSERT INTO pr_history (repo, branch, pr, created_at, updated_at, deleted_at) VALUES ('#{repo}', '#{current_branch}', #{pr}, '#{now}', '#{now}', NULL)"
-    db.execute query
+    puts query.cyan if debug?
+    db.execute query unless pretend?
     # END save to db
 
     puts "Recorded. Branch '#{current_branch}' is PR number #{pr}."
 
-    # Remind me to run rubocop
-    # rubocop = ' RU'.bold.white.on_blue + 'BOC'.bold.white + 'OP '.bold.white.on_red
-    # puts "Did you remember to run #{rubocop}?"
+    if slork?
+      board, ticket = get_board_and_ticket_from_branch
+      Optimist::die("Couldn't figure out board-ticket from branch") unless board && ticket
+      run_command "slork set-pr --board=#{board} --ticket=#{ticket} --pr=#{pr}"
+    end
   end
 end
 

@@ -34,7 +34,7 @@ class Application
 
   opt_flag :markdown
 
-  COMMANDS = ["add", "delete", "review", "status", "notes"].freeze
+  COMMANDS = ["add", "c", "console", "delete", "status", "notes", "pr", "review"].freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
@@ -110,8 +110,21 @@ class Application
   def run
     @opts = Optimist.options do
       banner <<BANNER
-Fill out template for slackup. Use standalone for 1 slackup, or use with slorks,
-which reads slorks.org.
+Generate and update tickets and PRs for slackup.
+
+slorks [<command>] [<options>]
+
+Commands:
+
+slorks    - list slorks to the console as a text table
+slorks -m - list slorks as markdown for slackup
+
+add       - create new slork entry
+review    - update a ticket to be in review (TODO: Set PR# from here as well)
+status    - update status (see Statuses next)
+notes     - update notes. If --notes is not provided, deletes the notes.
+pr        - set pr
+delete    - soft-delete an entry
 
 Statuses:
   b = Blocked
@@ -148,11 +161,12 @@ BANNER
     command = argv.shift&.downcase
     Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.inspect}" unless command.nil? || COMMANDS.include?(command)
 
+    # TODO: case/when?
     if ARGV.include?("create")
       ensure_table_exists!
     elsif markdown?
       list_as_markdown
-    elsif ARGV.first == "console" || ARGV.first == "c"
+    elsif command == "console" || command == "c"
       run_command "sqlite3 -table #{DATABASE_PATH}"
     elsif command == "add"
       add_new
@@ -162,6 +176,8 @@ BANNER
       move_into_review
     elsif command == "status"
       update_status
+    elsif command == "pr"
+      update_pr
     elsif command == "notes"
       update_notes
     else
@@ -179,7 +195,8 @@ BANNER
   end
 
   def list_as_markdown
-    Slork.where(deleted_at: nil).order(:created_at).all.each do |slork|
+    slorks = Slork.where(deleted_at: nil).order(:created_at).all
+    slorks.each.with_index(1) do |slork, index|
       template_lines = []
       template_lines << "*Title:* <%= slork.title %>"
       template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link
@@ -190,7 +207,7 @@ BANNER
       template = template_lines * "\n"
 
       puts ERB.new(template).result(binding)
-      puts '--'
+      puts '--' if index < slorks.size
     end
   end
 
@@ -276,6 +293,9 @@ BANNER
     puts "Set PR."
     ticket.move_into_review! unless pretend?
     puts "Moved into review."
+
+    assign_message = "@robby assign #{opts[:pr]}"
+    run_command %Q(echo "#{assign_message}" | pbcopy)
   end
 
   def update_notes
@@ -290,9 +310,33 @@ BANNER
     ticket.notes = opts[:notes]
     ticket.save
     puts "Updated note."
+    puts ticket.inspect if debug?
+  end
+
+  def update_pr
+    search = {}
+    search[:board] = opts[:board] if opts[:board]
+    search[:ticket] = opts[:ticket] if opts[:ticket]
+
+    ticket = find_one_ticket(
+      board: opts[:board],
+      ticket: opts[:ticket],
+      title: opts[:title],
+      status: opts[:status],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+    Optimist::die "No PR given, please set with --pr=<id>" unless opts[:pr]
+    ticket.pr = opts[:pr]
+    ticket.save
+    puts "Updated pr."
   end
 
   def update_status
+    search = {}
+    search[:board] = opts[:board] if opts[:board]
+    search[:ticket] = opts[:ticket] if opts[:ticket]
+
     ticket = find_one_ticket(
       board: opts[:board],
       ticket: opts[:ticket],
@@ -305,27 +349,6 @@ BANNER
     ticket.status = opts[:status]
     ticket.save
     puts "Updated status."
-  end
-
-  def get_board_and_ticket_from_branch
-    board, ticket = `git current-branch`
-                      .strip
-                      .sub(%r|^dbrady/|, "")
-                      .sub(%r|/.*$|, "")
-                      .split(/-/)
-
-    # puts ">>> #{[board, ticket].inspect} <<<"
-    [board, ticket]
-  end
-
-  def get_repo_and_pr_from_branch
-    repo, pr_id = `git get-pr`
-                    .strip
-                    .sub(%r|https://github.com/acima-credit/|, "")
-                    .split(%r|/pull/|)
-
-    # puts ">>> #{[repo, pr_id].inspect} <<<"
-    [repo, pr_id]
   end
 end
 

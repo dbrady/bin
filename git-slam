@@ -10,7 +10,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :auto, :specs
+  opt_flag :auto, :rubocop, :specs
 
   def run
     @opts = Optimist.options do
@@ -42,6 +42,7 @@ BANNER
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :rubocop, "Run git rubocop and abort if offenses detected", default: true
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -57,6 +58,8 @@ BANNER
         "mp-make-github-pr-text #{spec_flag} | pbcopy",
         "git create-pr",
       ]
+
+      commands.reject! {|command| command == "git rubocop" } unless rubocop?
       commands.each do |command|
         # use run_command! to abort the command chain on failure
         run_command! command
