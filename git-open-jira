@@ -21,7 +21,7 @@ class Application
     end
     puts opts.inspect if opts[:debug]
 
-    run_command "open #{jira_url}"
+    run_command "open #{jira_url(ARGV.first || jira_ticket)}"
   end
 end
 
