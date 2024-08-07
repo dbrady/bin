@@ -112,7 +112,7 @@ class Application
       banner <<BANNER
 Generate and update tickets and PRs for slackup.
 
-slorks [<command>] [<options>]
+slorks [<command> [<ticket>]] [<options>]
 
 Commands:
 
@@ -120,6 +120,7 @@ slorks    - list slorks to the console as a text table
 slorks -m - list slorks as markdown for slackup
 
 add       - create new slork entry
+c,console - open database console
 review    - update a ticket to be in review (TODO: Set PR# from here as well)
 status    - update status (see Statuses next)
 notes     - update notes. If --notes is not provided, deletes the notes.
@@ -161,27 +162,28 @@ BANNER
     command = argv.shift&.downcase
     Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.inspect}" unless command.nil? || COMMANDS.include?(command)
 
-    # TODO: case/when?
-    if ARGV.include?("create")
-      ensure_table_exists!
-    elsif markdown?
-      list_as_markdown
-    elsif command == "console" || command == "c"
-      run_command "sqlite3 -table #{DATABASE_PATH}"
-    elsif command == "add"
-      add_new
-    elsif command == "delete"
-      soft_delete
-    elsif command == "review"
-      move_into_review
-    elsif command == "status"
-      update_status
-    elsif command == "pr"
-      update_pr
-    elsif command == "notes"
-      update_notes
+    ensure_table_exists! if command == "create"
+
+    if !opts[:board_given] && !opts[:ticket_given] && ARGV.last =~ /^([A-Z]+)-(\d+)$/
+      opts[:board], opts[:ticket] = $1, $2
+      opts[:board_given] = true
+      opts[:ticket_given] = true
+    end
+
+    case command
+    when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
+    when "add" then add_new
+    when "delete" then soft_delete
+    when "review" then move_into_review
+    when "status" then update_status
+    when "pr" then update_pr
+    when "notes" then update_notes
     else
-      list
+      if markdown?
+        list_as_markdown
+      else
+        list
+      end
     end
   end
 
