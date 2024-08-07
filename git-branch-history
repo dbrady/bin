@@ -24,8 +24,10 @@ class Application
 
   attr_reader :db
 
-  opt_flag :console, :go, :journal, :unique, :utc
+  opt_flag :console, :go, :journal, :log, :sort, :unique, :utc
 
+  # TODO: opt_flag with rename? E.g.
+  # opt_flag( line_numbers: :"line-numbers" )
   def line_numbers?
     opts[:"line-number"]
   end
@@ -78,6 +80,7 @@ USAGE
       opt :index, "Show just one branch at index n/-m (run a search, pick index)", type: :integer
       opt :"line-number", "Show line numbers (for subsequent --index calls)", short: :n, default: true
       opt :unique, "Show unique branches. Suppress branches that have already been mentioned", short: :u, default: false
+      opt :sort, "Sort branches sorted alphabetically rather than by time", default: false
 
       opt :go, "Go to branch at index n/-m", default: false
       opt :console, "Connect to sqlite database instead of querying", default: false
@@ -106,12 +109,12 @@ USAGE
                     git_repo_for(Dir.pwd)
                   end
 
-    puts "Path to repo is '#{opts[:path]}'" if opts[:debug]
+    puts "Path to repo is '#{opts[:path]}'" if debug?
 
     opts[:start] ||= (Date.today - 3).strftime("%F")
     opts[:end] ||= (Date.today + 2).strftime("%F")
 
-    puts "Opts after processing: #{opts.inspect}" if opts[:debug]
+    puts "Opts after processing: #{opts.inspect}" if debug?
 
     wheres = []
     wheres << "DATE(created_at) >= '#{opts[:start]}'" if opts[:start]
@@ -126,12 +129,18 @@ USAGE
 
     group = unique? ? "GROUP BY branch" : ""
 
-    order = opts[:log] ? 'created_at' : 'path, created_at'
+    order = if sort?
+              'branch'
+            elsif log?
+              'created_at'
+            else
+              'path, created_at'
+            end
 
-    puts "Opening database at: #{DATABASE_PATH}" if opts[:debug]
+    puts "Opening database at: #{DATABASE_PATH}" if debug?
     @db = Extralite::Database.new(DATABASE_PATH)
 
-    query = if opts[:journal]
+    query = if journal?
               <<QUERY
 SELECT path, branch, created_at FROM branch_history #{where} ORDER BY path, created_at #{group}
 QUERY
@@ -163,12 +172,12 @@ QUERY
       puts "No repos found for query: #{where}"
     end
 
-    if opts[:journal]
+    if journal?
       repos.each_pair do |repo, branch_changes|
-        puts "branch_changes: #{branch_changes.inspect}" if opts[:debug]
+        puts "branch_changes: #{branch_changes.inspect}" if debug?
         puts repo.cyan
         branch_changes.each do |change|
-          puts "    change: #{change.inspect}" if opts[:debug]
+          puts "    change: #{change.inspect}" if debug?
           puts "    #{change[:created_at]} #{change[:branch]}"
         end
       end
