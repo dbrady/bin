@@ -164,11 +164,13 @@ BANNER
 
     ensure_table_exists! if command == "create"
 
-    if !opts[:board_given] && !opts[:ticket_given] && ARGV.last =~ /^([A-Z]+)-(\d+)$/
+    if !opts[:board_given] && !opts[:ticket_given] && ARGV[1] =~ /^([A-Z]+)-(\d+)$/
       opts[:board], opts[:ticket] = $1, $2
       opts[:board_given] = true
       opts[:ticket_given] = true
     end
+
+    puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
 
     case command
     when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
@@ -275,6 +277,7 @@ BANNER
     )
     ticket.soft_delete! unless pretend?
     puts "Deleted."
+    puts ticket if debug?
   end
 
   def move_into_review
@@ -298,6 +301,7 @@ BANNER
 
     assign_message = "@robby assign #{opts[:pr]}"
     run_command %Q(echo "#{assign_message}" | pbcopy)
+    puts ticket if debug?
   end
 
   def update_notes
@@ -309,10 +313,12 @@ BANNER
       repo: opts[:repo],
       status: opts[:status],
     )
+    opts[:notes] = ARGV[2] unless opts[:notes_given]
+
     ticket.notes = opts[:notes]
     ticket.save
     puts "Updated note."
-    puts ticket.inspect if debug?
+    puts ticket if debug?
   end
 
   def update_pr
@@ -329,9 +335,13 @@ BANNER
       notes: opts[:notes],
     )
     Optimist::die "No PR given, please set with --pr=<id>" unless opts[:pr]
+
+    opts[:pr] = ARGV[2] unless opts[:pr_given]
+
     ticket.pr = opts[:pr]
     ticket.save
     puts "Updated pr."
+    puts ticket if debug?
   end
 
   def update_status
@@ -348,9 +358,11 @@ BANNER
       notes: opts[:notes],
     )
     Optimist::die "New status #{opts[:status].inspect} must be one of #{KNOWN_STATUSES.keys.inspect}" unless KNOWN_STATUSES.include?(opts[:status])
+    opts[:status] = ARGV[2] unless opts[:status_given]
     ticket.status = opts[:status]
     ticket.save
     puts "Updated status."
+    puts ticket if debug?
   end
 end
 
