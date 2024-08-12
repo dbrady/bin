@@ -38,7 +38,7 @@ class Application
     end
 
     if branch_is_dirty? && !stash?
-      puts "Your branch has outstanding changes. Rerun with --stash if you want me to stash/rebase/reapply them, or --no-stash if you want to live dangerously.".red
+      puts "Your branch has outstanding changes. Rerun with --stash if you want to stash/rebase/reapply them, or --no-stash if you want to live dangerously.".red
       exit -1
     end
 
