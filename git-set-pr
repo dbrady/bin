@@ -58,8 +58,9 @@ class Application
 
     if slork?
       board, ticket = get_board_and_ticket_from_branch
-      Optimist::die("Couldn't figure out board-ticket from branch") unless board && ticket
-      run_command "slork set-pr --board=#{board} --ticket=#{ticket} --pr=#{pr}"
+      Optimist::die("Couldn't figure out Jira board/ticket from branch") unless board && ticket
+      run_command "slorks pr #{board}-#{ticket} --pr=#{pr}"
+      run_command "slorks status #{board}-#{ticket} --status=r"
     end
   end
 end
