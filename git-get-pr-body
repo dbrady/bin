@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+# git-get-pr-body - Download body of PR
+require "colorize"
+require "optimist"
+require 'json'
+require 'net/http'
+require 'uri'
+
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # APP CODE GOES HERE
+    # Replace with your GitHub personal access token
+    raise("TODO: I need to load the github_token from ~/.bundle/config")
+    github_token = ''
+    # Replace with the owner and repo name
+    owner = 'acima-credit'
+    repo = 'merchant_portal'
+    # Replace with the pull request number
+    pr_number = 13501
+
+    # GitHub API URL for the pull request
+    url = URI("https://api.github.com/repos/#{owner}/#{repo}/pulls/#{pr_number}")
+
+    # Create the HTTP request
+    http = Net::HTTP.new(url.host, url.port)
+    http.use_ssl = true
+    request = Net::HTTP::Get.new(url)
+    request['Authorization'] = "token #{github_token}"
+    request['Accept'] = 'application/vnd.github.v3+json'
+
+    # Make the request to the GitHub API
+    response = http.request(request)
+
+    # Check if the request was successful
+    if response.code.to_i == 200
+      pr_data = JSON.parse(response.body)
+      # Extract the description text
+      description = pr_data['body'] || 'No description provided'
+      puts "Pull Request Description:"
+      puts description
+    else
+      puts "Failed to fetch pull request: #{response.code}"
+    end
+  end
+end
+
+if __FILE__ == $0
+  Application.new.run
+end
