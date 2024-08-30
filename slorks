@@ -5,21 +5,15 @@
 #
 # slorks - generate table at terminal for my quick review
 # slorks -m, --markdown - generate markdown for slackup
-# slorks add --board=<jira_team> --ticket=<jira_ticket_number> --title=<title> - create new slork
+# slorks new [<ticket>|--board=<jira_team> --ticket=<jira_ticket_number>] --title=<title> - create new slork
 # slorks delete <ticket_details> - delete a slork (ticket_details must locate exactly 1 ticket)
 # slorks update <ticket_details> <new_ticket_details> (no idea how to do this. Find title then set title what)
 #
 # slork2 [create|edit|update|list|show]
 # $ slork2   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
 #
-#
 
-# TODO:
-# * add/update/remove note
-# * change status
-# * soft delete a slork
-# * set pr
-# *
+require "clipboard"
 require "colorize"
 require "erb"
 require "extralite"
@@ -34,7 +28,19 @@ class Application
 
   opt_flag :markdown
 
-  COMMANDS = ["add", "c", "console", "delete", "status", "notes", "pr", "review"].freeze
+  COMMANDS = {
+    "c" => "Open database console",
+    "console" => "Open database console",
+    "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
+    "delete" => "Soft-delete ticket",
+    "deploy" => "Mark ticket as Deployed",
+    "new" => "Create new ticket (automatically called from git-new-branch)",
+    "notes" => "Edit ticket notes",
+    "pr" => "Edit ticket PR",
+    "ready" => "Mark ticket as ready for deploy",
+    "review" => "Mark ticket as in review",
+    "status" => "Edit ticket status",
+  }.freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
@@ -44,7 +50,10 @@ class Application
     "q" => "QA Review",
     "p" => "In Progress",
     "d" => "Ready to Deploy",
-    "D" => "Deployed"
+    "D" => "Deployed",
+    "x" => "Abandoned",
+    "o" => "Done",
+    ">" => "Deferred",
   }
   DEFAULT_REPO="merchant_portal"
   DEFAULT_BOARD="CREDIT"
@@ -100,6 +109,16 @@ class Application
         save
       end
 
+      def mark_ready_to_deploy!
+        self.status = 'd'
+        save
+      end
+
+      def mark_deployed!
+        self.status = 'D'
+        save
+      end
+
       def set_pr!(pr)
         self.pr = pr
         save
@@ -109,31 +128,20 @@ class Application
 
   def run
     @opts = Optimist.options do
-      banner <<BANNER
+      banner <<BANNER.gsub(/<STATUSES>/, KNOWN_STATUSES.each_pair.map {|key,value| "  #{key}: #{value}"}.join("\n")).gsub(/<COMMANDS>/, COMMANDS.each_pair.map {|key, value| "  #{key.ljust(10)} - #{value}" }.join("\n"))
 Generate and update tickets and PRs for slackup.
 
 slorks [<command> [<ticket>]] [<options>]
 
-Commands:
-
 slorks    - list slorks to the console as a text table
 slorks -m - list slorks as markdown for slackup
 
-add       - create new slork entry
-c,console - open database console
-review    - update a ticket to be in review (TODO: Set PR# from here as well)
-status    - update status (see Statuses next)
-notes     - update notes. If --notes is not provided, deletes the notes.
-pr        - set pr
-delete    - soft-delete an entry
+Commands:
+
+<COMMANDS>
 
 Statuses:
-  b = Blocked
-  r = In Review
-  q = QA Review
-  p = In Progress
-  d = Ready to Deploy
-  D = Deployed
+<STATUSES>
 
 Options:
 BANNER
@@ -160,7 +168,7 @@ BANNER
 
     argv = ARGV.dup
     command = argv.shift&.downcase
-    Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.inspect}" unless command.nil? || COMMANDS.include?(command)
+    Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.keys.inspect}" unless command.nil? || COMMANDS.keys.include?(command)
 
     ensure_table_exists! if command == "create"
 
@@ -174,17 +182,24 @@ BANNER
 
     case command
     when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
-    when "add" then add_new
+    when "new" then add_new
+    when "clean" then clean_deploys
     when "delete" then soft_delete
+    when "deploy" then deploy
+    when "ready" then ready
     when "review" then move_into_review
     when "status" then update_status
     when "pr" then update_pr
     when "notes" then update_notes
     else
+      # TODO: make -m automatic. If you run regular slorks, print the table, but copy the markdown to pasteboard
+
       if markdown?
-        list_as_markdown
+        puts list_as_markdown if markdown?
+        copy_list_as_markdown
       else
-        list
+        copy_list_as_markdown unless opts[:markdown_given] && !markdown?
+        puts list
       end
     end
   end
@@ -195,10 +210,16 @@ BANNER
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
       table.rows << [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text, slork.notes, slork.pr_link, slork.jira_link]
     end
-    puts table
+    table.to_s
+  end
+
+  def copy_list_as_markdown
+    Clipboard.copy(list_as_markdown)
+    puts "Slackup report copied to clipboard."
   end
 
   def list_as_markdown
+    list = []
     slorks = Slork.where(deleted_at: nil).order(:created_at).all
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
@@ -210,9 +231,10 @@ BANNER
 
       template = template_lines * "\n"
 
-      puts ERB.new(template).result(binding)
-      puts '--' if index < slorks.size
+      list << ERB.new(template).result(binding)
+      list << '--' if index < slorks.size
     end
+    list * "\n"
   end
 
   def ensure_table_exists!
@@ -280,6 +302,13 @@ BANNER
     puts ticket if debug?
   end
 
+  def clean_deploys
+    Slork.where(deleted_at: nil, status: ["D", "o", "x"]).all.each do |slork|
+      puts "Cleaning ticket #{slork.ticket_key}"
+      slork.soft_delete! unless pretend?
+    end
+  end
+
   def move_into_review
     board, ticket = if opts[:board_given] && opts[:ticket_given]
                       [opts[:board], opts[:ticket]]
@@ -303,6 +332,37 @@ BANNER
     run_command %Q(echo "#{assign_message}" | pbcopy)
     puts ticket if debug?
   end
+
+  def ready
+    board, ticket = get_board_and_ticket_from_branch
+    board = opts[:board] if opts[:board_given]
+
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+
+    ticket.mark_ready_to_deploy!
+  end
+
+  def deploy
+    board, ticket = get_board_and_ticket_from_branch
+    board = opts[:board] if opts[:board_given]
+
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+
+    ticket.mark_deployed!
+  end
+
 
   def update_notes
     ticket = find_one_ticket(
