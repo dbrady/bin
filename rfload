@@ -8,12 +8,7 @@
 # current focus is always in .spec_focus
 # saved foci are in .spec_foci.yml
 require 'yaml'
-# Dear Dave, stop using colorize, term-ansicolor is SO much more powerful. Love, Dave
-# Admittedly it needs a monkeypatch to be as simple to use, but here you go.
 require 'colorize'
-# class String
-#   include Term::ANSIColor
-# end
 
 class RfLoader
   FOCUS_FILE = File.expand_path '~/.spec_focus'

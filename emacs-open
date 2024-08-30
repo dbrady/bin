@@ -25,9 +25,7 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    # APP CODE GOES HERE
     path = absolute? ? ARGV.first : File.join(Dir.pwd, ARGV.first)
-
 
     tmux_already_running = run_command "tmux list-sessions | grep -E '^#{opts[:session]}: [[:digit:]]+ windows '"
     # TODO: Use tmux list-windows -a | grep "emacs" to find which session has a

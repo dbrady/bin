@@ -111,7 +111,7 @@ USAGE
     title = branch.split(/[_-]/).join(' ').capitalize
 
     repo = Dir.pwd.split('/').last
-    slork_command = "slorks #{pretend? ? '-p ' : ''} add --board=#{opts[:"jira-team"]} --ticket=#{ticket_id} --title=#{title.inspect}"
+    slork_command = "slorks #{pretend? ? '-p ' : ''} new --board=#{opts[:"jira-team"]} --ticket=#{ticket_id} --title=#{title.inspect}"
 
     run_command slork_command
   end
