@@ -27,8 +27,9 @@ class Application
       "bundle",
       "npm install",
       "yarn install",
-      "bundle exec rails assets:clobber",
-      "bundle exec rails assets:precompile",
+      "bin/rails assets:clobber",
+      "bin/rails assets:precompile",
+      "bin/rails rswag:specs:swaggerize",
       "git restore db/seeds.rb yarn.lock", # because these get outta sync alla time
     ]
 

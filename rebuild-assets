@@ -14,3 +14,6 @@ bundle exec rails assets:clobber
 
 log bundle exec rails assets:precompile
 bundle exec rails assets:precompile
+
+log bundle exec rails rswag:specs:swaggerize
+bundle exec rails rswag:specs:swaggerize
