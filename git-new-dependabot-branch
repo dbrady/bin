@@ -1,0 +1,76 @@
+#!/usr/bin/env ruby
+# git-new-dependabot-branch <jira_id> <branch_name> <dependabot_branch_name>
+#
+# git new-dependabot-branch COR-1117 --dependabot-id=160 --library=axios
+# => git new-branch COR-1117 dependabot-160-update-axios
+# # git branch -a | grep -E 'dependabot.*axios' | if exactly one branch, merge it
+# => git merge remotes/origin/npm_and_yarn/axios-1.7.4
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :auto
+
+  def dependabot_branch?
+    opts[:"dependabot-branch_given"]
+  end
+
+  def run
+    @opts = Optimist.options do
+      banner <<-BANNER
+git new-dependabot-branch <jira_id> --library=<library_name> [--dependabot=<dependabot_pr_id>] [--dependabot-branch=<branch_name>]
+
+Options:
+      BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :dependabot, "Dependabot ticket id", type: :integer
+      opt :library, "Library to update", type: :string, required: true
+      opt :"dependabot-branch", "Name of dependabot branch, e.g. remotes/origin/dependabot/npm_and_yarn/braces-1.0.3", short: 'b', type: :string
+      opt :auto, "Autorun as much as possible (runs git-slam --auto)", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+    Optimist.die("You must be on the main branch to run this script") unless git_on_main_branch?
+    jira_ticket = ARGV.first
+
+    branch_name = "dependabot"
+    branch_name += "-#{opts[:dependabot]}" if opts[:dependabot_given]
+    branch_name += "-update-#{opts[:library]}"
+
+    puts "Creating branch #{branch_name}"
+    run_command! "git new-branch #{jira_ticket} #{branch_name}"
+
+    # git branch -a | grep -E 'remotes/origin/dependabot/.*#{library}' | if exactly one branch, merge it
+    remote_branch = if dependabot_branch?
+      opts[:"dependabot-branch"]
+    else
+      branches = get_command_output_lines "git branch -a | grep -E '^\s*remotes/origin/dependabot/.*#{opts[:library]}'"
+      if branches.size == 1
+        remote_branch = branches.first.strip
+        puts "Merging #{remote_branch}"
+        remote_branch
+      elsif branches.size.zero?
+        puts "No branches found for #{opts[:library]}".red
+      else
+        puts "Multiple branchhes found for #{opts[:library]}:".red
+        puts branches
+        puts "If the branch you want is in here, rerun with --dependabot-branch=<branch_name>"
+      end
+    end
+    run_command! "git merge #{remote_branch}" if remote_branch
+
+    run_command! %(git slam --auto --no-details --no-specs --summary="Automated fix suggested by Dependabot for a known security vulnerability in #{opts[:library]}.")
+  end
+
+end
+
+if __FILE__ == $0
+  Application.new.run
+end
