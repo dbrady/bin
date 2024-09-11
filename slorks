@@ -9,8 +9,8 @@
 # slorks delete <ticket_details> - delete a slork (ticket_details must locate exactly 1 ticket)
 # slorks update <ticket_details> <new_ticket_details> (no idea how to do this. Find title then set title what)
 #
-# slork2 [create|edit|update|list|show]
-# $ slork2   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
+# slorks [create|edit|update|list|show]
+# $ slorks   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
 #
 
 require "clipboard"
@@ -40,6 +40,7 @@ class Application
     "ready" => "Mark ticket as ready for deploy",
     "review" => "Mark ticket as in review",
     "status" => "Edit ticket status",
+    "undelete" => "Undelete a ticket (provide new status, default is 'p')",
   }.freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
@@ -63,7 +64,7 @@ class Application
       plugin :timestamps, update_on_create: true
 
       class <<self
-        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil)
+        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
           search = self
           search = search.where(board:) if board
           search = search.where(ticket:) if ticket
@@ -72,6 +73,8 @@ class Application
           search = search.where(repo:) if repo
           search = search.where(status:) if status
           search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
+          # search for where deleted_at is NOT null if deleted is true
+          search = search.where(Sequel.~(deleted_at: nil)) if deleted
 
           search.all
         end
@@ -121,6 +124,13 @@ class Application
 
       def set_pr!(pr)
         self.pr = pr
+        save
+      end
+
+      def undelete!(status: "p")
+        self.deleted_at = nil
+        self.status = status
+        puts self.inspect
         save
       end
     end
@@ -191,31 +201,77 @@ BANNER
     when "status" then update_status
     when "pr" then update_pr
     when "notes" then update_notes
+    when "undelete" then undelete
     else
-      # TODO: make -m automatic. If you run regular slorks, print the table, but copy the markdown to pasteboard
-
       if markdown?
         puts list_as_markdown if markdown?
         copy_list_as_markdown
       else
+        # copy to markdown unless --no-markdown is explicitly given
         copy_list_as_markdown unless opts[:markdown_given] && !markdown?
         puts list
       end
+      log_list
     end
   end
 
   def list
+    return @list if @list
     table = Text::Table.new
     table.head = %i(board ticket repo pr title status notes pr_link jira_link)
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
       table.rows << [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text, slork.notes, slork.pr_link, slork.jira_link]
     end
-    table.to_s
+    @list = table.to_s
   end
 
   def copy_list_as_markdown
     Clipboard.copy(list_as_markdown)
     puts "Slackup report copied to clipboard."
+  end
+
+  # TODO: If this gets used a lot, write a proper reporting system for it
+  # I expect this to be useful when compiling my weekly time sheets but
+  # let's see before we commit. YAGNI.
+  #
+  # This could also be served by adding an audit log to the Slork model
+  # and keep the changes in the database.
+  def log_list
+    folder = File.expand_path "~/bin/db/logs"
+    filename = "slorks.#{Time.now.strftime("%Y%m%d.%H%M%S")}.log"
+    full_path = File.join folder, filename
+    Dir.mkdir folder unless Dir.exist? folder
+
+    puts "path_to_last_log: #{path_to_last_log}" if debug?
+    puts "log_has_changed? #{log_has_changed?(path_to_last_log, list)}" if debug?
+
+    if log_has_changed?(path_to_last_log, list)
+      write_log(full_path, list)
+    else
+      puts "No changes to log."
+    end
+  end
+
+  def log_has_changed?(path, list)
+    return true unless path && list && File.exist?(path)
+    if debug?
+      puts "File.read(path): #{File.read(path)}"
+      puts "--"
+      puts "list: #{list}"  
+    end
+    File.read(path) != list
+  end
+
+  def path_to_last_log
+    folder = File.expand_path "~/bin/db/logs"
+    Dir.glob(File.join(folder, "slorks.*.log")).sort.last
+  end
+
+  def write_log(full_path, list)
+    File.open full_path, 'w' do |f|
+      f.puts list
+    end
+    puts "Logged to #{full_path}" unless quiet?
   end
 
   def list_as_markdown
@@ -255,10 +311,15 @@ BANNER
   end
 
   def add_new
-    puts opts.inspect
     board, ticket = get_board_and_ticket_from_branch
     board = opts[:board] if opts[:board_given]
     ticket = opts[:ticket] if opts[:ticket_given]
+
+    # if an undeleted ticket exists matching board and ticket, abort
+    if Slork.find_ticket(board:, ticket:).any?
+      puts "Ticket already exists. Aborting.".red
+      exit 1
+    end
 
     slork = Slork.new(
       board:,
@@ -275,9 +336,9 @@ BANNER
     slork.save unless pretend?
   end
 
-  def find_one_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil)
+  def find_one_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
     puts "Finding ticket: #{ {board:, ticket:, title:, pr:, repo:, status:, notes:}.inspect }" if debug?
-    tickets = Slork.find_ticket(board:, ticket:, title:, pr:, repo:, status:, notes:)
+    tickets = Slork.find_ticket(board:, ticket:, title:, pr:, repo:, status:, notes:, deleted:)
 
     if tickets.size != 1
       puts tickets.map(&:inspect) if debug?
@@ -299,6 +360,22 @@ BANNER
     )
     ticket.soft_delete! unless pretend?
     puts "Deleted."
+    puts ticket if debug?
+  end
+
+  def undelete
+    ticket = find_one_ticket(
+      board: opts[:board],
+      ticket: opts[:ticket],
+      title: opts[:title],
+      pr: opts[:pr],
+      repo: opts[:repo],
+      status: opts[:status],
+      notes: opts[:notes],
+      deleted: true
+    )
+    ticket.undelete!(status: opts[:status] || "p")
+    puts "Undeleted."
     puts ticket if debug?
   end
 
