@@ -10,7 +10,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :auto, :rubocop, :specs
+  opt_flag :auto, :details, :rubocop, :specs, :summary
 
   def run
     @opts = Optimist.options do
@@ -43,6 +43,9 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
       opt :rubocop, "Run git rubocop and abort if offenses detected", default: true
+      opt :details, "Include details section (--no-details to remove section)", default: true
+
+      opt :summary, "Summary of changes", type: :string
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -55,7 +58,7 @@ BANNER
         "git isclean",
         "git rubocop",
         "git cram",
-        "mp-make-github-pr-text #{spec_flag} | pbcopy",
+        "mp-make-github-pr-text #{flags} | pbcopy",
         "git create-pr",
       ]
 
@@ -71,8 +74,20 @@ BANNER
     end
   end
 
+  def flags
+    [spec_flag, summary_flag, details_flag].join(" ")
+  end
+
   def spec_flag
     specs? ? "--specs" : "--no-specs"
+  end
+
+  def summary_flag
+    summary? ? %(--summary="#{opts[:summary]}") : ""
+  end
+
+  def details_flag
+    details? ? "" : "--no-details"
   end
 end
 
