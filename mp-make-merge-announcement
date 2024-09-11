@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# mp-make-merge-announcement - "Done with preflight, merging [id](url) to master"
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<-BANNER
+mp-make-merge-announcement [options] [board-ticket:pr ...]
+
+Example:
+  mp-make-merge-announcement  # gets info from current branch
+  mp-make-merge-announcement COR-1117:13604 COR-1119:13605
+
+Options:
+      BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    prs = []
+
+    if ARGV.empty?
+      board, ticket = get_board_and_ticket_from_branch
+      repo, pr = get_repo_and_pr_from_branch
+      prs << {board:, ticket:, repo:, pr:} if board && ticket && repo && pr
+    else
+      repo, _ = opts[:repo] || get_repo_and_pr_from_branch
+      # ARGV is like COR-1117:13604 COR-1119:13605 etc
+      ARGV.each do |arg|
+        board, ticket, pr = arg.split(/[-:]/)
+        prs << {board:, ticket:, repo:, pr:} if board && ticket && pr
+      end
+    end
+
+    if prs.empty?
+      puts "Could not determine board, ticket, repo or PR from args or branch"
+    else
+      puts message_for prs
+    end
+  end
+
+  def get_pr_url(repo, pr)
+    "https://github.com/acima-credit/#{repo}/pull/#{pr}"
+  end
+
+  def link_for(board, ticket, pr_url)
+    "[#{board}-#{ticket}](#{pr_url})"
+  end
+
+  def message_for(prs)
+    puts prs.inspect
+    links = prs.map { |pr| link_for(pr[:board], pr[:ticket], get_pr_url(pr[:repo], pr[:pr])) }
+    if links.size > 1
+      last = links.pop
+      links[-1] += " and #{last}"
+    end
+    links = links.join(", ")
+
+    "Done with preflight, merging #{links} to master."
+  end
+end
+
+if __FILE__ == $0
+  Application.new.run
+end
