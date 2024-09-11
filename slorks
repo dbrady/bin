@@ -211,8 +211,13 @@ BANNER
         copy_list_as_markdown unless opts[:markdown_given] && !markdown?
         puts list
       end
-      log_list
     end
+    log_slorks
+
+
+    puts 'TODO: YOU NEED TO GET BOARD AND TICKET FROM ARGV[1] NOT BRANCH!'.white.on_red.bold
+    puts 'TODO: YOU NEED TO GET BOARD AND TICKET FROM ARGV[1] NOT BRANCH!'.white.on_red.bold
+    puts 'TODO: YOU NEED TO GET BOARD AND TICKET FROM ARGV[1] NOT BRANCH!'.white.on_red.bold
   end
 
   def list
@@ -236,7 +241,7 @@ BANNER
   #
   # This could also be served by adding an audit log to the Slork model
   # and keep the changes in the database.
-  def log_list
+  def log_slorks
     folder = File.expand_path "~/bin/db/logs"
     filename = "slorks.#{Time.now.strftime("%Y%m%d.%H%M%S")}.log"
     full_path = File.join folder, filename
@@ -254,11 +259,7 @@ BANNER
 
   def log_has_changed?(path, list)
     return true unless path && list && File.exist?(path)
-    if debug?
-      puts "File.read(path): #{File.read(path)}"
-      puts "--"
-      puts "list: #{list}"  
-    end
+
     File.read(path) != list
   end
 
