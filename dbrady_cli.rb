@@ -179,6 +179,10 @@ module DbradyCli
     [repo, pr_id]
   end
 
+  def get_pr_url
+    `git get-pr`.strip
+  end
+
   # returns true if there are no outstanding changes to commit or stash
   def git_isclean
     run_command "git isclean", force: true
@@ -207,11 +211,13 @@ if __FILE__ == $0
   # This is a clever, but it's a clever
   # puts Class.new { include DbradyCli }.new.send(ARGV.first)
 
-  class Application
-    include DbradyCli
-  end
+  # 2024-09-11: YTF DID I EVEN DO THIS
+  
+  # class Application
+  #   include DbradyCli
+  # end
 
-  if ARGV.first
-    puts Application.new.send ARGV.first
-  end
+  # if ARGV.first
+  #   puts Application.new.send ARGV.first
+  # end
 end
