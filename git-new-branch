@@ -38,7 +38,7 @@ Options:
 USAGE
 
       opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'MPS'
-      opt :slork, "Add this branch and ticket to a new entry to the slorks list", default: true
+      opt :slork, "Add this branch and ticket to a new entry to the slorks list (--no-slork to disable)", default: true
       opt :confirm, "If Jira team is omitted, confirm that the default is correct", short: :y, default: false
 
       opt :debug, "Print extra debug info", default: false
@@ -110,7 +110,6 @@ USAGE
   def add_branch_to_slorks(ticket_id, branch)
     title = branch.split(/[_-]/).join(' ').capitalize
 
-    repo = Dir.pwd.split('/').last
     slork_command = "slorks #{pretend? ? '-p ' : ''} new --board=#{opts[:"jira-team"]} --ticket=#{ticket_id} --title=#{title.inspect}"
 
     run_command slork_command
