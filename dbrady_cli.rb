@@ -205,19 +205,23 @@ module DbradyCli
       raise "FIGURE OUT PATH FOR #{starting_path.inspect}" if last_path == path
     end
   end
+
+  # Get the latest GitHub Personal Access Token
+  # It's in ~/.bundle/config as
+  def github_pat
+    File.readlines(File.expand_path("~/.bundle/config")).detect { |line| line =~ /^BUNDLE_RUBYGEMS__PKG__GITHUB__COM:/ }.split(/:/).last.strip
+  end
 end
 
 if __FILE__ == $0
-  # This is a clever, but it's a clever
-  # puts Class.new { include DbradyCli }.new.send(ARGV.first)
+  # If you run this file as a script, it will call the method and args you give it.
+  # E.g. ruby dbrady_cli.rb is_git_repo? ~/acima/devel/merchant_portal
 
-  # 2024-09-11: YTF DID I EVEN DO THIS
-  
-  # class Application
-  #   include DbradyCli
-  # end
+  class Application
+    include DbradyCli
+  end
 
-  # if ARGV.first
-  #   puts Application.new.send ARGV.first
-  # end
+  if ARGV.first
+    puts Application.new.send(*ARGV).inspect
+  end
 end
