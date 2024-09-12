@@ -13,7 +13,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :auto
+  opt_flag :auto, :merge
 
   def dependabot_branch?
     opts[:"dependabot-branch_given"]
@@ -34,6 +34,7 @@ Options:
       opt :library, "Library to update", type: :string, required: true
       opt :"dependabot-branch", "Name of dependabot branch, e.g. remotes/origin/dependabot/npm_and_yarn/braces-1.0.3", short: 'b', type: :string
       opt :auto, "Autorun as much as possible (runs git-slam --auto)", default: false
+      opt :merge, "Attempt to merge the dependabot branch (use --no-merge to disable --dependabot-branch)", default: true
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -48,27 +49,34 @@ Options:
     run_command! "git new-branch #{jira_ticket} #{branch_name}"
 
     # git branch -a | grep -E 'remotes/origin/dependabot/.*#{library}' | if exactly one branch, merge it
-    remote_branch = if dependabot_branch?
-      opts[:"dependabot-branch"]
-    else
-      branches = get_command_output_lines "git branch -a | grep -E '^\s*remotes/origin/dependabot/.*#{opts[:library]}'"
-      if branches.size == 1
-        remote_branch = branches.first.strip
-        puts "Merging #{remote_branch}"
-        remote_branch
-      elsif branches.size.zero?
-        puts "No branches found for #{opts[:library]}".red
-      else
-        puts "Multiple branchhes found for #{opts[:library]}:".red
-        puts branches
-        puts "If the branch you want is in here, rerun with --dependabot-branch=<branch_name>"
-      end
-    end
-    run_command! "git merge #{remote_branch}" if remote_branch
+    remote_branch = dependabot_branch
 
-    run_command! %(git slam --auto --no-details --no-specs --summary="Automated fix suggested by Dependabot for a known security vulnerability in #{opts[:library]}.")
+    if pretend? || (merge? && dependabot_branch)
+      run_command! "git merge #{dependabot_branch}"
+
+      run_command! %(git slam --auto --no-details --no-specs --summary="Automated fix suggested by Dependabot for a known security vulnerability in #{opts[:library]}.")
+    end
   end
 
+  def dependabot_branch
+    @dependabot_branch ||=
+      if dependabot_branch?
+        opts[:"dependabot-branch"]
+      elsif merge?
+        branches = get_command_output_lines "git branch -a | grep -E '^\s*remotes/origin/dependabot/.*#{opts[:library]}'"
+        if branches.size == 1
+          remote_branch = branches.first.strip
+          puts "Merging #{remote_branch}"
+          remote_branch
+        elsif branches.size.zero?
+          puts "No branches found for #{opts[:library]}".red
+        else
+          puts "Multiple branchhes found for #{opts[:library]}:".red
+          puts branches
+          puts "If the branch you want is in here, rerun with --dependabot-branch=<branch_name>"
+        end
+      end
+  end
 end
 
 if __FILE__ == $0
