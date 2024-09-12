@@ -27,6 +27,9 @@ class Application
   include DbradyCli
 
   opt_flag :markdown
+  def hide_notes?; opts[:"hide-notes"]; end
+  def hide_pr?; opts[:"hide-pr"]; end
+  def hide_jira?; opts[:"hide-jira"]; end
 
   COMMANDS = {
     "c" => "Open database console",
@@ -56,8 +59,6 @@ class Application
     "o" => "Done",
     ">" => "Deferred",
   }
-  DEFAULT_REPO="merchant_portal"
-  DEFAULT_BOARD="CREDIT"
 
   if !ARGV.include?("create")
     class Slork < Sequel::Model(DB[:slorks])
@@ -162,13 +163,17 @@ BANNER
 
       opt :markdown, "Display output as markdown for Slack", default: false
 
-      opt :board, "Jira board", type: :string, default: DEFAULT_BOARD
+      opt :board, "Jira board", type: :string
       opt :ticket, "Jira ticket number", type: :int
       opt :title, "Title of PR", type: :string
       opt :pr, "ID of PR", type: :int
-      opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
+      opt :repo, "Repository slug", type: :string
       opt :status, "Status text", type: :string
       opt :notes, "Notes text", type: :string
+
+      opt :"hide-notes", "Do not display notes column", short: "N", default: false
+      opt :"hide-pr", "Do not display pr column", short: "P", default: false
+      opt :"hide-jira", "Do not display jira column", short: "J", default: false
 
       # opt :branch, "Get jira board and id from branch, and if available, get pr id", short: :none, default: false
     end
@@ -178,30 +183,42 @@ BANNER
 
     argv = ARGV.dup
     command = argv.shift&.downcase
+    board, ticket = argv.shift&.split("-")
     Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.keys.inspect}" unless command.nil? || COMMANDS.keys.include?(command)
 
     ensure_table_exists! if command == "create"
 
-    if !opts[:board_given] && !opts[:ticket_given] && ARGV[1] =~ /^([A-Z]+)-(\d+)$/
+    if debug?
+      puts "board from ARGV: #{board}"
+      puts "ticket from ARGV: #{ticket}"
+      puts "!opts[:board_given]: #{(!opts[:board_given]).inspect}"
+      puts "!opts[:ticket_given]: #{(!opts[:ticket_given]).inspect}"
+      puts "ticket =~ /^([A-Z]+)-(\d+)$/: #{(ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
+      puts "!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/: #{(!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
+    end
+
+    if ticket && !opts[:board_given] && !opts[:ticket_given]
       opts[:board], opts[:ticket] = $1, $2
       opts[:board_given] = true
       opts[:ticket_given] = true
+    elsif !opts[:board_given] && !opts[:ticket_given]
+      board, ticket = get_board_and_ticket_from_branch
     end
 
     puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
 
     case command
     when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
-    when "new" then add_new
+    when "new" then add_new(board, ticket)
     when "clean" then clean_deploys
-    when "delete" then soft_delete
-    when "deploy" then deploy
-    when "ready" then ready
-    when "review" then move_into_review
-    when "status" then update_status
-    when "pr" then update_pr
-    when "notes" then update_notes
-    when "undelete" then undelete
+    when "delete" then soft_delete(board, ticket)
+    when "deploy" then deploy(board, ticket)
+    when "ready" then ready(board, ticket)
+    when "review" then move_into_review(board, ticket)
+    when "status" then update_status(board, ticket)
+    when "pr" then update_pr(board, ticket)
+    when "notes" then update_notes(board, ticket)
+    when "undelete" then undelete(board, ticket)
     else
       if markdown?
         puts list_as_markdown if markdown?
@@ -209,23 +226,26 @@ BANNER
       else
         # copy to markdown unless --no-markdown is explicitly given
         copy_list_as_markdown unless opts[:markdown_given] && !markdown?
-        puts list
       end
     end
+    puts list unless markdown?
     log_slorks
-
-
-    puts 'TODO: YOU NEED TO GET BOARD AND TICKET FROM ARGV[1] NOT BRANCH!'.white.on_red.bold
-    puts 'TODO: YOU NEED TO GET BOARD AND TICKET FROM ARGV[1] NOT BRANCH!'.white.on_red.bold
-    puts 'TODO: YOU NEED TO GET BOARD AND TICKET FROM ARGV[1] NOT BRANCH!'.white.on_red.bold
   end
 
   def list
     return @list if @list
     table = Text::Table.new
-    table.head = %i(board ticket repo pr title status notes pr_link jira_link)
+    table.head = %i(board ticket repo pr title status)
+    table.head << :notes unless hide_notes?
+    table.head << :pr_link unless hide_pr?
+    table.head << :jira_link unless hide_jira?
+
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
-      table.rows << [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text, slork.notes, slork.pr_link, slork.jira_link]
+      row = [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text]
+      row << slork.notes unless hide_notes?
+      row << slork.pr_link unless hide_pr?
+      row << slork.jira_link unless hide_jira?
+      table.rows << row
     end
     @list = table.to_s
   end
@@ -281,10 +301,10 @@ BANNER
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
       template_lines << "*Title:* <%= slork.title %>"
-      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link
-      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link
+      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !hide_jira?
+      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !hide_pr?
       template_lines << "*Status:* <%= slork.status_text %>"
-      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes
+      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && !hide_notes?
 
       template = template_lines * "\n"
 
@@ -311,11 +331,7 @@ BANNER
     end
   end
 
-  def add_new
-    board, ticket = get_board_and_ticket_from_branch
-    board = opts[:board] if opts[:board_given]
-    ticket = opts[:ticket] if opts[:ticket_given]
-
+  def add_new(board, ticket)
     # if an undeleted ticket exists matching board and ticket, abort
     if Slork.find_ticket(board:, ticket:).any?
       puts "Ticket already exists. Aborting.".red
@@ -349,10 +365,10 @@ BANNER
     tickets.first
   end
 
-  def soft_delete
+  def soft_delete(board, ticket)
     ticket = find_one_ticket(
-      board: opts[:board],
-      ticket: opts[:ticket],
+      board: board,
+      ticket: ticket,
       title: opts[:title],
       pr: opts[:pr],
       repo: opts[:repo],
@@ -364,10 +380,10 @@ BANNER
     puts ticket if debug?
   end
 
-  def undelete
+  def undelete(board, ticket)
     ticket = find_one_ticket(
-      board: opts[:board],
-      ticket: opts[:ticket],
+      board: board,
+      ticket: ticket,
       title: opts[:title],
       pr: opts[:pr],
       repo: opts[:repo],
@@ -387,12 +403,7 @@ BANNER
     end
   end
 
-  def move_into_review
-    board, ticket = if opts[:board_given] && opts[:ticket_given]
-                      [opts[:board], opts[:ticket]]
-                    else
-                      get_board_and_ticket_from_branch
-                    end
+  def move_into_review(board, ticket)
     ticket = find_one_ticket(
       board: board,
       ticket: ticket,
@@ -411,10 +422,7 @@ BANNER
     puts ticket if debug?
   end
 
-  def ready
-    board, ticket = get_board_and_ticket_from_branch
-    board = opts[:board] if opts[:board_given]
-
+  def ready(board, ticket)
     ticket = find_one_ticket(
       board: board,
       ticket: ticket,
@@ -426,10 +434,7 @@ BANNER
     ticket.mark_ready_to_deploy!
   end
 
-  def deploy
-    board, ticket = get_board_and_ticket_from_branch
-    board = opts[:board] if opts[:board_given]
-
+  def deploy(board, ticket)
     ticket = find_one_ticket(
       board: board,
       ticket: ticket,
@@ -442,10 +447,10 @@ BANNER
   end
 
 
-  def update_notes
+  def update_notes(board, ticket)
     ticket = find_one_ticket(
-      board: opts[:board],
-      ticket: opts[:ticket],
+      board: board,
+      ticket: ticket,
       title: opts[:title],
       pr: opts[:pr],
       repo: opts[:repo],
@@ -459,14 +464,10 @@ BANNER
     puts ticket if debug?
   end
 
-  def update_pr
-    search = {}
-    search[:board] = opts[:board] if opts[:board]
-    search[:ticket] = opts[:ticket] if opts[:ticket]
-
+  def update_pr(board, ticket)
     ticket = find_one_ticket(
-      board: opts[:board],
-      ticket: opts[:ticket],
+      board: board,
+      ticket: ticket,
       title: opts[:title],
       status: opts[:status],
       repo: opts[:repo],
@@ -482,14 +483,10 @@ BANNER
     puts ticket if debug?
   end
 
-  def update_status
-    search = {}
-    search[:board] = opts[:board] if opts[:board]
-    search[:ticket] = opts[:ticket] if opts[:ticket]
-
+  def update_status(board, ticket)
     ticket = find_one_ticket(
-      board: opts[:board],
-      ticket: opts[:ticket],
+      board: board,
+      ticket: ticket,
       title: opts[:title],
       pr: opts[:pr],
       repo: opts[:repo],
