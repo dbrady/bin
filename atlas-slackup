@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-
+# DEPRECATED - USE slorks now instead
 # atlas-slackup [--no-color] - Display slackup status to console and copy it to
 # the clipboard
 
