@@ -24,10 +24,8 @@ git new-branch [options] [<jira_team>-]<jira_id> <branch_name>
 
 Usage:
 
-    git new-branch 5658 set-default-epot-in-merchant-settings
-    => git co -b dbrady/ATL-5658/set-default-epot-in-merchant-settings
-    get new-branch --type=hotfix 1234 etl_f_this_job_is_busted
-    => git co -b hotfix/DS-1234/etl_f_this_job_is_busted
+    git new-branch COR-1197 sort-retailer-names-in-m2m-transfer
+    => git co -b dbrady/COR-1197/sort-retailer-names-in-m2m-transfer
 
 Note:
 
@@ -37,7 +35,6 @@ Note:
 Options:
 USAGE
 
-      opt :"jira-team", 'Jira ticket team prefix (or just pass <TEAM>-<id> as ticket id)', default: 'MPS'
       opt :slork, "Add this branch and ticket to a new entry to the slorks list (--no-slork to disable)", default: true
       opt :confirm, "If Jira team is omitted, confirm that the default is correct", short: :y, default: false
 
@@ -50,21 +47,12 @@ USAGE
     puts opts.inspect if opts[:debug]
 
     Optimist.die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
-    Optimist.die "First argument must be a Jira ticket id" unless (ARGV.first.to_i > 0 || ARGV.first =~ /^([A-Z]+)-(\d+)/i)
+    Optimist.die "Ticket must be <TEAM>-<ticket> format" unless ARGV.first =~ /^([A-Z]+)-(\d+)/i
 
     ticket, branch = ARGV
-    ticket_id = ticket
-
-    if ticket =~ /^([A-Z]+)-(\d+)/i
-      opts[:'jira-team'] = $1
-      opts[:'jira-team_given'] = true
-      ticket_id = $2
-    else
-      ticket_id = ticket
-      ticket = "#{opts[:'jira-team']}-#{ticket}"
-    end
-
-    pause_and_confirm_jira_team!(opts[:"jira-team"]) unless opts[:"jira-team_given"] || confirm?
+    jira_team, ticket_id = ticket.split("-")
+    ticket_id = ticket_id.to_i
+    Optimist.die "Ticket must be a positive integer" unless ticket_id > 0
 
     full_branch_name = "dbrady/#{ticket}/#{branch}"
 
@@ -94,23 +82,13 @@ USAGE
 
     puts `#{command}` unless pretend?
 
-    add_branch_to_slorks(ticket_id, branch) if slork?
+    add_branch_to_slorks(jira_team, ticket_id, branch) if slork?
   end
 
-  def pause_and_confirm_jira_team!(team)
-    puts "You have not specified a jira team. Really use #{opts[:'jira-team']}? [Y/n]"
-    confirm = $stdin.gets.chomp
-    puts confirm.inspect
-    if confirm != "" && confirm.downcase != 'y'
-      puts "Not confirmed. Aborting."
-      exit
-    end
-  end
-
-  def add_branch_to_slorks(ticket_id, branch)
+  def add_branch_to_slorks(jira_team, ticket_id, branch)
     title = branch.split(/[_-]/).join(' ').capitalize
 
-    slork_command = "slorks #{pretend? ? '-p ' : ''} new --board=#{opts[:"jira-team"]} --ticket=#{ticket_id} --title=#{title.inspect}"
+    slork_command = "slorks #{pretend? ? '-p ' : ''} new #{jira_team}-#{ticket_id} --title=#{title.inspect}"
 
     run_command slork_command
   end
