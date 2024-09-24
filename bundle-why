@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # bundle-why <gem> - WHY is a given gem being bundled?
 
+
+# bundle-why rexml
+#
+
 # Coupla options here. Bottom up:
 #
 # $ bundle-why faraday
@@ -58,85 +62,149 @@
 # Oh, snap, what about building the graph as a hash and just pretty-printing it?
 # Hmmm...
 
-class BundledGem
-  attr_reader :name, :version
-  def initialize(name, version)
-    @name, @version = name, version
-    @parents = {}
-  end
+# class BundledGem
+#   attr_reader :name, :version
+#   def initialize(name, version)
+#     @name, @version = name, version
+#     @parents = {}
+#   end
 
-  def add_parent_version_spec(gem, version_spec)
-    raise "WTF? #{name} is needed by #{gem.name} at version #{version_spec} but is already known to be needed by #{gem.name} at version #{@parents[gem]}" if @parents[gem]
-    @parents[gem] = version_spec
-  end
+#   def add_parent_version_spec(gem, version_spec)
+#     raise "WTF? #{name} is needed by #{gem.name} at version #{version_spec} but is already known to be needed by #{gem.name} at version #{@parents[gem]}" if @parents[gem]
+#     @parents[gem] = version_spec
+#   end
 
-  def needs?(target_gem)
-    dependencies.keys.include?(target_gem) ||
-      dependencies.values.any? {|gem| gem.needs?(target_gem) }
-  end
+#   def needs?(target_gem)
+#     dependencies.keys.include?(target_gem) ||
+#       dependencies.values.any? {|gem| gem.needs?(target_gem) }
+#   end
 
-  def to_s
-    "#{name} (#{version})"
-  end
+#   def to_s
+#     "#{name} (#{version})"
+#   end
+# end
+
+# class BundleWhy
+#   attr_reader :target_gem
+#   def initialize(target_gem)
+#     @target_gem = target_gem
+#   end
+
+#   def run!
+#     gems = get_installed_gems_from_lockfile
+#     add_dependencies_from_lockfile(gems)
+#     gems.keep_if { |gem| gem.needs? target_gem }
+#     # display tree
+#     find_root_gems(gems).each do |gem|
+#       puts gem.to_s
+
+#     end
+
+#   end
+
+#   def get_installed_gems_from_lockfile
+#     lockfile = File.readlines("./Gemfile.lock").map(&:strip)
+#     puts lockfile.first
+#     foundgem = false
+#     foundspecs = false
+#     while !lockfile.empty? && !foundspecs
+#       line = lockfile.shift
+#       puts line
+#       if foundgem
+#         if line == "specs:"
+#           puts "FOUND SPECS"
+#           foundspecs = true
+#         end
+#       elsif line == "GEM"
+#         puts "FOUND GEM"
+#         foundgem = true
+#       end
+#     end
+#     puts "DONE."
+#     puts lockfile.first
+
+#     # loop through Gemfile from GEM\nremote: .*\nspecs: until \n\n
+#     # Read GEM section for name (version)
+#     []
+#   end
+
+#   def add_dependencies_from_lockfile(gems)
+
+#     # Read GEM section for name (version_spec) under a given parent_name
+#     # get parent gem from gems.detect {|gem| gem.name == name }
+#     # call gem.add_parent_version_spec
+#   end
+
+#   def find_root_gems(gems)
+#     # Find gems with no parents -- they are roots
+#     []
+#   end
+# end
+
+# if __FILE__==$0
+#   BundleWhy.new(ARGV[0]).run!
+# end
+
+require 'bundler'
+
+def parse_gemfile_lock(file_path)
+  lockfile = Bundler::LockfileParser.new(Bundler.read_file(file_path))
+  dependencies = lockfile.dependencies
+  specs = lockfile.specs
+
+  { dependencies: dependencies, specs: specs }
 end
 
-class BundleWhy
-  attr_reader :target_gem
-  def initialize(target_gem)
-    @target_gem = target_gem
-  end
+def find_dependencies_for_gem(specs, gem_name, version)
+  dependencies = []
 
-  def run!
-    gems = get_installed_gems_from_lockfile
-    add_dependencies_from_lockfile(gems)
-    gems.keep_if { |gem| gem.needs? target_gem }
-    # display tree
-    find_root_gems(gems).each do |gem|
-      puts gem.to_s
-
-    end
-
-  end
-
-  def get_installed_gems_from_lockfile
-    lockfile = File.readlines("./Gemfile.lock").map(&:strip)
-    puts lockfile.first
-    foundgem = false
-    foundspecs = false
-    while !lockfile.empty? && !foundspecs
-      line = lockfile.shift
-      puts line
-      if foundgem
-        if line == "specs:"
-          puts "FOUND SPECS"
-          foundspecs = true
-        end
-      elsif line == "GEM"
-        puts "FOUND GEM"
-        foundgem = true
+  specs.each do |spec|
+    spec.dependencies.each do |dep|
+      if dep.name == gem_name && dep.requirement.satisfied_by?(Gem::Version.new(version))
+        dependencies << { gem: spec.name, version: spec.version, requirement: dep.requirement }
       end
     end
-    puts "DONE."
-    puts lockfile.first
-
-    # loop through Gemfile from GEM\nremote: .*\nspecs: until \n\n
-    # Read GEM section for name (version)
-    []
   end
 
-  def add_dependencies_from_lockfile(gems)
-
-    # Read GEM section for name (version_spec) under a given parent_name
-    # get parent gem from gems.detect {|gem| gem.name == name }
-    # call gem.add_parent_version_spec
-  end
-
-  def find_root_gems(gems)
-    # Find gems with no parents -- they are roots
-    []
-  end
+  dependencies
 end
 
-if __FILE__==$0
-  BundleWhy.new(ARGV[0]).run!
+def explain_gem_version(file_path, gem_name)
+  data = parse_gemfile_lock(file_path)
+  dependencies = data[:dependencies]
+  specs = data[:specs]
+
+  # Find the version of the gem from the specs
+  gem_spec = specs.find { |spec| spec.name == gem_name }
+  version = gem_spec.version.to_s if gem_spec
+
+  explanation = "#{gem_name} is installed at #{version} because:\n"
+
+  dependencies.each do |dep_name, dep|
+    if dep.requirement.satisfied_by?(Gem::Version.new(version))
+      explanation += "Gemfile wants #{dep_name} \"#{dep.requirement}\"\n"
+      puts '--'
+      puts explanation
+      puts "dep.requirement: #{dep.requirement}"
+      find_dependencies_for_gem(specs, dep_name, dep.requirement).each do |sub_dep|
+        explanation += "  #{dep_name} #{dep.requirement} wants #{sub_dep[:gem]} (#{sub_dep[:requirement]})\n"
+      end
+    end
+  end
+
+  specs.each do |spec|
+    spec.dependencies.each do |dep|
+      if dep.name == gem_name && dep.requirement.satisfied_by?(Gem::Version.new(version))
+        explanation += "#{spec.name} #{spec.version} wants #{gem_name} (#{dep.requirement})\n"
+      end
+    end
+  end
+
+  explanation
 end
+
+# Example usage
+file_path = 'Gemfile.lock'
+gem_name = 'rexml'
+
+puts explain_gem_version(file_path, gem_name)
