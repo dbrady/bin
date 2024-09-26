@@ -36,7 +36,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :color, :force, :hide_jira, :hide_notes, :hide_pr, :markdown
+  opt_flag :color, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :markdown
 
   COMMANDS = {
     "c" => "Open database console",
@@ -58,15 +58,15 @@ class Application
   DB = Sequel::sqlite(DATABASE_PATH)
 
   KNOWN_STATUSES = {
-    "b" => { name: "Blocked",         colors: [:bold, :white, :on_red] },
-    "r" => { name: "In Review",       colors: [:magenta] },
-    "q" => { name: "QA Review",       colors: [:light_magenta] },
-    "p" => { name: "In Progress",     colors: [:blue] },
-    "d" => { name: "Ready to Deploy", colors: [:bold, :light_green] },
-    "D" => { name: "Deployed",        colors: [:green] },
-    "x" => { name: "Abandoned",       colors: [:black] },
-    "o" => { name: "Done",            colors: [:black, :on_black] }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
-    ">" => { name: "Deferred",        colors: [:yellow] },
+    "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
+    "r" => { name: "In Review",       colors: {mode: :normal, color: :magenta, background: :normal} },
+    "q" => { name: "QA Review",       colors: {mode: :normal, color: :light_magenta, background: :normal} },
+    "p" => { name: "In Progress",     colors: {mode: :normal, color: :blue, background: :normal} },
+    "d" => { name: "Ready to Deploy", colors: {mode: :bold,   color: :light_green, background: :normal} },
+    "D" => { name: "Deployed",        colors: {mode: :normal, color: :green, background: :normal} },
+    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :black, background: :normal} },
+    "o" => { name: "Done",            colors: {mode: :normal, color: :black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
+    ">" => { name: "Deferred",        colors: {mode: :normal, color: :yellow, background: :normal} },
   }
 
   if !ARGV.include?("create")
@@ -179,6 +179,7 @@ BANNER
       opt :hide_jira, "Do not display jira column", short: "J", default: false
       opt :hide_notes, "Do not display notes column", short: "N", default: false
       opt :hide_pr, "Do not display pr column", short: "P", default: false
+      opt :hide_repo, "Do not display repo column", short: "R", default: false
       opt :markdown, "Display output as markdown for Slack", default: false
       opt :no_color, "Do not colorize output by status", short: "C", default: false
       opt :notes, "Notes text", type: :string
@@ -247,7 +248,8 @@ BANNER
 
   def list(all_columns: false, force_nocolor: false)
     table = Text::Table.new
-    head = %i(board ticket repo pr title status)
+    head = %i(ticket repo pr title status)
+    head.delete(:repo) unless all_columns || !hide_repo?
     head << :notes if all_columns || !hide_notes?
     head << :pr_link if all_columns || !hide_pr?
     head << :jira_link if all_columns || !hide_jira?
@@ -255,9 +257,10 @@ BANNER
     puts "----------" if debug?
     table.head = head
 
-
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
-      row = [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, force_nocolor ? slork.status_text : colorize_status(slork)]
+      row = [slork.ticket_key]
+      row << slork.repo if all_columns || !hide_repo?
+      row += [slork.pr, slork.title, force_nocolor ? slork.status_text : colorize_status(slork)]
       row << slork.notes if all_columns || !hide_notes?
       row << slork.pr_link if all_columns || !hide_pr?
       row << slork.jira_link if all_columns || !hide_jira?
@@ -269,8 +272,8 @@ BANNER
   end
 
   def colorize_text_by_status(status, text)
-    colors = KNOWN_STATUSES.fetch(status).fetch(:colors, [])
-    colors.inject(text) { |t, c| t.send(c) }
+    colors = KNOWN_STATUSES.fetch(status).fetch(:colors, {mode: :normal, color: :default, background: :normal})
+    text.colorize(colors)
   end
 
   def colorize_status(slork)
