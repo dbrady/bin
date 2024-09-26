@@ -179,6 +179,10 @@ module DbradyCli
     [repo, pr_id]
   end
 
+  def get_repo_from_branch
+    get_repo_and_pr_from_branch.first
+  end
+
   def get_pr_url
     `git get-pr`.strip
   end
