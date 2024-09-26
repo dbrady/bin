@@ -30,8 +30,8 @@ require "erb"
 require "extralite"
 require "optimist"
 require "sequel"
-require "text-table"
 require_relative "dbrady_cli"
+require_relative "tinytable"
 String.disable_colorization unless $stdout.tty?
 
 class Application
@@ -40,6 +40,7 @@ class Application
   opt_flag :color, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :markdown
 
   COMMANDS = {
+    "block" => "Mark ticket as blocked",
     "c" => "Open database console",
     "console" => "Open database console",
     "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
@@ -141,6 +142,12 @@ class Application
         save
       end
 
+      def block!(reason: nil)
+        self.status = 'b'
+        self.notes = reason if reason
+        save
+      end
+
       def undelete!(status: "p")
         self.deleted_at = nil
         self.status = status
@@ -221,17 +228,18 @@ BANNER
     puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
 
     case command
-    when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
-    when "new" then add_new(board, ticket)
+    when "block" then block(board, ticket, opts[:notes])
     when "clean" then clean_deploys
+    when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
     when "delete" then soft_delete(board, ticket)
     when "deploy" then deploy(board, ticket)
+    when "new" then add_new(board, ticket)
+    when "notes" then update_notes(board, ticket)
+    when "pr" then update_pr(board, ticket)
     when "ready" then ready(board, ticket)
     when "review" then move_into_review(board, ticket)
     when "status" then update_status(board, ticket)
     when "statuses" then list_statuses
-    when "pr" then update_pr(board, ticket)
-    when "notes" then update_notes(board, ticket)
     when "title" then update_title(board, ticket)
     when "undelete" then undelete(board, ticket)
     else
@@ -248,7 +256,7 @@ BANNER
   end
 
   def list(all_columns: false, force_nocolor: false)
-    table = Text::Table.new
+    table = TinyTable.new
     head = %i(ticket repo pr title status)
     head.delete(:repo) unless all_columns || !hide_repo?
     head << :notes if all_columns || !hide_notes?
@@ -404,6 +412,16 @@ BANNER
     end
 
     tickets.first
+  end
+
+  def block(board, ticket, reason)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+    )
+    ticket.block!(reason: reason)
+    puts "Blocked."
+    puts ticket if debug?
   end
 
   def soft_delete(board, ticket)
