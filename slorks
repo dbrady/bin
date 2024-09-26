@@ -14,6 +14,7 @@
 #
 
 # TODO: It's time for some TODO-Driven-Development
+# - [ ] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
 # - [ ] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [ ] Move the Slork class into a model subdir
 # - [ ] Convert from Sequel to ActiveRecord. I'm not seeing a complexity gain and having to memorize both query dsls is a pain. Also if I have the permissions to deploy Sequel, don't I probably also have permissions to install a DbradyCli gem? :-P
