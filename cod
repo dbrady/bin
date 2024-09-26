@@ -1,0 +1,8 @@
+#!/bin/bash
+
+rubanner --fg=white --bg=green --bold "IT'S CODE"
+rubanner --fg=white --bg=red --bold "NOT COD"
+rubanner --fg=white --bg=green --bold "YOU DORK"
+
+rub1nner "Starting it for you because I still love you"
+code $@
