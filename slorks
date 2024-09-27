@@ -44,15 +44,17 @@ class Application
     "c" => "Open database console",
     "console" => "Open database console",
     "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
+    "commands" => "List commands",
     "delete" => "Soft-delete ticket",
     "deploy" => "Mark ticket as Deployed",
+    "done" => "Mark ticket as done",
     "new" => "Create new ticket (automatically called from git-new-branch)",
     "notes" => "Edit ticket notes",
     "pr" => "Edit ticket PR",
     "ready" => "Mark ticket as ready for deploy",
-    "review" => "Mark ticket as in review",
+    "review" => "Mark ticket as in review (automatically called from git set-pr)",
     "status" => "Edit ticket status",
-    "statuses" => "Print statuses",
+    "statuses" => "List statuses",
     "title" => "Edit ticket title",
     "undelete" => "Undelete a ticket (provide new status, default is 'p')",
   }.freeze
@@ -230,9 +232,11 @@ BANNER
     case command
     when "block" then block(board, ticket, opts[:notes])
     when "clean" then clean_deploys
+    when "commands" then list_commands
     when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
     when "delete" then soft_delete(board, ticket)
     when "deploy" then deploy(board, ticket)
+    when "done" then mark_done(board, ticket, opts[:notes])
     when "new" then add_new(board, ticket)
     when "notes" then update_notes(board, ticket)
     when "pr" then update_pr(board, ticket)
@@ -251,7 +255,7 @@ BANNER
         copy_list_as_markdown unless opts[:markdown_given] && !markdown?
       end
     end
-    puts list(force_nocolor: !opts[:color]) unless markdown? || command == "statuses"
+    puts list(force_nocolor: !opts[:color]) unless markdown? || command == "statuses" || command == "commands"
     log_slorks
   end
 
@@ -289,6 +293,14 @@ BANNER
     return slork.status_text unless color?
 
     colorize_text_by_status(slork.status, slork.status_text)
+  end
+
+  def list_commands
+    puts "Commands:"
+    longest_key = COMMANDS.keys.map(&:length).max + 1
+    COMMANDS.each_pair do |key, value|
+      puts "  #{(key + ":").ljust(longest_key)} #{value}"
+    end
   end
 
   def list_statuses
@@ -505,6 +517,19 @@ BANNER
     ticket.mark_deployed!
   end
 
+  def mark_done(board, ticket, notes)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      repo: opts[:repo]
+    )
+
+    ticket.notes = notes if notes
+    ticket.status = "o"
+    ticket.save
+    puts "Marked done."
+    puts ticket if debug?
+  end
 
   def update_notes(board, ticket)
     ticket = find_one_ticket(
