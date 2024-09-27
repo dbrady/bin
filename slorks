@@ -13,25 +13,34 @@
 # $ slorks   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
 #
 
+# TODO: It's time for some TODO-Driven-Development
+# - [ ] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
+# - [ ] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
+# - [ ] Move the Slork class into a model subdir
+# - [ ] Convert from Sequel to ActiveRecord. I'm not seeing a complexity gain and having to memorize both query dsls is a pain. Also if I have the permissions to deploy Sequel, don't I probably also have permissions to install a DbradyCli gem? :-P
+# - [ ] Add a --dry-run option to show all commands
+# - [ ] FINALLY some features!
+# - [ ] Add change log into the database, autoupdate it on slork change (paperclip?) and add commands to view the changelog
+# - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a note"
+
+
 require "clipboard"
 require "colorize"
 require "erb"
 require "extralite"
 require "optimist"
 require "sequel"
-require "text-table"
 require_relative "dbrady_cli"
+require_relative "tinytable"
 String.disable_colorization unless $stdout.tty?
 
 class Application
   include DbradyCli
 
-  opt_flag :markdown
-  def hide_notes?; opts[:"hide-notes"]; end
-  def hide_pr?; opts[:"hide-pr"]; end
-  def hide_jira?; opts[:"hide-jira"]; end
+  opt_flag :color, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :markdown
 
   COMMANDS = {
+    "block" => "Mark ticket as blocked",
     "c" => "Open database console",
     "console" => "Open database console",
     "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
@@ -43,21 +52,23 @@ class Application
     "ready" => "Mark ticket as ready for deploy",
     "review" => "Mark ticket as in review",
     "status" => "Edit ticket status",
+    "statuses" => "Print statuses",
+    "title" => "Edit ticket title",
     "undelete" => "Undelete a ticket (provide new status, default is 'p')",
   }.freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
   KNOWN_STATUSES = {
-    "b" => "Blocked",
-    "r" => "In Review",
-    "q" => "QA Review",
-    "p" => "In Progress",
-    "d" => "Ready to Deploy",
-    "D" => "Deployed",
-    "x" => "Abandoned",
-    "o" => "Done",
-    ">" => "Deferred",
+    "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
+    "r" => { name: "In Review",       colors: {mode: :normal, color: :magenta, background: :normal} },
+    "q" => { name: "QA Review",       colors: {mode: :normal, color: :light_magenta, background: :normal} },
+    "p" => { name: "In Progress",     colors: {mode: :normal, color: :blue, background: :normal} },
+    "d" => { name: "Ready to Deploy", colors: {mode: :bold,   color: :light_green, background: :normal} },
+    "D" => { name: "Deployed",        colors: {mode: :normal, color: :green, background: :normal} },
+    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :black, background: :normal} },
+    "o" => { name: "Done",            colors: {mode: :normal, color: :black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
+    ">" => { name: "Deferred",        colors: {mode: :normal, color: :yellow, background: :normal} },
   }
 
   if !ARGV.include?("create")
@@ -74,8 +85,11 @@ class Application
           search = search.where(repo:) if repo
           search = search.where(status:) if status
           search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
-          # search for where deleted_at is NOT null if deleted is true
-          search = search.where(Sequel.~(deleted_at: nil)) if deleted
+          if deleted
+            search = search.where(Sequel.~(deleted_at: nil))
+          else
+            search = search.where(deleted_at: nil)
+          end
 
           search.all
         end
@@ -100,7 +114,7 @@ class Application
       end
 
       def status_text
-        KNOWN_STATUSES[status] || status
+        KNOWN_STATUSES.fetch(status, {})[:name] || status
       end
 
       def soft_delete!
@@ -128,10 +142,16 @@ class Application
         save
       end
 
+      def block!(reason: nil)
+        self.status = 'b'
+        self.notes = reason if reason
+        save
+      end
+
       def undelete!(status: "p")
         self.deleted_at = nil
         self.status = status
-        puts self.inspect
+        puts self.inspect if debug?
         save
       end
     end
@@ -139,7 +159,7 @@ class Application
 
   def run
     @opts = Optimist.options do
-      banner <<BANNER.gsub(/<STATUSES>/, KNOWN_STATUSES.each_pair.map {|key,value| "  #{key}: #{value}"}.join("\n")).gsub(/<COMMANDS>/, COMMANDS.each_pair.map {|key, value| "  #{key.ljust(10)} - #{value}" }.join("\n"))
+      banner <<BANNER.gsub(/<STATUSES>/, KNOWN_STATUSES.each_pair.map {|key,value| name = value[:name]; "  #{key}: #{name}"}.join("\n")).gsub(/<COMMANDS>/, COMMANDS.each_pair.map {|key, value| "  #{key.ljust(10)} - #{value}" }.join("\n"))
 Generate and update tickets and PRs for slackup.
 
 slorks [<command> [<ticket>]] [<options>]
@@ -161,25 +181,25 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
 
-      opt :markdown, "Display output as markdown for Slack", default: false
-
       opt :board, "Jira board", type: :string
+      opt :color, "Colorize output by status", default: true
+      opt :force, "Force creation even if ticket exists", short: "f", default: false
+      opt :hide_jira, "Do not display jira column", short: "J", default: false
+      opt :hide_notes, "Do not display notes column", short: "N", default: false
+      opt :hide_pr, "Do not display pr column", short: "P", default: false
+      opt :hide_repo, "Do not display repo column", short: "R", default: false
+      opt :markdown, "Display output as markdown for Slack", default: false
+      opt :no_color, "Do not colorize output by status", short: "C", default: false
+      opt :notes, "Notes text", type: :string
+      opt :pr, "ID of PR", type: :int
+      opt :repo, "Repository slug", type: :string, default: "merchant_portal"
+      opt :status, "Status text", type: :string
       opt :ticket, "Jira ticket number", type: :int
       opt :title, "Title of PR", type: :string
-      opt :pr, "ID of PR", type: :int
-      opt :repo, "Repository slug", type: :string
-      opt :status, "Status text", type: :string
-      opt :notes, "Notes text", type: :string
-
-      opt :"hide-notes", "Do not display notes column", short: "N", default: false
-      opt :"hide-pr", "Do not display pr column", short: "P", default: false
-      opt :"hide-jira", "Do not display jira column", short: "J", default: false
-
-      # opt :branch, "Get jira board and id from branch, and if available, get pr id", short: :none, default: false
     end
-    puts opts.inspect if opts[:debug]
+    puts opts.inspect if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if opts[:debug]
+    opts[:color] = false if opts[:no_color]
 
     argv = ARGV.dup
     command = argv.shift&.downcase
@@ -208,16 +228,19 @@ BANNER
     puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
 
     case command
-    when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
-    when "new" then add_new(board, ticket)
+    when "block" then block(board, ticket, opts[:notes])
     when "clean" then clean_deploys
+    when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
     when "delete" then soft_delete(board, ticket)
     when "deploy" then deploy(board, ticket)
+    when "new" then add_new(board, ticket)
+    when "notes" then update_notes(board, ticket)
+    when "pr" then update_pr(board, ticket)
     when "ready" then ready(board, ticket)
     when "review" then move_into_review(board, ticket)
     when "status" then update_status(board, ticket)
-    when "pr" then update_pr(board, ticket)
-    when "notes" then update_notes(board, ticket)
+    when "statuses" then list_statuses
+    when "title" then update_title(board, ticket)
     when "undelete" then undelete(board, ticket)
     else
       if markdown?
@@ -228,26 +251,51 @@ BANNER
         copy_list_as_markdown unless opts[:markdown_given] && !markdown?
       end
     end
-    puts list unless markdown?
+    puts list(force_nocolor: !opts[:color]) unless markdown? || command == "statuses"
     log_slorks
   end
 
-  def list
-    return @list if @list
-    table = Text::Table.new
-    table.head = %i(board ticket repo pr title status)
-    table.head << :notes unless hide_notes?
-    table.head << :pr_link unless hide_pr?
-    table.head << :jira_link unless hide_jira?
+  def list(all_columns: false, force_nocolor: false)
+    table = TinyTable.new
+    head = %i(ticket repo pr title status)
+    head.delete(:repo) unless all_columns || !hide_repo?
+    head << :notes if all_columns || !hide_notes?
+    head << :pr_link if all_columns || !hide_pr?
+    head << :jira_link if all_columns || !hide_jira?
+    puts head.map.with_index {|col, index| "#{index}: #{col}" } if debug?
+    puts "----------" if debug?
+    table.head = head
 
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
-      row = [slork.board, slork.ticket, slork.repo, slork.pr, slork.title, slork.status_text]
-      row << slork.notes unless hide_notes?
-      row << slork.pr_link unless hide_pr?
-      row << slork.jira_link unless hide_jira?
+      row = [slork.ticket_key]
+      row << slork.repo if all_columns || !hide_repo?
+      row += [slork.pr, slork.title, force_nocolor ? slork.status_text : colorize_status(slork)]
+      row << slork.notes if all_columns || !hide_notes?
+      row << slork.pr_link if all_columns || !hide_pr?
+      row << slork.jira_link if all_columns || !hide_jira?
+      puts row.map.with_index {|col, index| "#{index}: #{col}" } if debug?
+      puts "--" if debug?
       table.rows << row
     end
-    @list = table.to_s
+    table.to_s
+  end
+
+  def colorize_text_by_status(status, text)
+    colors = KNOWN_STATUSES.fetch(status).fetch(:colors, {mode: :normal, color: :default, background: :normal})
+    text.colorize(colors)
+  end
+
+  def colorize_status(slork)
+    return slork.status_text unless color?
+
+    colorize_text_by_status(slork.status, slork.status_text)
+  end
+
+  def list_statuses
+    puts "Statuses:"
+    KNOWN_STATUSES.each_pair do |key, value|
+      puts "  #{key}: #{colorize_text_by_status(key, value[:name])}"
+    end
   end
 
   def copy_list_as_markdown
@@ -270,17 +318,18 @@ BANNER
     puts "path_to_last_log: #{path_to_last_log}" if debug?
     puts "log_has_changed? #{log_has_changed?(path_to_last_log, list)}" if debug?
 
-    if log_has_changed?(path_to_last_log, list)
-      write_log(full_path, list)
+    the_list = list(all_columns: true, force_nocolor: true)
+    if log_has_changed?(path_to_last_log, the_list)
+      write_log(full_path, the_list)
     else
       puts "No changes to log."
     end
   end
 
-  def log_has_changed?(path, list)
-    return true unless path && list && File.exist?(path)
+  def log_has_changed?(path, the_list)
+    return true unless path && the_list && File.exist?(path)
 
-    File.read(path) != list
+    File.read(path) != the_list
   end
 
   def path_to_last_log
@@ -304,7 +353,7 @@ BANNER
       template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !hide_jira?
       template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !hide_pr?
       template_lines << "*Status:* <%= slork.status_text %>"
-      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && !hide_notes?
+      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !hide_notes?
 
       template = template_lines * "\n"
 
@@ -333,7 +382,7 @@ BANNER
 
   def add_new(board, ticket)
     # if an undeleted ticket exists matching board and ticket, abort
-    if Slork.find_ticket(board:, ticket:).any?
+    if !force? && Slork.find_ticket(board:, ticket:).any?
       puts "Ticket already exists. Aborting.".red
       exit 1
     end
@@ -348,7 +397,7 @@ BANNER
       notes: opts[:notes]
     )
 
-    puts slork.inspect
+    puts slork.inspect if debug?
 
     slork.save unless pretend?
   end
@@ -363,6 +412,16 @@ BANNER
     end
 
     tickets.first
+  end
+
+  def block(board, ticket, reason)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+    )
+    ticket.block!(reason: reason)
+    puts "Blocked."
+    puts ticket if debug?
   end
 
   def soft_delete(board, ticket)
@@ -461,6 +520,23 @@ BANNER
     ticket.notes = opts[:notes]
     ticket.save
     puts "Updated note."
+    puts ticket if debug?
+  end
+
+  def update_title(board, ticket)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      notes: opts[:notes],
+      pr: opts[:pr],
+      repo: opts[:repo],
+      status: opts[:status],
+    )
+    opts[:title] = ARGV[2] unless opts[:title_given]
+
+    ticket.title = opts[:title]
+    ticket.save
+    puts "Updated title."
     puts ticket if debug?
   end
 

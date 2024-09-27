@@ -5,6 +5,9 @@ require "optimist"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
+# TODO:
+# - [ ] Connect this to slorks so it can include the PR title
+
 class Application
   include DbradyCli
 
