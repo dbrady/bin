@@ -2,6 +2,18 @@
 # make-testit <filename> - create/update testit command script
 #
 # because ruby is a better python than python
+
+# 2024-09-30: Historical note. On the data team at Acima, circaa 2022, we had
+# access to financial data, so we were in the practice of submitting every PR to
+# auditors, which included a screenshot of our script running and generating
+# successful output. Testit would clean up my screen, and run the script in a
+# tidy format suitable for screenshotting. The problem is, the script testit ran
+# changed all the time, and my project in specific was handling dozens of tiny
+# PRs every day rather than one big grindy report over a week. Testit shaved a
+# ten-minute task down to 2 minutes, and then this script shaved the 2 minutes
+# down to zero. So this is the script that wrote the script that ran the
+# script. (Why write a program when you can write a programmer?)
+
 require "fileutils"
 
 # BONUS: If you run testit <filename>, save the <filename> to ~/.testit, and then testit with no args can rerun that file again.
