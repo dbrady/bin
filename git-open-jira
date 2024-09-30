@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# git-open-jira -
+# git-open-jira - Open the jira ticket in the browser
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
