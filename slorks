@@ -37,7 +37,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :color, :created_at, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :markdown, :updated_at
+  opt_flag :color, :created_at, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :humanize, :markdown, :updated_at
 
   COMMANDS = {
     "block" => "Mark ticket as blocked",
@@ -190,6 +190,7 @@ BANNER
       opt :hide_jira, "Do not display jira column", short: "J", default: false
       opt :hide_notes, "Do not display notes column", short: "N", default: false
       opt :hide_pr, "Do not display pr column", short: "P", default: false
+      opt :humanize, "Humanize timestamps", default: false
       opt :hide_repo, "Do not display repo column", short: "R", default: false
       opt :markdown, "Display output as markdown for Slack", default: false
       opt :no_color, "Do not colorize output by status", short: "C", default: false
@@ -261,33 +262,58 @@ BANNER
     log_slorks
   end
 
-  def list(all_columns: false, force_nocolor: false)
+  def list(for_log: false, force_nocolor: false)
     table = TinyTable.new
     head = %i(ticket repo pr title status)
-    head.delete(:repo) unless all_columns || !hide_repo?
-    head << :notes if all_columns || !hide_notes?
-    head << :pr_link if all_columns || !hide_pr?
-    head << :jira_link if all_columns || !hide_jira?
-    head << :created_at if all_columns || created_at?
-    head << :updated_at if all_columns || updated_at?
+    head.delete(:repo) unless for_log || !hide_repo?
+    head << :notes if for_log || !hide_notes?
+    head << :pr_link if for_log || !hide_pr?
+    head << :jira_link if for_log || !hide_jira?
+    head << :created_at if for_log || created_at?
+    head << :updated_at if for_log || updated_at?
     puts head.map.with_index {|col, index| "#{index}: #{col}" } if debug?
     puts "----------" if debug?
     table.head = head
 
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
       row = [slork.ticket_key]
-      row << slork.repo if all_columns || !hide_repo?
-      row += [slork.pr, slork.title, force_nocolor ? slork.status_text : colorize_status(slork)]
-      row << slork.notes if all_columns || !hide_notes?
-      row << slork.pr_link if all_columns || !hide_pr?
-      row << slork.jira_link if all_columns || !hide_jira?
-      row << slork.created_at if all_columns || created_at?
-      row << slork.updated_at if all_columns || updated_at?
+      row << slork.repo if for_log || !hide_repo?
+      row += [slork.pr, slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
+      row << slork.notes if for_log || !hide_notes?
+      row << slork.pr_link if for_log || !hide_pr?
+      row << slork.jira_link if for_log || !hide_jira?
+      row << display_time(slork.created_at, for_log:) if for_log || created_at?
+      row << display_time(slork.updated_at, for_log:) if for_log || updated_at?
       puts row.map.with_index {|col, index| "#{index}: #{col}" } if debug?
       puts "--" if debug?
       table.rows << row
     end
     table.to_s
+  end
+
+  def display_time(time, for_log: false)
+    return time if for_log
+    return nil unless time
+
+    if humanize?
+      puts "TIME NOW IS #{Time.now}"
+      elapsed_seconds = Time.now - time
+      days = elapsed_seconds / 86400
+      hours = elapsed_seconds / 3600
+      minutes = elapsed_seconds / 60
+
+      if days > 1
+        "#{'%.1f' % days} days ago"
+      elsif hours > 1
+        "#{'%.1f' % hours} hours ago"
+      elsif minutes > 1
+        "#{'%.1f' % minutes} minutes ago"
+      else
+        "just now"
+      end
+    else
+      time.strftime("%Y-%m-%d %H:%M:%S")
+    end
   end
 
   def colorize_text_by_status(status, text)
@@ -336,7 +362,7 @@ BANNER
     puts "path_to_last_log: #{path_to_last_log}" if debug?
     puts "log_has_changed? #{log_has_changed?(path_to_last_log, list)}" if debug?
 
-    the_list = list(all_columns: true, force_nocolor: true).join("\n") + "\n"
+    the_list = list(for_log: true).join("\n") + "\n"
     if log_has_changed?(path_to_last_log, the_list)
       write_log(full_path, the_list)
     else
