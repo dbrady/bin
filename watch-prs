@@ -1,0 +1,3 @@
+#!/bin/bash
+# stupid hack to reload "PRs assigned to you for review" but brute-forcing the PR Request page to load hourly
+watch -n 3600 date && open https://github.com/pulls/review-requested && afplay /Users/davidbrady/bin/broom01.mp3
