@@ -1,0 +1,6 @@
+tell application "System Events"
+    tell every desktop
+        set picture to "/Users/davidbrady/Pictures/birb-snuggling-budgies.jpg"
+        set picture scaling to 2
+    end tell
+end tell

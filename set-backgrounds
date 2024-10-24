@@ -1,0 +1,17 @@
+tell application "System Events"
+    tell desktop 1
+        set picture to "/Users/davidbrady/Pictures/birb-magenta-body.jpg"
+    end tell
+end tell
+
+tell application "System Events"
+    tell desktop 2
+        set picture to "~/Pictures/birb-coy-yellow-birb-in-pink-blossoms-ray-hennessy.jpg"
+    end tell
+end tell
+
+tell application "System Events"
+    tell desktop 3
+        set picture to "/Users/davidbrady/Pictures/birb-snuggling-budgies.jpg"
+    end tell
+end tell
