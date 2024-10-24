@@ -1,0 +1,16 @@
+#!/bin/bash
+
+insert_text_after_line() {
+    local file=$1
+    local line_number=$2
+    local text=$3
+
+    echo sed -i "" "${line_number}a\\
+${text}
+" "$file"
+    sed -i "" "${line_number}a\\
+${text}
+" "$file"
+}
+
+insert_text_after_line $@
