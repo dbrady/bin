@@ -22,6 +22,8 @@ end
 force = ARGV.include?("-f") || ARGV.include?("--force")
 
 if force || !system("are-rails-migrations-current")
+  log "diespringdie --db"
+  system "diespringdie --db"
   log "bundle exec rails db:migrate"
   system "bundle exec rails db:migrate"
   log "RAILS_ENV=test bundle exec rails db:migrate"
