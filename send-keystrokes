@@ -1,0 +1,19 @@
+#!/bin/bash
+
+# Function to send keystrokes to an application using AppleScript
+send_keystrokes() {
+  local app_name="$1"
+  local keystrokes="$2"
+
+  osascript <<EOF
+tell application "$app_name"
+  activate
+  delay 0.5
+  tell application "System Events"
+    keystroke "$keystrokes"
+  end tell
+end tell
+EOF
+}
+
+send_keystrokes "$1" "$2"
