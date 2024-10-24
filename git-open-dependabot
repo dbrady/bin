@@ -1,0 +1,5 @@
+#!/bin/bash
+
+URL=$(git remote get-url origin | sed -e 's/git@github.com:/https:\/\/github.com\//' | sed -E 's/\.git$/\/security\/dependabot/')
+echo $URL
+open $URL
