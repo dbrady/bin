@@ -37,7 +37,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :color, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :markdown
+  opt_flag :color, :created_at, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :markdown, :updated_at
 
   COMMANDS = {
     "block" => "Mark ticket as blocked",
@@ -185,6 +185,7 @@ BANNER
 
       opt :board, "Jira board", type: :string
       opt :color, "Colorize output by status", default: true
+      opt :created_at, "Show created_at timestamps", default: false
       opt :force, "Force creation even if ticket exists", short: "f", default: false
       opt :hide_jira, "Do not display jira column", short: "J", default: false
       opt :hide_notes, "Do not display notes column", short: "N", default: false
@@ -198,6 +199,7 @@ BANNER
       opt :status, "Status text", type: :string
       opt :ticket, "Jira ticket number", type: :int
       opt :title, "Title of PR", type: :string
+      opt :updated_at, "Show updated_at timestamps", default: false
     end
     puts opts.inspect if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
@@ -266,6 +268,8 @@ BANNER
     head << :notes if all_columns || !hide_notes?
     head << :pr_link if all_columns || !hide_pr?
     head << :jira_link if all_columns || !hide_jira?
+    head << :created_at if all_columns || created_at?
+    head << :updated_at if all_columns || updated_at?
     puts head.map.with_index {|col, index| "#{index}: #{col}" } if debug?
     puts "----------" if debug?
     table.head = head
@@ -277,6 +281,8 @@ BANNER
       row << slork.notes if all_columns || !hide_notes?
       row << slork.pr_link if all_columns || !hide_pr?
       row << slork.jira_link if all_columns || !hide_jira?
+      row << slork.created_at if all_columns || created_at?
+      row << slork.updated_at if all_columns || updated_at?
       puts row.map.with_index {|col, index| "#{index}: #{col}" } if debug?
       puts "--" if debug?
       table.rows << row
@@ -330,7 +336,7 @@ BANNER
     puts "path_to_last_log: #{path_to_last_log}" if debug?
     puts "log_has_changed? #{log_has_changed?(path_to_last_log, list)}" if debug?
 
-    the_list = list(all_columns: true, force_nocolor: true)
+    the_list = list(all_columns: true, force_nocolor: true).join("\n") + "\n"
     if log_has_changed?(path_to_last_log, the_list)
       write_log(full_path, the_list)
     else
@@ -351,7 +357,7 @@ BANNER
 
   def write_log(full_path, list)
     File.open full_path, 'w' do |f|
-      f.puts list
+      f.write list
     end
     puts "Logged to #{full_path}" unless quiet?
   end
