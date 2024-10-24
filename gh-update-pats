@@ -47,7 +47,8 @@ Fetching source index from https://rubygems.pkg.github.com/acima-credit/
 #{'Please double-check your credentials and correct them.'.red}
 ```
 
-1. Go to github, click on your portrait in the upper right, click Settings
+1. Go to github, click on your portrait in the upper right, click Settings. Or
+   click here: https://github.com/settings/profile
 
 2. In the left sidebar click < > Developer Settings
 
