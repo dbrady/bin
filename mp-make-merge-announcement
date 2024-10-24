@@ -48,7 +48,9 @@ Options:
     if prs.empty?
       puts "Could not determine board, ticket, repo or PR from args or branch"
     else
-      puts message_for prs
+      message = message_for(prs)
+      puts message
+      IO.popen('pbcopy', 'w') { |f| f << message } && puts("Copied to clipboard.")
     end
   end
 
@@ -61,7 +63,7 @@ Options:
   end
 
   def message_for(prs)
-    puts prs.inspect
+    puts prs.inspect if debug?
     links = prs.map { |pr| link_for(pr[:board], pr[:ticket], get_pr_url(pr[:repo], pr[:pr])) }
     if links.size > 1
       last = links.pop

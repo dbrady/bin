@@ -24,6 +24,34 @@ class Application
       banner <<-BANNER
 git new-dependabot-branch <jira_id> --library=<library_name> [--dependabot=<dependabot_pr_id>] [--dependabot-branch=<branch_name>]
 
+
+How To Do It:
+
+1. Start: find your dependabot ticket, e.g. "Nokogiri updates packaged libxml2 to v2.12.7 to resolve CVE-2024-34459 #155"
+2. Create a Jira ticket for it
+   1. Go to the Dependabot Epic, which is [COR-1116](https://upbd.atlassian.net/browse/COR-1116), and click Create. (If COR-1116 is closed and there are many dependabot tickets, open a new epic if you want.)
+   2. Set the Parent to the epic, e.g. COR-1116
+   3. Copy the dependabot title as the ticket summary, e.g "Nokogiri updates packaged libxml2 to v2.12.7 to resolve CVE-2024-34459"
+   4. For the description, paste in the dependabot url, e.g. `https://github.com/acima-credit/merchant_portal/security/dependabot/155`
+   5. If you're going to work the ticket, click Assign to Me.
+   6. Set the Investment Category to "Contunuous Development"
+   7. Set the team to your team, e.g. COR Red
+   8. Set the sprint to your current sprint. You'll get a warning about it affecting scope. If you don't want that, don't do this.
+   9. Set the points. Use your own judgment but as a rule of thumb if Dependabot is offering an automatic merge PR I estimate a 1. If Dependabot can't automatically update it, I pick 3. It's a gamble and I don't know until I get into it if it's going to be trivial or a nightmare.
+   10. Set the Project Code to ACE-220
+   11. Set the Journey Platform to Acima-LTO
+   12. Set the Value Stream to Transaction
+
+3. Open the ticket and move it to In Development. Let's say it opened as COR-1160.
+4. Check out latest master and git pull it.
+5. run `git new-dependabot-branch COR-1160 --dependabot=155 --library=nokogiri --no-merge` which will
+   1. Create a new story branch, `dbrady/COR-1160/dependabot-155-update-nokogiri
+   2. Fix the problem. `git new-dependabot-branch` will automatically merge a dependabot automerge branch if it finds one (use --no-merge to prevent it from trying). If it's a ruby gem you might be able to just `bundle update <gem>`. If not, you're about to pay back all those cheap 3-point stories because good lock tracking down all the necessary dependencies. Commit your changes.
+   3. `git slam` will push it up and open a PR.
+6. Get through review and deploy
+7. Go back to Dependabot and make sure the vulnerability has been removed from the dashboard. If not, Dismiss it with "a fix has already been started".
+
+
 Options:
       BANNER
       opt :debug, "Print extra debug info", default: false
