@@ -11,6 +11,8 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :no_done
+
   def run
     @opts = Optimist.options do
       banner <<-BANNER
@@ -26,6 +28,7 @@ Options:
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :no_done, "Do not include 'Done with preflight, ' in the message", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -46,7 +49,7 @@ Options:
     end
 
     if prs.empty?
-      puts "Could not determine board, ticket, repo or PR from args or branch"
+      puts "Could not determine board, ticket, repo or PR from args or branch. Hint: Write them like COR-2061:13950 ATD-999:12345"
     else
       message = message_for(prs)
       puts message
@@ -58,20 +61,30 @@ Options:
     "https://github.com/acima-credit/#{repo}/pull/#{pr}"
   end
 
-  def link_for(board, ticket, pr_url)
-    "[#{board}-#{ticket}](#{pr_url})"
+  def get_pr_title(repo, pr)
+    get_command_output("gh-get-pr-title #{repo} #{pr}").gsub(/\[.+\]\s*/, '')
+  end
+
+  def link_for(board, ticket, pr_url, title)
+    if title.include? "#{board}-#{ticket}"
+      "[#{title}](#{pr_url})"
+    else
+      "[#{board}-#{ticket}: #{title}](#{pr_url})"
+    end
   end
 
   def message_for(prs)
     puts prs.inspect if debug?
-    links = prs.map { |pr| link_for(pr[:board], pr[:ticket], get_pr_url(pr[:repo], pr[:pr])) }
+    links = prs.map { |pr| link_for(pr[:board], pr[:ticket], get_pr_url(pr[:repo], pr[:pr]), get_pr_title(pr[:repo], pr[:pr])) }
     if links.size > 1
       last = links.pop
       links[-1] += " and #{last}"
     end
     links = links.join(", ")
 
-    "Done with preflight, merging #{links} to master."
+    merge_text = "Done with preflight, merging #{links} to master."
+    merge_text.gsub!(/Done with preflight, m/, "M") if no_done?
+    merge_text
   end
 end
 
