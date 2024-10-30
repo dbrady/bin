@@ -1,0 +1,6 @@
+#!/bin/bash
+echo -e '\033[1;36m(cd ~/devel/poodle && bin/draw_planner)\033[0m'
+(cd ~/devel/poodle && bin/draw_planner)
+
+echo -e '\033[1;36mlp ~/devel/poodle/planner_sheet.pdf\033[0m'
+lp ~/devel/poodle/planner_sheet.pdf
