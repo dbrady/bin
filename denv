@@ -1,15 +1,29 @@
 #!/usr/bin/env ruby
-# scriptname - HEY DAVE COME DESCRIBE THIS SCRIPT
+# denv - Examine and set environment variables in our env files
 require "colorize"
 require "optimist"
+require_relative "tinytable"
 require_relative "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
+
+
+puts "THIS IS A WORK IN PROGRESS, OR MORE ACCURATELY A DOESN'T WORK IN PROGRESS".bold.white.on_red
 
 class Application
   include DbradyCli
 
   def run
     @opts = Optimist.options do
+      banner <<~BANNER
+      denv - Examine and set environment variables in our env files
+
+      Usage:
+        denv <var>
+        denv flip <var>
+        denv set <var> <value>
+
+      Options:
+      BANNER
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
@@ -18,7 +32,54 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    # APP CODE GOES HERE
+    case ARGV.size
+    when 0
+      puts "Please provide a variable name"
+    when 1
+      var = ARGV[0]
+      lookup(var)
+      puts "Looking for #{var}"
+    when 2
+      command, var = ARGV
+      case command
+      when "flip"
+        puts "Flipping #{var}"
+      when "set"
+        puts "Please provide a value for #{var}"
+      else
+        puts "Unknown command: #{command}"
+      end
+    when 3
+      command, var, value = ARGV
+      case command
+      when "set"
+        puts "Setting #{var} to #{value}"
+      else
+        puts "Unknown command: #{command}"
+      end
+    else
+      puts "Too many arguments"
+    end
+  end
+
+  def lookup(var)
+    # TODO: Instead of printing these, put them in a hash of file => line
+    # Then print them, colorized in red if they exist in multiple files
+    env_files.each do |file|
+      if File.exist?(file)
+        puts "Looking in #{file}"
+        lines = File.readlines(file)
+        lines.each do |line|
+          if line =~ /#{var}.*=/i
+            puts "  #{line}"
+          end
+        end
+      end
+    end
+  end
+
+  def env_files
+    %w(.env .nonprod.env .dev.env .local.env)
   end
 
 end
