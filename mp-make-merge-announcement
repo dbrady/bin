@@ -28,7 +28,6 @@ Options:
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
-      opt :no_done, "Do not include 'Done with preflight, ' in the message", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -52,7 +51,7 @@ Options:
       puts "Could not determine board, ticket, repo or PR from args or branch. Hint: Write them like COR-2061:13950 ATD-999:12345"
     else
       message = message_for(prs)
-      puts message
+      puts message.yellow
       IO.popen('pbcopy', 'w') { |f| f << message } && puts("Copied to clipboard.")
     end
   end
@@ -82,9 +81,7 @@ Options:
     end
     links = links.join(", ")
 
-    merge_text = "Done with preflight, merging #{links} to master."
-    merge_text.gsub!(/Done with preflight, m/, "M") if no_done?
-    merge_text
+    "Merging #{links} to master."
   end
 end
 
