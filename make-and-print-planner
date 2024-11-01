@@ -2,5 +2,9 @@
 echo -e '\033[1;36m(cd ~/devel/poodle && bin/draw_planner)\033[0m'
 (cd ~/devel/poodle && bin/draw_planner)
 
-echo -e '\033[1;36mlp ~/devel/poodle/planner_sheet.pdf\033[0m'
-lp ~/devel/poodle/planner_sheet.pdf
+# This doesn't work - lp prints portrait and one-sided.
+# echo -e '\033[1;36mlp ~/devel/poodle/planner_sheet.pdf\033[0m'
+# lp ~/devel/poodle/planner_sheet.pdf
+
+echo -e '\033[1;36mopen ~/devel/poodle/planner_sheet.pdf\033[0m'
+open ~/devel/poodle/planner_sheet.pdf
