@@ -40,6 +40,7 @@ class Application
   opt_flag :color, :created_at, :force, :hide_jira, :hide_notes, :hide_pr, :hide_repo, :humanize, :markdown, :updated_at
 
   COMMANDS = {
+    "announce" => "Display merge announcement",
     "block" => "Mark ticket as blocked",
     "c" => "Open database console",
     "console" => "Open database console",
@@ -60,6 +61,8 @@ class Application
   }.freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
+
+  NO_LIST_COMMANDS = %w{announce commands console statuses}
 
   KNOWN_STATUSES = {
     "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
@@ -249,6 +252,7 @@ BANNER
     when "statuses" then list_statuses
     when "title" then update_title(board, ticket)
     when "undelete" then undelete(board, ticket)
+    when "announce" then announce(board, ticket)
     else
       if markdown?
         puts list_as_markdown if markdown?
@@ -258,7 +262,7 @@ BANNER
         copy_list_as_markdown unless opts[:markdown_given] && !markdown?
       end
     end
-    puts list(force_nocolor: !opts[:color]) unless markdown? || command == "statuses" || command == "commands"
+    puts list(force_nocolor: !opts[:color]) unless markdown? || NO_LIST_COMMANDS.include?(command)
     log_slorks
   end
 
@@ -289,6 +293,20 @@ BANNER
       table.rows << row
     end
     table.to_s
+  end
+
+  def announce(board, ticket)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      pr: opts[:pr],
+      repo: opts[:repo],
+      status: opts[:status],
+      notes: opts[:notes],
+    )
+    puts "Announcing merge for #{ticket.ticket_key}:#{ticket.pr}"
+    run_command "mp-make-merge-announcement #{ticket.ticket_key}:#{ticket.pr}"
   end
 
   def display_time(time, for_log: false)
