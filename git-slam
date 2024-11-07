@@ -54,8 +54,12 @@ BANNER
 
     # APP CODE GOES HERE
     if auto?
+      unless run_command("git isclean")
+        puts "You have outstanding changes. Please commit or stash them before proceeding.".red
+        exit 1
+      end
+
       commands = [
-        "git isclean",
         "git rubocop",
         "git cram",
         "mp-make-github-pr-text #{flags} | pbcopy",
