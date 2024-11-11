@@ -9,7 +9,7 @@
     <array>
       <string>/bin/bash</string>
       <string>-c</string>
-      <string>source /Users/davidbrady/.bash_profile && ruby /Users/davidbrady/bin/git-log-branch /Users/davidbrady/acima/devel/merchant_portal</string>
+      <string>source /Users/davidbrady/.bash_profile && ruby /Users/davidbrady/bin/git-log-branch -p /Users/davidbrady/acima/devel/merchant_portal</string>
     </array>
 
     <key>StartInterval</key>
