@@ -7,4 +7,9 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://$HUE_IP/api/$HUE/lights/5/state" -d '{"on":false, "transitiontime": 0}' 2>/dev/null > /dev/null
+if [ -e ~/onsite.touch ]; then
+    # echo "You're onsite! Skipping HUE lights."
+    exit 0
+else
+    curl -X PUT "http://$HUE_IP/api/$HUE/lights/5/state" -d '{"on":false, "transitiontime": 0}' 2>/dev/null > /dev/null
+fi
