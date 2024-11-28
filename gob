@@ -2,3 +2,4 @@
 # gob - (go b)ranch - use selecta to pick a new branch
 # CLI workaround to a GUI-fluent team who use long, semantic branch names
 git checkout $(git branch | grep "$1" | sed -e 's/^\* //' | selecta)
+git log-branch "$(pwd)"

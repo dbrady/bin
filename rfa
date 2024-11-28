@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# rfn <spec> [<spec> [...]] - "rspec new" creates new spec focus
+# rfa <spec> [<spec> [...]] - "rspec add" adds another file to spec focus
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"

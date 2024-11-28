@@ -27,11 +27,6 @@ Usage:
     git new-branch COR-1197 sort-retailer-names-in-m2m-transfer
     => git co -b dbrady/COR-1197/sort-retailer-names-in-m2m-transfer
 
-Note:
-
-    Options can only be passed in when directly running this script
-    (git-new-branch), not when auto-dispatching it from git (git new-branch)
-
 Options:
 USAGE
 
