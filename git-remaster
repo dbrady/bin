@@ -8,13 +8,14 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :flowchart, :merge, :stash
+  opt_flag :bundle, :flowchart, :merge, :stash
 
   def run
     @opts = Optimist.options do
       opt :merge, "Merge parent branch in instead of rebasing", default: false
       opt :stash, "Stash and reapply changes around rebase", default: false
       opt :flowchart, "Show mermaid flowchart and exit", default: false
+      opt :bundle, "Run bundle install", default: false
 
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
@@ -55,6 +56,8 @@ class Application
     commands << "git #{rebase_or_merge_command} #{parent_branch}" unless current_branch == "master"
 
     run_command_chain commands
+
+    run_command "bundle" if bundle?
 
     run_command "git stash apply" if stashed
   end
