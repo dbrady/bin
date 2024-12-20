@@ -7,6 +7,10 @@ require "date"
 require "extralite"
 require "optimist"
 
+# TODO: Add -c/--count <n> to get the last n entries
+# TODO: If our dates are default and we go back 3 days and there are fewer than
+# <minimum> branches, re-query --count <minimun>with order by date desc limit n
+
 $has_tzinfo = true
 begin
   # Broken on ruby 3.2.2 in MP because it depends on a conflicting version of concurrent-ruby
