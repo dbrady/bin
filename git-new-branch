@@ -15,7 +15,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :confirm, :slork
+  opt_flag :confirm, :slork, :force
 
   def run
     @opts = Optimist.options do
@@ -34,6 +34,7 @@ USAGE
       opt :confirm, "If Jira team is omitted, confirm that the default is correct", short: :y, default: false
 
       opt :debug, "Print extra debug info", default: false
+      opt :force, "Force new branch creation from non-master branch", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
@@ -60,7 +61,7 @@ USAGE
     current_branch = `git current-branch`.strip
     main_branch = `git main-branch`.strip
 
-    if !(current_branch == main_branch || opts[:force])
+    if !(current_branch == main_branch || force?)
       puts "You are not on the main branch (#{main_branch}). If you meant to branch from here, rerun with --force, e.g.:".yellow
       puts "git-new-branch --force #{ARGV.join(' ')}"
       exit
@@ -78,6 +79,8 @@ USAGE
     puts `#{command}` unless pretend?
 
     add_branch_to_slorks(jira_team, ticket_id, branch) if slork?
+
+    run_command "git parent-branch set #{current_branch}" if current_branch != main_branch
   end
 
   def add_branch_to_slorks(jira_team, ticket_id, branch)
