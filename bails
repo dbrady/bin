@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# bails - bin/bundle exec rails, ensuring that aws login is current
+# bails - bin/rails, ensuring that aws login is current
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
@@ -26,7 +26,7 @@ class Application
     puts opts.inspect if opts[:debug]
 
     ensure_aws_sso_login
-    command = "bundle exec rails #{arglist}"
+    command = "bin/rails #{arglist}"
     command = "time #{command}" if time?
     run_command command
   end
