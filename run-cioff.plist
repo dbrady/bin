@@ -3,23 +3,23 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.davidbrady.git-log-branch</string>
+    <string>com.davidbrady.cioff</string>
 
     <key>ProgramArguments</key>
     <array>
       <string>/bin/bash</string>
       <string>-c</string>
-      <string>source /Users/davidbrady/.bash_profile && ruby /Users/davidbrady/bin/git-log-branch -p /Users/davidbrady/acima/devel/merchant_portal</string>
+      <string>source /Users/davidbrady/.private && /Users/davidbrady/bin/cioff</string>
     </array>
 
     <key>StartInterval</key>
-    <integer>60</integer>
+    <integer>3600</integer>
 
     <key>StandardOutPath</key>
-    <string>/tmp/git-log-branch.out</string>
+    <string>/tmp/cioff.out</string>
 
     <key>StandardErrorPath</key>
-    <string>/tmp/git-log-branch.err</string>
+    <string>/tmp/cioff.err</string>
 
     <key>RunAtLoad</key>
     <true/>

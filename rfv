@@ -1,5 +1,15 @@
 #!/bin/bash
 # echo 'Rspec Focus: View! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
-echo -n 'bundle exec rspec '
+
+echo -n 'time '
+
+if grep -vE "\brspec\b" ~/.spec_focus; then
+    if -e ./bin/rspec; then
+        echo -n './bin/rspec '
+    else
+        echo -n 'bundle exec rspec '
+    fi
+fi
+
 cat ~/.spec_focus
 echo

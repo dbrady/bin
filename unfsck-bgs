@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# unfsck-bgs - for those happy moments when IT throws all your family photos in the trash because that desktop is not your fucking property
+watch -n 60 'osascript ~/bin/set-backgrounds'
