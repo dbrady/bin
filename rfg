@@ -40,7 +40,7 @@
 #   rfload $1 && rfg
 # ELSE:
 #   # pass arguments directly to rspec as normal
-#   bundle exec rspec $@
+#   bin/rspec $@
 
 if [ "$1" = "-h" ]; then
     rfh
@@ -82,7 +82,7 @@ cirun
 # TODO: Swap intelligently between bin/rspec and bundle exec rspec. On my
 # current project, binstubs are smart enough to invoke bundle exec anyway, so
 # the smart version might just be "favor bin/rspec if present, fall back to
-# bundle exec rspec if there's a Gemfile, otherwise run bare rspec
+# bundle exec rspec if there's a Gemfile, otherwise run bare rspec"
 
 # if .spec_focus contains "rspec" it means I dumped the ENTIRE spec command in
 # there, likely to prepend environment switches like SPEC_SEED=true. This is
