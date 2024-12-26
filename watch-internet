@@ -1,4 +1,12 @@
 #!/bin/bash
+# TODO:
+# - [ ] Rewrite in ruby with dbrady_cli
+# - [ ] Red UP, green DOWN banner
+# - [ ] Show time since last state change (e.g. NETWORK IS UP for 0:45:21, or NETWORK IS UP since 08:32am)
+# - [ ] Speedup then back off timing after a DOWN change in case it's just a hiccup
+# - [ ] Keep track of seconds_up and seconds_down (so need to know time of last measurement)
+# - [ ] Show Uptime %: 100 * (1.0 - (seconds_down / (seconds_down + seconds_up))
+
 # only works on OSX for now but eh.
 if [ `uname -s` == 'Darwin' ]; then
     watch -n 10 'ping -c 1 google.com && say "The network is up"'
