@@ -1,3 +1,75 @@
+#!/usr/bin/env ruby
+# watch-internet - Ping a server continuously and track connectivity
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_reader :host, :sleep_interval
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :host, "Host to ping", default: "google.com"
+      opt :sleep_interval, "Seconds to sleep between pings", default: 10
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # APP CODE GOES HERE
+    while true
+      status = ping(host)
+
+      # TODO: histogram/counts
+      # - number of pings since status change
+      # - time since status change, e.g. "Down since 8:43:12 (2:27 ago)"
+      # - total elapsed up/down time
+      # - uptime %
+      update_status status
+
+      # clear screen
+      display_status status
+
+
+      sleep sleep_interval
+    end
+  end
+
+  def update_status(status)
+  end
+
+  def display_status(status)
+    run_command "clear", quiet: true
+    status ? announce_up : announce_down
+    puts Time.now.strftime("Last ping at %F %T")
+  end
+
+  def ping(host)
+    run_command "ping -t 10 -c 1 #{host} > /dev/null", quiet: true
+  end
+
+  def announce_up
+    run_command "rubanner --fg=white --bold --bg=green 'NET UP'", quiet: true
+  end
+
+  def announce_down
+    run_command "rubanner --fg=white --bold --bg=red 'NET DOWN'", quiet: true
+  end
+
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
 #!/bin/bash
 # TODO:
 # - [ ] Rewrite in ruby with dbrady_cli
@@ -8,10 +80,10 @@
 # - [ ] Show Uptime %: 100 * (1.0 - (seconds_down / (seconds_down + seconds_up))
 
 # only works on OSX for now but eh.
-if [ `uname -s` == 'Darwin' ]; then
-    watch -n 10 'ping -c 1 google.com && say "The network is up"'
-else
-    # TODO: hook into one of the audioplay apps to play a sound
-    # For now, go visual
-    watch -n 10 'ping -c 1 google.com && rubanner "The network is up"'
-fi
+# if [ `uname -s` == 'Darwin' ]; then
+#     watch -n 10 'ping -c 1 google.com && say "The network is up"'
+# else
+#     # TODO: hook into one of the audioplay apps to play a sound
+#     # For now, go visual
+#     watch -n 10 'ping -c 1 google.com && rubanner "The network is up"'
+# fi

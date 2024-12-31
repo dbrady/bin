@@ -41,6 +41,16 @@ module DbradyCli
         end
       end
     end
+
+    # Promote option to reader method, e.g. opt_reader(:host) will create `def host; opts[:host]; end`
+    def opt_reader(*fields)
+      Array(fields).each do |field|
+        raise "opt_field '#{field}' must not have hyphens" if field.to_s.include? '-'
+        define_method field do
+          opts[field.to_sym]
+        end
+      end
+    end
   end
 
   # This just makes opt_flag become a class method without the extend ceremony.
@@ -79,9 +89,9 @@ module DbradyCli
   # Log and run a command (unless --pretend), and return its exit status.
   # if force=true, run the command even if we're in pretend mode (use this
   # for commands that are not dangerous, like git isclean)
-  def run_command(command, force: false)
+  def run_command(command, force: false, quiet: false)
     puts "run_command: #{command.inspect} (force: #{force.inspect}, pretend: #{pretend?.inspect})" if debug?
-    puts command.cyan unless quiet?
+    puts command.cyan unless (quiet || quiet?)
 
     if force
       system command
