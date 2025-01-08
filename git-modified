@@ -6,9 +6,16 @@ require "optimist"
 String.disable_colorization unless $stdout.tty?
 
 opts = Optimist.options do
+  banner <<~BANNER
+git modified - show list of files that are currently modified (staged or not)
+
+See also: git files-changed for list of files changed between two commits
+
+Options:
+BANNER
   opt :debug, "Print extra debug info", default: false
   opt :staged, "Only show staged files", default: false
-  opt :unstaged, "Only show unstaged files",default: false
+  opt :unstaged, "Only show unstaged files", default: false
 end
 
 puts opts.inspect if opts[:debug]

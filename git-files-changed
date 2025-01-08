@@ -37,6 +37,8 @@ ancestor, and then show you the commits from one or both branches at its own
 discretion. In my own tests, it's usually <common>..<sha2> but in once case it
 gave me <common>..<sha1> followed by <common>..<sha2>. &shrug;
 
+See Also: git modified - list files modified since last commit, whether staged or not
+
 Options:
 BANNER
 
