@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 # git-parent-branch - Get or associate a parent branch with a branch
+#
+# TODO: Standardize the git-tool naming. The other tools have e.g. git-get-pr
+# and git-set-pr. This wants to be both, so I have to remember that this one is
+# "git-parent-branch set <branch>" and "git-parent-branch [get]"
 require "colorize"
 require "extralite"
 require "optimist"
@@ -23,6 +27,7 @@ git-parent-branch - Get or associate a parent branch with a branch
 git parent-branch set <parent> [<branch>] - set parent branch to branch
 git parent-branch [<branch>] - get parent branch
 git parent-branch list - list all branches
+git parent-branch go - go to parent branch
 
 If branch is omitted, assumes current branch.
 BANNER
@@ -43,7 +48,10 @@ BANNER
 
     repo = git_repo_for Dir.pwd
 
-    if ARGV.first == "set"
+    command = ARGV.first
+
+    case command
+    when "set"
       if ARGV.size == 3
         parent = ARGV[1]
         branch = ARGV[2]
@@ -56,9 +64,12 @@ BANNER
       end
 
       create_parent_branch repo, parent, branch
-    elsif ARGV.first == "list"
+    when "list"
       get_all_branches_for_repo(repo)
-    else
+    when "go"
+      branch = git_parent_branch
+      run_command "go '#{branch}'"
+    else # get
       case ARGV.size
       when 0
         branch = git_current_branch
