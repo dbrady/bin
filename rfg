@@ -1,7 +1,5 @@
-#!/bin/bash
+#!/usr/bin/env ruby
 # rfg - "rspec go" run specs focused on a specific subset, set by rff ("rspec focus")
-#
-
 # TODO: Port this to DbradyCli
 # TODO: Consider porting rfx to sqlite? Then relations like the current branch
 #       name become usable as inflectors to choose the correct set of specs to run.
@@ -22,55 +20,7 @@
 # This is complicated enough to warrant my rewriting it in ruby. It can be done
 # in bash but I'm already past the point of comfort and fluency in maintaining
 # this script.
-
-# usage:
 #
-# rfg [additional args or focus--will not change focus]
-
-# TODO: if spec_focus contains "rspec", it's the full command, which I use when
-# I need to force an env var like SPEC_SEED=true
-
-# TODO: Feature (may require rewriting in ruby?)
-# IFF:
-#   1. There is exactly one cmd line argument
-#   2. That argument is not a path (contains no /'s)
-#   3. That argument is not an option (does not begin with -)
-#   4. That argument exists as one of the loadable specs in rfload
-# THEN:
-#   rfload $1 && rfg
-# ELSE:
-#   # pass arguments directly to rspec as normal
-#   bin/rspec $@
-
-if [ "$1" = "-h" ]; then
-    rfh
-    exit 1
-fi
-
-# LOL/cry
-# if this is request-pages-api
-# Update 2017-12-18: John's Christmas Present To Dave: THIS IS NO LONGER NEEDED
-# pwd | grep request-pages-api &&
-#     # and you're not on vagrant
-#     uname -a | grep -v vagrant &&
-#     echo "#     #     #      #####   ######      #     #     #  #######" &&
-#     echo "#     #    # #    #     #  #     #    # #    ##    #     #" &&
-#     echo "#     #   #   #   #        #     #   #   #   # #   #     #" &&
-#     echo "#     #  #     #  #  ####  ######   #     #  #  #  #     #" &&
-#     echo " #   #   #######  #     #  #   #    #######  #   # #     #" &&
-#     echo "  # #    #     #  #     #  #    #   #     #  #    ##     #" &&
-#     echo "   #     #     #   #####   #     #  #     #  #     #     #" &&
-
-#     echo "*** WARNING *** Dave, you're trying to run rpapi specs outside of vagrant" &&
-#     echo "Please check your number and do not attempt your call again." &&
-#     exit -1
-
-echo 'Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
-echo "Running focused specs"
-
-# grep -E "\brspec\b" ~/.spec_focus && (echo time $(cat ~/.spec_focus)) || (echo time bin/rspec $(cat ~/.spec_focus))
-
-cirun
 # TODO: Bring back the old, better version that parsed the RSpec output,
 # e.g. if output includes /[1-9]+ failures/ cifail
 # and if output include /[1-9]+ pending/ ciwarn
@@ -100,20 +50,86 @@ cirun
 # split the spec_focus around the rspec command, and anything in front of it, of
 # the form X=Y, gets rolled up into a custom argument to system, like
 # `system(custom_env, rspec_command, args)`
-if grep -E "\brspec\b" ~/.spec_focus; then
-    echo ~/.spec_focus explicitly invokes rspec, honoring full command
-    if time bash ~/.spec_focus; then
-        cipass
+
+# usage:
+#
+# rfg [additional args or focus--will not change focus]
+
+# TODO: if spec_focus contains "rspec", it's the full command, which I use when
+# I need to force an env var like SPEC_SEED=true
+
+# TODO: Feature (may require rewriting in ruby?)
+# IFF:
+#   1. There is exactly one cmd line argument
+#   2. That argument is not a path (contains no /'s)
+#   3. That argument is not an option (does not begin with -)
+#   4. That argument exists as one of the loadable specs in rfload
+# THEN:
+#   rfload $1 && rfg
+# ELSE:
+#   # pass arguments directly to rspec as normal
+#   bin/rspec $@
+
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+rfg [<options>] [additional args or focus--will not change focus]
+
+See Also: rfh to see extended help
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    puts "Rspec Focus: Go! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)"
+    puts "Running focused specs"
+
+    focus = File.readlines(File.expand_path("~/.spec_focus")).map(&:strip).join('')
+
+    run_specs best_rspec_command(focus)
+  end
+
+  def best_rspec_command(focus)
+    if focus =~ /\brspec\b/
+      puts "~/.spec_focus explicitly invokes rspec, honoring full command"
+      ["time", focus].join(' ') unless focus =~ /^\s*time\s/
     else
-        cifail
-        exit -1
-    fi
-else
-    echo ~/.spec_focus does not explicitly invoke rspec, using bundle exec rspec
-    if time ./bin/rspec $@ $(cat ~/.spec_focus); then
-        cipass
+      puts "~/.spec_focus does not explicitly invoke rspec, using bin/rspec"
+      best_rspec = if File.exist?(File.join(Dir.pwd, "bin/rspec"))
+                     "bin/rspec"
+                   else
+                     "bundle exec rspec"
+                   end
+      full_command = ['time', best_rspec, focus].join(" ")
+    end
+  end
+
+  def run_specs(command)
+    run_command "cirun"
+    if run_command(command)
+      run_command "cipass"
     else
-        cifail
-        exit -1
-    fi
-fi
+      run_command "cifail"
+      exit -1
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
