@@ -1,39 +1,74 @@
 #!/usr/bin/env ruby
-# 
+# gemdir - cd to the gem directory
+#
+# TODO: Given the name of a specific gem, take us to the gem folder for the
+# currently bundled version of that gem
+
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    gemdir = get_command_output('gem environment gemdir')
+    gemdir = File.join(gemdir, 'gems')
+    run_command "cd '#{gemdir}'"
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
+#!/usr/bin/env ruby
+#
 # gemdir - find a folder or file in a gem
-# 
+#
 # usage:
 #    gemdir <gem> [<sub_path>] [-v<version>]
 #
 # # find gem base path
 # gemdir api
 # => /usr/lib/ruby/gems/1.8/gems/api-0.1.1
-# 
+#
 # # find subfolder
 # gemdir api lib
 # => /usr/lib/ruby/gems/1.8/gems/api-0.1.1/lib
-# 
+#
 # # it even searches
 # gemdir api pants.rb
 # => /usr/lib/ruby/gems/1.8/gems/api-0.1.1/lib/modules/pants.rb
-# 
+#
 # # subfile/folder must exist
 # gemdir api argle.bz2
 # => NOT FOUND: path or file argle.bz2 anywhere in /usr/lib/ruby/gems/1.8/gems/api-0.1.1
 
 # TODO: Implement version
 
-require 'rubygems'
+# 2025-01-06: STAHP. This is a deprecated interface, does not work on ruby 3.4
+# require 'rubygems'
 
-the_gem = ARGV[0]
-path = ARGV[1]
+# the_gem = ARGV[0]
+# path = ARGV[1]
 
-gps = Gem::GemPathSearcher.new
+# gps = Gem::GemPathSearcher.new
 
-spec = gps.find(the_gem)
+# spec = gps.find(the_gem)
 
-if path.nil?
-  puts spec.full_gem_path
-else
-  puts Dir.glob( File.join(spec.full_gem_path, '**', path) )
-end
+# if path.nil?
+#   puts spec.full_gem_path
+# else
+#   puts Dir.glob( File.join(spec.full_gem_path, '**', path) )
+# end
