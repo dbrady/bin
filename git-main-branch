@@ -45,13 +45,14 @@ class Application
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :force, "Force re-caching branch", default: false
     end
     puts opts.inspect if opts[:debug]
 
     dir = Dir.pwd
     puts "dir: #{dir.inspect}" if debug?
 
-    if ARGV.include?("-f") || !cache_lookup(dir)
+    if opts[:force] || !cache_lookup(dir)
       puts "Folder is not cached, initializing" if debug?
       branch = get_main_branch_from_remote
       cache_branch dir, branch
