@@ -119,11 +119,11 @@ BANNER
   end
 
   def run_specs(command)
-    run_command "cirun"
+    run_command "cirun", quiet: true
     if run_command(command)
-      run_command "cipass"
+      run_command "cipass", quiet: true
     else
-      run_command "cifail"
+      run_command "cifail", quiet: true
       exit -1
     end
   end
