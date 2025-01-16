@@ -66,6 +66,10 @@ BANNER
       create_parent_branch repo, parent, branch
     when "list"
       get_all_branches_for_repo(repo)
+    when "diff"
+      parent_branch = git_parent_branch
+      current_branch = git_current_branch
+      run_command "git diff #{parent_branch}..#{current_branch}"
     when "go"
       branch = git_parent_branch
       run_command "go '#{branch}'"
