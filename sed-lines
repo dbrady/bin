@@ -47,7 +47,7 @@ show_line_numbers = argv.delete("-n")
 
 start, stop, file = *argv
 
-file ||= `get-ds-script`.strip
+# file ||= `get-ds-script`.strip
 
 command = if show_line_numbers
             "cat -n #{file} | sed -ne '#{start},#{stop}p'"
