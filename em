@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# emacs-open - Send open-file keychords to emacs in another tmux window
+# em - emacs-open - Send open-file keychords to emacs in another tmux window
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
