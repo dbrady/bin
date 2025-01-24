@@ -1,0 +1,27 @@
+# git-prefactor - TODO/NEW/RAMBLE
+
+# tl;dr "take this commit out of my current work, create/reuse a parent branch between me and my parent, and move this commit into the parent". This way I can make a separate PR, and have my refactorings go in there.
+
+# hackng
+
+# oh, I need calculate finxed
+bash = <<DORK
+git add / comtit
+# => b18739
+
+
+git prefactor b18739
+
+
+
+main > dbrady/IU-42/blah
+
+go main
+git branch prefactor-for/IU-42
+git cherry-pick b18739
+go original-branch
+git rebase prefactor-for/IU-42
+
+git diff prefactor
+
+DORK

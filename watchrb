@@ -1,0 +1,101 @@
+#!/usr/bin/env ruby
+# watchrb - DSL driver to "watch something ruby"
+#
+# e.g. watch this customer and associated phone records
+require "colorize"
+require "optimist"
+require_relative "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+# IMPORTANT: Build iteratively.
+
+# Think of it like ETL, but not in database terms, rather in the general sense of
+# "get some data, transform it, display it". The Extract is "go get this customer
+# and customer.phone_numbers". T is "get the id and updated_at from customer,
+# format the updated_at as %F %T, then make a new field "full_name" that consists
+# of customer first_name and last_name separated b a space. From each phone_number
+# get type, number, label and status. Colorize the status field with READY in
+# green, NEW in cyan, DISABLED in gray and UNVERIFIED in yellow. If the status is
+# FRAUD, colorize the entire phone record in red, and if the deleted_at is not
+# nil, colorize the entire phone record in gray."L is "display it to the person
+# debugging this".
+
+# The idea is to narrow down and visualize tricksome data, like how I do
+# Lease#explain_conditions. Ideally the data output should be arrangeable, for
+# example when I worked on a data sync bug I needed customer.main_phone to exactly
+# match customer.main_phone_number.phone_number and customer.main_phone_type to
+# exactly match customer.main_phone_number.phone_type, and there was also an
+# alt_phone/alt_phone_type. I wanted them aligned and colorized, green if match
+# and red if not. I was literall thinking like spreadsheet cells or an ERD chart
+# drawn in text, like:
+
+# +--------------------------------+       +-----------------------+   +-----------------------+
+# | customer                       |       | phone (main)          |   | phone (alt)           |
+# +-----------------+--------------+       +--------+--------------+   +--------+--------------+
+# | id              | 1000042      |       | role   | main         |   | role   | alt          |
+# | main_phone      | 333.333.3333 |       | number | 333.333.3333 |   | number | 555.555.5555 |
+# | main_phone_type | mobile       |       | type   | landline     |   | type   | landline     |
+# | alt_phone       | 444.444.4444 |       +--------+--------------+   +--------+--------------+
+# | alt_phone_type  | landline     |
+# +-----------------+--------------+
+#
+# In the above, main_phone_type and phone (main).type don't match, and would be
+# displayed in red.
+
+# Other possible viz: emit a dot file and regen it with imagemagick.
+
+# ----------------------------------------------------------------------
+# SUPER SIMPLE IMPLEMENTATION 1:
+#
+# loop forever, sleeping every 5 seconds
+# each loop, poll the data
+# transform it as necessary
+# write out a GraphViz .dot file
+# render it with dot2png
+# open it in Preview
+#
+# ----------------------------------------------------------------------
+# SUPER SIMPLE IMPLEMENTATION 2:
+#
+# grab data, transform it, emit it as a spreadsheet so the cells align
+#
+# ----------------------------------------------------------------------
+# SUPER SIMPLE IMPLEMENTATION 3:
+#
+# sitting in the rails console, grab data, transform it, print it to the screen
+# with text-table.
+#
+# ----------------------------------------------------------------------
+
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+watchrb - DSL driver to "watch something ruby"
+
+VERY VERY WIP. This is the driver file for a tool I'm hoping will help debug and
+visualize data. It would poll or watch for events, then transform and display
+the data I care about.
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    # APP CODE GOES HERE
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
