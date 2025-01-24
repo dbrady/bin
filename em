@@ -51,7 +51,7 @@ class Application
       # TODO: git-new-branch duplicates this code. Refactor this to emacs-send?
       tmux_command = "tmux send-keys -t#{opts[:session]}:#{opts[:window]}"
       run_command "#{tmux_command} C-x C-f C-a C-k #{path} C-m"
-      run_command "#{tmux_command} M-g M-g #{line} C-m" if line
+      run_command "#{tmux_command} M-x goto-line C-m #{line} C-m M-x recenter-top-bottom C-m" if line
     else
       puts "File does not exist: #{path}"
       puts "Please fix the path or rerun with --force if you want to create the file"
