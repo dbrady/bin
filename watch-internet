@@ -8,24 +8,29 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_reader :host, :sleep_interval
+  opt_reader :host, :sleep_interval, :verbose, :ttl
 
   def run
     @opts = Optimist.options do
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :verbose, "Run with more output (use --no-quiet for maximum yappage)", default: false
       opt :quiet, "Run with minimal output", default: false
 
       opt :host, "Host to ping", default: "google.com"
       opt :sleep_interval, "Seconds to sleep between pings", default: 10
+      opt :ttl, "Time-To Live (lengthen if network is flaky, shorten for faster response)", default: 150
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
     # APP CODE GOES HERE
     while true
+      clear_screen
+
       status = ping(host)
+
+      display_status status
 
       # TODO: histogram/counts
       # - number of pings since status change
@@ -34,10 +39,6 @@ class Application
       # - uptime %
       update_status status
 
-      # clear screen
-      display_status status
-
-
       sleep sleep_interval
     end
   end
@@ -45,14 +46,17 @@ class Application
   def update_status(status)
   end
 
-  def display_status(status)
+  def clear_screen
     run_command "clear", quiet: true
+  end
+
+  def display_status(status)
     status ? announce_up : announce_down
     puts Time.now.strftime("Last ping at %F %T")
   end
 
   def ping(host)
-    run_command "ping -t 10 -c 1 #{host} > /dev/null", quiet: true
+    run_command "ping -t #{ttl} -c 1 #{host} > /dev/null", quiet: !verbose
   end
 
   def announce_up
