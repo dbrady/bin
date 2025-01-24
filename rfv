@@ -2,10 +2,10 @@
 # echo 'Rspec Focus: View! (rff - Focus; rfg - Go; rfc - Clear; rfe - Edit; rfv - View; rfh - Help)'
 
 # if spec_focus does NOT mention rspec, we need to prefix the command
-if grep -vE "\brspec\b" ~/.spec_focus; then
+if grep -vE "\brspec\b" ~/.spec_focus > /dev/null; then
     # but WHICH command? Prefer bin/rspec over bundle exec rspec, it is MUCH
     # faster if you're running spring. (Cf. 4sec vs 39sec)
-    if -e ./bin/rspec; then
+    if [ -e ./bin/rspec ]; then
         echo -n './bin/rspec '
     else
         echo -n 'bundle exec rspec '
