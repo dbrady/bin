@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# scriptname - HEY DAVE COME DESCRIBE THIS SCRIPT
+# {{script}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 require "colorize"
 require "optimist"
 require_relative "dbrady_cli"
@@ -10,6 +10,11 @@ class Application
 
   def run
     @opts = Optimist.options do
+      banner <<BANNER
+{{script}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+
+Options:
+BANNER
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
