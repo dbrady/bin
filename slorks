@@ -415,7 +415,6 @@ BANNER
       template_lines << "*Title:* <%= slork.title %>"
       template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !no_jira?
       template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !no_pr?
-      template_lines << "*Repo:* <%= slork.repo %>" if slork.repo != DEFAULT_REPO
       template_lines << "*Status:* <%= slork.status_text %>"
       template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !no_notes?
 
