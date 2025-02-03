@@ -72,14 +72,14 @@ module DbradyCli
   # exception if fails.
   # if force=true, run the command even if we're in pretend mode (use this
   # for commands that are not dangerous, like git isclean)
-  def run_command!(command, force: false)
+  def run_command!(command, force: false, env: {})
     puts "run_command!: #{command.inspect}" if debug?
     puts command.cyan unless quiet?
 
     success = if force
-                system command
+                system env, command
               else
-                pretend? || system(command)
+                pretend? || system(env, command)
               end
 
     raise "run_command! failed running #{command.inspect}" unless success
@@ -89,14 +89,15 @@ module DbradyCli
   # Log and run a command (unless --pretend), and return its exit status.
   # if force=true, run the command even if we're in pretend mode (use this
   # for commands that are not dangerous, like git isclean)
-  def run_command(command, force: false, quiet: false)
+  def run_command(command, force: false, quiet: false, env: {})
     puts "run_command: #{command.inspect} (force: #{force.inspect}, pretend: #{pretend?.inspect})" if debug?
-    puts command.cyan unless (quiet || quiet?)
+    command_text = env.map {|pair| pair.join('=')}.join(' ') + " " + command
+    puts command_text.cyan unless (quiet || quiet?)
 
     if force
-      system command
+      system env, command
     else
-      pretend? || system(command)
+      pretend? || system(env, command)
     end
   end
 
