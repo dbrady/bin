@@ -1,11 +1,10 @@
 #!/usr/bin/env ruby
 # rfg - "rspec go" run specs focused on a specific subset, set by rff ("rspec focus")
-# TODO: Port this to DbradyCli
+# DONE: Port this to DbradyCli
 # TODO: Consider porting rfx to sqlite? Then relations like the current branch
 #       name become usable as inflectors to choose the correct set of specs to run.
 # TODO: I'm considering an equivalent set of apps/commands for rubocop. Refactor
 #       to abstract out the application name? Or is that overkill?
-
 # TODO: Use tee to catch pending and turn on warnings:
 # (rspec | tee ~/.spec_output.log) || cifail
 #
@@ -28,32 +27,13 @@
 # ^^^ TODONT: But don't bother until I have a team that cares about warning-free
 # specs. (And then, make it optional. I originally just cut this over rather
 # than trying to make it bimodal.)
-
-# TODO: Swap intelligently between bin/rspec and bundle exec rspec. On my
-# current project, binstubs are smart enough to invoke bundle exec anyway, so
-# the smart version might just be "favor bin/rspec if present, fall back to
-# bundle exec rspec if there's a Gemfile, otherwise run bare rspec"
-
-# if .spec_focus contains "rspec" it means I dumped the ENTIRE spec command in
-# there, likely to prepend environment switches like SPEC_SEED=true. This is
-# useful for env seeds but forces me to lock into bin/rspec or bundle exec
-# rspec. For a one-off, that's fine. Especially since I also cut over from
-# bundle exec rspec to bin/rspec.
 #
-# If not, assume spec_focus contains just the args to pass to bin/rspec
+# TODO: Favor bin/rspec over bundle exec rspec over rspec. bin/rspec honors
+# Spring which cuts about 20s off the spec startup time (which is 3x longer than
+# the maximum time I tolerate on specs!)
 #
-# TODO: If you put SPEC_SEED=true bin/rspec app/models/user_spec.rb, this will
-# blow up trying to execute the command `SPEC_SEED=true`. Right now this is
-# manually overridable with `SPEC_SEED=true rfg`. To make this work the way I
-# want, I might want to port this to ruby and either port spec_foci to a
-# database (like sqlite3 db in the newly-minted ~/bin/db folder) or have ruby
-# split the spec_focus around the rspec command, and anything in front of it, of
-# the form X=Y, gets rolled up into a custom argument to system, like
-# `system(custom_env, rspec_command, args)`
-
-# usage:
-#
-# rfg [additional args or focus--will not change focus]
+# DONE: Let's support SPEC_SEED=true. "-s/--seed" should add SPEC_SEED=true to
+# the env before calling.
 
 # TODO: if spec_focus contains "rspec", it's the full command, which I use when
 # I need to force an env var like SPEC_SEED=true
@@ -78,6 +58,9 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :seed, :fail_fast
+  opt_reader :profile
+
   def run
     @opts = Optimist.options do
       banner <<BANNER
@@ -91,6 +74,10 @@ BANNER
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+
+      opt :seed, "Run specs with SPEC_SEED=true (for work)", default: false
+      opt :fail_fast, "Pass --fail-fast to rspec", default: false
+      opt :profile, "Pass --profile <num> to rspec", type: :int
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -114,13 +101,26 @@ BANNER
                    else
                      "bundle exec rspec"
                    end
-      full_command = ['time', best_rspec, focus].join(" ")
+      full_command = ['time', best_rspec, rspec_flags, focus].join(" ")
     end
+  end
+
+  def rspec_env
+    env = {}
+    env["SPEC_SEED"] = "true" if seed?
+    env
+  end
+
+  def rspec_flags
+    flags = []
+    flags << "--profile=#{profile}" if profile
+    flags << "--fail-fast" if fail_fast?
+    flags
   end
 
   def run_specs(command)
     run_command "cirun", quiet: true
-    if run_command(command)
+    if run_command(command, env: rspec_env)
       run_command "cipass", quiet: true
     else
       run_command "cifail", quiet: true
