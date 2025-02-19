@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+#
+# schema-peek - Print the schema for a file by awking db/structure.sql for the
+# schema definition.
+#
+# TODO: Make this work with db/schema.rb as well
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :ruby, :sql
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+# schema-peek - Print the schema for a file by awking db/structure.sql for the
+# schema definition.
+
+schema-peek [option] <table>
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :ruby, "Get the ruby definition from db/schema.rb", default: false
+      opt :sql, "Get the DDL from db/structure.sql", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    raise "You have specified --ruby but I could not find db/schema.rb. Regenerate it with SCHEMA_FORMAT=ruby bin/rails db:schema:dump" if ruby? && !File.exist?("db/schema.rb")
+    raise "You have specified --sql but I could not find db/structure.sql. Regenerate it with SCHEMA_FORMAT=sql bin/rails db:schema:dump" if sql? && !File.exist?("db/structure.sql")
+
+    if !opts[:ruby_given] && !opts[:sql_given]
+      if File.exist?("db/schema.rb")
+        opts[:ruby] = true
+      elsif File.exist?("db/structure.sql")
+        opts[:sql] = true
+      end
+    end
+
+    table = ARGV.first
+    awk_command = if ruby?
+                    %Q|awk '/create_table "#{table}"/,/^\\\s*$/' db/schema.rb|
+                  elsif sql?
+                    %Q|awk '/CREATE TABLE public.#{table}\\\s*\\\(/,/^\s*$/' db/structure.sql|
+                  else
+                    raise "Could not find schema.rb or structure.sql"
+                  end
+
+    run_command awk_command
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
