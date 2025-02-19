@@ -17,19 +17,35 @@ opts = Optimist.options do
   opt :headers, "Expect table to have headers", default: true
 end
 
+# poor man's Text::Table. Pass an array of arrays.
+def print_table(table, line_delimiter: '|', cell_delimiter: '|')
+  # Calculate the maximum width of each column
+  column_widths = table.transpose.map do |column|
+    column.map { |cell| cell.to_s.length }.max
+  end
+
+  # Print the table
+  table.each do |row|
+    cells = row.map.with_index do |cell, index|
+      cell.to_s.ljust(column_widths[index] + 2)
+    end
+    puts "#{line_delimiter} " + cells.join(" #{cell_delimiter} ") + " #{line_delimiter}"
+  end
+end
+
 csv = ARGF.readlines.join
 
 args = {first_row_is_head: opts[:headers]}
 
-formatted = CSV.parse(csv, headers: true, col_sep: opts[:delimiter]).to_a.to_table(args).to_s
+print_table CSV.parse(csv, headers: true, col_sep: opts[:delimiter]).to_a
 
-if opts[:org]
-  # sadly the text-table to_table can't deal with the headache that is emacs'
-  # org-mode. It accepts args like :horizontal_boundary and
-  # :boundary_intersection but does not distinguish between horizontal end
-  # boundaries and horizontal intersections. So text-table can do
-  # "+---+---+---+---+" or "|---|---|---|---|", but we need "|---+---+---+---|".
-  puts formatted.gsub(/^\+/, "|").gsub(/\+$/, "|")
-else
-  puts formatted
-end
+# if opts[:org]
+#   # sadly the text-table to_table can't deal with the headache that is emacs'
+#   # org-mode. It accepts args like :horizontal_boundary and
+#   # :boundary_intersection but does not distinguish between horizontal end
+#   # boundaries and horizontal intersections. So text-table can do
+#   # "+---+---+---+---+" or "|---|---|---|---|", but we need "|---+---+---+---|".
+#   puts formatted.gsub(/^\+/, "|").gsub(/\+$/, "|")
+# else
+#   puts formatted
+# end

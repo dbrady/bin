@@ -29,7 +29,8 @@ class Application
     current_branch = `git current-branch`.strip
     query = "SELECT pr FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}' AND deleted_at IS NULL"
     puts query.cyan if debug?
-    pr = db.query_single_value(query)
+    # pr = db.query_single_array(query)
+    pr = db.query_single(query)&.fetch(:pr, nil)
 
     if pr.nil?
       $stderr.puts "No PR for #{repo}" if $stdout.tty?

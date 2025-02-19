@@ -1,12 +1,23 @@
 #!/usr/bin/env ruby
 # Run a script and time its output under various ruby implementations
+require "colorize"
 
-best_of = 1
-args = ARGV
-if args[0] == "-b"
-  best_of = args[1].to_i
-  args = args[2..-1]
+def log(*args)
+  $stdout.puts *args
+  $stdout.flush
 end
+
+def run_command(command)
+  puts command.cyan
+  system command
+end
+
+best_of = 10
+args = ARGV
+# if args[0] == "-b"
+#   best_of = args[1].to_i
+#   args = args[2..-1]
+# end
 
 # Don't use any rubies that aren't in the path
 rubies = %w(ruby ruby1.9 jruby rbx tinyrb).select {|ruby| ENV["PATH"].split(/:/).map {|p| File.join(p, ruby) }.any? {|f| File.exist? f}}
@@ -17,9 +28,9 @@ times = { }
 
 rubies.each do |ruby|
   1.upto(best_of) do |run|
-    puts "timerubies: Timing script #{args[0]} under #{ruby} (#{run}/#{best_of})..."
+    log "timerubies: Timing script #{args[0]} under #{ruby} (#{run}/#{best_of})..."
     start = Time.now.to_f
-    system("#{ruby} #{args * ' '}")
+    run_command("#{ruby} #{args * ' '}")
     stop = Time.now.to_f
     if $?.exitstatus
       time = stop - start
@@ -31,10 +42,10 @@ end
 
 sec_digits = times.map {|k,v| v ? (Math.log(v)/Math.log(10)).ceil : 0}.max
 
-puts '# ' + '-' * 70
+log '# ' + '-' * 70
 rubies.each do |ruby|
   time = times[ruby] ? ("%#{sec_digits+3}.3fs" % times[ruby]) : "-.---s (DNF)"
-  puts "# %-#{longest_label}s: %s" % [ruby, time]
+  log "# %-#{longest_label}s: %s" % [ruby, time]
 end
 
 
@@ -42,4 +53,3 @@ end
 # times[ruby] / $?    nil    OK
 # nil                 nil    time
 # n                   n      [time,n].min
-

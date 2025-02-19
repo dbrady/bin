@@ -1,8 +1,10 @@
 #!/usr/bin/env ruby
-# {{script}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+# NO{{DEL}}COMMIT: You need to name this script
+# {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 require "colorize"
 require "optimist"
-require_relative "dbrady_cli"
+$:.unshift(File.expand_path("~/bin"))
+require "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application
@@ -11,7 +13,8 @@ class Application
   def run
     @opts = Optimist.options do
       banner <<BANNER
-{{script}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+# NO{{DEL}}COMMIT: You need to name this script
+{{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 
 Options:
 BANNER

@@ -29,6 +29,9 @@ module DbradyCli
     opts[:pretend]
   end
 
+  # ======================================================================
+  # CLASS METHODS
+  # ----------------------------------------------------------------------
   module ClassMethods
     # opt_flag :debug will create `def debug?; opts[:debug]; end`
     # opt_flag :a, :b, :c will create a?, b? and c?
@@ -51,18 +54,33 @@ module DbradyCli
         end
       end
     end
+
+    def ensure_rails_runner!
+      return if defined? Rails
+
+      # get the file path of the caller so we can pass it to rails runner.
+      caller_file = caller_locations(1, 1).first.path
+
+      # favor the spring binstub over bundler, because spring go fast.
+      spring = File.join(Dir.pwd, "bin/rails")
+
+      rails_command = File.exist?(spring) ? spring : "bundle exec rails"
+
+      command = "#{rails_command} runner #{caller_file} #{ARGV * ' '}"
+
+      puts command.cyan
+      status = system(command)
+      exit status
+    end
   end
 
-  # This just makes opt_flag become a class method without the extend ceremony.
-  # This is peak Spooky Action at a Distance, and I don't do this in
-  # production. But for my private scripts folder... yeah. Minimizing ceremony
-  # FTW.
-  #
-  # include DbradyCli
-  # opt_flag :cheese
   def self.included(including_module)
     including_module.extend ClassMethods
   end
+  # ----------------------------------------------------------------------
+  # END CLASS METHODS
+  # ======================================================================
+
 
   # ----------------------------------------------------------------------
   # BASH STUFF
@@ -91,7 +109,8 @@ module DbradyCli
   # for commands that are not dangerous, like git isclean)
   def run_command(command, force: false, quiet: false, env: {})
     puts "run_command: #{command.inspect} (force: #{force.inspect}, pretend: #{pretend?.inspect})" if debug?
-    command_text = env.map {|pair| pair.join('=')}.join(' ') + " " + command
+    command_pieces = env.map {|pair| pair.join('=')} + [command]
+    command_text = command_pieces.compact * ' '
     puts command_text.cyan unless (quiet || quiet?)
 
     if force
