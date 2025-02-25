@@ -1,0 +1,131 @@
+#!/usr/bin/env ruby
+# append-migration-sql - generate Tad's migration sql thing
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+  attr_reader :migration
+
+  VALID_COMMANDS = {
+    "clear" => "Clear annotations from end of file",
+    "down" => "Run the down migration",
+    "redo" => "Clear, down, and then run.",
+    "run" => "Annotate migration",
+    "undo" => "Same as down && clear",
+    "view" => "View the migration file",
+  }
+
+  def valid_command_options
+    longest = VALID_COMMANDS.keys.map(&:size).max
+    VALID_COMMANDS.each_pair.map do |command, description|
+      "  %#{longest}s: %s" % [command, description]
+    end.join("\n")
+  end
+
+  def run
+    vco = valid_command_options
+    @opts = Optimist.options do
+      banner <<BANNER
+# append-migration-sql [<pattern>] [<command> [...]] - generate Tad's migration sql thing
+
+Valid Commands:
+#{vco}
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      # opt :redo, "Redo/re-annotate migration", default: false
+      # opt :undo, "Remove annotation", default: false
+      # opt :view, "View migration", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    commands, args = ARGV.dup.partition {|arg| VALID_COMMANDS.keys.include?(arg.downcase) }
+    commands = commands.map(&:downcase)
+    if debug?
+      puts "Commands: #{commands.join(', ')}"
+      puts "Args: #{args.join(', ')}"
+    end
+    @migration = select_migration(args)
+
+    puts "Commands: #{commands}"
+
+    commands.each do |command|
+      case command
+      when "clear" then clear_migration
+      when "down"  then down_migration
+      when "undo"  then undo_migration
+      when "redo"  then redo_migration
+      when "view"  then view_migration
+      when "run"   then annotate_migration
+      end
+    end
+  end
+
+  def select_migration(argv)
+    migration_filter = File.join("db/migrate", argv) + "*"
+    migrations = get_command_output_lines("ls #{migration_filter}")
+    if migrations.size == 1
+      puts "Autoselecting #{migrations.first}" if debug?
+      return migrations.first
+    end
+
+    selecta_command = "ls #{migration_filter} | sort | uniq | selecta"
+    puts "Select Migration to Annotate:"
+    get_command_output selecta_command
+  end
+
+  def annotate_migration
+    puts "annotate_migration".magenta
+    command = "bin/rails db:append_migration_sql[#{migration}]"
+    run_command! command, env: { "RAILS_ENV" => ENV.fetch("RAIL_ENV", "development") }
+  end
+
+  def down_migration
+    puts "down_migration".magenta
+    run_command! "bin/rails db:migrate:down", env: { "VERSION" => migration.sub(/^[^\d]*/, "") }
+  end
+
+  # strip annotation comments from end of migration
+  def clear_migration
+    puts "clear_migration".magenta
+    lines = File.readlines(migration).map(&:rstrip)
+
+    lines.pop while lines.last&.strip&.empty? || lines.last =~ /^\s*#/
+
+    File.open(migration, "w") do |fp|
+      fp.puts lines
+    end
+  end
+
+  def undo_migration
+    puts "undo_migration".magenta
+    down_migration
+    clear_migration
+  end
+
+  def redo_migration
+    puts "redo_migration(migration)".magenta
+    undo_migration
+    annotate_migration
+  end
+
+  def view_migration
+    puts "view_migration(migration)".magenta
+    puts File.readlines(migration).map(&:rstrip)
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
