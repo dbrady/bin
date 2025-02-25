@@ -41,6 +41,7 @@ class Application
   opt_flag :color, :created_at, :force, :no_jira, :no_notes, :no_pr, :no_repo, :humanize, :markdown, :updated_at
 
   COMMANDS = {
+    "abandon" => "Mark ticket as abandoned",
     "announce" => "Display merge announcement",
     "block" => "Mark ticket as blocked",
     "c" => "Open database console",
@@ -53,6 +54,8 @@ class Application
     "new" => "Create new ticket (automatically called from git-new-branch)",
     "notes" => "Edit ticket notes",
     "pr" => "Edit ticket PR",
+    "progress" => "Mark ticket as in progress",
+    "qa" => "Mark ticket as ready for qa",
     "ready" => "Mark ticket as ready for deploy",
     "review" => "Mark ticket as in review (automatically called from git set-pr)",
     "status" => "Edit ticket status",
@@ -237,6 +240,8 @@ BANNER
     puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
 
     case command
+    when "abandon" then mark_abandoned(board, ticket)
+    when "announce" then announce(board, ticket)
     when "block" then block(board, ticket, opts[:notes])
     when "clean" then clean_deploys
     when "commands" then list_commands
@@ -247,13 +252,13 @@ BANNER
     when "new" then add_new(board, ticket)
     when "notes" then update_notes(board, ticket)
     when "pr" then update_pr(board, ticket)
+    when "qa" then mark_ready_for_qa(board, ticket)
     when "ready" then ready(board, ticket)
     when "review" then move_into_review(board, ticket)
     when "status" then update_status(board, ticket)
     when "statuses" then list_statuses
     when "title" then update_title(board, ticket)
     when "undelete" then undelete(board, ticket)
-    when "announce" then announce(board, ticket)
     else
       if markdown?
         puts list_as_markdown if markdown?
@@ -579,6 +584,48 @@ BANNER
     ticket.status = "o"
     ticket.save
     puts "Marked done."
+    puts ticket if debug?
+  end
+
+  def mark_abandoned(board, ticket)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      repo: opts[:repo]
+    )
+
+    ticket.notes = notes if notes
+    ticket.status = "x"
+    ticket.save
+    puts "Marked abandoned."
+    puts ticket if debug?
+  end
+
+  def mark_ready_for_qa(board, ticket)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      repo: opts[:repo]
+    )
+
+    ticket.notes = notes if notes
+    ticket.status = "q"
+    ticket.save
+    puts "Marked as in QA."
+    puts ticket if debug?
+  end
+
+  def mark_in_progres(board, ticket)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      repo: opts[:repo]
+    )
+
+    ticket.notes = notes if notes
+    ticket.status = "p"
+    ticket.save
+    puts "Marked as in progress."
     puts ticket if debug?
   end
 
