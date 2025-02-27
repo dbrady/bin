@@ -22,7 +22,7 @@ class Application
 
         Note: Files are identified by having committed changes, but rubocop runs on files as current constituted.
 
-
+        Options:
       BANNER
 
       opt :debug, "Print extra debug info", default: false
@@ -44,7 +44,7 @@ class Application
       opt :"extra-details", "Show extra details in offense messages", short: :E, default: true
       opt :"except", "Exclude the given cop(s)", type: :string
       opt :"only", "Only run the given cop(s)", short: :O, type: :string
-   end
+    end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
 
