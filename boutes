@@ -34,8 +34,8 @@ class Application
     cache_routes if ARGV.empty? || !boutes_file_exists?
 
     if ARGV.empty?
-      run_command "bundle exec rails routes > #{boutes_path}"
-      run_command "bundle exec rails grape:routes >> #{boutes_path}"
+      run_command "bin/rails routes > #{boutes_path}"
+      run_command "bin/rails grape:routes >> #{boutes_path}"
     else
       run_command %Q|ag -i "#{ARGV.first}" "#{boutes_path}"|
     end
