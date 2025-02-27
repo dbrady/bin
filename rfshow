@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# rfshow - show a list/tree of the current specs
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+rfshow - show a list/tree of the current specs
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    specs = get_command_output("rfv").split(/\s+/)
+    specs.shift while specs.first&.end_with?("/rspec") || specs.first&.start_with?("-")
+
+    # TODO: colorize the directory tree?
+    #print "\x1b[48;2;0;#{green};#{blue}m#{char}"
+    puts specs.sort
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
