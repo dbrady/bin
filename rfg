@@ -91,18 +91,19 @@ BANNER
   end
 
   def best_rspec_command(focus)
-    if focus =~ /\brspec\b/
-      puts "~/.spec_focus explicitly invokes rspec, honoring full command"
-      ["time", focus].join(' ') unless focus =~ /^\s*time\s/
-    else
-      puts "~/.spec_focus does not explicitly invoke rspec, using bin/rspec"
-      best_rspec = if File.exist?(File.join(Dir.pwd, "bin/rspec"))
-                     "bin/rspec"
-                   else
-                     "bundle exec rspec"
-                   end
-      full_command = ['time', best_rspec, rspec_flags, focus].join(" ")
-    end
+    command = if focus =~ /\brspec\b/
+                puts "~/.spec_focus explicitly invokes rspec, honoring full command"
+                ["time", focus].join(' ') unless focus =~ /^\s*time\s/
+              else
+                puts "~/.spec_focus does not explicitly invoke rspec, using bin/rspec"
+                best_rspec = if File.exist?(File.join(Dir.pwd, "bin/rspec"))
+                               "bin/rspec"
+                             else
+                               "bundle exec rspec"
+                             end
+                ['time', best_rspec, focus].join(" ")
+              end
+    command = [command , rspec_flags].join(' ')
   end
 
   def rspec_env
