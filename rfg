@@ -1,24 +1,20 @@
 #!/usr/bin/env ruby
 # rfg - "rspec go" run specs focused on a specific subset, set by rff ("rspec focus")
 # DONE: Port this to DbradyCli
-# TODO: Consider porting rfx to sqlite? Then relations like the current branch
-#       name become usable as inflectors to choose the correct set of specs to run.
+#
+# TODO: Port to monolith/dispatch. E.g. instead of rfg, rfn, rfload, let's have
+#       rfx new, rfx go, rfx load, etc.
+#
+# TODO: Port/rewrite all of rfx to sqlite? Then relations like the current
+#       branch name become usable as inflectors to choose the correct set of
+#       specs to run. 2025-03-03: Baby steps: we have $/db/git-settings.rb now,
+#       so we can leverage that.
+#
 # TODO: I'm considering an equivalent set of apps/commands for rubocop. Refactor
 #       to abstract out the application name? Or is that overkill?
-# TODO: Use tee to catch pending and turn on warnings:
-# (rspec | tee ~/.spec_output.log) || cifail
 #
-# Need to thread these together a bit:
-# if rspec fails
-#   cifail
-# elif spec output matches ", 0 pending"
-#   cipass
-# else
-#   ciwarn
-#
-# This is complicated enough to warrant my rewriting it in ruby. It can be done
-# in bash but I'm already past the point of comfort and fluency in maintaining
-# this script.
+# TODO: Spike/experiment: Use tee to catch pending and turn on warnings?
+# E.g. (rspec | tee ~/.spec_output.log) || cifail
 #
 # TODO: Bring back the old, better version that parsed the RSpec output,
 # e.g. if output includes /[1-9]+ failures/ cifail
@@ -28,27 +24,15 @@
 # specs. (And then, make it optional. I originally just cut this over rather
 # than trying to make it bimodal.)
 #
-# TODO: Favor bin/rspec over bundle exec rspec over rspec. bin/rspec honors
-# Spring which cuts about 20s off the spec startup time (which is 3x longer than
-# the maximum time I tolerate on specs!)
+# TODO: Favor bin/rspec > bundle exec rspec > rspec. bin/rspec honors Spring
+# which cuts about 20s off the spec startup time (which is 3x longer than the
+# maximum time I tolerate on specs!)
 #
 # DONE: Let's support SPEC_SEED=true. "-s/--seed" should add SPEC_SEED=true to
 # the env before calling.
 
-# TODO: if spec_focus contains "rspec", it's the full command, which I use when
+# DONE: if spec_focus contains "rspec", it's the full command, which I use when
 # I need to force an env var like SPEC_SEED=true
-
-# TODO: Feature (may require rewriting in ruby?)
-# IFF:
-#   1. There is exactly one cmd line argument
-#   2. That argument is not a path (contains no /'s)
-#   3. That argument is not an option (does not begin with -)
-#   4. That argument exists as one of the loadable specs in rfload
-# THEN:
-#   rfload $1 && rfg
-# ELSE:
-#   # pass arguments directly to rspec as normal
-#   bin/rspec $@
 
 require "colorize"
 require "optimist"
