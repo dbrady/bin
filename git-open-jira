@@ -2,10 +2,10 @@
 # git-open-jira - Open the jira ticket in the browser
 require "colorize"
 require "optimist"
-require_relative "dbrady_cli"
+require_relative "bin/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
-require_relative "dbrady_cli"
+require_relative "bin/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application

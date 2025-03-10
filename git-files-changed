@@ -3,7 +3,7 @@
 # See Also: git-modified for uncommitted changed files
 require "colorize"
 require "optimist"
-require_relative "dbrady_cli"
+require_relative "bin/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application

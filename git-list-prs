@@ -16,7 +16,7 @@ require "extralite"
 require "optimist"
 require "sequel"
 require "text-table"
-require_relative "dbrady_cli"
+require_relative "bin/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 # TODO: I don't like "search <allfields>", maybe change to --branch=CREDIT or --pr=23 or --date=2024

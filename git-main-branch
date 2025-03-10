@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # git-main - identify and return the main branch for this repo
 require "colorize"
-require_relative "dbrady_cli"
+require_relative "bin/dbrady_cli"
 require "optimist"
 require "yaml"
 String.disable_colorization unless $stdout.tty?
