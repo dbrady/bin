@@ -30,8 +30,8 @@ require "erb"
 require "extralite"
 require "optimist"
 require "sequel"
-require_relative "dbrady_cli"
-require_relative "tinytable"
+require_relative "lib/dbrady_cli"
+require_relative "lib/tinytable"
 String.disable_colorization unless $stdout.tty?
 
 class Application
