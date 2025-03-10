@@ -60,7 +60,19 @@ class GitBranchLogger
 
   def log_branch(path, branch)
     log "Recording branch '#{branch}' for path '#{path}'"
+    if branch == 'in'
+      log_error_branch(path, branch)
+      return
+    end
+
     db.execute "INSERT INTO branch_history (path, branch) VALUES (?, ?);", path, branch
+  end
+
+  def log_error_branch(path, branch)
+    File.open(File.expand_path("~/bin/db/git-log-branch-errors.log"), "a") do |fp|
+      message = "#{Time.now.strftime('%F %T')} Branch name is messed up: path: #{path}, branch: #{branch} (current branch: #{git_current_branch})"
+      fp.puts message
+    end
   end
 
   def drop_table
