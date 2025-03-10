@@ -9,7 +9,7 @@
 # => git co -b dbrady/COR-5658/set_default_epot_in_merchant_settings
 require "colorize"
 require "optimist"
-require_relative "bin/dbrady_cli"
+require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application

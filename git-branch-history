@@ -19,7 +19,7 @@ rescue LoadError
   $has_tzinfo = false
 end
 
-require_relative "bin/dbrady_cli"
+require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application

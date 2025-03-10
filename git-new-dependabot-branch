@@ -7,7 +7,7 @@
 # => git merge remotes/origin/npm_and_yarn/axios-1.7.4
 require "colorize"
 require "optimist"
-require_relative "bin/dbrady_cli"
+require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application

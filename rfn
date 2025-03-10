@@ -2,7 +2,7 @@
 # rfn <spec> [<spec> [...]] - "rspec new" creates new spec focus
 require "colorize"
 require "optimist"
-require_relative "bin/dbrady_cli"
+require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application

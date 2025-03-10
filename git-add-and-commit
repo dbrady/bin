@@ -2,7 +2,7 @@
 # git add-and-commit - Add a path and commit it. STUPID VERSION. WILL COMMIT ANY EXISTING CHANGES. WILL ADD NEW FILES. IF YOU HAVE STAGED CHANGES AND THE PATH YOU WANT TO ADD
 require "colorize"
 require "optimist"
-require_relative "bin/dbrady_cli"
+require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 class Application
