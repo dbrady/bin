@@ -19,8 +19,8 @@
 # end
 # print image from variable
 
-PICTURES_FOLDER = File.join(File.expand_path('~'), "Pictures")
-BIRBS_CACHE_FOLDER = File.join(File.expand_path('~'), "Documents", "refdox", "birbs_cache")
+PICTURES_FOLDER = File.join(File.expand_path('~'), "Documents/birbs")
+BIRBS_CACHE_FOLDER = File.join(PICTURES_FOLDER, "chafa-cache")
 
 # Create bribs cache if needed (only need this once per laptop, but man when it crashes the error comes from a weird place)
 
@@ -47,15 +47,14 @@ end
 # term-birb --help
 # term-birb -?
 if ARGV.size > 0 && ["halp", "--halp", "--help", "-h", "-?"].include?(ARGV.first.downcase)
-  puts <<HALP
+  puts <<HELP
 term-birb - show a birb onna termbinal
 
 term-birb [<n>]     - show a random (or the nth) birb
 term-birb owl [<n>] - show a random birb (or the nth) with owl in the name
 term-birb list      - show numbered list of all the birbs
 term-birb list owl  - show numbered list of all the birbs with owl in the name
-term-birb HALP      - show dis halp message (also halp or --halp or -h or -? or --help)
-HALP
+HELP
 
   exit 0
 end
