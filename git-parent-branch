@@ -28,6 +28,7 @@ git parent-branch set <parent> [<branch>] - set parent branch to branch
 git parent-branch [<branch>] - get parent branch
 git parent-branch list - list all branches
 git parent-branch go - go to parent branch
+git parench-branch unset - unset parent branch (reverts to master)
 
 If branch is omitted, assumes current branch.
 BANNER
@@ -73,6 +74,8 @@ BANNER
     when "go"
       branch = git_parent_branch
       run_command "go '#{branch}'"
+    when "unset"
+      unset_parent_branch repo, branch
     else # get
       case ARGV.size
       when 0
@@ -93,8 +96,20 @@ BANNER
     @db ||= Extralite::Database.new DATABASE_PATH
   end
 
+  def execute(sql)
+    puts sql.cyan if debug?
+    db.execute sql unless pretend?
+  end
+
+  def query(sql, &block)
+    puts sql.cyan if debug?
+    db.query(sql) do |row|
+      yield row if block_given?
+    end
+  end
+
   def ensure_table_exists
-    query = <<SQL
+    sql = <<SQL
 CREATE TABLE IF NOT EXISTS parent_branches (
   id INTEGER NOT NULL PRIMARY KEY,
   repo TEXT NOT NULL,
@@ -106,27 +121,29 @@ CREATE TABLE IF NOT EXISTS parent_branches (
 )
 SQL
 
-    db.execute query
+    execute sql
   end
+
 
   def create_parent_branch(repo, parent, branch)
     return if get_parent_branch(repo, branch) == parent
 
     # Delete any old parents
-    query = "UPDATE parent_branches SET deleted_at=CURRENT_TIMESTAMP WHERE repo='#{repo}' AND branch='#{branch}' AND deleted_at IS NULL"
-    puts query.cyan if debug?
-    db.execute query unless pretend?
+    unset_parent_branch(repo, branch)
 
     # Set this one
-    query = "INSERT INTO parent_branches (repo, branch, parent) VALUES (?, ?, ?)"
-    puts query.cyan if debug?
-    db.execute query, repo, branch, parent unless pretend?
+    sql = "INSERT INTO parent_branches (repo, branch, parent) VALUES (?, ?, ?)"
+    execute sql, repo, branch, parent unless pretend?
+  end
+
+  def unset_parent_branch(repo, branch)
+    sql = "UPDATE parent_branches SET deleted_at=CURRENT_TIMESTAMP WHERE repo='#{repo}' AND branch='#{branch}' AND deleted_at IS NULL"
+    execute sql
   end
 
   def get_parent_branch(repo, branch)
-    query = "SELECT parent FROM parent_branches WHERE repo='#{repo}' AND branch='#{branch}' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1"
-    puts query.cyan if debug?
-    db.query(query) do |row|
+    sql = "SELECT parent FROM parent_branches WHERE repo='#{repo}' AND branch='#{branch}' AND deleted_at IS NULL ORDER BY created_at DESC LIMIT 1"
+    query(sql) do |row|
       return row[:parent]
     end
   end
@@ -134,12 +151,11 @@ SQL
   def get_all_branches_for_repo(repo)
     delete_clause = deleted? ? "" : "AND deleted_at IS NULL"
     order_clause = name? ? "ORDER BY parent ASC, branch ASC" : "ORDER BY updated_at ASC"
-    query = "SELECT repo, branch, parent, updated_at, deleted_at FROM parent_branches WHERE repo='#{repo}' #{delete_clause} #{order_clause}"
-    puts query.cyan if debug?
+    sql = "SELECT repo, branch, parent, updated_at, deleted_at FROM parent_branches WHERE repo='#{repo}' #{delete_clause} #{order_clause}"
     table = Text::Table.new
     table.head = ["updated_at", "deleted_at", "repo", "branch", "parent"]
     puts "Listing branches for #{repo}:"
-    db.query(query) do |row|
+    query(sql) do |row|
       table.rows << [row[:updated_at], row[:deleted_at], row[:repo], row[:branch], row[:parent]]
     end
     puts table
