@@ -21,8 +21,12 @@
 # Or to just run model specs (e.g. if they are well-factored into unit-test style specs):
 # rff spec/models
 
+# TODO: Port this to the git-settings.db or make a separate db for spec
+# foci. (I'm increasingly of the opinion to rename db/git-settings.db to be more
+# generic as it exists to sync git branches with external tools, which means
+# it's doing more and more things with external tools, like github and now
+# rspec).
 
-# TODO: Provide a way to split out environment prefixes, e.g. `rff COVERAGE=true : -f d`
 if [ "$1" = "-h" ]; then
     rfh
     exit 1
