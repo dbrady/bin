@@ -573,14 +573,14 @@ BANNER
     ticket.mark_deployed!
   end
 
-  def mark_done(board, ticket, notes)
+  def mark_done(board, ticket)
     ticket = find_one_ticket(
       board: board,
       ticket: ticket,
       repo: opts[:repo]
     )
 
-    ticket.notes = notes if notes
+    ticket.notes = opts[:notes] if opts[:notes_given]
     ticket.status = "o"
     ticket.save
     puts "Marked done."
@@ -594,7 +594,7 @@ BANNER
       repo: opts[:repo]
     )
 
-    ticket.notes = notes if notes
+    ticket.notes = opts[:notes] if opts[:notes_given]
     ticket.status = "x"
     ticket.save
     puts "Marked abandoned."
@@ -608,7 +608,7 @@ BANNER
       repo: opts[:repo]
     )
 
-    ticket.notes = notes if notes
+    ticket.notes = opts[:notes] if opts[:notes_given]
     ticket.status = "q"
     ticket.save
     puts "Marked as in QA."
@@ -622,7 +622,7 @@ BANNER
       repo: opts[:repo]
     )
 
-    ticket.notes = notes if notes
+    ticket.notes = opts[:notes] if opts[:notes_given]
     ticket.status = "p"
     ticket.save
     puts "Marked as in progress."
