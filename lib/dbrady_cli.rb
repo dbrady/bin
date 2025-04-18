@@ -27,6 +27,43 @@ require "colorize"
 # The including class may wish to use opts = Optimist.options { ... }, and
 # capture debug, pretend and/or quiet. See scrapbin/ruby/new-ruby (in my
 # scrapbin repo) for an example.
+
+# TODO: the run method could be pulled up into here. The run method does a)
+# Optimist stuff and then b) my app code. SOMETIMES I override/extend the
+# optimist stuff. I would love it for when I create a new script to just have to
+# put my app code in def run and have it wrap or advise. ("def on_run" maybe?
+# Tell the reader "this is a delegation target because there is a delegator you
+# should be aware of"?) If this were a bdd/tdd feature, I want all of the
+# following (or it is not more valuable than custom coding it at this time):
+#
+# 1. legacy/older code must work the same. Their def run should be honored
+#    without interference.
+#
+
+# 2. new app with perfect use case, the "# APP CODE GOES HERE" is the only code
+#    I put in the new method. This is the aspirational use case; get it right or
+#    don't bother. So `def run; puts "Hello"; end` should be a complete app. The
+#    parent's run method should do Optimist (which means banner will need to be
+#    provided by this class and/or my app code should handle that. Right now the
+#    Optimist code is here in the Application class because the parent class
+#    needs the banner. This could easily be extracted.
+
+# 3. New app with custom optimist options. Probably handle the same way as the
+#    banner.
+
+# 4. New app that does not want to use the optimist stuff, idk why not. I may
+#    have invented this use case to back-justify completeness with my belief
+#    that I should have the option to use the new run system but turn it all off
+#    to use the old run system without having to abandon the Application code
+#    entirely[1]. Potentially that could just be "never call Application.run. Write
+#    a custom run method and in the bootstrapper, call that instead" So maybe
+#    this whole paragraph is a solution looking for a problem.
+
+# [1] Write me a sentence that tells me you had surgery today and are trying to
+# code while fighting the anesthesia without telling me you had surgery today
+# and are trying to code while fighting the anesthesia
+
+
 module DbradyCli
   attr_reader :opts
 

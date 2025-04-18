@@ -1,0 +1,125 @@
+#!/usr/bin/env ruby
+# v2-char-dump <image.png> - Decode and dump v2 png spec
+
+# vibe coded with ChatGPT on drugs after my surgery. It works but don't @ me
+# about style or readability. :-P
+
+require 'json'
+require 'base64'
+
+PNG_SIGNATURE = "\x89PNG\r\n\x1a\n".b
+
+def extract_text_chunk(file_path)
+  File.open(file_path, 'rb') do |f|
+    signature = f.read(8)
+    raise "Invalid PNG file" unless signature == PNG_SIGNATURE
+
+    until f.eof?
+      length_data = f.read(4)
+      break unless length_data
+      length = length_data.unpack1('N')
+      chunk_type = f.read(4)
+      data = f.read(length)
+      crc = f.read(4) # Ignored
+
+      if chunk_type == 'tEXt'
+        key, value = data.split("\x00", 2)
+        return value if key.downcase.include?('char') || key.downcase.include?('meta')
+      end
+    end
+  end
+
+  raise "No relevant tEXt chunk found"
+end
+
+def decode_character_spec(text_data)
+  begin
+    decoded = Base64.decode64(text_data)
+  rescue
+    raise "Base64 decode failed"
+  end
+
+  begin
+    json = JSON.parse(decoded)
+  rescue => e
+    raise "JSON parse failed: #{e.message}"
+  end
+
+  json['data'] or raise "Missing 'data' field in JSON"
+end
+
+if __FILE__ == $0
+  if ARGV.length != 1
+    warn "Usage: #{$0} <character.png>"
+    exit 1
+  end
+
+  begin
+    text_value = extract_text_chunk(ARGV[0])
+    spec = decode_character_spec(text_value)
+    puts JSON.pretty_generate(spec)
+  rescue => e
+    warn "Error: #{e.message}"
+    exit 1
+  end
+end
+
+
+#!/usr/bin/env ruby
+# v2-char-dump <image.png> - Decode and dump v2 png spec
+
+# LOL - I vibe coded this and it's literally missing the important part where
+# the decoding, which is the part I asked for, is actually done.
+require 'json'
+require 'chunky_png'
+
+def extract_character_spec(filename)
+  spec_json = nil
+
+  File.open(filename, 'rb') do |f|
+    signature = f.read(8)
+    unless signature == "\x89PNG\r\n\x1a\n".b
+      raise "Not a valid PNG file"
+    end
+
+    chunk_index = 0
+
+    until f.eof?
+      length = f.read(4).unpack1('N')
+      chunk_type = f.read(4)
+      data = f.read(length)
+      crc = f.read(4) # Ignored, but could be validated
+
+      puts "Chunk #{chunk_index += 1}: #{chunk_type}"
+
+      if chunk_type == 'tEXt' || chunk_type == 'iTXt'
+        key, value = data.split("\x00", 2)
+        puts "  key: #{key}"
+        puts "    value: #{value}" if key == "chara"
+        if key.downcase.include?('character') || key.downcase.include?('spec')
+          spec_json = value
+          break
+        end
+      end
+    end
+  end
+
+  raise "No character spec found in PNG metadata" if spec_json.nil?
+
+  JSON.parse(spec_json)
+end
+
+if __FILE__ == $0
+  if ARGV.length != 1
+    puts "Usage: #{$0} <file.png>"
+    exit 1
+  end
+
+  begin
+    spec = extract_character_spec(ARGV[0])
+    puts JSON.pretty_generate(spec)
+  rescue => e
+    warn "Error: #{e.message}"
+    exit 1
+  end
+end
