@@ -4,6 +4,9 @@ require "colorize"
 require "optimist"
 require "yaml"
 
+# TODO:
+# - [ ] Pass Jira ticket instead of PR, use git-get-pr-id to look it up
+
 class Logger
   # This is a terrible name. IT means "allow logging at all", but I don't want
   # to use the negative accessor "quiet"

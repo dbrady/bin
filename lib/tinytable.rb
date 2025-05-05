@@ -20,7 +20,7 @@ require "colorize"
 class TinyTable
   attr_accessor :rows, :head
 
-  def initialize(rows: [], head: nil)
+  def initialize(head: nil, rows: [])
     @rows = rows
     @head = head
   end

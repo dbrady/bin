@@ -3,7 +3,7 @@
 # {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 require "colorize"
 require "optimist"
-$:.unshift(File.expand_path("~/bin"))
+$:.unshift(File.expand_path("~/bin/lib"))
 require "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
