@@ -6,7 +6,10 @@ require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
 # TODO:
-# - [ ] Connect this to slorks so it can include the PR title
+# - [X] Connect this to slorks so it can include the PR title
+# - [ ] Now that we can read slorks, also get the PR# if not provided
+#       E.g. mp-make-merge-announcement IU-1767 would look up IU-1767, see that
+#       it is PR 14572, and proceed. Print a happy error message.
 
 class Application
   include DbradyCli
@@ -21,6 +24,7 @@ mp-make-merge-announcement [options] [board-ticket:pr ...]
 Example:
   mp-make-merge-announcement  # gets info from current branch
   mp-make-merge-announcement COR-1117:13604 COR-1119:13605
+  mp-make-merge-announcement COR-1117 COR-1119 # gets PR# from slork (RDD, NOT IMPLEMENTED)
 
 Options:
       BANNER
