@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+
+# apt-search - my own wrapper around apt search. By default requires the match to be on the package name, not just the description.
+
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :names_only
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+apt-search - wrapper for apt search, by default requires the match to be on the package name (not just the description)
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :names_only, "Require match to be in the name", short: :n, default: true
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    search_packages
+  end
+
+  def search_packages
+    package_lines = get_command_output_lines %Q{apt search #{search_options} "#{search_term}"}
+
+    package_lines.each do |line|
+      # highlight package name
+      puts line.gsub(%r{^(.+)(?=/)}, '\1'.colorize(colors))
+    end
+  end
+
+  # color options for colorize
+  def colors
+    {
+      # mode: :bold,
+      color: :light_cyan,
+    }
+  end
+
+  def search_options
+    options = []
+    options << "--names-only" if names_only?
+    options.join(" ")
+  end
+
+  def search_term
+    ARGV.join(' ').gsub(/"/, '\"')
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
