@@ -26,27 +26,38 @@ class TinyTable
   end
 
   def to_s
-    column_widths = calculate_column_widths
-    separator = "+" + column_widths.map { |width| "-" * (width + 2) }.join("+") + "+"
+    table = []
+
+    table << separator
+    if head
+      table << "| " + head.zip(column_widths).map { |cell, width| cell.to_s.center(width) }.join(" | ") + " |"
+    end
 
     [
-      separator,
-      "| " + head.zip(column_widths).map { |cell, width| cell.to_s.center(width) }.join(" | ") + " |",
       separator
     ] + rows.map do |row|
-      "| " + row.zip(column_widths).map do |cell, width|
-        cell = cell.to_s
-        nudge_for_ansi = cell.length - cell.uncolorize.length
-        # TODO: dynamic ljust/center/rjust based on column's content
-        cell.ljust(width + nudge_for_ansi)
-      end.join(" | ") + " |"
+      if row == [:separator]
+        separator
+      else
+
+        "| " + row.zip(column_widths).map do |cell, width|
+          cell = cell.to_s
+          nudge_for_ansi = cell.length - cell.uncolorize.length
+          # TODO: dynamic ljust/center/rjust based on column's content
+          cell.ljust(width + nudge_for_ansi)
+        end.join(" | ") + " |"
+      end
     end + [
       separator
     ]
   end
 
+  def separator
+    @separator ||= "+" + column_widths.map { |width| "-" * (width + 2) }.join("+") + "+"
+  end
+
   def calculate_column_widths
-    column_widths = head.map(&:length)
+    column_widths = (head ? head : rows.first).map(&:length)
     rows.each do |row|
       row.each_with_index do |cell, i|
         column_widths[i] = [column_widths[i], cell.to_s.gsub(/\033.*?m/,'').length].max
@@ -55,6 +66,9 @@ class TinyTable
     column_widths
   end
 
+  def column_widths
+    @column_widths ||= calculate_column_widths
+  end
 end
 
 # test / example

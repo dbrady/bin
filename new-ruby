@@ -3,7 +3,7 @@
 # {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 require "colorize"
 require "optimist"
-$:.unshift(File.expand_path("~/bin"))
+$:.unshift(File.expand_path("~/bin/lib"))
 require "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
@@ -22,9 +22,37 @@ BANNER
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+
+      # @ignore_invalid_options = true # no error given if you call this with other options (good for passthru)
+
+      # plural types or type in [array] means multiple VALUES for this
+      #   arg, but --arg can only appear once
+
+      # multi: true means the --arg can appear multiple times, and
+      #   each element will be of the type indicated.
+
+      # If you specify both a plural type AND multi, you will get an
+      #   array of arrays. See "batches" below.
+      #
+      #   opt :sizes, type: :ints
+      #   opt :names, default: [String]
+      #   opt :file, type: :string, multi: true
+      #   opt :batches, type: :strings, multi: true
+      #
+      # How you would call these:
+      #   --sizes 8 9 9                   # [8, 9, 9]
+      #   --names Alice Bob Carol         # ["Alice", "Bob", "Carol"]
+      #   --file=1.txt --file=2.txt       # ["1.txt", "2.txt"]
+      #   --batches a b c --batches d e   # [["a","b","c"], ["d","e"]]
+
+      # CONSTRAINTS: See https://www.manageiq.org/optimist/
+      #
+      # depends : # You may specify AT MOST one
+      # conflicts :cat, :dog, :rat     # You may specify at most one
+      # either :left, :right, :center  # You MUST specify EXACTLY one
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if opts[:debug]
+    puts opts.inspect if debug?
 
     # APP CODE GOES HERE
   end

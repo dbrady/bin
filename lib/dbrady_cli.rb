@@ -1,45 +1,45 @@
 #!/usr/bin/env ruby
 require "colorize"
+require "optimist"
 
-# DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER
-#  DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGE
-# R DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANG
-# ER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DAN
+# Monkeypatch to add type: :symbol / :symbols to Optimist
+module Optimist
+  # Add support for type: :symbol
+  class SymbolOption < Option
+    register_alias :symbol
+    def as_type(val) ; val.to_sym ; end
+    def type_format ; "=<s>" ; end
+    def parse(paramlist, _neg_given)
+      paramlist.map { |pg| pg.map { |param| as_type(param) } }
+    end
+  end
+
+  # Option class for handling multiple Symbols
+  class SymbolArrayOption < SymbolOption
+    register_alias :symbols
+    def type_format ; "=<s+>" ; end
+    def multi_arg? ; true ; end
+  end
+end
+
+# This is my kitchen sink mixin module to make a pretty CLI app. If
+# Thor had been around before I learned all the ins and outs of
+# optimist, I'd use that instead. Probably. Maybe.
 #
-# THIS FILE HAS MOVED. IT NOW LIVES IN bin/lib/. ALL NEW SCRIPTS WILL
-# USE require_relative "lib/dbrady_cli".
-#
-# AS OF TODAY (2025-03-10) THERE ARE 45 FILES IN bin THAT require_relative
-# "dbrady_cli". UPDATE THESE AND THEN REMOVE THIS COMMENT.
-#
-# GER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DA
-# NGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER D
-# ANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER
-# DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER DANGER
-
-
-# mixin module to provide all the git/jira stuff I keep reusing everywhere.
-#
-
-# TODO add an optflag helper function maybe?
-# e.g. optflag :pants would do def pants?; opts[:pants]; end
-
-# The including class may wish to use opts = Optimist.options { ... }, and
-# capture debug, pretend and/or quiet. See scrapbin/ruby/new-ruby (in my
-# scrapbin repo) for an example.
-
-# TODO: the run method could be pulled up into here. The run method does a)
-# Optimist stuff and then b) my app code. SOMETIMES I override/extend the
-# optimist stuff. I would love it for when I create a new script to just have to
-# put my app code in def run and have it wrap or advise. ("def on_run" maybe?
-# Tell the reader "this is a delegation target because there is a delegator you
-# should be aware of"?) If this were a bdd/tdd feature, I want all of the
-# following (or it is not more valuable than custom coding it at this time):
+# TODO: provide a default implementation of run that parses arguments
+# and takes care of basic housekeeping, then callback to on_run. The
+# run method currently does a) Optimist stuff and then b) my app
+# code. SOMETIMES I override/extend the optimist stuff. I would love
+# it for when I create a new script to just have to put my app code in
+# def run and have it wrap or advise. ("def on_run" maybe?  Tell the
+# reader "this is a delegation target because there is a delegator you
+# should be aware of"?) If this were a bdd/tdd feature, I want all of
+# the following (or it is not more valuable than custom coding it at
+# this time):
 #
 # 1. legacy/older code must work the same. Their def run should be honored
 #    without interference.
 #
-
 # 2. new app with perfect use case, the "# APP CODE GOES HERE" is the only code
 #    I put in the new method. This is the aspirational use case; get it right or
 #    don't bother. So `def run; puts "Hello"; end` should be a complete app. The

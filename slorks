@@ -31,7 +31,7 @@ require "extralite"
 require "optimist"
 require "sequel"
 require_relative "lib/dbrady_cli"
-require_relative "lib/tinytable"
+require_relative "lib/tiny_table"
 String.disable_colorization unless $stdout.tty?
 
 class Application

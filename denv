@@ -2,7 +2,7 @@
 # denv - Examine and set environment variables in our env files
 require "colorize"
 require "optimist"
-require_relative "tinytable"
+require_relative "tiny_table"
 require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
@@ -81,7 +81,6 @@ class Application
   def env_files
     %w(.env .nonprod.env .dev.env .local.env)
   end
-
 end
 
 
