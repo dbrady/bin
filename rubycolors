@@ -1,44 +1,112 @@
 #!/usr/bin/env ruby
+# rubycolors - print a table of the ruby colors available in colorize
+#
+# TODO: Refactor. I ported this to new-ruby so I could add --include and
+# --exclude and they KINDA work but not really. The column/row headers are
+# magical/WET. Maybe refactor it to extract the table to a data structure with
+# column and row titles, and then make it print that structure with correct
+# headers.
+#
+# SIGH: lib/tinytable.rb would be perfect for this, BUT it doesn't support
+# multiline cells, and I'm blarting out "on", "light", "red" etc. WAIT. Could I massage it from THIS side? If I had rows << :separator, I bet it would work. I could send:
+#
+# [nil, nil, "on"]
+# [nil, "on", "light"]
+# [nil, "black", "black"]
+# :separator   # <-- this is a row!
+require "byebug"
 require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+require "tiny_table"
+String.disable_colorization unless $stdout.tty?
 
-base_colors = %i[black red green yellow blue magenta cyan white]
-colors = base_colors.map {|c| [c, :"light_#{c}"] }.flatten
+class Application
+  include DbradyCli
 
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+rubycolors - print a table of the ruby colors available in colorize
 
-format = "%14s | %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s"
-separator = ('-' * 14) + "-+-" + "-" * 8 * 8 * 2
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
 
-puts format % ([""] + ["", "on"] * 8).map {|c| c.center(7) }
-puts format % ([""] + ["on", "light"] * 8).map {|c| c.center(7) }
-puts format % ([""] + base_colors.map {|c| [c, c]}.flatten).map {|c| c.to_s.center(7) }
-puts separator
+      opt :exclude, "Colors to exclude", type: :symbols
+      opt :include, "Colors to include", type: :symbols
 
-base_colors.each do |color|
-  fg_color = color
-  str = "rubyist".send(fg_color)
-  puts format % ([fg_color] + colors.map {|c| str.send(:"on_#{c}")})
+      opt :new, "Print using new tinytable", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    if debug?
+      # print opts in pretty table
+      longest_key = opts.keys.map(&:size).max
+      opts.keys.sort.each do |option_name|
+        puts option_name.to_s.ljust(longest_key) + ": " + opts[option_name].inspect
+      end
 
-  fg_color = "light_#{color}"
-  str = "rubyist".send(fg_color)
-  puts format % ([fg_color] + colors.map {|c| str.send(:"on_#{c}")})
+      puts "colors: #{colors.inspect}"
+    end
+
+    on_run
+  end
+
+  def base_colors
+    %i[black red green yellow blue magenta cyan white]
+  end
+
+  def colors
+    return @colors if @colors
+    @colors ||= base_colors.map {|c| [c, :"light_#{c}"] }.flatten
+    @colors = (@colors & opts[:include]) if opts[:include_given]
+    @colors = (@colors - opts[:exclude]) if opts[:exclude_given]
+    puts "colors: #{@colors.inspect}" if debug?
+    @colors
+  end
+
+  def bg_colors
+    return @bg_colors if @bg_colors
+    @bg_colors ||= base_colors.map {|c| ["on_#{c}", :"on_light_#{c}"] }.flatten.map { it.to_sym }
+    @bg_colors = (@bg_colors & opts[:include]) if opts[:include_given]
+    @bg_colors = (@bg_colors - opts[:exclude]) if opts[:exclude_given]
+    @bg_colors
+  end
+
+  def on_run
+    table = TinyTable.new
+
+    # cobble up the 3-line header on/light/color vs ""/on/color
+    table.rows << [""] + bg_colors.map do
+      it.start_with?("on_light_") ? "on".center(7) : ""
+    end
+    table.rows << [""] + bg_colors.map do
+      it.start_with?("on_light") ? "light".center(7) : (it.start_with?("on_") ? "on".center(7) : "")
+    end
+    table.rows << [""] + bg_colors.map do
+      it.to_s.split(/_/).last.center(7)
+    end
+
+    table.rows << [:separator]
+
+    colors.each do |fg_color|
+      next unless colors.include?(fg_color)
+
+      table.rows << [fg_color] + bg_colors.map do |bg_color|
+        attrs = { color: fg_color, background: bg_color.to_s.sub(/^on_/, '').to_sym }
+        "rubyist".colorize(attrs)
+      end
+    end
+
+    puts table.to_s
+  end
 end
 
-puts separator
 
-base_colors.each do |color|
-  fg_color = color
-  str = "rubyist".send(fg_color).bold
-  puts format % (["bold #{fg_color}"] + colors.map {|c| str.send(:"on_#{c}")})
+if __FILE__ == $0
+  Application.new.run
 end
-
-puts separator
-puts "# require the colorize gem".green
-puts "require".light_white.bold + " 'colorize'".red
-puts
-puts "puts ".light_white.bold + "'Here is a string'.white.bold.on_red".light_red
-puts "=> ".light_white + "Here is a string".white.bold.on_red
-
-puts
-puts "# or, for a less-civilized color sample table:".green
-puts "$ ruby -rcolorize -e 'puts String.color_samples'"
-puts separator.gsub(/\+/, '-')
