@@ -89,7 +89,11 @@ if birb_filepath.nil?
   exit 1
 end
 
-chafa_path = "/opt/homebrew/bin/chafa"
+def osx?
+  @osx ||= `uname -s`.strip == "Darwin"
+end
+
+chafa_path = osx? ? "/opt/homebrew/bin/chafa" : `which chafa`.strip
 birb_filename = birb_filepath.split("/").last
 cache_filename = "#{birb_filename}.#{x}x#{y}.ansi"
 
@@ -98,7 +102,9 @@ cache_filepath = File.join(BIRBS_CACHE_FOLDER, cache_filename)
 if File.exist?(cache_filepath)
   puts File.read(cache_filepath)
 else
-  birb_ansi = `#{chafa_path} #{birb_filepath}`
+  command = "#{chafa_path} #{birb_filepath}"
+  puts command
+  birb_ansi = `#{command}`
   File.open(cache_filepath, "w") { |fp| fp.puts(birb_ansi) }
   puts birb_ansi
 end
