@@ -180,6 +180,7 @@ module DbradyCli
 
   # run a command and get its output as a single string (rstripping last line)
   def get_command_output(command)
+    puts command.cyan unless quiet?
     `#{command}`.rstrip
   end
 
@@ -188,7 +189,7 @@ module DbradyCli
   end
 
   def linux?
-    # I mean technically also Windows but lol who even uses that
+    # I mean technically also Windows/WSL but lol who even uses that
     !osx?
   end
 
