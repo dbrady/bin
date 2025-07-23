@@ -1,0 +1,9 @@
+#!/bin/bash
+# rvm-install-with-openssl-1.1 <version> - install ruby with openssl 1.1. Apple
+# Silicon needs this for rubies that need openssl 1 and can't link against
+# openssl 2. As of 2025-07-23, that's ruby 3 up through 3.3.6 at least.
+VERSION=$1
+OPENSSL_DIR=$(brew --prefix openssl@1.1)
+
+echo -e "\033[36mrvm install $VERSION --with-openssl-dir=$OPENSSL_DIR\033[0m"
+rvm install $VERSION --with-openssl-dir=$OPENSSL_DIR
