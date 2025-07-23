@@ -64,12 +64,12 @@ Fetching source index from https://rubygems.pkg.github.com/acima-credit/
    no living witnesses.*
 
    These privileges were enough the last time I checked, but may be
-   overpermissive: repo, workflow, write:packages, delete:packages,
-   admin:public_key, admin:repo_hook, user
+   overpermissive:
+   #{'repo, workflow, write:packages, delete:packages, admin:public_key, admin:repo_hook, user'.cyan}
 
 7. Click the Generate New Token button and WATCH OUT: you'll go back to the
    list of tokens, there will be a green box with your new token in it, right
-   belowe a blue box saying "Make sure to copy this token... you won't see this
+   below a blue box saying "Make sure to copy this token... you won't see this
    again!". COPY THIS BEFORE YOU CONFIGURE SSO! THEY ARE NOT KIDDING.
 
 8. SRSLY COPY THE TOKEN NOW
@@ -91,6 +91,11 @@ BANNER
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
+
+    if ARGV.empty?
+      Optimist.educate # show the help screen
+      exit
+    end
 
     @pat = ARGV.first
 
@@ -131,4 +136,3 @@ end
 if __FILE__ == $0
   Application.new.run
 end
-# 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
