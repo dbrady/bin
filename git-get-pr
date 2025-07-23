@@ -7,6 +7,17 @@ require "text-table"
 require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
 
+_ = <<SCHEMA
+CREATE TABLE pr_history (
+       id INTEGER NOT NULL PRIMARY KEY,
+       repo VARCHAR(255),
+       branch VARCHAR(255),
+       pr VARCHAR(255),
+       created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       deleted_at TIMESTAMP
+       );
+SCHEMA
 
 class Application
   include DbradyCli
