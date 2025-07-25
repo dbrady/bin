@@ -1,2 +1,6 @@
 #!/bin/bash
-xclip -selection clipboard
+if [ `uname -s` == "Darwin" ]; then
+    /usr/bin/pbcopy
+else
+    xclip -selection clipboard
+fi
