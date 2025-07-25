@@ -65,7 +65,8 @@ Fetching source index from https://rubygems.pkg.github.com/acima-credit/
 
    These privileges were enough the last time I checked, but may be
    overpermissive:
-   #{'repo, workflow, write:packages, delete:packages, admin:public_key, admin:repo_hook, user'.cyan}
+   #{'repo, workflow, write:packages, delete:packages, admin:public_key, admin:repo_hook, user'.yellow} #{'<-- STOP. Try next line instead!'.white.on_red.bold}
+   #{'repo, workflow, write:packages, admin:org'.cyan} #{'<-- Found in our onboarding wiki 2025-07-25. Try this for August PAT.'.white.on_green.bold}
 
 7. Click the Generate New Token button and WATCH OUT: you'll go back to the
    list of tokens, there will be a green box with your new token in it, right
