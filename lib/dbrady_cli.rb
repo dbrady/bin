@@ -2,6 +2,29 @@
 require "colorize"
 require "optimist"
 
+# TODO:
+# - [ ] Break into smaller files. DbradyCli::Shell, Jira, Git, Env, Options. Users should get all the subfiles if they require 'dbrady_cli', ditto for include DbradyCli in the code. 
+
+# - [ ] Consider upgrading this to a gem? Not until/unless I can trick bundler into sliding my gem into every bundle. Then again I have to add colorize and optimist and extralite all the time anyway? I held off of doing the gem thing because this file was churning HARD, and I didn't want to reinstall the gem every time I changed it. But now that it is stable, I think it is time to make it a gem.
+# - [ ] Add a test suite
+# - [ ] Add a dbrady_cli.gemspec
+# - [ ] Add a README.md
+# - [ ] Add a LICENSE file
+# - [ ] Add a CHANGELOG.md
+# - [ ] Add a CONTRIBUTING.md
+# - [ ] Add a CODE_OF_CONDUCT.md
+# - [ ] Add a .gitignore file
+# - [ ] Add a .rspec file
+# - [ ] Add a .rubocop.yml file
+# - [ ] Add a .yardopts file
+# - [ ] Add a .travis.yml file
+# - [ ] Add a .circleci/config.yml file
+# - [ ] Add a .github/workflows/ci.yml file
+# - [ ] Add a .github/ISSUE_TEMPLATE/bug_report.md file
+# - [ ] Add a .github/ISSUE_TEMPLATE/feature_request.md file
+# - [ ] Add a .github/PULL_REQUEST_TEMPLATE.md file
+
+
 # Monkeypatch to add type: :symbol / :symbols to Optimist
 module Optimist
   # Add support for type: :symbol
