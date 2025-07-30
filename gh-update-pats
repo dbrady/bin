@@ -60,28 +60,24 @@ Fetching source index from https://rubygems.pkg.github.com/acima-credit/
 5. If you get challenged for a 2FA here, the code you want is in Google
    Authenticator, not Duo
 
-6. Unclear which privileges are needed, there is no documentation and apparently
-   no living witnesses.*
+6. These permissions are documented in the onboarding wiki:
 
-   These privileges were enough the last time I checked, but may be
-   overpermissive:
-   #{'repo, workflow, write:packages, delete:packages, admin:public_key, admin:repo_hook, user'.yellow} #{'<-- STOP. Try next line instead!'.white.on_red.bold}
-   #{'repo, workflow, write:packages, admin:org'.cyan} #{'<-- Found in our onboarding wiki 2025-07-25. Try this for August PAT.'.white.on_green.bold}
+   #{'repo, workflow, write:packages, admin:org'.cyan}
 
-7. Click the Generate New Token button and WATCH OUT: you'll go back to the
+7. #{'WATCH OUT'.bold.white.on_red}: Click the Generate New Token button. You'll go back to the
    list of tokens, there will be a green box with your new token in it, right
    below a blue box saying "Make sure to copy this token... you won't see this
-   again!". COPY THIS BEFORE YOU CONFIGURE SSO! THEY ARE NOT KIDDING.
+   again!". #{'COPY THIS BEFORE YOU CONFIGURE SSO! THEY ARE NOT KIDDING.'.bold.red}
 
-8. SRSLY COPY THE TOKEN NOW
+8. #{'SRSLY. COPY THE TOKEN NOW.'.bold.red}
 
 9. Click Configure SSO to open the list of orgs. Click "Authorize" next to
    acima-credit. THIS WILL REDIRECT TO YOU AWAY FROM THIS PAGE so I really hope
-   you copied the token when I told you to. If you didn't, this was all just for
+   you copied the token when I told you to. If you did not, this was all just for
    practice. Go back to step 7, you silly goose.
 
 10. Open .bundle/config and update the BUNDLE_HTTPS line with the correct
-   PAT. THIS SCRIPT WILL DO THIS PART FOR YOU, BUT YOU NEED TO THE REST FIRST.
+   PAT. THIS SCRIPT WILL DO THIS PART FOR YOU, BUT YOU NEED TO DO THE REST FIRST.
 
 Options:
 BANNER
@@ -92,11 +88,8 @@ BANNER
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
-
-    if ARGV.empty?
-      Optimist.educate # show the help screen
-      exit
-    end
+    
+    Optimist.educate if ARGV.empty?
 
     @pat = ARGV.first
 
