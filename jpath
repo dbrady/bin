@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# jpath - print the breadcrumb to a given key in a json file
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+jpath <key> <path/to/file.json> - print path to a given key in a json file
+
+echo '{"a": {"b": {"c": 13}}}' > file.json
+jpath c file.json
+["a", "b", "c"]
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if debug?
+
+    Optimist.educate if ARGV.empty?
+
+    Optimist.die "Expected 2 args, got #{ARGV.size}. jpath <key> <path/to/file.json>" unless ARGV.size == 2
+
+    key, file = *ARGV
+
+    run_command %Q<jq -c 'paths | select(.[-1] == "#{key}")' "#{file}">
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
