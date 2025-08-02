@@ -19,7 +19,7 @@ opts = Optimist.options do
   opt :center, "Align text to the center (default: true unless -l or -r specified)"
   opt :padding, "Number of spaces to pad text", type: :int, default: 1
   opt :vpadding, "Number of lines to vertically pad banner", type: :int, default: 1
-  opt :bold, "Use bold text", short: :B, default: false
+  opt :bold, "Use bold text", short: :B, default: true
 end
 puts opts.inspect if opts[:debug]
 

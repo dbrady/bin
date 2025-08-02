@@ -14,8 +14,8 @@
 #
 
 # TODO: It's time for some TODO-Driven-Development
-# - [ ] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
-# - [ ] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
+# - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
+# - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [ ] Move the Slork class into a model subdir
 # - [ ] Convert from Sequel to ActiveRecord. I'm not seeing a complexity gain and having to memorize both query dsls is a pain. Also if I have the permissions to deploy Sequel, don't I probably also have permissions to install a DbradyCli gem? :-P
 # - [ ] Add a --dry-run option to show all commands
@@ -48,6 +48,7 @@ class Application
     "console" => "Open database console",
     "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
     "commands" => "List commands",
+    "create" => "Create slorks database",
     "delete" => "Soft-delete ticket",
     "deploy" => "Mark ticket as Deployed",
     "done" => "Mark ticket as done",
@@ -75,8 +76,8 @@ class Application
     "p" => { name: "In Progress",     colors: {mode: :normal, color: :blue, background: :normal} },
     "d" => { name: "Ready to Deploy", colors: {mode: :bold,   color: :light_green, background: :normal} },
     "D" => { name: "Deployed",        colors: {mode: :normal, color: :green, background: :normal} },
-    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :black, background: :normal} },
-    "o" => { name: "Done",            colors: {mode: :normal, color: :black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
+    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :light_black, background: :normal} },
+    "o" => { name: "Done",            colors: {mode: :normal, color: :light_black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
     ">" => { name: "Deferred",        colors: {mode: :normal, color: :yellow, background: :normal} },
   }
 

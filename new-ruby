@@ -54,6 +54,8 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
 
+    Optimist.educate if ARGV.empty?
+
     # APP CODE GOES HERE
   end
 
