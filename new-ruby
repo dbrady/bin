@@ -54,6 +54,7 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
 
+    # Educate the user (show help and exit) if no args given
     Optimist.educate if ARGV.empty?
 
     # APP CODE GOES HERE
