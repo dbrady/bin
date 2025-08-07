@@ -42,20 +42,22 @@ logger = Logger.new(opts[:debug], "%F %T.%3N")
 logger.log(opts.inspect)
 
 pull_url = if ARGV.size.zero?
-              `git get-pr`
-            else
-              pr = ARGV.first
-              logger.log "pr: #{pr}"
+             `git get-pr -q`
+           else
+             pr = ARGV.first
+             logger.log "pr: #{pr}"
 
-              fetch_url = `git remote get-url origin`
-                            .strip
-                            .sub(/\.git$/, '')
-                            .sub('git@github.com:', 'https://github.com/')
-              pull_url = "#{fetch_url}/pull/#{pr}"
-              logger.log "fetch_url: #{fetch_url}"
-              logger.log "pull_url: #{pull_url}"
-              pull_url
-            end
+             fetch_url = `git remote get-url origin`
+                           .strip
+                           .sub(/\.git$/, '')
+                           .sub('git@github.com:', 'https://github.com/')
+             pull_url = "#{fetch_url}/pull/#{pr}"
+             logger.log "fetch_url: #{fetch_url}"
+             logger.log "pull_url: #{pull_url}"
+             pull_url
+           end
+
+puts "pull_url: #{pull_url.inspect}" if opts[:debug]
 
 def osx?
   `uname -s`.strip == 'Darwin'

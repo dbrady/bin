@@ -124,7 +124,6 @@ SQL
     execute sql
   end
 
-
   def create_parent_branch(repo, parent, branch)
     return if get_parent_branch(repo, branch) == parent
 
@@ -132,8 +131,8 @@ SQL
     unset_parent_branch(repo, branch)
 
     # Set this one
-    sql = "INSERT INTO parent_branches (repo, branch, parent) VALUES (?, ?, ?)"
-    execute sql, repo, branch, parent unless pretend?
+    sql = "INSERT INTO parent_branches (repo, branch, parent) VALUES ('#{repo}', '#{branch}', '#{parent}')"
+    execute sql
   end
 
   def unset_parent_branch(repo, branch)

@@ -53,12 +53,12 @@ class Application
 
   def tz_offset
     puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
-    @tz_offset ||= get_command_output 'date "+%z"'
+    @tz_offset ||= get_command_output 'date "+%z"', quiet: !(verbose? || debug?)
   end
 
   def local_tz_abbrev
     puts "date commands have not been tested on and/or converted to linux".yellow unless osx?
-    @local_tz_abbrev ||= get_command_output 'date "+%Z"'
+    @local_tz_abbrev ||= get_command_output 'date "+%Z"', quiet: !(verbose? || debug?)
   end
 
   def convert_to_localtime(time)

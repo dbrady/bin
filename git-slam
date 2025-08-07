@@ -10,7 +10,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :auto, :details, :rubocop, :specs, :summary
+  opt_flag :auto, :details, :rubocop, :specs, :summary, :skip_isclean
 
   def run
     @opts = Optimist.options do
@@ -36,26 +36,25 @@ class Application
 
 Options:
 BANNER
-      opt :auto, "Autorun as much as possible", default: false
-      opt :specs, "Include spec run command in 'How to Test' section", default: false
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
-      opt :rubocop, "Run git rubocop and abort if offenses detected", default: true
-      opt :details, "Include details section (--no-details to remove section)", default: true
 
+      opt :auto, "Autorun as much as possible", default: false
+      opt :details, "Include details section (--no-details to remove section)", default: true
+      opt :skip_isclean, "Ignore outstanding changes.", default: false
+      opt :rubocop, "Run git rubocop and abort if offenses detected", default: true
+      opt :specs, "Include spec run command in 'How to Test' section", default: false
       opt :summary, "Summary of changes", type: :string
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    Optimist.die "Training wheels: for now, please explicitly specify --specs or --no-specs to embed or suppress the rspec command in the How To Test section" unless opts[:specs_given]
-
     # APP CODE GOES HERE
     if auto?
-      unless run_command("git isclean")
-        puts "You have outstanding changes. Please commit or stash them before proceeding.".red
+      unless skip_isclean? || run_command("git isclean")
+        puts "You have outstanding changes. Please commit or stash them before proceeding, or rerun with --skip-isclean.".red
         exit 1
       end
 

@@ -1,0 +1,51 @@
+#!/usr/bin/env ruby
+# git-reparent - tl;dr it's git rebase -i $(git parent-branch)
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+# NO{{DEL}}COMMIT: You need to name this script
+{{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if debug?
+
+    run!
+  end
+
+  # App code goes here
+  def run!
+    if git_on_main_branch?
+      puts "Cannot rebase. You are already on the main branch.".red
+      exit 1
+    end
+
+    # if a custom parent branch exists, git rebase -i against it.
+    parent_branch = get_command_output "git-parent-branch"
+    parent_branch = git_main_branch if parent_branch.empty?
+
+    command = "git rebase -i '#{parent_branch}'"
+    puts command.cyan
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
