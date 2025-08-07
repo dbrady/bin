@@ -2,8 +2,6 @@
 
 if [ $1 == "main" ]; then
     git main
-elif [ $1 == "hermes" ]; then
-    git hermes
 elif [ $1 == "parent" ]; then
     git parent
 elif git checkout $@ 2>/dev/null; then
