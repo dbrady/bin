@@ -3,7 +3,7 @@ require "colorize"
 require "optimist"
 
 # TODO:
-# - [ ] Break into smaller files. DbradyCli::Shell, Jira, Git, Env, Options. Users should get all the subfiles if they require 'dbrady_cli', ditto for include DbradyCli in the code. 
+# - [ ] Break into smaller files. DbradyCli::Shell, Jira, Git, Env, Options. Users should get all the subfiles if they require 'dbrady_cli', ditto for include DbradyCli in the code.
 
 # - [ ] Consider upgrading this to a gem? Not until/unless I can trick bundler into sliding my gem into every bundle. Then again I have to add colorize and optimist and extralite all the time anyway? I held off of doing the gem thing because this file was churning HARD, and I didn't want to reinstall the gem every time I changed it. But now that it is stable, I think it is time to make it a gem.
 # - [ ] Add a test suite
@@ -90,6 +90,7 @@ end
 module DbradyCli
   attr_reader :opts
 
+  # opt_flag :debug, :quiet, :verbose, :pretend
   def debug?
     opts[:debug]
   end
@@ -197,13 +198,13 @@ module DbradyCli
     end
   end
 
-  def get_command_output_lines(command)
-    get_command_output(command).each_line.map(&:rstrip).to_a
+  def get_command_output_lines(command, quiet: false)
+    get_command_output(command, quiet:).each_line.map(&:rstrip).to_a
   end
 
   # run a command and get its output as a single string (rstripping last line)
-  def get_command_output(command)
-    puts command.cyan unless quiet?
+  def get_command_output(command, quiet: false)
+    puts command.cyan unless (quiet || quiet?)
     `#{command}`.rstrip
   end
 
