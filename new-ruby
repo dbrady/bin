@@ -55,9 +55,15 @@ BANNER
     puts opts.inspect if debug?
 
     # Educate the user (show help and exit) if no args given
+    # Remove this if your script takes no args
     Optimist.educate if ARGV.empty?
 
-    # APP CODE GOES HERE
+    run!
+  end
+
+  # APP CODE GOES HERE
+  def run!
+
   end
 
 end
