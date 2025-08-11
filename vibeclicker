@@ -1,0 +1,102 @@
+#!/usr/bin/env ruby
+# Autoclicker for Ubuntu 24 on X11 (no sudo, no OS keybindings, no
+# gems). Probably won't work under Wayland (Ubuntu 25 onwards)
+# Toggle key: F8.  Usage: ruby autoclick_x11.rb [<interval=0.05>]
+
+# vibecoded by ChatGPT-5.
+
+require 'fiddle'
+require 'fiddle/import'
+
+module X11
+  extend Fiddle::Importer
+  dlload 'libX11.so.6', 'libXtst.so.6'
+
+  extern 'int XInitThreads()'
+  extern 'void* XOpenDisplay(char*)'
+  extern 'int XCloseDisplay(void*)'
+  extern 'unsigned long XDefaultRootWindow(void*)'
+  extern 'unsigned long XStringToKeysym(char*)'
+  extern 'unsigned int XKeysymToKeycode(void*, unsigned long)'
+  extern 'int XGrabKey(void*, int, unsigned int, unsigned long, int, int, int)'
+  extern 'int XUngrabKey(void*, int, unsigned int, unsigned long)'
+  extern 'int XSelectInput(void*, unsigned long, long)'
+  extern 'int XPending(void*)'
+  extern 'void XNextEvent(void*, void*)'
+  extern 'int XFlush(void*)'
+
+  extern 'int XTestFakeButtonEvent(void*, unsigned int, int, unsigned long)'
+
+  GrabModeAsync = 1
+  AnyModifier   = 1 << 15
+  KeyPress      = 2
+  KeyPressMask  = 1 << 0
+  True          = 1
+  False         = 0
+  CurrentTime   = 0
+end
+
+abort "Wayland session detected; this only works on X11." unless (ENV['XDG_SESSION_TYPE'] || '').downcase == 'x11'
+
+click_interval_seconds = (ARGV[0] || '0.05').to_f
+click_interval_seconds = 0.01 if click_interval_seconds <= 0
+
+X11.XInitThreads()
+
+display = X11.XOpenDisplay(nil)
+abort "Could not open X display." if display.nil? || display.to_i == 0
+
+root_window = X11.XDefaultRootWindow(display)
+
+toggle_keysym = X11.XStringToKeysym('F8')
+toggle_keycode = X11.XKeysymToKeycode(display, toggle_keysym)
+if toggle_keycode == 0
+  X11.XCloseDisplay(display)
+  abort "Could not resolve keysym for F8."
+end
+
+X11.XGrabKey(display, toggle_keycode, X11::AnyModifier, root_window,
+             X11::True, X11::GrabModeAsync, X11::GrabModeAsync)
+X11.XSelectInput(display, root_window, X11::KeyPressMask)
+X11.XFlush(display)
+
+autoclick_enabled = false
+puts "[autoclick] X11 started. Press F8 to toggle. Interval=#{click_interval_seconds}s"
+
+click_loop = Thread.new do
+  loop do
+    if autoclick_enabled
+      X11.XTestFakeButtonEvent(display, 1, X11::True,  X11::CurrentTime)
+      X11.XTestFakeButtonEvent(display, 1, X11::False, X11::CurrentTime)
+      X11.XFlush(display)
+      sleep click_interval_seconds
+    else
+      sleep 0.2
+    end
+  end
+end
+
+event_buffer = Fiddle::Pointer.malloc(96) # big enough for XEvent
+trap('INT')  { puts "\n[autoclick] exiting"; exit! 0 }
+trap('TERM') { exit! 0 }
+
+begin
+  loop do
+    if X11.XPending(display) > 0
+      X11.XNextEvent(display, event_buffer)
+      event_type = event_buffer[0, Fiddle::SIZEOF_INT].unpack1('l')
+      if event_type == X11::KeyPress
+        autoclick_enabled = !autoclick_enabled
+        puts "[autoclick] #{autoclick_enabled ? 'ENABLED' : 'disabled'}"
+      end
+    else
+      sleep 0.01
+    end
+  end
+ensure
+  begin
+    X11.XUngrabKey(display, toggle_keycode, X11::AnyModifier, root_window)
+    X11.XCloseDisplay(display)
+  rescue
+  end
+end
