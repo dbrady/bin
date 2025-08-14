@@ -72,6 +72,14 @@ __END__
 # "# NOCOMMIT -- temp hack for bug #123".  Git will still let you stage the file
 # with git add, but it will stop you from committing the file until you remove
 # the NOCOMMIT comment.
+#
+# Overrides:
+# - Set ALLOW_NOCOMMIT=true to allow you to override all NOCOMMITs in a
+# file. THIS IS EXACTLY AS DANGEROUS AS YOUR USAGE OF NOCOMMIT WAS IN THE FIRST
+# PLACE. I use it for files like this one where NOCOMMIT appears as part of the
+# intended source, not as a directive.
+#
+# - Put NOCOMMIT_IS_OK_HERE on a line with NOCOMMIT to disable for THAT line.
 
 exit 0 if ENV["ALLOW_NOCOMMIT"] == "true"
 
@@ -133,6 +141,8 @@ main_branch=`git main-branch`.strip
 def log_line(msg="")
   puts "\033[1;37;41m#{msg}\033[0m"
 end
+
+exit 0 if ENV["ALLOW_MAIN"] == "true"
 
 if branch == main_branch
   width = [30, branch.size + 8].max
