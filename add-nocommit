@@ -35,7 +35,7 @@
 # Usage:
 #     Just add a comment like:
 #
-# NOCOMMIT: this file has sensitive data / is bogus / etc!
+# NOCOMMIT: this file has sensitive data / is bogus / etc
 #
 # and if you forget and accidentally git add the file, the commit will
 # fail, showing you the file and line containing the NOCOMMIT message.
@@ -50,13 +50,15 @@ precommit_file = "%s/pre-commit" % precommit_folder
 
 barf! "Pardon me, but I'm lost. Is this a git repo? I don't see .git/hooks/ here!" unless File.directory? precommit_folder
 if !ARGV.include?("-f") && !ARGV.include?("--force")
-  barf! "Cowardly refusing to overwrite existing pre-commit hook!" if File.exist? precommit_file
+  barf! "Cowardly refusing to overwrite existing pre-commit hook! Rerun with --force if you're sure." if File.exist?(precommit_file) && !ARGV.include?("--force")
 end
 
 File.open(precommit_file, 'w') do |file|
   file.puts DATA.read
 end
 system("chmod a+x #{precommit_file}")
+
+puts "Added."
 
 __END__
 #!/usr/bin/env ruby
@@ -70,6 +72,9 @@ __END__
 # "# NOCOMMIT -- temp hack for bug #123".  Git will still let you stage the file
 # with git add, but it will stop you from committing the file until you remove
 # the NOCOMMIT comment.
+
+exit 0 if ENV["ALLOW_NOCOMMIT"] == "true"
+
 file = ""
 delta = ""
 line_num = 0
@@ -86,8 +91,7 @@ line_num = 0
     line_num += 1 if line !~ /^- /
   end
 
-  if ENV.["ALLOW_COMMIT"] != true &&
-     !line.start_with?("-") &&          # don't stop me from DELETING a NOCOMMIT
+  if !line.start_with?("-") &&          # the diff contains a DELETE of a NOCOMMIT, which is ok
      line =~ %r{NOCOMMIT} &&
      line !~ /NOCOMMIT_IS_OK_HERE/
     puts <<BANNER
