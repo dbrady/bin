@@ -1,34 +1,44 @@
 #!/usr/bin/env ruby
-# NOCOMMIT_IS_OK_HERE: This script creates pre-commit git hook that detects the text
-# NOCOMMIT_IS_OK_HERE: "NOCOMMIT" in the text. If found, git will abort the commit with a
-# NOCOMMIT_IS_OK_HERE: big warning message telling you that you have marked a file as being
-# NOCOMMIT_IS_OK_HERE: not committable.
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: Example:
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: # NOCOMMIT: Hacks
-# NOCOMMIT_IS_OK_HERE: x / 0 # NOCOMMIT: This is probably a bad idea
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: You can override this by ALSO adding NOCOMMIT_IS_OK_HERE to THE SAME line.
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: Example:
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: def mark_line_as_nocommit(message)
-# NOCOMMIT_IS_OK_HERE:     puts '# NOCOMMIT: #{message}' # NOCOMMIT_IS_OK_HERE
-# NOCOMMIT_IS_OK_HERE: end
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: Installation:
-# NOCOMMIT_IS_OK_HERE:     With this script in your path, cd to the root of your project
-# NOCOMMIT_IS_OK_HERE: and run "add-nocommit". This will create the magical pre-commit
-# NOCOMMIT_IS_OK_HERE: file.
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: Usage:
-# NOCOMMIT_IS_OK_HERE:     Just add a comment like:
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: NOCOMMIT: this file has sensitive data / is bogus / etc!
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: and if you forget and accidentally git add the file, the commit will
-# NOCOMMIT_IS_OK_HERE: fail, showing you the file and line containing the NOCOMMIT message.
+# add-nocommit - add pre-commit git hook to prevent hacky commits
+#
+# This script creates pre-commit git hook that detects the text "NOCOMMIT" in
+# the text. If found, git will abort the commit with a big warning message
+# telling you that you have marked a file as being not committable. Use this for
+# temporary hacks or secrets that must not be committed.
+#
+# Overrides:
+# - Set ALLOW_NOCOMMIT=true to allow you to override all NOCOMMITs in a
+# file. THIS IS EXACTLY AS DANGEROUS AS YOUR USAGE OF NOCOMMIT WAS IN THE FIRST
+# PLACE. I use it for files like this one where NOCOMMIT appears as part of the
+# intended source, not as a directive.
+#
+# - Put NOCOMMIT_IS_OK_HERE on a line with NOCOMMIT to disable for THAT line.
+#
+# Example:
+#
+# # NOCOMMIT: Hacks
+# x / 0 # NOCOMMIT: This is probably a bad idea
+#
+# You can override this by ALSO adding NOCOMMIT_IS_OK_HERE to THE SAME line.
+#
+# Example:
+#
+# def mark_line_as_nocommit(message)
+#     puts '# NOCOMMIT: #{message}' # NOCOMMIT_IS_OK_HERE
+# end
+#
+# Installation:
+#     With this script in your path, cd to the root of your project
+# and run "add-nocommit". This will create the magical pre-commit
+# file.
+#
+# Usage:
+#     Just add a comment like:
+#
+# NOCOMMIT: this file has sensitive data / is bogus / etc!
+#
+# and if you forget and accidentally git add the file, the commit will
+# fail, showing you the file and line containing the NOCOMMIT message.
 
 def barf!(msg=nil)
   puts "*** add-nocommit: %s " % msg if msg
@@ -51,15 +61,15 @@ system("chmod a+x #{precommit_file}")
 __END__
 #!/usr/bin/env ruby
 
-# NOCOMMIT_IS_OK_HERE: git-hook to check for NOCOMMIT messages in code that has
-# NOCOMMIT_IS_OK_HERE: been staged and abort the commit if found.
-# NOCOMMIT_IS_OK_HERE:
-# NOCOMMIT_IS_OK_HERE: To use: copy this file into your .git/hooks folder as pre-commit and make sure
-# NOCOMMIT_IS_OK_HERE: it is executable (chmod +x pre-commit). Now in your code, type // NOCOMMIT or
-# NOCOMMIT_IS_OK_HERE: # NOCOMMIT in a line and save it -- usually with an explanatory message like
-# NOCOMMIT_IS_OK_HERE: "# NOCOMMIT -- temp hack for bug #123".  Git will still let you stage the file
-# NOCOMMIT_IS_OK_HERE: with git add, but it will stop you from committing the file until you remove
-# NOCOMMIT_IS_OK_HERE: the NOCOMMIT comment.
+# git-hook to check for NOCOMMIT messages in code that has been staged and abort
+# the commit if found.
+#
+# To use: copy this file into your .git/hooks folder as pre-commit and make sure
+# it is executable (chmod +x pre-commit). Now in your code, type // NOCOMMIT or
+# # NOCOMMIT in a line and save it -- usually with an explanatory message like
+# "# NOCOMMIT -- temp hack for bug #123".  Git will still let you stage the file
+# with git add, but it will stop you from committing the file until you remove
+# the NOCOMMIT comment.
 file = ""
 delta = ""
 line_num = 0
@@ -76,7 +86,10 @@ line_num = 0
     line_num += 1 if line !~ /^- /
   end
 
-  if !line.start_with?("-") && line =~ %r{NOCOMMIT} && line !~ /NOCOMMIT_IS_OK_HERE/
+  if ENV.["ALLOW_COMMIT"] != true &&
+     !line.start_with?("-") &&          # don't stop me from DELETING a NOCOMMIT
+     line =~ %r{NOCOMMIT} &&
+     line !~ /NOCOMMIT_IS_OK_HERE/
     puts <<BANNER
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
