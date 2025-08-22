@@ -12,6 +12,7 @@ else
     exit 1
   else
       git checkout $(git branch | grep $1 | sed -e 's/\*//' | awk '{ print $1 }')
-      git log-branch "$(pwd)"
   fi
 fi
+
+git log-branch "$(pwd)"
