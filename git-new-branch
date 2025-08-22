@@ -27,25 +27,30 @@ Usage:
     git new-branch COR-1197 sort-retailer-names-in-m2m-transfer
     => git co -b dbrady/COR-1197/sort-retailer-names-in-m2m-transfer
 
+    git new-branch COR-3665 MX: Satisfy references condition
+    => git co -b dbrady/COR-3665/mx-satisfy-references-condition
+
 Options:
 USAGE
-
-      opt :slork, "Add this branch and ticket to a new entry to the slorks list (--no-slork to disable)", default: true
-      opt :confirm, "If Jira team is omitted, confirm that the default is correct", short: :y, default: false
 
       opt :debug, "Print extra debug info", default: false
       opt :force, "Force new branch creation from non-master branch", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+
+      opt :slork, "Add this branch and ticket to a new entry to the slorks list (--no-slork to disable)", default: true
+      opt :confirm, "If Jira team is omitted, confirm that the default is correct", short: :y, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
+    Optimist.educate if ARGV.empty? # Remove this if your script takes no args
 
-    Optimist.die "Expected exactly 2 arguments, got #{ARGV.size}" unless ARGV.size == 2
     Optimist.die "Ticket must be <TEAM>-<ticket> format" unless ARGV.first =~ /^([A-Z]+)-(\d+)/i
 
-    ticket, branch = ARGV
+    argv = ARGV.dup
+    ticket = argv.shift
+    branch = argv.join("-").gsub(/[^A-Za-z0-9\-]/, '-').gsub(/--+/, '-').downcase
     jira_team, ticket_id = ticket.split("-")
     ticket_id = ticket_id.to_i
     Optimist.die "Ticket must be a positive integer" unless ticket_id > 0
@@ -63,7 +68,7 @@ USAGE
 
     if !(current_branch == main_branch || force?)
       puts "You are not on the main branch (#{main_branch}). If you meant to branch from here, rerun with --force, e.g.:".yellow
-      puts "git-new-branch --force #{ARGV.join(' ')}"
+      puts "git-new-branch --force \"#{ARGV.join(' ')}\""
       exit
     end
 
@@ -74,11 +79,9 @@ USAGE
     end
 
     command = "git co -b #{full_branch_name}"
-    puts command.cyan
+    puts get_command_output_lines(command)
 
-    puts `#{command}` unless pretend?
-
-    add_branch_to_slorks(jira_team, ticket_id, branch) if slork?
+    add_branch_to_slorks(jira_team, ticket_id, branch) if slork? && !pretend?
 
     run_command "git parent-branch set #{current_branch}" if current_branch != main_branch
   end

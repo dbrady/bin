@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# NO{{DEL}}COMMIT: You need to name this script
+# NOCOMMIT: You need to name this script!
 # {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 require "colorize"
 require "optimist"
@@ -13,7 +13,7 @@ class Application
   def run
     @opts = Optimist.options do
       banner <<BANNER
-# NO{{DEL}}COMMIT: You need to name this script
+# NOCOMMIT: You need to name this script!
 {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 
 Options:
@@ -53,10 +53,7 @@ BANNER
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
-
-    # Educate the user (show help and exit) if no args given
-    # Remove this if your script takes no args
-    Optimist.educate if ARGV.empty?
+    Optimist.educate if ARGV.empty? # Remove this if your script takes no args
 
     run!
   end

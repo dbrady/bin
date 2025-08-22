@@ -5,6 +5,13 @@
 
 # TODO: Update to dbrady_cli. This is from before the dbrady_cli lib
 
+# TODO: Make a heartbeat table, just a name, last_heartbeat_at, so that when I
+# nun git-branch-history, I also get "last update was...". Maybe even make it
+# red if it's more than a few minutes, as it means the job isn't running. This
+# comment is more for the other app, but don't move it there until we're done
+# here. This comment paragraph IS the Jira epic, and it lives in whichever
+# project is the current ticket. ;)
+
 require 'colorize'
 require 'optimist'
 require 'extralite'

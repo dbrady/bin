@@ -9,7 +9,7 @@
     <array>
       <string>/bin/bash</string>
       <string>-c</string>
-      <string>source /Users/davidbrady/.bash_profile && ruby /Users/davidbrady/bin/git-log-branch -p /Users/davidbrady/acima/devel/merchant_portal && echo "$(date +"%F %T"): $PATH" >> ~/paths-from-mp-git-log-branch-plist.txt && ruby /Users/davidbrady/bin/git-log-branch -p /Users/davidbrady/acima/devel/privatizer</string>
+      <string>source /Users/davidbrady/.bash_profile && ruby /Users/davidbrady/bin/git-log-branch -p /Users/davidbrady/acima/devel/merchant_portal && echo "$(date +"%F %T"): $PATH" >> ~/paths-from-mp-git-log-branch-plist.txt</string>
     </array>
 
     <key>StartInterval</key>
