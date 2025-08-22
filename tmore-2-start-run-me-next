@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# tmore-start - hack to workaround my crippled tshare-start script
+
+require_relative 'tmuxinatrix/tmux_settings'
+require_relative 'tmuxinatrix/tmuxinatrix'
+
+settingses = [
+  TmuxSettings.new(name: "AMC", folder: "application-management-client", commands: "./start"),
+  TmuxSettings.new(name: "BasicAccess", folder: "basic_access", commands: "./bin/rails server"),
+  TmuxSettings.new(name: "aperture", folder: "aperture", commands: "./start"),
+]
+$logging = true
+
+Tmuxinatrix.run('more', settingses)

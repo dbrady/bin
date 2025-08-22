@@ -1,0 +1,5 @@
+#!/bin/bash
+# tmore-1-new-run-me-first - create new session for more services. Run this, jump into window 1 and run
+# tmore-2-start-run-me-next
+echo "tmux new-session -s more"
+tmux new-session -s more
