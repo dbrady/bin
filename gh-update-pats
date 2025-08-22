@@ -88,7 +88,7 @@ BANNER
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
-    
+
     Optimist.educate if ARGV.empty?
 
     @pat = ARGV.first
@@ -103,7 +103,8 @@ BANNER
 
     tokens = [
       "BUNDLE_RUBYGEMS__PKG__GITHUB__COM",
-      "BUNDLE_HTTPS://RUBYGEMS__PKG__GITHUB__COM/ACIMA___CREDIT/"
+      "BUNDLE_HTTPS://RUBYGEMS__PKG__GITHUB__COM/ACIMA___CREDIT/",
+      "BUNDLE_GEMS__KARAFKA__IO:",
     ]
 
     files.each do |file|
