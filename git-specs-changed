@@ -1,0 +1,133 @@
+#!/usr/bin/env ruby
+# git-specs-changed (<n>|<sha>|<sha1>..<sha2>) - Show files changed since sha or in the last n commits
+# See Also: git-modified for uncommitted changed files
+require "colorize"
+require "optimist"
+require_relative "lib/dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+# TODO: some kind of aggressive, "dig in" mode where we also look at
+# changes to the app and lib folders and try to match them to their
+# associated spec file.
+#
+# TODO: (Total pie in the sky) can we read the spec coverage file and
+# check to see if the changes in a PR are covered with runnable specs?
+
+class Application
+  include DbradyCli
+
+  opt_flag :existing
+  opt_flag :ruby
+
+  def run
+    @opts = Optimist.options do
+      banner <<~BANNER
+git specs-changed - show list of files changed in a range of commits
+
+git specs-changed [options] (<n>|<sha1>|<sha1>..<sha2>)
+
+git specs-changed <n>                             - Show files changed in the last n commits
+git specs-changed <since_commit>                  - Show files changed since a commit or branch
+git specs-changed <since_comment>..<until_commit> - Show files changed in a range of commits
+
+Examples:
+
+git specs-changed 7                - Show files changed in the last 7 commits
+git specs-changed abcd1234         - Show files changed since commit abcd1234
+git specs-changed master           - Show files changed since you forked from master
+git specs-changed ab1234..cd5678   - Show files changed in a range of commits
+git specs-changed staging..release - Show files changed from one branch to another
+
+Note: This tool assumes that <sha1> is an ancestor of <sha2>. If they are not,
+git will cheerfully walk up the logs to of both branches back to their common
+ancestor, and then show you the commits from one or both branches at its own
+discretion. In my own tests, it's usually <common>..<sha2> but in once case it
+gave me <common>..<sha1> followed by <common>..<sha2>. &shrug;
+
+See Also: git modified - list files modified since last commit, whether staged or not
+
+Options:
+BANNER
+
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :only, "Pattern to include", short: :o, type: :string, multi: true
+      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
+      opt :existing, "Only show files that currently exist (for piping into file processor scripts, e.g. rubocop)", short: :e, default: true
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    $stderr.puts opts.inspect if opts[:debug]
+
+    repo = git_repo_for(Dir.pwd)
+
+    opts[:only] << 'spec/*'
+    spec_subdirs_to_skip = %w(helpers factories support cassettes)
+
+    spec_subdirs_to_skip.each do |folder|
+      opts[:exclude] << "spec/#{folder}/*"
+    end
+
+    range = if ARGV.empty?
+              parent = git_parent_or_main_branch
+              $stderr.puts "Diffing against branch: #{parent.inspect}" if verbose?
+              "#{parent}..HEAD"
+            elsif ARGV.size == 2
+              # git specs-changed abc123 def456
+              ARGV.join('..')
+            elsif ARGV.first =~ /^\d+$/
+              # git specs-changed 5
+              # look at last 5 commits
+              "-n #{ARGV.first}"
+            elsif ARGV.first =~ /\.\./
+              # git specs-changed abc123..def456
+              # look at commits in that range
+              # ARGV.first because "x..y" is one string
+              ARGV.first
+            else
+              # git specs-changed abc123
+              # look at abc123..HEAD
+              "#{ARGV.first}..HEAD"
+            end
+
+    $stderr.puts "range: #{range}" if debug?
+
+    files = get_command_output_lines "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq", quiet: !debug?
+
+    if debug?
+      $stderr.puts '-' * 80
+      $stderr.puts "Only: #{opts[:only].inspect}"
+      $stderr.puts "Exclude: #{opts[:exclude].inspect}"
+      $stderr.puts '-' * 80
+      $stderr.puts 'Files Unfiltered:'
+      $stderr.puts files.inspect
+      $stderr.puts '--'
+    end
+    # filter files through only_patterns, patterns_to_exclude, fragments_to_exclude
+    opts[:only].each do |pattern|
+      files = files.select {|filename| File.fnmatch(pattern, filename) }
+      if debug?
+        $stderr.puts "Files Filtered by opts[:only] of #{pattern.inspect}:"
+        $stderr.puts files
+        $stderr.puts '--'
+      end
+    end
+    files = files.reject {|filename| opts[:exclude].any? {|pattern| File.fnmatch(pattern, filename) }}
+    if debug?
+      $stderr.puts 'Files Filtered by Exclude:'
+      $stderr.puts files
+      $stderr.puts '--'
+    end
+
+    files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } if existing?
+
+    puts files
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
