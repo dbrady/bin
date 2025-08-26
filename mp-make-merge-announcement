@@ -19,12 +19,13 @@ class Application
   def run
     @opts = Optimist.options do
       banner <<-BANNER
-mp-make-merge-announcement [options] [board-ticket:pr ...]
+mp-make-merge-announcement [options] [board-ticket:pr [...]]
+
+mp-make-merge-announcement <BOARD>-<ticket>:<pr> # leave blank for current branch/pr
 
 Example:
-  mp-make-merge-announcement  # gets info from current branch
+  mp-make-merge-announcement # works if ticket is in branch name and git set-pr is set
   mp-make-merge-announcement COR-1117:13604 COR-1119:13605
-  mp-make-merge-announcement COR-1117 COR-1119 # gets PR# from slork (RDD, NOT IMPLEMENTED)
 
 Options:
       BANNER
