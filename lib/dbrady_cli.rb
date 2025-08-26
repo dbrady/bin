@@ -283,7 +283,7 @@ module DbradyCli
   end
 
   def get_repo_and_pr_from_branch
-    repo, pr_id = `git get-pr`
+    repo, pr_id = `git get-pr -q`
                     .strip
                     .sub(%r|https://github.com/acima-credit/|, "")
                     .split(%r|/pull/|)
@@ -297,7 +297,7 @@ module DbradyCli
   end
 
   def get_pr_url
-    `git get-pr`.strip
+    `git get-pr -q`.strip
   end
 
   # returns true if there are no outstanding changes to commit or stash
@@ -326,7 +326,7 @@ module DbradyCli
   # Get the latest GitHub Personal Access Token
   # It's in ~/.bundle/config as
   def github_pat
-    File.readlines(File.expand_path("~/.bundle/config")).detect { |line| line =~ /^BUNDLE_RUBYGEMS__PKG__GITHUB__COM:/ }.split(/:/).last.strip
+    File.readlines(File.expand_path("~/.bundle/config")).detect { |line| line =~ /^BUNDLE_RUBYGEMS__PKG__GITHUB__COM:/ }.split(/:/).last.strip.gsub(/['"]/, "")
   end
 end
 

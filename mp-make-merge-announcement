@@ -56,7 +56,7 @@ Options:
     else
       message = message_for(prs)
       puts message.yellow
-      IO.popen('pbcopy', 'w') { |f| f << message } && puts("Copied to clipboard.")
+      IO.popen('pbcopy', 'w') { |f| f << message } && puts("Copied to clipboard. Paste and format in Slack with ⌘-v ⌘-S-f")
     end
   end
 
