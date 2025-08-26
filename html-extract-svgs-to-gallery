@@ -1,0 +1,85 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# html-extract-svgs-to-gallery <input.html>
+#
+# vibecoded with GPT5
+
+require "colorize"
+require "nokogiri"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  # opt_flag :debug, :quiet, :verbose, :pretend
+
+  def input
+    opts[:input]
+  end
+
+  def output
+    opts[:output] && File.expand_path(File.join(Dir.pwd, opts[:output]))
+  end
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+html-extract-svgs-to-gallery - extract svgs from html and make a gallery html
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :input, "Input file", type: :string
+      opt :output, "Output file", type: :string
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if debug?
+
+    if debug?
+      puts "input: #{input.inspect}"
+      puts "output: #{output.inspect}"
+    end
+
+    if input
+      Optimist.die("Input file not found: \"#{input}\"") unless File.exist?(input)
+    elsif $stdin.tty? # you are NOT piping in data
+      Optimist.die("You must specify an input file or pipe from stdin")
+    end
+
+    run!
+  end
+
+  # APP CODE GOES HERE
+  def run!
+    html = input ? File.read(input) : ARGF.read
+    doc  = Nokogiri::HTML.parse(html)
+
+    svgs = doc.css("svg")
+
+    out = +"<!doctype html>\n<meta charset=\"utf-8\">\n" \
+           "<style>body{display:flex;flex-wrap:wrap;gap:12px;padding:12px}" \
+           ".cell{padding:8px;border:1px solid #ddd;border-radius:10px}" \
+           "svg{width:48px;height:48px}</style>\n<body>\n"
+
+    svgs.each { |node| out << "<div class=\"cell\">#{node.to_html}</div>\n" }
+    out << "</body>\n"
+
+    if output
+      File.write(output, out)
+    else
+      $stdout.write out
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
