@@ -65,7 +65,7 @@ Options:
   end
 
   def get_pr_title(repo, pr)
-    get_command_output("gh-get-pr-title #{repo} #{pr}").gsub(/\[.+\]\s*/, '')
+    get_command_output("gh-get-pr-title #{repo} #{pr}", quiet: true).gsub(/\[.+\]\s*/, '')
   end
 
   def link_for(board, ticket, pr_url, title)
