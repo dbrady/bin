@@ -1,0 +1,3 @@
+#!/bin/bash
+echo -e '\033[36msqlite3 ~/bin/db/git-settings.db ".schema --nosys" > ~/bin/db/schema-git-settings.sql\033[0m'
+sqlite3 ~/bin/db/git-settings.db ".schema --nosys" > ~/bin/db/schema-git-settings.sql
