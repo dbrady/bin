@@ -46,7 +46,7 @@ BANNER
     # Abort if we're already on the parent branch (shouldn't be possible unless
     # in an earlier life you set a branch to be its own parent branch, which
     # makes no sense).
-    if true || parent_branch == current_branch
+    if parent_branch == current_branch
       puts "Critical Error: you have somehow set parent_branch == current_branch. This makes no sense. Aborting."
       exit 1
     end
@@ -61,7 +61,7 @@ BANNER
 
     commands = [checkout_command, delete_command, rebuild_command].compact
 
-    if true || BRANCHES_TO_BE_PARANOID_ABOUT.include?(current_branch)
+    if BRANCHES_TO_BE_PARANOID_ABOUT.include?(current_branch)
       puts "Cowardly refusing to delete branch '#{current_branch}': this is in my list of branches to be paranoid about: #{BRANCHES_TO_BE_PARANOID_ABOUT.inspect}"
       puts "If you are absolutely sure, you can do it manually with:"
       display_what_to_do commands
