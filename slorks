@@ -28,12 +28,13 @@
 # - [ ] FINALLY some features!
 # - [ ] Add change log into the database, autoupdate it on slork change (paperclip?) and add commands to view the changelog
 # - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a note"
-
+# - [ ] Project codes and timing
 
 require "clipboard"
 require "colorize"
 require "erb"
 require "extralite" # needed for Sequel (to be deprecated)
+require "fileutils"
 require "optimist"
 require "sequel" # to be deprecated
 require "sqlite3"
@@ -239,6 +240,8 @@ BANNER
       exit
     end
 
+    backup_database
+
     if debug?
       puts "board from ARGV: #{board}"
       puts "ticket from ARGV: #{ticket}"
@@ -417,6 +420,18 @@ BANNER
     return true unless path && the_list && File.exist?(path)
 
     File.read(path) != the_list
+  end
+
+  def backup_database
+    here = File.dirname(File.expand_path(__FILE__))
+    db_file = Time.now.strftime("git-settings.%F.db")
+    backup_filename = File.join(here, "db", "backups", db_file)
+    src_filename = DATABASE_PATH
+
+    puts "#{src_filename} -> #{backup_filename}"
+
+    puts "FileUtils.cp(#{src_filename.inspect}, #{backup_filename.inspect})"
+    FileUtils.cp(src_filename, backup_filename)
   end
 
   def path_to_last_log
