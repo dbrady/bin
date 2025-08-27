@@ -88,7 +88,8 @@ BANNER
       end
 
       parent_branch = get_parent_branch(repo, branch)
-      puts parent_branch if parent_branch && !parent_branch.empty?
+      parent_branch = get_command_output("git main-branch", quiet: true) if parent_branch.nil? || parent_branch.empty?
+      puts parent_branch
     end
   end
 
