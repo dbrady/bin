@@ -17,8 +17,14 @@
 # - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
 # - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [ ] Move the Slork class into a model subdir
-# - [ ] Convert from Sequel to ActiveRecord. I'm not seeing a complexity gain and having to memorize both query dsls is a pain. Also if I have the permissions to deploy Sequel, don't I probably also have permissions to install a DbradyCli gem? :-P
+# - [ ] Convert from Sequel to ActiveRecord (or just bare SQL, so I don't have
+#       to install Rails into every ruby version). I'm not seeing a complexity
+#       gain and having to memorize both query dsls is a pain. Also if I have
+#       the permissions to deploy Sequel, don't I probably also have permissions
+#       to install a DbradyCli gem? :-P
 # - [ ] Add a --dry-run option to show all commands
+# - [ ] We're big enough to warrant a proper cleanup refactoring with tests.
+#   - [ ] Investigate how we're gonna run tests or rspec in here
 # - [ ] FINALLY some features!
 # - [ ] Add change log into the database, autoupdate it on slork change (paperclip?) and add commands to view the changelog
 # - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a note"
@@ -27,9 +33,10 @@
 require "clipboard"
 require "colorize"
 require "erb"
-require "extralite"
+require "extralite" # needed for Sequel (to be deprecated)
 require "optimist"
-require "sequel"
+require "sequel" # to be deprecated
+require "sqlite3"
 require_relative "lib/dbrady_cli"
 require_relative "lib/tiny_table"
 String.disable_colorization unless $stdout.tty?
@@ -82,30 +89,17 @@ class Application
   }
 
   if !ARGV.include?("create")
+    # Slork represents one slackup entry. Class methods let you find slorks, instance methods let you work with one.
     class Slork < Sequel::Model(DB[:slorks])
       plugin :timestamps, update_on_create: true
 
       class <<self
-        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
-          search = self
-          search = search.where(board:) if board
-          search = search.where(ticket:) if ticket
-          search = search.where(Sequel.ilike(:title, "%#{title}%")) if title
-          search = search.where(pr:) if pr
-          search = search.where(repo:) if repo
-          search = search.where(status:) if status
-          search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
-          if deleted
-            search = search.where(Sequel.~(deleted_at: nil))
-          else
-            search = search.where(deleted_at: nil)
-          end
-
-          search.all
+        # vvvv----------<<<< SQLite3 bare code to be generated >>>>----------vvvv
+        def db
+          @db ||= SQLite3::Database.new DATABASE_PATH
         end
       end
 
-      # Returns the full jira ticket, like MPS-42 or COR-781 or COVID-19
       def ticket_key
         "#{board}-#{ticket}"
       end
@@ -125,6 +119,27 @@ class Application
 
       def status_text
         KNOWN_STATUSES.fetch(status, {})[:name] || status
+      end
+
+      # vvvv----------<<<< Sequel code to be deprecated >>>>----------vvvv
+      class <<self
+        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
+          search = self
+          search = search.where(board:) if board
+          search = search.where(ticket:) if ticket
+          search = search.where(Sequel.ilike(:title, "%#{title}%")) if title
+          search = search.where(pr:) if pr
+          search = search.where(repo:) if repo
+          search = search.where(status:) if status
+          search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
+          if deleted
+            search = search.where(Sequel.~(deleted_at: nil))
+          else
+            search = search.where(deleted_at: nil)
+          end
+
+          search.all
+        end
       end
 
       def soft_delete!
@@ -219,7 +234,10 @@ BANNER
     board, ticket = argv.shift&.split("-")
     Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.keys.inspect}" unless command.nil? || COMMANDS.keys.include?(command)
 
-    ensure_table_exists! if command == "create"
+    if command == "create"
+      ensure_table_exists!
+      exit
+    end
 
     if debug?
       puts "board from ARGV: #{board}"
@@ -433,20 +451,60 @@ BANNER
   end
 
   def ensure_table_exists!
-    DB.create_table?(:slorks, if_not_exists: true) do
-      primary_key :id
-      String :repo, null: false
-      String :board, null: false
-      Integer :ticket, null: false
-      Integer :pr
-      String :title, null: false
-      String :status, null: false
-      String :notes
+    # slorks
+    sql = <<~SQL
+CREATE TABLE IF NOT EXISTS slorks (
+    id integer NOT NULL PRIMARY KEY AUTOINCREMENT,
+    repo varchar(255) NOT NULL,
+    board varchar(255) NOT NULL,
+    ticket integer NOT NULL,
+    pr integer,
+    title varchar(255) NOT NULL,
+    status varchar(255) NOT NULL,
+    notes varchar(255),
+    project_code varchar(255),
+    created_at timestamp,
+    updated_at timestamp,
+    deleted_at timestamp
+);
+SQL
 
-      DateTime :created_at
-      DateTime :updated_at
-      DateTime :deleted_at
-    end
+    execute_query sql
+
+    # durations
+    sql = <<~SQL
+CREATE TABLE IF NOT EXISTS durations (
+  id         INTEGER PRIMARY KEY,
+  slork_id   INTEGER NOT NULL,
+  label      VARCHAR(255),
+  notes      TEXT,
+  ms         INTEGER NOT NULL CHECK (ms >= 0),
+
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  hms TEXT GENERATED ALWAYS AS (
+    printf('%d:%02d:%02d.%03d',
+      CAST(ms/3600000 AS INTEGER),
+      CAST(ms/60000   AS INTEGER) % 60,
+      CAST(ms/1000    AS INTEGER) % 60,
+      ms % 1000
+    )
+  ) VIRTUAL,
+
+  FOREIGN KEY (slork_id) REFERENCES slorks(id)
+);
+SQL
+    execute_query sql
+  end
+
+  def db
+    @db ||= SQLite3::Database.new DATABASE_PATH
+  end
+
+  def execute_query(query)
+    puts query.light_green if debug? || verbose?
+    db.execute query unless pretend?
   end
 
   def add_new(board, ticket)
