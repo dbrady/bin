@@ -240,6 +240,7 @@ BANNER
       exit
     end
 
+    backup_schema
     backup_database
 
     if debug?
@@ -249,6 +250,22 @@ BANNER
       puts "!opts[:ticket_given]: #{(!opts[:ticket_given]).inspect}"
       puts "ticket =~ /^([A-Z]+)-(\d+)$/: #{(ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
       puts "!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/: #{(!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
+      puts '--'
+      puts "OPT FLAGS:"
+      puts "debug:      #{debug?.inspect}"
+      puts "pretend:    #{pretend?.inspect}"
+      puts "verbose:    #{verbose?.inspect}"
+      puts "quiet:      #{quiet?.inspect}"
+      puts "color:      #{color?.inspect}"
+      puts "created_at: #{created_at?.inspect}"
+      puts "force:      #{force?.inspect}"
+      puts "no_jira:    #{no_jira?.inspect}"
+      puts "no_notes:   #{no_notes?.inspect}"
+      puts "no_pr:      #{no_pr?.inspect}"
+      puts "no_repo:    #{no_repo?.inspect}"
+      puts "humanize:   #{humanize?.inspect}"
+      puts "markdown:   #{markdown?.inspect}"
+      puts "updated_at: #{updated_at?.inspect}"
     end
 
     if ticket && !opts[:board_given] && !opts[:ticket_given]
@@ -303,8 +320,10 @@ BANNER
     head << :jira_link if for_log || !no_jira?
     head << :created_at if for_log || created_at?
     head << :updated_at if for_log || updated_at?
-    puts head.map.with_index {|col, index| "#{index}: #{col}" } if debug?
-    puts "----------" if debug?
+    if debug?
+      puts head.map.with_index {|col, index| "#{index}: #{col}" }
+      puts "----------"
+    end
     table.head = head
 
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
@@ -390,15 +409,9 @@ BANNER
 
   def copy_list_as_markdown
     Clipboard.copy(list_as_markdown)
-    puts "Slackup report copied to clipboard."
+    puts "Slackup report copied to clipboard." if verbose?
   end
 
-  # TODO: If this gets used a lot, write a proper reporting system for it
-  # I expect this to be useful when compiling my weekly time sheets but
-  # let's see before we commit. YAGNI.
-  #
-  # This could also be served by adding an audit log to the Slork model
-  # and keep the changes in the database.
   def log_slorks
     folder = File.expand_path "~/bin/db/logs"
     filename = "slorks.#{Time.now.strftime("%Y%m%d.%H%M%S")}.log"
@@ -412,7 +425,7 @@ BANNER
     if log_has_changed?(path_to_last_log, the_list)
       write_log(full_path, the_list)
     else
-      puts "No changes to log."
+      puts "No changes to log." if verbose?
     end
   end
 
@@ -428,10 +441,14 @@ BANNER
     backup_filename = File.join(here, "db", "backups", db_file)
     src_filename = DATABASE_PATH
 
-    puts "#{src_filename} -> #{backup_filename}"
-
-    puts "FileUtils.cp(#{src_filename.inspect}, #{backup_filename.inspect})"
     FileUtils.cp(src_filename, backup_filename)
+  end
+
+  def backup_schema
+    here = File.dirname(File.expand_path(__FILE__))
+    schema_file = File.join(here, "db", "schema-git-settings.sql")
+
+    run_command "sqlite3 '#{DATABASE_PATH}' '.schema --nosys' > '#{schema_file}'", quiet: !verbose?
   end
 
   def path_to_last_log
@@ -443,7 +460,7 @@ BANNER
     File.open full_path, 'w' do |f|
       f.write list
     end
-    puts "Logged to #{full_path}" unless quiet?
+    puts "Logged to #{full_path}" if verbose?
   end
 
   def list_as_markdown
@@ -518,7 +535,7 @@ SQL
   end
 
   def execute_query(query)
-    puts query.light_green if debug? || verbose?
+    puts query.light_green if debug?
     db.execute query unless pretend?
   end
 
