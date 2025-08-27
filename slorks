@@ -448,7 +448,7 @@ BANNER
     here = File.dirname(File.expand_path(__FILE__))
     schema_file = File.join(here, "db", "schema-git-settings.sql")
 
-    run_command "sqlite3 '#{DATABASE_PATH}' '.schema --nosys' > '#{schema_file}'", quiet: !verbose?
+    run_command "sqlite3 '#{DATABASE_PATH}' '.schema --nosys --indent' > '#{schema_file}'", quiet: !verbose?
   end
 
   def path_to_last_log
