@@ -46,7 +46,17 @@ class Application
   include DbradyCli
   DEFAULT_REPO = "merchant_portal".freeze
 
-  opt_flag :color, :created_at, :force, :no_jira, :no_notes, :no_pr, :no_repo, :humanize, :markdown, :updated_at
+  opt_flag :color,
+           :created_at,
+           :force,
+           :humanize,
+           :markdown,
+           :no_jira,
+           :no_notes,
+           :no_pr,
+           :no_repo,
+           :project_code,
+           :updated_at
 
   COMMANDS = {
     "abandon" => "Mark ticket as abandoned",
@@ -220,6 +230,7 @@ BANNER
       opt :no_color, "Do not colorize output by status", short: "C", default: false
       opt :notes, "Notes text", type: :string
       opt :pr, "ID of PR", type: :int
+      opt :project_code, "Project Code", default: false
       opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
       opt :status, "Status text", type: :string
       opt :ticket, "Jira ticket number", type: :int
@@ -312,7 +323,6 @@ BANNER
   end
 
   def list(for_log: false, force_nocolor: false)
-    table = TinyTable.new
     head = %i(ticket repo pr title status)
     head.delete(:repo) unless for_log || !no_repo?
     head << :notes if for_log || !no_notes?
@@ -320,11 +330,12 @@ BANNER
     head << :jira_link if for_log || !no_jira?
     head << :created_at if for_log || created_at?
     head << :updated_at if for_log || updated_at?
+    head << :project_code if for_log || project_code?
     if debug?
       puts head.map.with_index {|col, index| "#{index}: #{col}" }
       puts "----------"
     end
-    table.head = head
+    table = TinyTable.new(head: )
 
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
       row = [slork.ticket_key]
@@ -333,6 +344,7 @@ BANNER
       row << slork.notes if for_log || !no_notes?
       row << slork.pr_link if for_log || !no_pr?
       row << slork.jira_link if for_log || !no_jira?
+      row << slork.project_code if for_log || project_code?
       row << display_time(slork.created_at, for_log:) if for_log || created_at?
       row << display_time(slork.updated_at, for_log:) if for_log || updated_at?
       puts row.map.with_index {|col, index| "#{index}: #{col}" } if debug?

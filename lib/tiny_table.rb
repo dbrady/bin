@@ -28,14 +28,14 @@ class TinyTable
   def to_s
     table = []
 
-    table << separator
     if head
+      table << separator
       table << "| " + head.zip(column_widths).map { |cell, width| cell.to_s.center(width) }.join(" | ") + " |"
     end
 
-    [
-      separator
-    ] + rows.map do |row|
+    table << separator
+
+    table += rows.map do |row|
       if row == [:separator]
         separator
       else
@@ -47,9 +47,10 @@ class TinyTable
           cell.ljust(width + nudge_for_ansi)
         end.join(" | ") + " |"
       end
-    end + [
-      separator
-    ]
+    end
+    table << separator
+
+    table
   end
 
   def separator
