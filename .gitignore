@@ -6,3 +6,4 @@ __pycache__/*
 testit
 db/*.db
 db/logs/*
+db/backups/*
