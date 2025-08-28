@@ -17,11 +17,6 @@
 # - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
 # - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [ ] Move the Slork class into a model subdir
-# - [ ] Convert from Sequel to ActiveRecord (or just bare SQL, so I don't have
-#       to install Rails into every ruby version). I'm not seeing a complexity
-#       gain and having to memorize both query dsls is a pain. Also if I have
-#       the permissions to deploy Sequel, don't I probably also have permissions
-#       to install a DbradyCli gem? :-P
 # - [ ] Add a --dry-run option to show all commands
 # - [ ] We're big enough to warrant a proper cleanup refactoring with tests.
 #   - [ ] Investigate how we're gonna run tests or rspec in here
@@ -33,11 +28,10 @@
 require "clipboard"
 require "colorize"
 require "erb"
-require "extralite" # needed for Sequel (to be deprecated)
+require "extralite"
 require "fileutils"
 require "optimist"
-require "sequel" # to be deprecated
-require "sqlite3"
+require "sequel"
 require_relative "lib/dbrady_cli"
 require_relative "lib/tiny_table"
 String.disable_colorization unless $stdout.tty?
@@ -65,6 +59,7 @@ class Application
     "c" => "Open database console",
     "console" => "Open database console",
     "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
+    "code" => "Set project code",
     "commands" => "List commands",
     "create" => "Create slorks database",
     "delete" => "Soft-delete ticket",
@@ -79,6 +74,7 @@ class Application
     "review" => "Mark ticket as in review (automatically called from git set-pr)",
     "status" => "Edit ticket status",
     "statuses" => "List statuses",
+    "time" => "Log time against a ticket",
     "title" => "Edit ticket title",
     "undelete" => "Undelete a ticket (provide new status, default is 'p')",
   }.freeze
@@ -105,13 +101,26 @@ class Application
       plugin :timestamps, update_on_create: true
 
       class <<self
-        # vvvv----------<<<< SQLite3 bare code to be generated >>>>----------vvvv
-        def db
-          @db ||= SQLite3::Database.new DATABASE_PATH
+        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
+          search = self
+          search = search.where(board:) if board
+          search = search.where(ticket:) if ticket
+          search = search.where(Sequel.ilike(:title, "%#{title}%")) if title
+          search = search.where(pr:) if pr
+          search = search.where(repo:) if repo
+          search = search.where(status:) if status
+          search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
+          if deleted
+            search = search.where(Sequel.~(deleted_at: nil))
+          else
+            search = search.where(deleted_at: nil)
+          end
+
+          search.all
         end
       end
 
-      def ticket_key
+    def ticket_key
         "#{board}-#{ticket}"
       end
 
@@ -130,27 +139,6 @@ class Application
 
       def status_text
         KNOWN_STATUSES.fetch(status, {})[:name] || status
-      end
-
-      # vvvv----------<<<< Sequel code to be deprecated >>>>----------vvvv
-      class <<self
-        def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
-          search = self
-          search = search.where(board:) if board
-          search = search.where(ticket:) if ticket
-          search = search.where(Sequel.ilike(:title, "%#{title}%")) if title
-          search = search.where(pr:) if pr
-          search = search.where(repo:) if repo
-          search = search.where(status:) if status
-          search = search.where(Sequel.ilike(:notes, "%#{notes}%")) if notes
-          if deleted
-            search = search.where(Sequel.~(deleted_at: nil))
-          else
-            search = search.where(deleted_at: nil)
-          end
-
-          search.all
-        end
       end
 
       def soft_delete!
@@ -279,13 +267,17 @@ BANNER
       puts "updated_at: #{updated_at?.inspect}"
     end
 
-    if ticket && !opts[:board_given] && !opts[:ticket_given]
-      opts[:board], opts[:ticket] = $1, $2
-      opts[:board_given] = true
-      opts[:ticket_given] = true
-    elsif !opts[:board_given] && !opts[:ticket_given]
-      board, ticket = get_board_and_ticket_from_branch
-    end
+    board, ticket = if ticket && !opts[:board_given] && !opts[:ticket_given]
+                      opts[:board], opts[:ticket] = $1, $2
+                      opts[:board_given] = true
+                      opts[:ticket_given] = true
+                      [opts[:board], opts[:ticket]]
+                    elsif !opts[:board_given] && !opts[:ticket_given]
+                      get_board_and_ticket_from_branch
+                    else
+                      puts "WARNING: Weird logic detected, how did I get here?".red.bold
+                      [opts[:board], opts[:ticket]]
+                    end
 
     puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
 
@@ -294,6 +286,7 @@ BANNER
     when "announce" then announce(board, ticket)
     when "block" then block(board, ticket, opts[:notes])
     when "clean" then clean_deploys
+    when "code" then update_project_code(board, ticket)
     when "commands" then list_commands
     when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
     when "delete" then soft_delete(board, ticket)
@@ -307,6 +300,7 @@ BANNER
     when "review" then move_into_review(board, ticket)
     when "status" then update_status(board, ticket)
     when "statuses" then list_statuses
+    when "time" then record_time(board, ticket)
     when "title" then update_title(board, ticket)
     when "undelete" then undelete(board, ticket)
     else
@@ -568,7 +562,10 @@ SQL
       notes: opts[:notes]
     )
 
-    puts slork.inspect if debug?
+    if debug?
+      puts "add_new(#{board.inspect}, #{ticket.inspect})"
+      puts slork.inspect
+    end
 
     slork.save unless pretend?
   end
@@ -650,6 +647,23 @@ SQL
     assign_message = "@robby assign #{opts[:pr]}"
     run_command %Q(echo "#{assign_message}" | pbcopy)
     puts ticket if debug?
+  end
+
+  def update_project_code(board, ticket)
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+
+    ticket.project_code = ARGV[2]
+    ticket.save
+  end
+
+  def record_time(board, ticket)
+    raise "record_time not yet implemented"
   end
 
   def ready(board, ticket)
