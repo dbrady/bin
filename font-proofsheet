@@ -1,0 +1,200 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+#
+# vibecoded with ChatGPT-5. Kinda works.
+require "open3"
+require "optparse"
+require "cgi"
+
+# Ensure UTF-8 in child processes and string handling
+ENV["LANG"]   ||= "C.UTF-8"
+ENV["LC_ALL"] ||= "C.UTF-8"
+
+FontFace = Struct.new(:file_path, :family, :style, :weight_numeric, :slant_code, keyword_init: true)
+
+def assert_fontconfig_present!
+  _out, _err, status = Open3.capture3("fc-list", "-v")
+  abort "Error: 'fc-list' not found. Please install fontconfig (e.g., apt install fontconfig)." unless status.success?
+end
+
+def read_all_font_faces
+  # Ask fontconfig (fc-list) for one line per *font file* (face), with useful fields.
+  # %{slant}: 0=roman, 100=italic, 110=oblique (per fontconfig)
+  # %{weight}: numeric weight when available (100, 200, ... 900)
+  format = "%{file}|%{family}|%{style}|%{weight}|%{slant}\n"
+  output, error, status = Open3.capture3("fc-list", ":", "-f", format)
+  abort "fc-list failed: #{error}".strip unless status.success?
+
+  faces = []
+  output.each_line do |line|
+    file_path, family, style, weight_str, slant_str = line.strip.split("|", 5)
+    next if file_path.nil? || family.nil?
+
+    weight_numeric = (Integer(weight_str) rescue nil)
+    slant_code     = (Integer(slant_str) rescue 0)
+    style          = (style || "").strip
+    faces << FontFace.new(
+      file_path: file_path.strip,
+      family: family.strip,
+      style: style.empty? ? "Regular" : style,
+      weight_numeric: weight_numeric,
+      slant_code: slant_code
+    )
+  end
+  faces
+end
+
+def matches_any_filter?(text, filters)
+  return false if filters.nil? || filters.empty?
+  filters.any? do |filter|
+    if filter.is_a?(Regexp)
+      text =~ filter
+    else
+      text.downcase.include?(filter.to_s.downcase)
+    end
+  end
+end
+
+def explain_exclusion(text, filters)
+  return false if filters.nil? || filters.empty?
+  matched_filter = filters.detect do |filter|
+    if filter.is_a?(Regexp)
+      text =~ filter
+    else
+      text.downcase.include?(filter.to_s.downcase)
+    end
+  end
+
+  puts "Rejecting #{text} because it matches #{matched_filter.inspect}"
+end
+
+
+# === REQUIRED METHOD ===
+# Returns an array of FontFace (one per font *file*), filtered by:
+# - include: include a face if it matches ANY entry (string contains or regex match) against family, style, or file path
+# - exclude: drop a face if it matches ANY entry (same matching rules)
+def get_system_fonts(include: nil, exclude: nil)
+  all_faces = read_all_font_faces
+  all_faces.select do |face|
+    combined_text = "#{face.family} #{face.style}"
+    included = true
+    included &&= matches_any_filter?(combined_text, include) if include && !include.empty?
+    included &&= !matches_any_filter?(combined_text, exclude) if exclude && !exclude.empty?
+
+    if !(exclude && exclude.empty?) && matches_any_filter?(combined_text, exclude)
+      explain_exclusion(combined_text, exclude)
+    end
+    included
+  end
+end
+
+def html_escape(text)
+  CGI.escapeHTML(text.to_s)
+end
+
+def css_string_literal(s)
+  "\"#{s.to_s.gsub('\\', '\\\\').gsub('"', '\"')}\""
+end
+
+def css_font_style_from_slant(slant_code)
+  case slant_code
+  when 100, 110 then "italic"     # italic or oblique -> render as italic
+  else "normal"
+  end
+end
+
+def css_font_weight(weight_numeric)
+  return "normal" if weight_numeric.nil? || weight_numeric.zero?
+  # Clamp to CSS-safe numeric weights
+  [[weight_numeric, 100].max, 900].min.to_s
+end
+
+def build_html(sample_text:, font_faces:)
+  # TODO: fix the 360px lockdown if the string is long or else allow a --width=360px arg or --columns=1 arg, etc.
+  <<~HTML
+    <!doctype html>
+    <meta charset="utf-8">
+    <title>Font preview — #{html_escape(sample_text)}</title>
+    <style>
+      :root{
+        --background:#fafafa; --foreground:#111; --card:#fff; --muted:#555; --line:#e5e5e5; --chip:#f3f3f3;
+      }
+      *{box-sizing:border-box}
+      body{margin:0;font:14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, sans-serif;background:var(--background);color:var(--foreground)}
+      header{position:sticky;top:0;background:#fff;padding:10px 16px;border-bottom:1px solid #ddd;z-index:1;display:flex;gap:16px;flex-wrap:wrap;align-items:baseline}
+      header code{background:var(--chip);border:1px solid #e9e9e9;border-radius:6px;padding:2px 6px}
+      .count{opacity:.7}
+      .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px;padding:12px}
+      .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+      .sample{font-size:56px;line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px}
+      .meta{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:12px}
+      .meta code{background:var(--chip);border:1px solid #e9e9e9;border-radius:6px;padding:2px 6px}
+      .details{font-size:12px;color:#333;margin-top:6px}
+      .details code{background:#f6f6f6;border:1px solid #eee;border-radius:6px;padding:1px 5px}
+    </style>
+    <header>
+      <div><strong>Font preview:</strong> <code>#{html_escape(sample_text)}</code></div>
+      <div class="count">#{font_faces.length} font files</div>
+    </header>
+    <main class="grid">
+    #{font_faces.map { |face|
+      style = css_font_style_from_slant(face.slant_code)
+      weight = css_font_weight(face.weight_numeric)
+      %Q{  <div class="card">
+        <div class="sample" style="font-family: #{css_string_literal(face.family)}, sans-serif; font-style: #{style}; font-weight: #{weight};">#{html_escape(sample_text)}</div>
+        <div class="meta"><span>#{html_escape(face.family)} — #{html_escape(face.style)}</span><code>#{weight}, #{style}</code></div>
+        <div class="details"><code>#{html_escape(face.file_path)}</code></div>
+      </div>}
+    }.join("\n")}
+    </main>
+  HTML
+end
+
+# -------------------- CLI --------------------
+
+assert_fontconfig_present!
+
+options = {
+  sample_text: "The wizard's blazing dagger quickly froze, jamming explosively.",
+  output_path: "",
+  include_filters: [],
+  exclude_filters: []
+}
+
+option_parser = OptionParser.new do |opt|
+  opt.banner = "Usage: #{File.basename($0)} [options]\n" \
+             "  e.g. #{File.basename($0)} --text 'word' --output fonts.html\n" \
+             "       #{File.basename($0)} --include /Sans/ --include serif --exclude Mono\n"
+  opt.on("--text TEXT", "Sample text to render (default: 'abcABC123')") { |v| options[:sample_text] = v }
+  opt.on("--output FILE", "Output HTML file path") { |v| options[:output_path] = v }
+  opt.on("--include PATTERN", "Include include faces matching PATTERN (string or /regex/). Repeatable.") do |v|
+    if v.start_with?("/") && v.end_with?("/")
+      options[:include_filters] << Regexp.new(v[1..-2], Regexp::IGNORECASE)
+    else
+      options[:include_filters] << v
+    end
+  end
+  opt.on("--exclude PATTERN", "Exclude faces matching PATTERN (string or /regex/). Repeatable.") do |v|
+    if v.start_with?("/") && v.end_with?("/")
+      options[:exclude_filters] << Regexp.new(v[1..-2], Regexp::IGNORECASE)
+    else
+      options[:exclude_filters] << v
+    end
+  end
+  opt.on("-h", "--help", "Show help and exit") { puts opt; exit }
+end
+option_parser.parse!(ARGV)
+
+include_argument    = options[:include_filters].empty?    ? nil : options[:include_filters]
+exclude_argument = options[:exclude_filters].empty? ? nil : options[:exclude_filters]
+
+font_faces = get_system_fonts(include: include_argument, exclude: exclude_argument)
+
+if options[:output_path].empty?
+  puts font_faces.map(&:family)
+  puts "#{font_faces.size} fonts."
+else
+  html_output = build_html(sample_text: options[:sample_text], font_faces: font_faces)
+  File.write(options[:output_path], html_output)
+  puts "Wrote: #{options[:output_path]} (#{font_faces.length} font files)"
+end

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# sudo apt install xdotool if you don't have xdotool
+state=$(xset q | awk '/Caps Lock:/ {print $4}')
+if [ "$state" == "on" ]; then
+  xdotool key Caps_Lock
+fi
