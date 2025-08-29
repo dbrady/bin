@@ -155,7 +155,7 @@ assert_fontconfig_present!
 
 options = {
   sample_text: "The wizard's blazing dagger quickly froze, jamming explosively.",
-  output_path: "fonts.html",
+  output_path: "",
   include_filters: [],
   exclude_filters: []
 }
@@ -165,7 +165,7 @@ option_parser = OptionParser.new do |opt|
              "  e.g. #{File.basename($0)} --text 'word' --output fonts.html\n" \
              "       #{File.basename($0)} --include /Sans/ --include serif --exclude Mono\n"
   opt.on("--text TEXT", "Sample text to render (default: 'abcABC123')") { |v| options[:sample_text] = v }
-  opt.on("--output FILE", "Output HTML file path (default: 'fonts.html')") { |v| options[:output_path] = v }
+  opt.on("--output FILE", "Output HTML file path") { |v| options[:output_path] = v }
   opt.on("--include PATTERN", "Include include faces matching PATTERN (string or /regex/). Repeatable.") do |v|
     if v.start_with?("/") && v.end_with?("/")
       options[:include_filters] << Regexp.new(v[1..-2], Regexp::IGNORECASE)
@@ -188,7 +188,12 @@ include_argument    = options[:include_filters].empty?    ? nil : options[:inclu
 exclude_argument = options[:exclude_filters].empty? ? nil : options[:exclude_filters]
 
 font_faces = get_system_fonts(include: include_argument, exclude: exclude_argument)
-File.open('fonts.txt', 'w') { |fp| fp.puts font_faces.map(&:family) }
-html_output = build_html(sample_text: options[:sample_text], font_faces: font_faces)
-File.write(options[:output_path], html_output)
-puts "Wrote: #{options[:output_path]} (#{font_faces.length} font files)"
+
+if options[:output_path].empty?
+  puts font_faces.map(&:family)
+  puts "#{font_faces.size} fonts."
+else
+  html_output = build_html(sample_text: options[:sample_text], font_faces: font_faces)
+  File.write(options[:output_path], html_output)
+  puts "Wrote: #{options[:output_path]} (#{font_faces.length} font files)"
+end
