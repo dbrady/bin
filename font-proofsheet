@@ -110,6 +110,7 @@ def css_font_weight(weight_numeric)
 end
 
 def build_html(sample_text:, font_faces:)
+  # TODO: fix the 360px lockdown if the string is long or else allow a --width=360px arg or --columns=1 arg, etc.
   <<~HTML
     <!doctype html>
     <meta charset="utf-8">
