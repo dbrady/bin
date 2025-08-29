@@ -17,11 +17,6 @@
 # - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
 # - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [ ] Move the Slork class into a model subdir
-# - [ ] Convert from Sequel to ActiveRecord (or just bare SQL, so I don't have
-#       to install Rails into every ruby version). I'm not seeing a complexity
-#       gain and having to memorize both query dsls is a pain. Also if I have
-#       the permissions to deploy Sequel, don't I probably also have permissions
-#       to install a DbradyCli gem? :-P
 # - [ ] Add a --dry-run option to show all commands
 # - [ ] We're big enough to warrant a proper cleanup refactoring with tests.
 #   - [ ] Investigate how we're gonna run tests or rspec in here
@@ -105,35 +100,6 @@ class Application
       plugin :timestamps, update_on_create: true
 
       class <<self
-        # vvvv----------<<<< SQLite3 bare code to be generated >>>>----------vvvv
-        def db
-          @db ||= SQLite3::Database.new DATABASE_PATH
-        end
-      end
-
-      def ticket_key
-        "#{board}-#{ticket}"
-      end
-
-      # https://github.com/acima-credit/merchant_portal/pull/13287 | https://upbd.atlassian.net/browse/ATD-1401
-      def pr_link
-        return nil unless pr
-
-        "https://github.com/acima-credit/#{repo}/pull/#{pr}"
-      end
-
-      def jira_link
-        return nil unless board && ticket
-
-        "https://upbd.atlassian.net/browse/#{board}-#{ticket}"
-      end
-
-      def status_text
-        KNOWN_STATUSES.fetch(status, {})[:name] || status
-      end
-
-      # vvvv----------<<<< Sequel code to be deprecated >>>>----------vvvv
-      class <<self
         def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
           search = self
           search = search.where(board:) if board
@@ -151,6 +117,26 @@ class Application
 
           search.all
         end
+      end
+
+      def ticket_key
+        "#{board}-#{ticket}"
+      end
+
+      def pr_link
+        return nil unless pr
+
+        "https://github.com/acima-credit/#{repo}/pull/#{pr}"
+      end
+
+      def jira_link
+        return nil unless board && ticket
+
+        "https://upbd.atlassian.net/browse/#{board}-#{ticket}"
+      end
+
+      def status_text
+        KNOWN_STATUSES.fetch(status, {})[:name] || status
       end
 
       def soft_delete!
