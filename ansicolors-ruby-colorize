@@ -1,67 +1,39 @@
 #!/usr/bin/env ruby
-# ansicolors-ruby - like my ansicolors script but print the color names
+# ansicolors-ruby-colorize2
+
 require "colorize"
+$:.unshift File.expand_path("~/bin/lib")
+require "tiny_table"
 
-colors = %i[black red green yellow blue magenta cyan white]
-light_colors = colors.map {|c| "light_#{c}"}.map(&:to_sym)
+colors = %i[black red green yellow blue magenta cyan white light_black light_red light_green light_yellow light_blue light_magenta light_cyan light_white]
 
-# header
-# format = "%-13s | %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-7s %-13s %-13s %-13s %-13s %-13s %-13s %-13s %-13s"
-puts 'Ruby colorize gem:'
-puts '-' * 191
-puts "              | Background: on_(color)"
-puts "Foreground    | black  red    green  yellow blue   magentacyan   white  light_black   light_red     light_green   light_yellow  light_blue    light_magenta light_cyan    light_white"
+table = TinyTable.new
+table.head = ["Foreground"] + colors
 
-all_colors = colors.dup + light_colors.dup
-
-all_colors.each do |fg|
-  # Print normal line
-  label = fg.to_s.sub(/light_/,'')
-  str = "normal".to_s.ljust(13) + " | "
-
-  colors.each do |bg|
-    str += label.ljust(7).send(fg).send("on_#{bg}") + " "
+colors.each do |color|
+  row = [color]
+  colors.each do |background|
+    row << color.to_s.ljust(13).colorize({color:, background:})
   end
-  colors.each do |bg|
-    str += label.ljust(13).send(fg).send("on_#{bg}") + " "
+  table.rows << row
+
+  row = ["  bold"]
+  colors.each do |background|
+    row << color.to_s.ljust(13).colorize({color:, background:, mode: :bold})
   end
-  puts str
-
-  # Print bold line
-  str = fg.to_s.ljust(13) + " | "
-  str = "bold".ljust(13) + " | "
-
-  colors.each do |bg|
-    str += label.ljust(7).colorize(color: fg, background: bg, mode: :bold) + " "
-  end
-  colors.each do |bg|
-    str += label.ljust(13).colorize(color: fg, background: bg, mode: :bold) + " "
-  end
-  puts str
-
-  # Print dim line
-  # str = fg.to_s.ljust(13) + " | "
-  # str = "dim".ljust(13) + " | "
-
-  # colors.each do |bg|
-  #   str += label.ljust(7).colorize(color: fg, background: bg, mode: :dim) + " "
-  # end
-  # colors.each do |bg|
-  #   str += label.ljust(13).colorize(color: fg, background: bg, mode: :dim) + " "
-  # end
-  # puts str
+  table.rows << row
 end
 
-puts '-' * 191
+puts table.to_s
 
-# Notes
 puts
-puts "Ruby colorize gem notes:"
-puts "For the exhaustive list of colors, ask the gem directly: " + "ruby -rcolorize -e 'puts String.color_samples".colorize(mode: :bold)
-puts "For mode changes like bold, dim, blink, you must use the #colorize method. str.(mode: :bold)"
-puts "String#colorize is pretty forgiving, and stacks with the color methods:"
+puts <<EXAMPLES
+Examples:
+'Message'.bold.white.on_green -> #{'Message'.bold.white.on_green}
+'Message'.colorize({mode: :bold, color: :white, background: :green}) -> #{'Message'.colorize({mode: :bold, color: :white, background: :green})}
 
-
-puts "str.white.colorize(mode: :bold).on_light_magenta".white.colorize(mode: :bold).on_light_magenta
-puts "str.colorize(color: :white, background: :magenta, mode: :bold)".colorize(color: :white, background: :light_magenta, mode: :bold)
-puts "When setting background with colorize, omit the on_ prefix. colorize(background: :green) - note :green, not :on_green"
+IMPORTANT: colorize() is tetchy. It likes to fail silently! Check for:
+1. Exactly one argument, a Hash. NOT keyword args!                      | Bad: #{'s.colorize(color: :red)'.red}         | Good: #{'s.colorize({color: :red})'.green}
+2. All values are symbols. NOT strings!                                 | Bad: #{'s.colorize(color: "red")'.red}        | Good: #{'s.colorize(color: :red)'.green}
+3. Background color is just the color name, it does NOT begin with on_. | Bad: #{'s.colorize(background: :on_red)'.red} | Good: #{'s.colorize(background: :red)'.green}
+EXAMPLES
