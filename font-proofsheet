@@ -164,8 +164,8 @@ option_parser = OptionParser.new do |opt|
   opt.banner = "Usage: #{File.basename($0)} [options]\n" \
              "  e.g. #{File.basename($0)} --text 'word' --output fonts.html\n" \
              "       #{File.basename($0)} --include /Sans/ --include serif --exclude Mono\n"
-  opt.on("--text TEXT", "Sample text to render (default: 'acima')") { |v| options[:sample_text] = v }
-  opt.on("--output FILE", "Output HTML file path (default: 'acima-fonts.html')") { |v| options[:output_path] = v }
+  opt.on("--text TEXT", "Sample text to render (default: 'abcABC123')") { |v| options[:sample_text] = v }
+  opt.on("--output FILE", "Output HTML file path (default: 'fonts.html')") { |v| options[:output_path] = v }
   opt.on("--include PATTERN", "Include include faces matching PATTERN (string or /regex/). Repeatable.") do |v|
     if v.start_with?("/") && v.end_with?("/")
       options[:include_filters] << Regexp.new(v[1..-2], Regexp::IGNORECASE)
