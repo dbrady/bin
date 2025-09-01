@@ -120,11 +120,10 @@ class Application
         end
       end
 
-    def ticket_key
+      def ticket_key
         "#{board}-#{ticket}"
       end
 
-      # https://github.com/acima-credit/merchant_portal/pull/13287 | https://upbd.atlassian.net/browse/ATD-1401
       def pr_link
         return nil unless pr
 

@@ -10,10 +10,6 @@ puts "Opening the github homepage for this project: "
 
 url = `git-home-url`.strip
 
-def osx?
-  `uname -s`.strip == 'Darwin'
-end
-
 puts url.on_green
 
 if osx?
