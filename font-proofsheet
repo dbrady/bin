@@ -141,7 +141,7 @@ def build_html(sample_text:, font_faces:)
       style = css_font_style_from_slant(face.slant_code)
       weight = css_font_weight(face.weight_numeric)
       %Q{  <div class="card">
-        <div class="sample" style="font-family: #{css_string_literal(face.family)}, sans-serif; font-style: #{style}; font-weight: #{weight};">#{html_escape(sample_text)}</div>
+        <div class="sample" style="font-family: #{face.family}, sans-serif; font-style: #{style}; font-weight: #{weight};">#{html_escape(sample_text)}</div>
         <div class="meta"><span>#{html_escape(face.family)} — #{html_escape(face.style)}</span><code>#{weight}, #{style}</code></div>
         <div class="details"><code>#{html_escape(face.file_path)}</code></div>
       </div>}
@@ -155,7 +155,7 @@ end
 assert_fontconfig_present!
 
 options = {
-  sample_text: "The wizard's blazing dagger quickly froze, jamming explosively.",
+  sample_text: "",
   output_path: "",
   include_filters: [],
   exclude_filters: []
