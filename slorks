@@ -355,7 +355,7 @@ BANNER
       pr: opts[:pr],
       repo: opts[:repo],
       status: opts[:status],
-      notes: opts[:notes],
+      notes: opts[:notes]
     )
     puts "Announcing merge for #{ticket.ticket_key}:#{ticket.pr}"
     run_command "mp-make-merge-announcement #{ticket.ticket_key}:#{ticket.pr}"
