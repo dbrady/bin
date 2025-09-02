@@ -270,7 +270,7 @@ BANNER
                       opts[:board], opts[:ticket] = $1, $2
                       opts[:board_given] = true
                       opts[:ticket_given] = true
-                      [opts[:board], opts[:ticket]]
+                      [board, ticket]
                     elsif !opts[:board_given] && !opts[:ticket_given]
                       get_board_and_ticket_from_branch
                     else
