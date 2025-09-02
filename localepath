@@ -1,0 +1,136 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# localepath - print breadcrumb/path to string in one of our localization files
+#
+# SETUP: This script needs my personal dbrady_cli library and expects to find it
+# in ~/bin/lib. You can get that here: https://github.com/dbrady/bin.git
+# Or just the one file at https://github.com/dbrady/bin/blob/master/lib/dbrady_cli.rb
+require "colorize"
+require "json"
+require "optimist"
+require "yaml"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :color, :dump, :files, :search #, :values
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+localepath - print breadcrumb/path to string in one of our localization files
+
+localepath "string" <path/to/en.yml>
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :color, "Display path colorized", default: true
+      opt :dump, "Dump the yaml as json", default: false
+      opt :files, "Print filenames with each match", short: :H, default: false
+      opt :search, "Search views for i18n.t usage", default: false
+      # opt :values, "Print matching lines with each match", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if debug?
+
+    Optimist.die "Expected 1 or 2 args, got #{ARGV.size}" unless [1,2].include?(ARGV.size)
+
+    String.disable_colorization unless color?
+
+    run!
+  end
+
+  def run!
+    # :eyes:
+    string_to_find, path = *ARGV
+
+    if path
+      run_on_file string_to_find, path
+    else
+      Dir.glob("config/locales/**/*.yml").each do |path|
+        run_on_file string_to_find, path
+      end
+    end
+  end
+
+  def run_on_file(string_to_find, path)
+    paths = Array(path)
+    filter = if string_to_find.start_with?("/") && string_to_find.end_with?("/")
+               Regexp.new(string_to_find[1..-2], Regexp::IGNORECASE)
+             else
+               string_to_find
+             end
+
+    paths.each do |path|
+      config = Psych.load_file(path, aliases: true)
+
+      puts JSON.pretty_generate(config) if dump?
+
+      breadcrumb = find_item(config, filter, ".")
+
+      if breadcrumb
+        found = breadcrumb.dup
+        found = found.yellow if color?
+
+        # TODO: Need a Match class to include path, value, line number, etc.
+        # found = "#{found}:#{value}" if values?
+
+        puts found
+
+        if search?
+          tag_to_search = breadcrumb.sub(/\.en\.leases/, '')
+          run_command %Q(ag --vimgrep "#{tag_to_search}" .), quiet: true
+          # localepath '/^Prepaid Rent$/' | sed -e 's/.en.leases.//' | while read string; do echo ag -H "$string" .; ag --vimgrep "$string" .; done
+
+        end
+      end
+    end
+  end
+
+  def  find_item(hash, item, prefix)
+    puts "find_item: #{item.inspect}" if debug?
+    hash_size = hash.inspect.size
+    puts "find_item(hash(#{hash_size}), #{item.inspect}, #{prefix.inspect})" if debug?
+
+    hash.each_pair do |key, value|
+      case value
+
+      when Hash
+        breadcrumb = find_item(value, item, "#{prefix}#{key}.")
+        return breadcrumb if breadcrumb
+
+      when String
+        new_prefix = "#{prefix}#{key}"
+        if item.is_a?(Regexp)
+          puts "#{prefix.inspect}: #{key.inspect} -> #{value.inspect} =~ #{item}" if debug?
+          if value =~ item
+            puts "#{key.yellow}: #{value.cyan}" unless quiet?
+            return new_prefix
+          end
+        else
+          if value.include?(item)
+            puts "#{key.yellow}: #{value.cyan}" unless quiet?
+            return new_prefix
+          end
+        end
+      end
+    end
+
+    # We only get here if value is a hash AND none of its subhashes have the
+    # item.  I.e. this entire hash was a dry hole.
+    return nil
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
