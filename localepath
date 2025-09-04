@@ -16,7 +16,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :color, :dump, :files, :search #, :values
+  opt_flag :case, :color, :dump, :files, :search, :views
 
   def run
     @opts = Optimist.options do
@@ -32,15 +32,19 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
 
+      opt :case, "Perform case sensitive search", default: false
       opt :color, "Display path colorized", default: true
       opt :dump, "Dump the yaml as json", default: false
-      opt :files, "Print filenames with each match", short: :H, default: false
+      opt :files, "Print locale filenames", short: :l, default: false
       opt :search, "Search views for i18n.t usage", default: false
+      opt :views, "Print view filenames", short: :H, default: false
+
       # opt :values, "Print matching lines with each match", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if debug?
 
+    Optimist.educate if ARGV.empty?
     Optimist.die "Expected 1 or 2 args, got #{ARGV.size}" unless [1,2].include?(ARGV.size)
 
     String.disable_colorization unless color?
@@ -64,7 +68,7 @@ BANNER
   def run_on_file(string_to_find, path)
     paths = Array(path)
     filter = if string_to_find.start_with?("/") && string_to_find.end_with?("/")
-               Regexp.new(string_to_find[1..-2], Regexp::IGNORECASE)
+               Regexp.new(string_to_find[1..-2], case? ? Regexp::IGNORECASE : nil)
              else
                string_to_find
              end
@@ -87,19 +91,18 @@ BANNER
 
         if search?
           tag_to_search = breadcrumb.sub(/\.en\.leases/, '')
-          run_command %Q(ag --vimgrep "#{tag_to_search}" .), quiet: true
-          # localepath '/^Prepaid Rent$/' | sed -e 's/.en.leases.//' | while read string; do echo ag -H "$string" .; ag --vimgrep "$string" .; done
+          hits = get_command_output_lines(%Q(ag --vimgrep "#{tag_to_search}" .), quiet: true)
 
+          hits.each do |hit|
+            file, line, column, text = hit.split(/:/, 4)
+            puts [file.light_green.bold, line.yellow.bold, column.yellow, text].join(':')
+          end
         end
       end
     end
   end
 
   def  find_item(hash, item, prefix)
-    puts "find_item: #{item.inspect}" if debug?
-    hash_size = hash.inspect.size
-    puts "find_item(hash(#{hash_size}), #{item.inspect}, #{prefix.inspect})" if debug?
-
     hash.each_pair do |key, value|
       case value
 
@@ -115,8 +118,13 @@ BANNER
             puts "#{key.yellow}: #{value.cyan}" unless quiet?
             return new_prefix
           end
-        else
+        elsif case?
           if value.include?(item)
+            puts "#{key.yellow}: #{value.cyan}" unless quiet?
+            return new_prefix
+          end
+        else
+          if value.downcase.include?(item.downcase)
             puts "#{key.yellow}: #{value.cyan}" unless quiet?
             return new_prefix
           end
