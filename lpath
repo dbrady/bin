@@ -1,10 +1,13 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
-# localepath - print breadcrumb/path to string in one of our localization files
+# lpath - print breadcrumb/path to string in one of our localization files
 #
 # SETUP: This script needs my personal dbrady_cli library and expects to find it
-# in ~/bin/lib. You can get that here: https://github.com/dbrady/bin.git
-# Or just the one file at https://github.com/dbrady/bin/blob/master/lib/dbrady_cli.rb
+# in ~/bin/lib. You can get that here:
+# https://github.com/dbrady/bin/blob/master/lib/dbrady_cli.rb
+#
+# TODO: This is a hamburger mess of feature creep because it's an active
+# tool. Settle on what I want and make it work
 require "colorize"
 require "json"
 require "optimist"
@@ -35,14 +38,12 @@ BANNER
       opt :case, "Perform case sensitive search", default: false
       opt :color, "Display path colorized", default: true
       opt :dump, "Dump the yaml as json", default: false
-      opt :files, "Print locale filenames", short: :l, default: false
-      opt :search, "Search views for i18n.t usage", default: false
-      opt :views, "Print view filenames", short: :H, default: false
-
-      # opt :values, "Print matching lines with each match", default: false
+      opt :files, "Print locale filenames", short: :f, default: false
+      opt :search, "Search views for i18n.t usage", short: :s, default: false
+      opt :views, "Print view filenames", short: :w, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
 
     Optimist.educate if ARGV.empty?
     Optimist.die "Expected 1 or 2 args, got #{ARGV.size}" unless [1,2].include?(ARGV.size)
@@ -65,44 +66,54 @@ BANNER
     end
   end
 
-  def run_on_file(string_to_find, path)
-    paths = Array(path)
-    filter = if string_to_find.start_with?("/") && string_to_find.end_with?("/")
-               Regexp.new(string_to_find[1..-2], case? ? Regexp::IGNORECASE : nil)
-             else
-               string_to_find
-             end
+  def run_on_file(string_to_find, path_to_locale_file)
+    paths_to_locale_files = Array(path_to_locale_file)
+    filter_text = if string_to_find.start_with?("/") && string_to_find.end_with?("/")
+                    string_to_find[1..-2]
+                  else
+                    Regexp.escape(string_to_find)
+                  end
+    filter = Regexp.new(filter_text, case? ? Regexp::IGNORECASE : nil)
 
-    paths.each do |path|
-      config = Psych.load_file(path, aliases: true)
+    paths_to_locale_files.each do |path_to_locale_file|
+      config = Psych.load_file(path_to_locale_file, aliases: true)
 
       puts JSON.pretty_generate(config) if dump?
 
       breadcrumb = find_item(config, filter, ".")
 
       if breadcrumb
-        found = breadcrumb.dup
-        found = found.yellow if color?
+        found_breadcrumb = breadcrumb.dup
+        found_breadcrumb = found_breadcrumb.yellow if color?
 
-        # TODO: Need a Match class to include path, value, line number, etc.
-        # found = "#{found}:#{value}" if values?
+        # TODO: Need a Match class to include path_to_locale_file, value, line
+        # number, etc.  found_breadcrumb = "#{found_breadcrumb}:#{value}" if values?
 
-        puts found
+        puts found_breadcrumb
+        puts path_to_locale_file if files?
 
         if search?
-          tag_to_search = breadcrumb.sub(/\.en\.leases/, '')
+          tag_to_search = breadcrumb.sub(/\.en\.leases./, '')
           hits = get_command_output_lines(%Q(ag --vimgrep "#{tag_to_search}" .), quiet: true)
 
           hits.each do |hit|
             file, line, column, text = hit.split(/:/, 4)
-            puts [file.light_green.bold, line.yellow.bold, column.yellow, text].join(':')
+            if color?
+              if case?
+                text = text.gsub(tag_to_search) { |match| match.black.on_yellow } if color?
+              end
+              file = file.light_green.bold
+              line = line.yellow.bold
+              column = column.yellow
+            end
+            puts [file, line, column, text].join(':')
           end
         end
       end
     end
   end
 
-  def  find_item(hash, item, prefix)
+  def find_item(hash, item, prefix)
     hash.each_pair do |key, value|
       case value
 
@@ -115,17 +126,29 @@ BANNER
         if item.is_a?(Regexp)
           puts "#{prefix.inspect}: #{key.inspect} -> #{value.inspect} =~ #{item}" if debug?
           if value =~ item
-            puts "#{key.yellow}: #{value.cyan}" unless quiet?
+            if color?
+              key = key.yellow
+              value = value.cyan
+            end
+            puts "#{key}: #{value}" unless quiet?
             return new_prefix
           end
         elsif case?
           if value.include?(item)
-            puts "#{key.yellow}: #{value.cyan}" unless quiet?
+            if color?
+              key = key.yellow
+              value = value.cyan
+            end
+            puts "#{key}: #{value}" unless quiet?
             return new_prefix
           end
         else
           if value.downcase.include?(item.downcase)
-            puts "#{key.yellow}: #{value.cyan}" unless quiet?
+            if color?
+              key = key.yellow
+              value = value.cyan
+            end
+            puts "#{key}: #{value}" unless quiet?
             return new_prefix
           end
         end
