@@ -224,7 +224,7 @@ BANNER
       opt :title, "Title of PR", type: :string
       opt :updated_at, "Show updated_at timestamps", default: false
     end
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     opts[:color] = false if opts[:no_color]
 

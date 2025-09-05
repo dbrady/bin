@@ -60,7 +60,7 @@ BANNER
       # either :left, :right, :center  # You MUST specify EXACTLY one
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
 
     run!
   end

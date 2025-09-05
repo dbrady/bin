@@ -46,7 +46,7 @@ class Application
       opt :"only", "Only run the given cop(s)", short: :O, type: :string
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
 
     # if no arguments and nothing's going on, use git main as the sha
     changed_files = get_command_output_lines("git files-changed --existing #{opts[:since]}")

@@ -40,7 +40,7 @@ BANNER
       opt :output, "Output file", type: :string
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
 
     if debug?
       puts "input: #{input.inspect}"
