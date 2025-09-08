@@ -30,7 +30,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :case, :color, :files, :keys, :search, :views
+  opt_flag :case, :color, :files, :hits, :keys, :search, :views
 
   def run
     @opts = Optimist.options do
@@ -46,16 +46,29 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
 
-      opt :all, "Shorthand for -fksw", short: :A, default: false
-      opt :case, "Perform case insensitive search", short: :i, default: true
+      opt :all, "Shorthand for -fiksw", short: :A, default: false
+      opt :case, "Perform case insensitive search", short: :c, default: true
       opt :color, "Display path colorized", default: true
       opt :files, "Print locale filenames", short: :f, default: false
+      opt :hits, "Print hits in local files", short: :i, default: true
       opt :keys, "Search keys as well as values", short: :k, default: false
       opt :search, "Search views for i18n.t usage", short: :s, default: false
       opt :views, "Print view filenames", short: :w, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.sort.to_h.inspect if debug?
+    if debug?
+      puts opts.sort.to_h.inspect
+      puts "Flags: (#{opt_flags.size})"
+      opt_flags.sort.each do |flag|
+        flag_method = "#{flag}?"
+        puts "  #{flag}: #{self.public_send(flag_method).inspect}"
+      end
+      puts "Readers: (#{opt_readers.size})"
+      opt_readers.sort.each do |reader|
+        reader_method = "#{reader}?"
+        puts "  #{reader}: #{self.public_send(reader_method).inspect}"
+      end
+    end
 
     Optimist.educate if ARGV.empty?
     Optimist.die "Expected 1 or 2 args, got #{ARGV.size}" unless [1,2].include?(ARGV.size)
@@ -106,8 +119,9 @@ BANNER
         # TODO: Need a Match class to include path_to_locale_file, value, line
         # number, etc.  found_breadcrumb = "#{found_breadcrumb}:#{value}" if values?
 
-        puts found_breadcrumb
-        puts
+        if hits?
+          puts found_breadcrumb
+        end
 
         if search?
           tag_to_search = breadcrumb.sub(/\.en\.leases./, '')
@@ -151,8 +165,10 @@ BANNER
           if silent
             puts "NOT PRINTING BECAUSE QUIET"
           else
-            puts path_to_locale_file if files?
-            puts "#{key}: #{value}" # unless quiet
+            puts_locale_path(path_to_locale_file) if files?
+            if !files? || (files? && hits?)
+              puts "#{key}: #{value}"
+            end
           end
           breadcrumb = new_prefix.chomp('.')
         end
@@ -162,6 +178,14 @@ BANNER
     # We only get here if value is a hash AND none of its subhashes have the
     # item.  I.e. this entire hash was a dry hole.
     return breadcrumb
+  end
+
+  def puts_locale_path(path)
+    @seen ||= Set.new
+    if !@seen.include?(path)
+      @seen << path
+      puts path
+    end
   end
 end
 
