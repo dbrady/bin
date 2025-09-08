@@ -111,12 +111,21 @@ module DbradyCli
   # CLASS METHODS
   # ----------------------------------------------------------------------
   module ClassMethods
+    def opt_flags
+      @opt_flags ||= [:debug, :quiet, :verbose, :pretend]
+    end
+
+    def opt_readers
+      @opt_readers ||= []
+    end
+
     # opt_flag :debug will create `def debug?; opts[:debug]; end`
     # opt_flag :a, :b, :c will create a?, b? and c?
     def opt_flag(*fields)
       Array(fields).each do |field|
         flag ||= "#{field}?"
         raise "opt_flag '#{flag}' must not have hyphens" if flag.to_s.include? '-'
+        opt_flags << field
         define_method flag do
           opts[field.to_sym]
         end
@@ -127,6 +136,7 @@ module DbradyCli
     def opt_reader(*fields)
       Array(fields).each do |field|
         raise "opt_field '#{field}' must not have hyphens" if field.to_s.include? '-'
+        opt_readers << field
         define_method field do
           opts[field.to_sym]
         end
@@ -151,6 +161,15 @@ module DbradyCli
       exit status
     end
   end
+
+  def opt_flags
+    self.class.opt_flags
+  end
+
+  def opt_readers
+    self.class.opt_readers
+  end
+
 
   def self.included(including_module)
     including_module.extend ClassMethods
