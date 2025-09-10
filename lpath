@@ -1,0 +1,195 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# lpath - print breadcrumb/path to string in one of our localization files
+#
+# SETUP: This script needs my personal dbrady_cli library and expects to find it
+# in ~/bin/lib. You can get that here:
+# https://github.com/dbrady/bin/blob/master/lib/dbrady_cli.rb
+#
+# TODO: This is a hamburger mess of feature creep because it's an active
+# tool. Settle on what I want and make it work
+#
+# Rework with flow:
+# string -> locale_files -> breadcrumbs matches in views
+#
+# potentially inject a step for javascripts:
+# string -> locale_files -> breadcrumbs -> matches in js -> js found in views
+#
+# The gotcha is if you're looking for javascript inclusions in views, you still have to find breadcrumbs in those views
+#
+# But at the end of the day, it's 1:m all the way down.
+
+require "colorize"
+require "json"
+require "optimist"
+require "yaml"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :case, :color, :files, :hits, :keys, :search, :views
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+localepath - print breadcrumb/path to string in one of our localization files
+
+localepath "string" <path/to/en.yml>
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :all, "Shorthand for -fiksw", short: :A, default: false
+      opt :case, "Perform case insensitive search", short: :c, default: true
+      opt :color, "Display path colorized", default: true
+      opt :files, "Print locale filenames", short: :f, default: false
+      opt :hits, "Print hits in local files", short: :i, default: true
+      opt :keys, "Search keys as well as values", short: :k, default: false
+      opt :search, "Search views for i18n.t usage", short: :s, default: false
+      opt :views, "Print view filenames", short: :w, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    if debug?
+      puts opts.sort.to_h.inspect
+      puts "Flags: (#{opt_flags.size})"
+      opt_flags.sort.each do |flag|
+        flag_method = "#{flag}?"
+        puts "  #{flag}: #{self.public_send(flag_method).inspect}"
+      end
+      puts "Readers: (#{opt_readers.size})"
+      opt_readers.sort.each do |reader|
+        reader_method = "#{reader}?"
+        puts "  #{reader}: #{self.public_send(reader_method).inspect}"
+      end
+    end
+
+    Optimist.educate if ARGV.empty?
+    Optimist.die "Expected 1 or 2 args, got #{ARGV.size}" unless [1,2].include?(ARGV.size)
+
+    if opts[:all]
+      opts[:files] = opts[:keys] = opts[:search] = opts[:views] = true
+      opts[:files_given] = opts[:keys_given] = opts[:search_given] = opts[:views_given] = true
+    end
+
+    String.disable_colorization unless color?
+
+    run!
+  end
+
+  def run!
+    # :eyes:
+    string_to_find, path = *ARGV
+
+    if path
+      run_on_file string_to_find, path
+    else
+      Dir.glob("config/locales/**/*.yml").each do |path|
+        run_on_file string_to_find, path
+      end
+    end
+  end
+
+  def run_on_file(string_to_find, path_to_locale_file)
+    paths_to_locale_files = Array(path_to_locale_file)
+    filter_text = if string_to_find.start_with?("/") && string_to_find.end_with?("/")
+                    string_to_find[1..-2]
+                  else
+                    Regexp.escape(string_to_find)
+                  end
+    filter = Regexp.new(filter_text, case? ? Regexp::IGNORECASE : nil)
+
+    paths_to_locale_files.each do |path_to_locale_file|
+      config = Psych.load_file(path_to_locale_file, aliases: true)
+
+      breadcrumb = find_item(config, filter, ".", path_to_locale_file, silent: true)
+
+      if breadcrumb
+        find_item(config, filter, ".", path_to_locale_file, silent: false)
+
+        found_breadcrumb = breadcrumb.dup
+        found_breadcrumb = found_breadcrumb.yellow if color?
+
+        # TODO: Need a Match class to include path_to_locale_file, value, line
+        # number, etc.  found_breadcrumb = "#{found_breadcrumb}:#{value}" if values?
+
+        if hits?
+          puts found_breadcrumb
+        end
+
+        if search?
+          tag_to_search = breadcrumb.sub(/\.en\.leases./, '')
+          hits = get_command_output_lines(%Q(ag --vimgrep "#{tag_to_search}" .), quiet: true)
+
+          hits.each do |hit|
+            file, line, column, text = hit.split(/:/, 4)
+            if color?
+              if case?
+                text = text.gsub(tag_to_search) { |match| match.black.on_yellow } if color?
+              end
+              file = file.light_green.bold
+              line = line.yellow.bold
+              column = column.yellow
+            end
+            puts [file, line, column, text].join(':')
+          end
+        end
+      end
+    end
+  end
+
+  def find_item(hash, item, prefix, path_to_locale_file, silent: false)
+    breadcrumb = nil
+
+    hash.each_pair do |key, value|
+      new_prefix = "#{prefix}#{key}."
+
+      case value
+      when Hash
+        breadcrumb = find_item(value, item, new_prefix, path_to_locale_file)
+
+      when String
+        if value =~ item || (keys? && String === key && key =~ item)
+          key = new_prefix.chomp('.')
+          puts "#{key.inspect}: #{value.inspect} =~ #{item}" if debug?
+          if color?
+            key = key.yellow
+            value = value.gsub(item) { |match| match.black.on_cyan }
+          end
+          if silent
+            puts "NOT PRINTING BECAUSE QUIET"
+          else
+            puts_locale_path(path_to_locale_file) if files?
+            if !files? || (files? && hits?)
+              puts "#{key}: #{value}"
+            end
+          end
+          breadcrumb = new_prefix.chomp('.')
+        end
+      end
+    end
+
+    # We only get here if value is a hash AND none of its subhashes have the
+    # item.  I.e. this entire hash was a dry hole.
+    return breadcrumb
+  end
+
+  def puts_locale_path(path)
+    @seen ||= Set.new
+    if !@seen.include?(path)
+      @seen << path
+      puts path
+    end
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end

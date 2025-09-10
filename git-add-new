@@ -19,6 +19,8 @@ if ! git-isclean; then
     exit -1
 fi
 
+# This will show new files
+# git ls-files --others --exclude-standard
 
 echo git add "$@"
 git add "$@"

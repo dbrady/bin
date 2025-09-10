@@ -1,5 +1,0 @@
-#!/bin/bash
-# reclobber - clobber and precompile assets
-
-echo reclobber is an alter for rebuild-assets
-./rebuild-assets

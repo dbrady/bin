@@ -224,7 +224,7 @@ BANNER
       opt :title, "Title of PR", type: :string
       opt :updated_at, "Show updated_at timestamps", default: false
     end
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     opts[:color] = false if opts[:no_color]
 
@@ -270,7 +270,7 @@ BANNER
                       opts[:board], opts[:ticket] = $1, $2
                       opts[:board_given] = true
                       opts[:ticket_given] = true
-                      [opts[:board], opts[:ticket]]
+                      [board, ticket]
                     elsif !opts[:board_given] && !opts[:ticket_given]
                       get_board_and_ticket_from_branch
                     else
@@ -355,7 +355,7 @@ BANNER
       pr: opts[:pr],
       repo: opts[:repo],
       status: opts[:status],
-      notes: opts[:notes],
+      notes: opts[:notes]
     )
     puts "Announcing merge for #{ticket.ticket_key}:#{ticket.pr}"
     run_command "mp-make-merge-announcement #{ticket.ticket_key}:#{ticket.pr}"

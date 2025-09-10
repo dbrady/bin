@@ -26,7 +26,7 @@ BANNER
       opt :quiet, "Run with minimal output", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
 
     Optimist.educate if ARGV.empty?
 

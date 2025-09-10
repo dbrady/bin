@@ -14,13 +14,13 @@ class Application
 
   opt_flag :open,
            :preview
-  
+
   opt_reader :bottom,
              :bottom_gravity,
              :bottom_pointsize,
              :bottom_y,
-             :fill, 
-             :font, 
+             :fill,
+             :font,
              :image_width,
              :pointsize,
              :stroke,
@@ -29,7 +29,7 @@ class Application
              :top_gravity,
              :top_pointsize,
              :top_y
-  
+
   def run
     @opts = Optimist.options do
       banner <<BANNER
@@ -61,7 +61,7 @@ BANNER
     end
     Optimist::die "Error: you must specify at least one of --top or --bottom" unless top? || bottom?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if debug?
+    puts opts.sort.to_h.inspect if debug?
 
     on_run
   end
@@ -73,7 +73,7 @@ BANNER
     run_command preview_command if preview?
     run_command open_command if open?
   end
-  
+
   def self.best_font_for_this_os
     if linux?
       "DejaVu-Sans-Bold"
@@ -89,11 +89,11 @@ BANNER
   def open_command
     osx? ? "open" : "xdg-open"
   end
-  
+
   def image
     @image ||= ARGV.first
   end
-  
+
   def output_image
     puts "File.basename(image): #{File.basename(image)}" if debug?
     ext = File.extname(image)
@@ -108,23 +108,23 @@ BANNER
   def pointsize_for_top
     top_pointsize || pointsize
   end
-  
+
   def pointsize_for_bottom
     bottom_pointsize || pointsize
   end
-  
+
   def bottom_caption
     return nil unless bottom?
 
     %Q|\\( -background none -fill #{fill} -stroke #{stroke} -strokewidth #{stroke_width} -font #{font} -pointsize #{pointsize_for_bottom} -size #{image_width} -gravity #{bottom_gravity} caption:"#{bottom}" \\) -gravity #{bottom_gravity} -geometry +0+#{bottom_y} -composite|
   end
-  
+
   def top_caption
     return nil unless top?
 
     %Q|\\( -background none -fill #{fill} -stroke #{stroke} -strokewidth #{stroke_width} -font #{font} -pointsize #{pointsize_for_top} -size #{image_width} -gravity North caption:"#{top}" \\) -gravity #{top_gravity} -geometry +0+#{top_y} -composite|
   end
-  
+
   def convert_command
     %Q|convert "#{image}" #{top_caption} #{bottom_caption} "#{output_image}"|
   end
@@ -132,7 +132,7 @@ BANNER
   def self.linux?
     @linux ||= `uname -s`.strip == "Linux"
   end
-  
+
 end
 
 
