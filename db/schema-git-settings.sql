@@ -28,7 +28,8 @@ CREATE TABLE `slorks`(
   `created_at` timestamp,
   `updated_at` timestamp,
   `deleted_at` timestamp,
-  project_code varchar(255)
+  project_code varchar(255),
+  branch varchar(255)
 );
 CREATE TABLE parent_branches(
   id INTEGER NOT NULL PRIMARY KEY,
