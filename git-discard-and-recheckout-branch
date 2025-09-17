@@ -1,0 +1,79 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# git-discard-and-recheckout-branch - delete the current branch and re-checkout
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :ignore, :reset, :stash
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+git-discard-and-recheckout-branch - delete the current branch and re-checkout
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :ignore, "Ignore outstanding changes", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :reset, "Reset any changes before discard", default: false
+      opt :stash, "Stash changes before discard, and stash apply them afterwards", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+
+      conflicts :ignore, :reset, :stash
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    if debug?
+      puts opts.sort.to_h.inspect
+      puts "opt_flags: (#{opt_flags.size})"
+      opt_flags.each do |flag|
+        flag_method = "#{flag}?"
+        puts "#{flag}: #{public_send(flag_method).inspect}"
+      end
+      puts "opt_readers: (#{opt_readers.size})"
+      opt_readers.each do |reader|
+        puts "#{reader}: #{public_send(reader).inspect}"
+      end
+    end
+
+    run!
+  end
+
+  # APP CODE GOES HERE
+  def run!
+    # make sure you're not on main
+    if git_on_main_branch?
+      puts "You are on main! Cowardly refusing to discard."
+      exit 1
+    end
+
+    # if changes, ensure --force or --stash
+    if [git_isclean, ignore?, reset?, stash?].none?
+      puts "You have outstanding changes. Please clear them or rerun with --force, --reset, --stash"
+      exit 1
+    end
+
+    run_command "git stash" if stash?
+    run_command "git reset --hard" if reset?
+
+    current_branch = git_current_branch
+
+    run_command "git main"
+    run_command "git branch -D '#{current_branch}'"
+    run_command "git checkout '#{current_branch}'"
+    run_command "git stash apply" if stash?
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
