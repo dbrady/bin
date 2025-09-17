@@ -10,6 +10,7 @@ settingses = [
   TmuxSettings.new(name: "spec", folder: "merchant_portal"),
   TmuxSettings.new(name: "console", folder: "merchant_portal", commands: "bin/rails console"),
   TmuxSettings.new(name: "server", folder: "merchant_portal", commands: "bin/rails server"),
+  TmuxSettings.new(name: "watch", folder: "merchant_portal", commands: "mp-watch-branches"),
 
   # TmuxSettings.new("mp", folder: "merchant_portal"),
   # TmuxSettings.new("mpq", folder: "merchant_portal", "besq"),
