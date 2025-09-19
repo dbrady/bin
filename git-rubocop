@@ -3,8 +3,13 @@
 # see git-modified --help for full args.
 require "colorize"
 require "optimist"
+require "yaml"
 require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
+
+# TODO: If files-changed returns a file that should be excluded by .rubocop.yml,
+# it won't be because we pass an explicit list of files, which tells rubocop to
+# look right at those ignored files.
 
 class Application
   include DbradyCli
@@ -25,25 +30,22 @@ class Application
         Options:
       BANNER
 
-      opt :debug, "Print extra debug info", default: false
-      opt :quiet, "Run with minimal output", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-
-      opt :since, "Check all files modified since commit or branch. See `git-files-changed --help` for options. If omitted, checks unstaged changes only.", type: :string, default: main_branch
-
-      opt :rspec, "Include rspec files (omitted by  default)", default: false
-      opt :unstaged, "Consider unstaged files even if they have not been committed in the --since range", default: false
-      opt :only_pattern, "Pattern to include", short: :o, type: :string, multi: true
-      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
-      opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
-
-      opt :autocorrect, "Automatically fix correctable issues", short: :a, default: false
       opt :"autocorrect-all", "Automatically fix correctable issues", short: :A, default: false
       opt :"display-style-guide", "Display style guide in offense messages", short: :S, default: true
-      opt :"extra-details", "Show extra details in offense messages", short: :E, default: true
       opt :"except", "Exclude the given cop(s)", type: :string
+      opt :"extra-details", "Show extra details in offense messages", short: :E, default: true
       opt :"only", "Only run the given cop(s)", short: :O, type: :string
+      opt :autocorrect, "Automatically fix correctable issues", short: :a, default: false
+      opt :debug, "Print extra debug info", default: false
+      opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
+      opt :exclude_pattern, "Filenames to exclude (regex)", short: :X, type: :string, multi: true
+      opt :only_pattern, "Pattern to include", short: :o, type: :string, multi: true
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :rspec, "Include rspec files (omitted by  default)", default: false
+      opt :since, "Check all files modified since commit or branch. See `git-files-changed --help` for options. If omitted, checks unstaged changes only.", type: :string, default: main_branch
+      opt :unstaged, "Consider unstaged files even if they have not been committed in the --since range", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.sort.to_h.inspect if debug?
@@ -58,7 +60,7 @@ class Application
     files += ARGV.dup # re-add ARGV so you can, e.g. exclude *.json, then later add specific json files
 
     if !unstaged? && !modified_files.empty?
-      $stderr.puts "You have unsaged changes present, consider rerunning with -u/--unstaged.".yellow
+      $stderr.puts "You have unstaged changes present, consider rerunning with -u/--unstaged.".yellow
     end
 
     files = files.map(&:strip).uniq.sort
@@ -75,6 +77,8 @@ class Application
 
     patterns_to_exclude << %r{^spec/} unless opts[:rspec]
     patterns_to_exclude << %r{\.(slim|haml|yml)$}
+
+    patterns_to_exclude += rubocop_ignore_patterns
 
     if debug?
       puts "Only patterns to consider (exclude all non-matches):"
@@ -146,6 +150,12 @@ class Application
 
     puts command.cyan
     system command unless opts[:pretend]
+  end
+
+  def rubocop_ignore_patterns(path_to_rubocop_yml=".rubocop.yml")
+    return [] unless File.exist?(path_to_rubocop_yml)
+    config = YAML.load_file(path_to_rubocop_yml)["AllCops"]["Exclude"].map do |glob|
+      Regexp.new("^" + glob.gsub(".", "\\.").gsub("**", ".*").gsub("*", "[^/]*") + "$")    end
   end
 end
 
