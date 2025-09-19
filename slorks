@@ -205,7 +205,7 @@ BANNER
       opt :quiet, "Run with minimal output", default: false
 
       opt :board, "Jira board", type: :string
-      opt :branch_name, "Branch name", type: :string
+      opt :branch, "Branch name", type: :string
       opt :color, "Colorize output by status", default: true
       opt :created_at, "Show created_at timestamps", default: false
       opt :force, "Force creation even if ticket exists", short: "f", default: false
@@ -296,6 +296,7 @@ BANNER
     when "abandon" then mark_abandoned(board, ticket)
     when "announce" then announce(board, ticket)
     when "block" then block(board, ticket, opts[:notes])
+    when "branch" then set_branch(board, ticket, opts[:branch])
     when "clean" then clean_deploys
     when "code" then update_project_code(board, ticket)
     when "commands" then list_commands
@@ -571,7 +572,8 @@ SQL
       pr: opts[:pr],
       title: opts[:title],
       status: opts[:status] || 'p',
-      notes: opts[:notes]
+      notes: opts[:notes],
+      branch: opts[:branch] || git_current_branch
     )
 
     if debug?
@@ -671,6 +673,21 @@ SQL
     )
 
     ticket.project_code = ARGV[2]
+    ticket.save
+  end
+
+  def set_branch(board, ticket, branch)
+    branch ||= git_current_branch
+    puts "Setting branch to #{branch.inspect}..."
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+
+    ticket.branch = branch
     ticket.save
   end
 
