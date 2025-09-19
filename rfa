@@ -9,7 +9,7 @@ class Application
   include DbradyCli
 
   def run
-    existing_focus = get_command_output 'rfv'
+    existing_focus = `rfv`.strip
 
     @opts = Optimist.options do
       banner <<-BANNER
@@ -33,6 +33,8 @@ BANNER
       Optimist.die "Path does not exist: #{path}" unless File.exist?(path)
       Optimist.die "Path is already in spec focus: #{path}" if existing_focus =~ /\s+#{path}(\s|$)/
     end
+
+
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 

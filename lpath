@@ -50,7 +50,7 @@ BANNER
       opt :case, "Perform case insensitive search", short: :c, default: true
       opt :color, "Display path colorized", default: true
       opt :files, "Print locale filenames", short: :f, default: false
-      opt :hits, "Print hits in local files", short: :i, default: true
+      opt :hits, "Print hits in locale files", short: :l, default: true
       opt :keys, "Search keys as well as values", short: :k, default: false
       opt :search, "Search views for i18n.t usage", short: :s, default: false
       opt :views, "Print view filenames", short: :w, default: false

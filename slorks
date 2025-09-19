@@ -56,6 +56,7 @@ class Application
     "abandon" => "Mark ticket as abandoned",
     "announce" => "Display merge announcement",
     "block" => "Mark ticket as blocked",
+    "branch" => "Set branch",
     "c" => "Open database console",
     "console" => "Open database console",
     "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
@@ -187,8 +188,7 @@ Generate and update tickets and PRs for slackup.
 
 slorks [<command> [<ticket>]] [<options>]
 
-slorks    - list slorks to the console as a text table
-slorks -m - list slorks as markdown for slackup
+slorks    - list slorks to the console and clipboard as a text table
 
 Commands:
 
@@ -205,6 +205,7 @@ BANNER
       opt :quiet, "Run with minimal output", default: false
 
       opt :board, "Jira board", type: :string
+      opt :branch, "Branch name", type: :string
       opt :color, "Colorize output by status", default: true
       opt :created_at, "Show created_at timestamps", default: false
       opt :force, "Force creation even if ticket exists", short: "f", default: false
@@ -224,7 +225,18 @@ BANNER
       opt :title, "Title of PR", type: :string
       opt :updated_at, "Show updated_at timestamps", default: false
     end
-    puts opts.sort.to_h.inspect if debug?
+    if debug?
+      puts opts.sort.to_h.inspect
+      puts "opt_flags: (#{opt_flags.size})"
+      opt_flags.each do |flag|
+        flag_method = "#{flag}?"
+        puts "#{flag}: #{public_send(flag_method).inspect}"
+      end
+      puts "opt_readers: (#{opt_readers.size})"
+      opt_readers.each do |reader|
+        puts "#{reader}: #{public_send(reader).inspect}"
+      end
+    end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     opts[:color] = false if opts[:no_color]
 
@@ -242,28 +254,28 @@ BANNER
     backup_database
 
     if debug?
-      puts "board from ARGV: #{board}"
-      puts "ticket from ARGV: #{ticket}"
-      puts "!opts[:board_given]: #{(!opts[:board_given]).inspect}"
-      puts "!opts[:ticket_given]: #{(!opts[:ticket_given]).inspect}"
-      puts "ticket =~ /^([A-Z]+)-(\d+)$/: #{(ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
-      puts "!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/: #{(!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
-      puts '--'
-      puts "OPT FLAGS:"
-      puts "debug:      #{debug?.inspect}"
-      puts "pretend:    #{pretend?.inspect}"
-      puts "verbose:    #{verbose?.inspect}"
-      puts "quiet:      #{quiet?.inspect}"
-      puts "color:      #{color?.inspect}"
-      puts "created_at: #{created_at?.inspect}"
-      puts "force:      #{force?.inspect}"
-      puts "no_jira:    #{no_jira?.inspect}"
-      puts "no_notes:   #{no_notes?.inspect}"
-      puts "no_pr:      #{no_pr?.inspect}"
-      puts "no_repo:    #{no_repo?.inspect}"
-      puts "humanize:   #{humanize?.inspect}"
-      puts "markdown:   #{markdown?.inspect}"
-      puts "updated_at: #{updated_at?.inspect}"
+      puts "> board from ARGV: #{board}"
+      puts "> ticket from ARGV: #{ticket}"
+      puts "> !opts[:board_given]: #{(!opts[:board_given]).inspect}"
+      puts "> !opts[:ticket_given]: #{(!opts[:ticket_given]).inspect}"
+      puts "> ticket =~ /^([A-Z]+)-(\d+)$/: #{(ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
+      puts "> !opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/: #{(!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
+      puts '> --'
+      puts "> OPT FLAGS:"
+      puts "> debug:      #{debug?.inspect}"
+      puts "> pretend:    #{pretend?.inspect}"
+      puts "> verbose:    #{verbose?.inspect}"
+      puts "> quiet:      #{quiet?.inspect}"
+      puts "> color:      #{color?.inspect}"
+      puts "> created_at: #{created_at?.inspect}"
+      puts "> force:      #{force?.inspect}"
+      puts "> no_jira:    #{no_jira?.inspect}"
+      puts "> no_notes:   #{no_notes?.inspect}"
+      puts "> no_pr:      #{no_pr?.inspect}"
+      puts "> no_repo:    #{no_repo?.inspect}"
+      puts "> humanize:   #{humanize?.inspect}"
+      puts "> markdown:   #{markdown?.inspect}"
+      puts "> updated_at: #{updated_at?.inspect}"
     end
 
     board, ticket = if ticket && !opts[:board_given] && !opts[:ticket_given]
@@ -284,6 +296,7 @@ BANNER
     when "abandon" then mark_abandoned(board, ticket)
     when "announce" then announce(board, ticket)
     when "block" then block(board, ticket, opts[:notes])
+    when "branch" then set_branch(board, ticket, opts[:branch])
     when "clean" then clean_deploys
     when "code" then update_project_code(board, ticket)
     when "commands" then list_commands
@@ -500,6 +513,7 @@ CREATE TABLE IF NOT EXISTS slorks (
     status varchar(255) NOT NULL,
     notes varchar(255),
     project_code varchar(255),
+    branch varchar(255),
     created_at timestamp,
     updated_at timestamp,
     deleted_at timestamp
@@ -558,7 +572,8 @@ SQL
       pr: opts[:pr],
       title: opts[:title],
       status: opts[:status] || 'p',
-      notes: opts[:notes]
+      notes: opts[:notes],
+      branch: opts[:branch] || git_current_branch
     )
 
     if debug?
@@ -658,6 +673,21 @@ SQL
     )
 
     ticket.project_code = ARGV[2]
+    ticket.save
+  end
+
+  def set_branch(board, ticket, branch)
+    branch ||= git_current_branch
+    puts "Setting branch to #{branch.inspect}..."
+    ticket = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo: opts[:repo],
+      notes: opts[:notes],
+    )
+
+    ticket.branch = branch
     ticket.save
   end
 

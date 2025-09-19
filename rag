@@ -1,0 +1,2 @@
+#!/bin/bash
+ag --all-types -l $@ | grep -vE '^(public/vite-dev|public/assets|tmp|app/assets|log)/' | xargs ag $@
