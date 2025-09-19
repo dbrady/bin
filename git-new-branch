@@ -50,9 +50,11 @@ USAGE
 
     argv = ARGV.dup
     ticket = argv.shift
+    title = argv * ' '
     branch = argv.join("-").gsub(/[^A-Za-z0-9\-]/, '-').gsub(/--+/, '-').downcase
     jira_team, ticket_id = ticket.split("-")
     ticket_id = ticket_id.to_i
+
     Optimist.die "Ticket must be a positive integer" unless ticket_id > 0
 
     full_branch_name = "dbrady/#{ticket}/#{branch}"
@@ -81,14 +83,12 @@ USAGE
     command = "git co -b #{full_branch_name}"
     puts get_command_output_lines(command)
 
-    add_branch_to_slorks(jira_team, ticket_id, branch) if slork? && !pretend?
+    add_branch_to_slorks(jira_team, ticket_id, branch, title) if slork? && !pretend?
 
     run_command "git parent-branch set #{current_branch}" if current_branch != main_branch
   end
 
-  def add_branch_to_slorks(jira_team, ticket_id, branch)
-    title = branch.split(/[_-]/).join(' ').capitalize
-
+  def add_branch_to_slorks(jira_team, ticket_id, branch, title)
     slork_command = "slorks #{pretend? ? '-p ' : ''} new #{jira_team}-#{ticket_id} --title=#{title.inspect}"
 
     run_command slork_command

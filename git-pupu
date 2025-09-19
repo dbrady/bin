@@ -1,0 +1,4 @@
+#!/bin/bash
+# git-pupu - git pull && git push. It's funny because I am 12
+echo -e '\033[36mgit pull && git push\033[0m'
+git pull && git push

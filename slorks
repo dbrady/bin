@@ -45,38 +45,38 @@ class Application
            :force,
            :humanize,
            :markdown,
-           :no_jira,
-           :no_notes,
-           :no_pr,
-           :no_repo,
+           :hide_jira,
+           :hide_notes,
+           :hide_pr,
+           :hide_repo,
            :project_code,
            :updated_at
 
   COMMANDS = {
-    "abandon" => "Mark ticket as abandoned",
+    "abandon"  => "Mark ticket as abandoned",
     "announce" => "Display merge announcement",
-    "block" => "Mark ticket as blocked",
-    "branch" => "Set branch",
-    "c" => "Open database console",
-    "console" => "Open database console",
-    "clean" => "Soft-delete all deployed tickets (use after reporting them as deployed)",
-    "code" => "Set project code",
+    "block"    => "Mark ticket as blocked",
+    "branch"   => "Set branch",
+    "c"        => "Open database console",
+    "console"  => "Open database console",
+    "clean"    => "Soft-delete all deployed tickets (use after reporting them as deployed)",
+    "code"     => "Set project code",
     "commands" => "List commands",
-    "create" => "Create slorks database",
-    "delete" => "Soft-delete ticket",
-    "deploy" => "Mark ticket as Deployed",
-    "done" => "Mark ticket as done",
-    "new" => "Create new ticket (automatically called from git-new-branch)",
-    "notes" => "Edit ticket notes",
-    "pr" => "Edit ticket PR",
+    "create"   => "Create slorks database",
+    "delete"   => "Soft-delete ticket",
+    "deploy"   => "Mark ticket as Deployed",
+    "done"     => "Mark ticket as done",
+    "new"      => "Create new ticket (automatically called from git-new-branch)",
+    "notes"    => "Edit ticket notes",
+    "pr"       => "Edit ticket PR",
     "progress" => "Mark ticket as in progress",
-    "qa" => "Mark ticket as ready for qa",
-    "ready" => "Mark ticket as ready for deploy",
-    "review" => "Mark ticket as in review (automatically called from git set-pr)",
-    "status" => "Edit ticket status",
+    "qa"       => "Mark ticket as ready for qa",
+    "ready"    => "Mark ticket as ready for deploy",
+    "review"   => "Mark ticket as in review (automatically called from git set-pr)",
+    "status"   => "Edit ticket status",
     "statuses" => "List statuses",
-    "time" => "Log time against a ticket",
-    "title" => "Edit ticket title",
+    "time"     => "Log time against a ticket",
+    "title"    => "Edit ticket title",
     "undelete" => "Undelete a ticket (provide new status, default is 'p')",
   }.freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
@@ -199,31 +199,30 @@ Statuses:
 
 Options:
 BANNER
-      opt :debug, "Print extra debug info", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
-      opt :quiet, "Run with minimal output", default: false
-
-      opt :board, "Jira board", type: :string
-      opt :branch, "Branch name", type: :string
-      opt :color, "Colorize output by status", default: true
-      opt :created_at, "Show created_at timestamps", default: false
-      opt :force, "Force creation even if ticket exists", short: "f", default: false
-      opt :no_jira, "Do not display jira column", short: "J", default: false
-      opt :no_notes, "Do not display notes column", short: "N", default: false
-      opt :no_pr, "Do not display pr column", short: "P", default: false
-      opt :humanize, "Humanize timestamps", default: false
-      opt :no_repo, "Do not display repo column", short: "R", default: false
-      opt :markdown, "Display output as markdown for Slack", default: false
-      opt :no_color, "Do not colorize output by status", short: "C", default: false
-      opt :notes, "Notes text", type: :string
-      opt :pr, "ID of PR", type: :int
+      opt :board,        "Jira board", type: :string
+      opt :branch,       "Branch name", type: :string
+      opt :color,        "Colorize output by status", default: true
+      opt :created_at,   "Show created_at timestamps", default: false
+      opt :debug,        "Print extra debug info", default: false
+      opt :force,        "Force creation of a duplicate ticket if ticket already exists", short: "f", default: false
+      opt :hide_jira,    "Do not display jira column", short: "J", default: false
+      opt :hide_notes,   "Do not display notes column", short: "N", default: false
+      opt :hide_pr,      "Do not display pr column", short: "P", default: false
+      opt :hide_repo,    "Do not display repo column", short: "R", default: false
+      opt :humanize,     "Humanize timestamps", default: false
+      opt :markdown,     "Display output as markdown for Slack", default: false
+      opt :no_color,     "Do not colorize output by status", short: "C", default: false
+      opt :notes,        "Notes text", type: :string
+      opt :pr,           "ID of PR", type: :int
+      opt :pretend,      "Print commands but do not run them", default: false
       opt :project_code, "Project Code", default: false
-      opt :repo, "Repository slug", type: :string, default: DEFAULT_REPO
-      opt :status, "Status text", type: :string
-      opt :ticket, "Jira ticket number", type: :int
-      opt :title, "Title of PR", type: :string
-      opt :updated_at, "Show updated_at timestamps", default: false
+      opt :quiet,        "Run with minimal output", default: false
+      opt :repo,         "Repository slug", type: :string, default: DEFAULT_REPO
+      opt :status,       "Status text", type: :string
+      opt :ticket,       "Jira ticket number", type: :int
+      opt :title,        "Title of PR", type: :string
+      opt :updated_at,   "Show updated_at timestamps", default: false
+      opt :verbose,      "Run with verbose output (overrides --quiet)", default: false
     end
     if debug?
       puts opts.sort.to_h.inspect
@@ -269,10 +268,10 @@ BANNER
       puts "> color:      #{color?.inspect}"
       puts "> created_at: #{created_at?.inspect}"
       puts "> force:      #{force?.inspect}"
-      puts "> no_jira:    #{no_jira?.inspect}"
-      puts "> no_notes:   #{no_notes?.inspect}"
-      puts "> no_pr:      #{no_pr?.inspect}"
-      puts "> no_repo:    #{no_repo?.inspect}"
+      puts "> hide_jira:    #{hide_jira?.inspect}"
+      puts "> hide_notes:   #{hide_notes?.inspect}"
+      puts "> hide_pr:      #{hide_pr?.inspect}"
+      puts "> hide_repo:    #{hide_repo?.inspect}"
       puts "> humanize:   #{humanize?.inspect}"
       puts "> markdown:   #{markdown?.inspect}"
       puts "> updated_at: #{updated_at?.inspect}"
@@ -330,10 +329,10 @@ BANNER
 
   def list(for_log: false, force_nocolor: false)
     head = %i(ticket repo pr title status)
-    head.delete(:repo) unless for_log || !no_repo?
-    head << :notes if for_log || !no_notes?
-    head << :pr_link if for_log || !no_pr?
-    head << :jira_link if for_log || !no_jira?
+    head.delete(:repo) unless for_log || !hide_repo?
+    head << :notes if for_log || !hide_notes?
+    head << :pr_link if for_log || !hide_pr?
+    head << :jira_link if for_log || !hide_jira?
     head << :created_at if for_log || created_at?
     head << :updated_at if for_log || updated_at?
     head << :project_code if for_log || project_code?
@@ -345,11 +344,11 @@ BANNER
 
     Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
       row = [slork.ticket_key]
-      row << slork.repo if for_log || !no_repo?
+      row << slork.repo if for_log || !hide_repo?
       row += [slork.pr, slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
-      row << slork.notes if for_log || !no_notes?
-      row << slork.pr_link if for_log || !no_pr?
-      row << slork.jira_link if for_log || !no_jira?
+      row << slork.notes if for_log || !hide_notes?
+      row << slork.pr_link if for_log || !hide_pr?
+      row << slork.jira_link if for_log || !hide_jira?
       row << slork.project_code if for_log || project_code?
       row << display_time(slork.created_at, for_log:) if for_log || created_at?
       row << display_time(slork.updated_at, for_log:) if for_log || updated_at?
@@ -487,10 +486,10 @@ BANNER
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
       template_lines << "*Title:* <%= slork.title %>"
-      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !no_jira?
-      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !no_pr?
+      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !hide_jira?
+      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !hide_pr?
       template_lines << "*Status:* <%= slork.status_text %>"
-      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !no_notes?
+      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !hide_notes?
 
       template = template_lines * "\n"
 
