@@ -48,11 +48,16 @@ BANNER
 
     @infile, @outfile = ARGV
 
-    if auto? && @outfile.nil?
-      @outfile = File.open(infile.sub(/.png$/, '.json'), "w")
-    else
-      @outfile = $stdout
-    end
+    @outfile = if @outfile.nil?
+                 if auto?
+                   @outfile = File.open(File.basename(infile, '.json'), "w")
+                   puts @outfile.inspect
+                 else
+                   @outfile = $stdout
+                 end
+               else
+                 File.open(outfile, "w")
+               end
 
     run!
   end
