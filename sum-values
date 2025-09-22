@@ -4,10 +4,10 @@
 # Usage:
 # echo "1
 # 2
-# 3" | sum_values
+# 3" | sum-values
 # => 6
 #
-# ag -c TODO | cut -d : -f 2 | sum_values
+# ag -c TODO | cut -d : -f 2 | sum-values
 # => 31
 
 while read n; do seq $n; done | wc -l
