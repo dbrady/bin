@@ -19,10 +19,10 @@ class Application
 
 Options:
 BANNER
-      opt :debug, "Print extra debug info", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
-      opt :quiet, "Run with minimal output", default: false
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
 
       # @ignore_invalid_options = true # no error given if you call this with other options (good for passthru)
 
