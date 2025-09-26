@@ -66,6 +66,7 @@ class Application
     "delete"   => "Soft-delete ticket",
     "deploy"   => "Mark ticket as Deployed",
     "done"     => "Mark ticket as done",
+    "go"       => "Go to branch for this ticket (git checkout)",
     "new"      => "Create new ticket (automatically called from git-new-branch)",
     "notes"    => "Edit ticket notes",
     "pr"       => "Edit ticket PR",
@@ -82,7 +83,7 @@ class Application
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
-  NO_LIST_COMMANDS = %w{announce commands console statuses}
+  NO_LIST_COMMANDS = %w{announce commands console go statuses}
 
   KNOWN_STATUSES = {
     "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
@@ -199,11 +200,13 @@ Statuses:
 
 Options:
 BANNER
+
+      # TODO: drop --board=COR, --ticket=3566 in favor of --ticket=COR-3566
       opt :board,        "Jira board", type: :string
       opt :branch,       "Branch name", type: :string
       opt :color,        "Colorize output by status", default: true
       opt :created_at,   "Show created_at timestamps", default: false
-      opt :debug,        "Print extra debug info", default: false
+      opt :debug,        "Print extra debug info", short: :d, default: false
       opt :force,        "Force creation of a duplicate ticket if ticket already exists", short: "f", default: false
       opt :hide_jira,    "Do not display jira column", short: "J", default: false
       opt :hide_notes,   "Do not display notes column", short: "N", default: false
@@ -214,15 +217,15 @@ BANNER
       opt :no_color,     "Do not colorize output by status", short: "C", default: false
       opt :notes,        "Notes text", type: :string
       opt :pr,           "ID of PR", type: :int
-      opt :pretend,      "Print commands but do not run them", default: false
-      opt :project_code, "Project Code", default: false
-      opt :quiet,        "Run with minimal output", default: false
+      opt :pretend,      "Print commands but do not run them", short: :p, default: false
+      opt :project_code, "Hide project Code", default: false
+      opt :quiet,        "Run with minimal output", short: :q, default: false
       opt :repo,         "Repository slug", type: :string, default: DEFAULT_REPO
       opt :status,       "Status text", type: :string
       opt :ticket,       "Jira ticket number", type: :int
       opt :title,        "Title of PR", type: :string
       opt :updated_at,   "Show updated_at timestamps", default: false
-      opt :verbose,      "Run with verbose output (overrides --quiet)", default: false
+      opt :verbose,      "Run with verbose output (overrides --quiet)", short: :v, default: false
     end
     if debug?
       puts opts.sort.to_h.inspect
@@ -277,19 +280,24 @@ BANNER
       puts "> updated_at: #{updated_at?.inspect}"
     end
 
-    board, ticket = if ticket && !opts[:board_given] && !opts[:ticket_given]
+    board, ticket = if opts[:board_given] && opts[:ticket_given]
+                      # both given, slorks --board=AAA --ticket=42
+                      [opts[:board], opts[:ticket]]
+                    elsif ticket
+                      # jira id given, slorks AAA-42
                       opts[:board], opts[:ticket] = $1, $2
                       opts[:board_given] = true
                       opts[:ticket_given] = true
                       [board, ticket]
                     elsif !opts[:board_given] && !opts[:ticket_given]
+                      # No ticket and neither was given. Infer from branch name.
                       get_board_and_ticket_from_branch
                     else
-                      puts "WARNING: Weird logic detected, how did I get here?".red.bold
-                      [opts[:board], opts[:ticket]]
+                      this, that = opts[:board_given] ? [:board, :ticket] : [:ticket, :board]
+                      Optimist::die "You have specified --#{this} but not --#{that}; both are required if either are present"
                     end
 
-    puts ["Board: #{opts[:board]}", "Ticket: #{opts[:ticket]}"] if debug?
+    puts ["Board: #{board}", "Ticket: #{ticket}"] if debug?
 
     case command
     when "abandon" then mark_abandoned(board, ticket)
@@ -303,6 +311,7 @@ BANNER
     when "delete" then soft_delete(board, ticket)
     when "deploy" then deploy(board, ticket)
     when "done" then mark_done(board, ticket, opts[:notes])
+    when "go" then go_to_branch_for(board, ticket)
     when "new" then add_new(board, ticket)
     when "notes" then update_notes(board, ticket)
     when "pr" then update_pr(board, ticket)
@@ -716,6 +725,25 @@ SQL
     )
 
     ticket.mark_deployed!
+  end
+
+  def go_to_branch_for(board, ticket)
+    ticket = find_one_ticket(board:, ticket:)
+
+    # abort unless git-isclean OR --force
+    if !git_isclean && !force?
+      puts "You have unstaged changes. Commit or stash them, or rerun with --force." unless quiet?
+      exit 1
+    end
+
+    # abort if target branch is this branch
+    current_branch = git_current_branch
+    if ticket.branch == current_branch
+      puts "You are already on branch '#{current_branch}'. My work here is done." unless quiet?
+      exit 0
+    end
+
+    run_command "go '#{ticket.branch}'"
   end
 
   def mark_done(board, ticket)
