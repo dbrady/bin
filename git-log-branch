@@ -23,6 +23,8 @@ LOG_COLOR_INFO=:white
 LOG_COLOR_QUERY=:cyan
 LOG_COLOR_PRINT=:normal
 
+# File.open(File.expand_path("~/git-log-branch.log"), "w") { |fp| fp.puts Time.now.strftime("%F-%T") }
+
 class GitBranchLogger
   def initialize(opts)
     @opts = opts
