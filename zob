@@ -13,6 +13,8 @@
 # TODO: zob -i - interactive. Like the editor version but iterates
 #       through each branch to delete and prompts to see if you want
 #       to delete each branch with a [y/N] prompt
+#
+# TODO: zob --not-me or zob --not <pattern>
 
 if [ "$1" == "" ]; then
     echo -e '\033[1;37;41mSelect a branch to DELETE\033[0m or \033[1;37;42mhit CTRL-C to abort\033[0m:'
