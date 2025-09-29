@@ -5,4 +5,8 @@
 # detached from /branch)" as "(HEAD". Mostly a problem when you have submodules.
 
 # git branch | grep '*' | cut -d ' ' -f2-
-git status | head -n 1 | awk '{ print $3 }'
+# git status | head -n 1 | awk '{ print $3 }'
+
+# Always check back, kids. That utility script you wrote 4 years ago might
+# finally be part of the base tool
+git branch --show-current
