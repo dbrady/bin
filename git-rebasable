@@ -1,0 +1,20 @@
+#!/bin/bash
+# git-rebasable
+#
+# git rebasable && git rebase -i master || git merge master
+#
+# exits with 0 if the branch can be rebased cleanly. No script yet for modifying
+# the rebasability yet, for now we query the slorks table.
+
+# Get the current branch name
+BRANCH=$(git branch --show-current)
+
+# Query the database for the rebasable status
+REBASABLE=$(sqlite3 ~/bin/db/git-settings.db "SELECT rebasable FROM slorks WHERE branch = '$BRANCH'")
+
+# Exit with success if rebasable is 1, failure otherwise
+if [ "$REBASABLE" = "1" ]; then
+    exit 0
+else
+    exit 1
+fi
