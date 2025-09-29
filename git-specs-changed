@@ -16,8 +16,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :existing
-  opt_flag :ruby
+  opt_flag :existing, :run
 
   def run
     @opts = Optimist.options do
@@ -50,13 +49,13 @@ Options:
 BANNER
 
       opt :debug, "Print extra debug info", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
-      opt :quiet, "Run with minimal output", default: false
-
-      opt :only, "Pattern to include", short: :o, type: :string, multi: true
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :existing, "Only show files that currently exist (for piping into file processor scripts, e.g. rubocop)", short: :e, default: true
+      opt :only, "Pattern to include", short: :o, type: :string, multi: true
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :run, "Run the detected spec files", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     $stderr.puts opts.inspect if opts[:debug]
@@ -124,6 +123,10 @@ BANNER
     files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } if existing?
 
     puts files
+
+    if run?
+      run_command "rfr #{files.map(&:inspect).join(' ')}"
+    end
   end
 end
 
