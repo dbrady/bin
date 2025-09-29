@@ -12,15 +12,14 @@ class Application
 
   def run
     @opts = Optimist.options do
-      opt :merge, "Merge parent branch in instead of rebasing", default: false
-      opt :stash, "Stash and reapply changes around rebase", default: false
-      opt :flowchart, "Show mermaid flowchart and exit", default: false
       opt :bundle, "Run bundle install", default: false
-
       opt :debug, "Print extra debug info", default: false
+      opt :flowchart, "Show mermaid flowchart and exit", default: false
+      opt :merge, "Merge parent branch in instead of rebasing", default: false
       opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :stash, "Stash and reapply changes around rebase", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
 
@@ -41,6 +40,13 @@ class Application
     if branch_is_dirty? && !stash?
       puts "Your branch has outstanding changes. Rerun with --stash if you want to stash/rebase/reapply them, or --no-stash if you want to live dangerously.".red
       exit -1
+    end
+
+    # if you did NOT specify -m and the branch is not rebasable, turn it on.
+    puts "branch_is_rebasable? #{branch_is_rebasable?.inspect}" if debug?
+    if !branch_is_rebasable? && !opts[:merge]
+      $stderr.puts "This branch is not rebasable but you have not specified --merge. Cavalierly turning it on --merge for you...".yellow unless quiet?
+      opts[:merge_given] = opts[:merge] = true
     end
 
     stashed = if branch_is_dirty? && stash?
@@ -127,6 +133,10 @@ FLOWCHART
     @branch_is_dirty = !run_command("git isclean")
     @branch_is_dirty_is_cached = true
     @branch_is_dirty
+  end
+
+  def branch_is_rebasable?
+    run_command 'git rebasable'
   end
 end
 

@@ -1,16 +1,23 @@
 #!/bin/bash
-# git-rebasable
+# git-rebasable - return true unless I have flagged the branch as merge-only in slorks
+#
+# IT JUST CHECKS MY FLAG. IT DOES NOT TRY TO CALCULATE IF A REBASE IS CONFLICTED
 #
 # git rebasable && git rebase -i master || git merge master
 #
 # exits with 0 if the branch can be rebased cleanly. No script yet for modifying
 # the rebasability yet, for now we query the slorks table.
 
-# Get the current branch name
-BRANCH=$(git branch --show-current)
+# Get the branch name - use argument if provided, otherwise current branch
+if [ $# -gt 0 ]; then
+    BRANCH="$1"
+else
+    BRANCH=$(git branch --show-current)
+fi
 
 # Query the database for the rebasable status
-REBASABLE=$(sqlite3 ~/bin/db/git-settings.db "SELECT rebasable FROM slorks WHERE branch = '$BRANCH'")
+# TODO: confirm repo, check to make sure only one slork is found, promote to new-ruby template?
+REBASABLE=$(sqlite3 ~/bin/db/git-settings.db "SELECT rebasable FROM slorks WHERE branch = '$BRANCH' AND deleted_at IS NULL")
 
 # Exit with success if rebasable is 1, failure otherwise
 if [ "$REBASABLE" = "1" ]; then
