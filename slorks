@@ -179,6 +179,10 @@ class Application
         puts self.inspect if debug?
         save
       end
+
+      def rebasable?
+        !!self.rebasable
+      end
     end
   end
 
@@ -522,6 +526,7 @@ CREATE TABLE IF NOT EXISTS slorks (
     notes varchar(255),
     project_code varchar(255),
     branch varchar(255),
+    rebasable boolean default true,
     created_at timestamp,
     updated_at timestamp,
     deleted_at timestamp
