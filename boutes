@@ -25,12 +25,6 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    # lock it to mp dir for now
-    if Dir.getwd !~ %r|/merchant_portal$|
-      puts "Currently this only works from the merchant portal folder."
-      exit
-    end
-
     cache_routes if ARGV.empty? || !boutes_file_exists?
 
     if ARGV.empty?
@@ -50,7 +44,7 @@ class Application
   end
 
   def boutes_path
-    @boutes_path ||= File.expand_path("../boutes.txt")
+    @boutes_path ||= File.expand_path("tmp/rails-routes.log")
   end
 
 end
