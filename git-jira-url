@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+# git-jira-url - Dump the jira url for the current or given branch
+require "colorize"
+require "optimist"
+require_relative "lib/dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+require_relative "lib/dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+git-jira-url - Dump the jira url for the current or given branch
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+
+      opt :project, "Project portion of jira ticket, e.g. CREDIT or ATD", default: "AA"
+    end
+    puts opts.inspect if opts[:debug]
+
+    puts jira_url(ARGV.first || jira_ticket)
+  end
+end
+
+if __FILE__ == $0
+  Application.new.run
+end
