@@ -314,7 +314,7 @@ BANNER
     when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
     when "delete" then soft_delete(board, ticket)
     when "deploy" then deploy(board, ticket)
-    when "done" then mark_done(board, ticket, opts[:notes])
+    when "done" then mark_done(board, ticket)
     when "go" then go_to_branch_for(board, ticket)
     when "new" then add_new(board, ticket)
     when "notes" then update_notes(board, ticket)
