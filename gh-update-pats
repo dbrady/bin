@@ -95,13 +95,16 @@ BANNER
 
     raise "You must provide a github personal access token!" unless pat =~ /^ghp_/
 
+    # PATHS TO UPDATE
     files = [
       "~/.bundle/config",
       "#{ACIMA_DEVEL}/application_management_system/.bundle/config",
       "#{ACIMA_DEVEL}/merchant_portal/.bundle/config",
       "#{ACIMA_DEVEL}/funding-request-service/.bundle/config",
+      "#{ACIMA_DEVEL}/global_customer/.bundle/config",
     ].map {|file| File.expand_path(file)}
 
+    # TOKENS TO SET
     tokens = [
       "BUNDLE_RUBYGEMS__PKG__GITHUB__COM",
       "BUNDLE_HTTPS://RUBYGEMS__PKG__GITHUB__COM/ACIMA___CREDIT/",
