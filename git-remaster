@@ -8,16 +8,19 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :bundle, :flowchart, :merge, :stash
+  opt_flag :bundle, :migrate, :flowchart, :merge, :recurse, :stash
 
   def run
+    original_args = ARGV.dup
     @opts = Optimist.options do
       opt :bundle, "Run bundle install", default: false
       opt :debug, "Print extra debug info", default: false
       opt :flowchart, "Show mermaid flowchart and exit", default: false
       opt :merge, "Merge parent branch in instead of rebasing", default: false
+      opt :migrate, "Run any new database migrations", default: false
       opt :pretend, "Print commands but do not run them", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :recurse, "Recurse all the way to master", default: false
       opt :stash, "Stash and reapply changes around rebase", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
@@ -29,11 +32,16 @@ class Application
     end
 
     current_branch = `git current-branch`.strip
+    main_branch = git_main_branch
     parent_branch = ARGV.first || git_parent_or_main_branch
 
     if debug?
       puts "current_branch: #{current_branch}"
       puts "parent_branch: #{parent_branch}"
+      puts "main_branch: #{main_branch.inspect}"
+      puts "main_branch != parent_branch && recurse?: #{(main_branch != parent_branch && recurse?).inspect}"
+      puts "main_branch != parent_branch: #{(main_branch != parent_branch).inspect}"
+      puts "recurse?: #{recurse?.inspect}"
       puts opts.inspect
     end
 
@@ -42,10 +50,41 @@ class Application
       exit -1
     end
 
-    # if you did NOT specify -m and the branch is not rebasable, turn it on.
-    puts "branch_is_rebasable? #{branch_is_rebasable?.inspect}" if debug?
+    debug ">>> ENTERING REMASTER OF #{current_branch}"
+    debug "recurse is on" if recurse?
+    if recurse? && main_branch != parent_branch
+      debug "Recursing to parent branch '#{parent_branch}'"
+      run_command "git checkout '#{parent_branch}'"
+
+      # make sure the git co actually worked so we don't forkbomb
+      new_current_branch = git_current_branch
+
+      if new_current_branch == current_branch
+        puts "COULD NOT CHANGE BRANCH. ABORTING".bold.white.on_red
+        exit
+      end
+
+      # recurse
+      debug '-' * 80
+      puts "current_branch: #{current_branch.inspect}"
+      puts "parent_branch: #{parent_branch.inspect}"
+      puts "main_branch: #{main_branch.inspect}"
+      debug '-' * 80
+      if parent_branch == main_branch
+        debug "Parent branch is #{parent_branch}, my work is done here."
+      else
+        run_command "git-remaster #{original_args * ' '}"
+      end
+
+      debug "Returning to child branch '#{current_branch}'"
+      run_command "git checkout '#{current_branch}'"
+    end
+
+    # if the branch is not rebasable, turn on --merge
+    debug "branch_is_rebasable? #{branch_is_rebasable?.inspect}"
     if !branch_is_rebasable? && !opts[:merge]
-      $stderr.puts "This branch is not rebasable but you have not specified --merge. Cavalierly turning it on --merge for you...".yellow unless quiet?
+      # TODO: I still need the ability to set the rebase/merge values here
+      $stderr.puts "Branch is not rebasable; using merge strategy.".yellow unless quiet?
       opts[:merge_given] = opts[:merge] = true
     end
 
@@ -64,8 +103,16 @@ class Application
     run_command_chain commands
 
     run_command "bundle" if bundle?
+    run_command "remigrate -f" if migrate?
 
     run_command "git stash apply" if stashed
+    debug "<<<< EXITING REMASTER OF #{current_branch}"
+  end
+
+  def debug(message)
+    return unless debug?
+
+    puts message.magenta
   end
 
   def flowchart
@@ -136,7 +183,7 @@ FLOWCHART
   end
 
   def branch_is_rebasable?
-    run_command 'git rebasable'
+    @branch_is_rebasable ||= run_command 'git rebasable'
   end
 end
 
