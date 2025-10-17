@@ -19,28 +19,37 @@ class Application
       BANNER
       opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
+
     cache_routes if ARGV.empty? || !boutes_file_exists?
 
-    if ARGV.empty?
-      run_command "bin/rails routes > #{boutes_path}"
-      run_command "bin/rails grape:routes >> #{boutes_path}"
-    else
-      run_command %Q|ag -i "#{ARGV.first}" "#{boutes_path}"|
-    end
+    run_command %Q|ag --nonumbers -i "#{ARGV.first}" "#{boutes_path}"| unless ARGV.empty?
   end
 
   def cache_routes
     puts "Caching routes."
+    run_command "bin/rails routes > #{boutes_path}"
+    run_command "bin/rails grape:routes >> #{boutes_path}"
+    number_boute_file_lines
   end
 
   def boutes_file_exists?
     File.exist?(boutes_path)
+  end
+
+  def number_boute_file_lines
+    lines = File.readlines(boutes_path).map(&:rstrip)
+    digits = 1 + (Math.log(lines.size) / Math.log(100)).ceil
+    format = "%#{digits}d | %s"
+    lines_with_numbers = lines.map.with_index(1) do |line, index|
+      format % [index, line]
+    end
+    File.open(boutes_path, "w") { |fp| fp.puts lines_with_numbers }
   end
 
   def boutes_path
