@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# git-specs-changed (<n>|<sha>|<sha1>..<sha2>) - Show files changed since sha or in the last n commits
+# git-specs-changed (<n>|<sha>|<sha1>..<sha2>) - Show spec files changed since sha or in the last n commits
 # See Also: git-modified for uncommitted changed files
 require "colorize"
 require "optimist"
@@ -62,7 +62,8 @@ BANNER
 
     repo = git_repo_for(Dir.pwd)
 
-    opts[:only] << 'spec/*'
+    opts[:only] << 'spec/*_spec.rb'
+
     spec_subdirs_to_skip = %w(helpers factories support cassettes)
 
     spec_subdirs_to_skip.each do |folder|
