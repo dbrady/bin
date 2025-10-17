@@ -5,6 +5,7 @@ require "base64"
 require "colorize"
 require "json"
 require "optimist"
+require "pathname"
 $:.unshift(File.expand_path("~/bin/lib"))
 require "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
@@ -50,8 +51,8 @@ BANNER
 
     @outfile = if @outfile.nil?
                  if auto?
-                   @outfile = File.open(File.basename(infile, '.json'), "w")
-                   puts @outfile.inspect
+                   @outfile = File.open(Pathname(infile).sub_ext('.json').to_s, "w")
+                   puts "Writing #{@outfile.inspect}"
                  else
                    @outfile = $stdout
                  end
@@ -66,6 +67,7 @@ BANNER
     text_value = extract_text_chunk(ARGV[0])
     spec = decode_character_spec(text_value)
 
+    puts "outfile: #{outfile.inspect}"
     outfile.puts JSON.pretty_generate(spec)
   end
 
