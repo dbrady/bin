@@ -604,7 +604,8 @@ SQL
 
     if tickets.size != 1
       puts tickets.map(&:inspect) if debug?
-      raise "Expected exactly 1 ticket to be found, got #{tickets.size}"
+      inspection = "board: #{board.inspect}, ticket: #{ticket.inspect}, title: #{title.inspect}, pr: #{pr.inspect}, repo: #{repo.inspect}, status: #{status.inspect}, notes: #{notes.inspect}, deleted: #{deleted.inspect}"
+      raise "Expected exactly 1 ticket to be found, got #{tickets.size}. (Searched: #{inspection})"
     end
 
     tickets.first
