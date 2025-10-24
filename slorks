@@ -22,8 +22,25 @@
 #   - [ ] Investigate how we're gonna run tests or rspec in here
 # - [ ] FINALLY some features!
 # - [ ] Add change log into the database, autoupdate it on slork change (paperclip?) and add commands to view the changelog
-# - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a note"
-# - [ ] Project codes and timing
+# - [ ] Argv Upgrading
+#    - [ ] think on generalizing optimist (or just adapting my own args handler)
+#      towards a <command> <subcommand> <args> structure where each command
+#      could potentially open up a subinstance of optimist, like how "rails g
+#      help" and "rails g migration help" will send the help arg to generate or
+#      to migration. There's messes in there like tail args, e.g. "foo arg -a"
+#      is that foo(arg, -a) or foo.arg(-a), etc, but that's a well-studied
+#      problem (Ruby solves it with precedence, "foo arg, -a" means "foo(arg,
+#      -a)" and "foo arg a" means "foo(arg(-a))". Mind you, Ruby has commas and
+#      bash does not...
+#   - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes
+#     MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a
+#     note"
+# - [X] Project codes
+# - [ ] Time tracking
+#
+# TODO: YAGNI Failures - Write down Nice To Haves here as we need them
+# - [ ] A log of old slorks: select id, board, ticket, title, status, created_at, deleted_at, project_code, branch from slorks order by created_at;
+# - [ ] slorks code <code> should work, but doesn't, because codes look like jira tickets, and we optimistically snatch the ticket from the command line before we've processed the command.
 
 require "clipboard"
 require "colorize"
