@@ -16,7 +16,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :existing, :run
+  opt_flag :dig, :existing, :run
 
   def run
     @opts = Optimist.options do
@@ -49,6 +49,7 @@ Options:
 BANNER
 
       opt :debug, "Print extra debug info", default: false
+      opt :dig, "Dig into changed source files and try to locate their specs", default: false
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :existing, "Only show files that currently exist (for piping into file processor scripts, e.g. rubocop)", short: :e, default: true
       opt :only, "Pattern to include", short: :o, type: :string, multi: true
@@ -58,7 +59,12 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    $stderr.puts opts.inspect if opts[:debug]
+    dump_opts if debug?
+
+    # Commenting out: YAGNI?
+    # if opts[:dig_given] && (opts[:exclude_given] || opts[:only_given])
+    #   puts "WARNING: --dig with --exclude or --only will likely have weird interactions".yellow
+    # end
 
     repo = git_repo_for(Dir.pwd)
 
@@ -95,6 +101,7 @@ BANNER
     $stderr.puts "range: #{range}" if debug?
 
     files = get_command_output_lines "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq", quiet: !debug?
+    all_files = files.dup # this is going to have weird fitering interactions, sorry
 
     if debug?
       $stderr.puts '-' * 80
@@ -122,6 +129,17 @@ BANNER
     end
 
     files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } if existing?
+
+    diggable_files = if dig?
+                       (all_files - files)
+                         .reject { |filename| !filename.start_with?("app/") }
+                         .map { |filename| filename.sub(%r|^app\/|, "spec/").sub(/\.rb$/, "_spec.rb") }
+                         .reject { |filename| !File.exist?(filename) }
+                     else
+                       []
+                     end
+
+    files = (files + diggable_files).uniq
 
     puts files
 
