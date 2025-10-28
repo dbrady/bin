@@ -1,0 +1,9 @@
+#!/bin/bash
+echo "One week:"
+git shortlog --since="1 week ago" | grep -E '^\w+' | ruby -ne '$_ =~ /^(.+) \((\d+)/; puts "%4s %s" % [$2, $1]' | sort -r -n | cat -n | grep -i brady
+
+echo "One month:"
+git shortlog --since="1 month ago" | grep -E '^\w+' | ruby -ne '$_ =~ /^(.+) \((\d+)/; puts "%4s %s" % [$2, $1]' | sort -r -n | cat -n | grep -i brady
+
+echo "One year:"
+git shortlog --since="1 year ago" | grep -E '^\w+' | ruby -ne '$_ =~ /^(.+) \((\d+)/; puts "%4s %s" % [$2, $1]' | sort -r -n | cat -n | grep -i brady
