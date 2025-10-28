@@ -68,7 +68,7 @@ class Rubanner
   end
 
   def ensure_figlet_installed!
-    raise NotImplementedError.new("figlet is not supported on this system -- please install it and try again") unless system("which figlet > /dev/null")
+    raise NotImplementedError.new("figlet is not supported on this system -- please install it (e.g. 'sudo apt install figlet' or 'brew install figlet') and try again") unless system("which figlet > /dev/null")
   end
 
   # double-dispatch from command-line args to colorize gem, e.g.
