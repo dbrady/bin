@@ -95,8 +95,12 @@ module DbradyCli
     opts[:debug]
   end
 
+  def headless?
+    !$stdout.tty?
+  end
+
   def quiet?
-    opts[:quiet]
+    opts[:quiet] || headless?
   end
 
   def verbose?

@@ -13,16 +13,20 @@ class Application
   def run
     original_args = ARGV.dup
     @opts = Optimist.options do
-      opt :bundle, "Run bundle install", default: false
-      opt :debug, "Print extra debug info", default: false
-      opt :flowchart, "Show mermaid flowchart and exit", default: false
-      opt :merge, "Merge parent branch in instead of rebasing", default: false
-      opt :migrate, "Run any new database migrations", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-      opt :quiet, "Run with minimal output", default: false
-      opt :recurse, "Recurse all the way to master", default: false
-      opt :stash, "Stash and reapply changes around rebase", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :bundle,    "Run bundle install",                          default: false
+      opt :debug,     "Print extra debug info",                      default: false
+      opt :flowchart, "Show mermaid flowchart and exit",             default: false
+      opt :full,      "Run all the things (bundle, remigrate)",      default: false
+      opt :merge,     "Merge parent branch in instead of rebasing",  default: false
+      opt :migrate,   "Run any new database migrations",             default: false
+      opt :pretend,   "Print commands but do not run them",          default: false
+      opt :quiet,     "Run with minimal output",                     default: false
+      opt :recurse,   "Recurse all the way to master",               default: false
+      opt :stash,     "Stash and reapply changes around rebase",     default: false
+      opt :verbose,   "Run with verbose output (overrides --quiet)", default: false
+
+      conflicts :full, :bundle
+      conflicts :full, :migrate
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
 
