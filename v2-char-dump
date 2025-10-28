@@ -51,10 +51,9 @@ BANNER
 
     @outfile = if @outfile.nil?
                  if auto?
-                   @outfile = File.open(Pathname(infile).sub_ext('.json').to_s, "w")
-                   puts "Writing #{@outfile.inspect}"
+                   File.open(Pathname(infile).sub_ext('.json').to_s, "w")
                  else
-                   @outfile = $stdout
+                   $stdout
                  end
                else
                  File.open(outfile, "w")
