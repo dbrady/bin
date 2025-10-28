@@ -80,7 +80,11 @@ filter, index = if ARGV.size == 2
 
 srand(Time.now.to_i)
 require 'io/console'
-y,x = $stdout.winsize
+begin
+  y,x = $stdout.winsize
+rescue Errno::EOPNOTSUPP
+  exit 1
+end
 
 birb_filepath = pick_a_birb(filter, index)
 

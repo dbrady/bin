@@ -162,6 +162,11 @@ module DbradyCli
     end
   end
 
+  # Autoload class methods
+  def self.included(including_module)
+    including_module.extend ClassMethods
+  end
+
   def opt_flags
     self.class.opt_flags
   end
@@ -170,10 +175,19 @@ module DbradyCli
     self.class.opt_readers
   end
 
-
-  def self.included(including_module)
-    including_module.extend ClassMethods
+  def dump_opts
+    puts opts.sort.to_h.inspect
+    puts "opt_flags: (#{opt_flags.size})"
+    opt_flags.each do |flag|
+      flag_method = "#{flag}?"
+      puts "#{flag}: #{public_send(flag_method).inspect}"
+    end
+    puts "opt_readers: (#{opt_readers.size})"
+    opt_readers.each do |reader|
+      puts "#{reader}: #{public_send(reader).inspect}"
+    end
   end
+
   # ----------------------------------------------------------------------
   # END CLASS METHODS
   # ======================================================================

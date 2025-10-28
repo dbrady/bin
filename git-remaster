@@ -92,15 +92,28 @@ class Application
                 run_command("git stash")
               end
 
-    commands = [
-      "git checkout #{parent_branch}",
-      "git pull",
-      "git checkout #{current_branch}",
-    ]
-    rebase_or_merge_command = merge? ? "merge" : "rebase"
-    commands << "git #{rebase_or_merge_command} #{parent_branch}" unless current_branch == "master"
+    if !run_command("git checkout #{parent_branch}")
+      puts "Could not check out parent branch"
+      exit -1
+    end
 
-    run_command_chain commands
+    if !run_command("git pull")
+      # git pull is allowed to fail but if we're recursing
+      if !recurse?
+        puts "Git pull failed"
+        exit -1
+      end
+    end
+
+    if !run_command "git checkout #{current_branch}"
+      puts "Could not return to child branch"
+      exit -1
+    end
+
+    if current_branch != "master"
+      rebase_or_merge_command = merge? ? "merge" : "rebase"
+      run_command "git #{rebase_or_merge_command} #{parent_branch}"
+    end
 
     run_command "bundle" if bundle?
     run_command "remigrate -f" if migrate?
@@ -159,16 +172,6 @@ flowchart TD
 FLOWCHART
 
     str
-  end
-
-  def run_command_chain(commands)
-    commands.each do |command|
-      success = run_command(command)
-      if !success
-        puts "Command failed: #{command}".red
-        exit -1
-      end
-    end
   end
 
   # Returns true if there are any staged or unstaged changes (but does not care if

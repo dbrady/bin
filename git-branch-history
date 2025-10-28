@@ -28,7 +28,7 @@ class Application
 
   attr_reader :db
 
-  opt_flag :console, :go, :journal, :log, :sort, :unique, :utc
+  opt_flag :console, :go, :journal, :log, :sort, :today, :unique, :utc, :yesterday
 
   # TODO: opt_flag with rename? E.g.
   # opt_flag( line_numbers: :"line-numbers" )
@@ -79,28 +79,40 @@ By default, gets the branch history of the current repo for last week
 If --start is not given, assumes three days ago.
 USAGE
 
-      opt :start, "Start date", short: :none, type: :string
-      opt :end, "End date", short: :none, type: :string
-      opt :index, "Show just one branch at index n/-m (run a search, pick index)", type: :integer
-      opt :"line-number", "Show line numbers (for subsequent --index calls)", short: :n, default: true
-      opt :unique, "Show unique branches. Suppress branches that have already been mentioned", short: :u, default: false
-      opt :sort, "Sort branches sorted alphabetically rather than by time", default: false
-
-      opt :go, "Go to branch at index n/-m", default: false
       opt :console, "Connect to sqlite database instead of querying", default: false
-
+      opt :debug, "Dump extra debug information (Also set --verbose to log query results)", short: :d, default: false
+      opt :end, "End date", short: :none, type: :string
+      opt :go, "Go to branch at index n/-m", default: false
+      opt :index, "Show just one branch at index n/-m (run a search, pick index)", type: :integer
+      opt :journal, "Show all branches with switch times", default: false
+      opt :line_number, "Show line numbers (for subsequent --index calls)", short: :n, default: true
       opt :log, "Show journal/log of branch changes", default: false
       opt :path, "Path to specific repo (defaults to current folder)", type: :string
-      opt :journal, "Show all branches with switch times", default: false
-      opt :utc, "Show times in UTC rather than local timezone", short: :U, default: false
-
-      opt :debug, "Dump extra debug information (Also set --verbose to log query results)", short: :d, default: false
       opt :pretend, "Print queries but do not run them", default: false
-      opt :verbose, "Be a bit extra chatty", default: false
       opt :quiet, "Run with minimal output (no line numbers or additional suggestions, overridden by -d/-v)", short: :q, default: false
+      opt :sort, "Sort branches sorted alphabetically rather than by time", default: false
+      opt :start, "Start date", short: :none, type: :string
+      opt :today, "Synonymous with --start=<last_midnight>", default: false
+      opt :unique, "Show unique branches. Suppress branches that have already been mentioned", short: :u, default: false
+      opt :utc, "Show times in UTC rather than local timezone", short: :U, default: false
+      opt :verbose, "Be a bit extra chatty", default: false
+      opt :yesterday, "Synonymous with --start=<yesterday_midnight>", default: false
+
+      conflicts :yesterday, :today, :start
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if opts[:debug]
+    if debug?
+      puts opts.sort.to_h.inspect
+      puts "opt_flags: (#{opt_flags.size})"
+      opt_flags.each do |flag|
+        flag_method = "#{flag}?"
+        puts "#{flag}: #{public_send(flag_method).inspect}"
+      end
+      puts "opt_readers: (#{opt_readers.size})"
+      opt_readers.each do |reader|
+        puts "#{reader}: #{public_send(reader).inspect}"
+      end
+    end
 
     if console?
       status = run_command "sqlite3 -table #{DATABASE_PATH}"
@@ -115,7 +127,13 @@ USAGE
 
     puts "Path to repo is '#{opts[:path]}'" if debug?
 
-    opts[:start] ||= (Date.today - 7).strftime("%F")
+    opts[:start] ||= if today?
+                       Date.today.strftime("%F")
+                     elsif yesterday?
+                       (Date.today - 1).strftime("%F")
+                     else
+                       (Date.today - 7).strftime("%F")
+                     end
     opts[:end] ||= (Date.today + 2).strftime("%F")
 
     puts "Opts after processing: #{opts.inspect}" if debug?

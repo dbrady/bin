@@ -53,18 +53,7 @@ BANNER
       # either :left, :right, :center  # You MUST specify EXACTLY one
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    if debug?
-      puts opts.sort.to_h.inspect
-      puts "opt_flags: (#{opt_flags.size})"
-      opt_flags.each do |flag|
-        flag_method = "#{flag}?"
-        puts "#{flag}: #{public_send(flag_method).inspect}"
-      end
-      puts "opt_readers: (#{opt_readers.size})"
-      opt_readers.each do |reader|
-        puts "#{reader}: #{public_send(reader).inspect}"
-      end
-    end
+    dump_opts if debug?
     Optimist.educate if ARGV.empty? # Remove this if your script takes no args
 
     run!

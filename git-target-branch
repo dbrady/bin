@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# git target-branch - emit the branch a current PR
+# echo -e '\033[36mgh pr view --json baseRefName -q .baseRefName\033[0m'
+gh pr view --json baseRefName -q .baseRefName
