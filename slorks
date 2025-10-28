@@ -144,6 +144,14 @@ class Application
         "#{board}-#{ticket}"
       end
 
+      def to_s
+        ticket_key
+      end
+
+      def ticket_key_and_pr
+        "#{ticket.ticket_key}:#{ticket.pr}"
+      end
+
       def pr_link
         return nil unless pr
 
@@ -400,8 +408,8 @@ BANNER
       status: opts[:status],
       notes: opts[:notes]
     )
-    puts "Announcing merge for #{ticket.ticket_key}:#{ticket.pr}"
-    run_command "mp-make-merge-announcement #{ticket.ticket_key}:#{ticket.pr}"
+    puts "Announcing merge for #{ticket.ticket_key_and_pr}"
+    run_command "mp-make-merge-announcement #{ticket.ticket_key_and_pr}"
   end
 
   def display_time(time, for_log: false)
@@ -671,7 +679,7 @@ SQL
 
   def clean_deploys
     Slork.where(deleted_at: nil, status: ["D", "o", "x"]).all.each do |slork|
-      puts "Cleaning ticket #{slork.ticket_key}"
+      puts "Cleaning ticket #{slork}"
       slork.soft_delete! unless pretend?
     end
   end
@@ -684,14 +692,15 @@ SQL
       repo: opts[:repo],
       notes: opts[:notes],
     )
-    Optimist::die "You must specify --pr to move ticket into review" unless opts[:pr_given]
-    ticket.set_pr!(opts[:pr]) unless pretend?
-    puts "Set PR."
-    ticket.move_into_review! unless pretend?
-    puts "Moved into review."
+    pr = opts[:pr] || get_command_output("git get-pr-id --quiet")
 
-    assign_message = "@robby assign #{opts[:pr]}"
-    run_command %Q(echo "#{assign_message}" | pbcopy)
+    if !pretend?
+      ticket.set_pr!(pr) if pr != ""
+      puts "Set PR id of #{ticket} to #{pr}."
+    end
+    ticket.move_into_review! unless pretend?
+    puts "Moved #{ticket} into review."
+
     puts ticket if debug?
   end
 

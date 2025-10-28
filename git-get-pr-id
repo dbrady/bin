@@ -33,7 +33,7 @@ class Application
     pr = db.query_single(query)&.fetch(:pr, nil)
 
     if pr.nil?
-      $stderr.puts "No PR for #{repo}" if $stdout.tty?
+      $stderr.puts "No PR for #{repo}" if !quiet? && $stderr.tty?
       exit -1
     end
 
