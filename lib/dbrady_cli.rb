@@ -3,6 +3,7 @@ require "colorize"
 require "optimist"
 
 # TODO:
+# - [ ] Add a Logger
 # - [ ] Break into smaller files. DbradyCli::Shell, Jira, Git, Env, Options. Users should get all the subfiles if they require 'dbrady_cli', ditto for include DbradyCli in the code.
 
 # - [ ] Consider upgrading this to a gem? Not until/unless I can trick bundler into sliding my gem into every bundle. Then again I have to add colorize and optimist and extralite all the time anyway? I held off of doing the gem thing because this file was churning HARD, and I didn't want to reinstall the gem every time I changed it. But now that it is stable, I think it is time to make it a gem.
