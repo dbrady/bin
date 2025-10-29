@@ -98,14 +98,17 @@ BANNER
 
     # Query the database for the rebasable status
     values = query("SELECT board, ticket, rebasable FROM slorks WHERE branch = '#{branch}' AND deleted_at IS NULL")
-    if values.size != 1
-      puts "Expected to find 1 record but got #{values.size}:"
-      values.each do |value|
-        puts "#{value[:board]}-#{value[:ticket]}: #{value[:title]}: #{value[:rebasable]}"
-      end
-      exit
-    end
-    rebasable = values.first[:rebasable]
+    rebasable = if values.size == 1
+                  values.first[:rebasable]
+                elsif values.size.zero?
+                  0
+                else
+                  puts "Expected to find at most 1 record, but got #{values.size}:"
+                  values.each do |value|
+                    puts "#{value[:board]}-#{value[:ticket]}: #{value[:title]}: #{value[:rebasable]}"
+                  end
+                  exit
+                end
     puts "rebasable: #{rebasable.inspect}" if debug?
     exit rebasable.zero? ? 1 : 0
   end
