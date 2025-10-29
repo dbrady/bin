@@ -8,6 +8,11 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :grape, :line_numbers, :rails
+  opt_reader :output
+
+  DEFAULT_BOUTES_PATH = File.expand_path("tmp/rails-routes.log").freeze
+
   def run
     @opts = Optimist.options do
       banner <<~BANNER
@@ -18,13 +23,16 @@ class Application
         Options:
       BANNER
       opt :debug, "Print extra debug info", default: false
+      opt :grape, "Emit grape API routes", default: true
+      opt :line_numbers, "Include line numbers in output", short: :l, default: false
+      opt :output, "Name of file to output", default: DEFAULT_BOUTES_PATH
       opt :pretend, "Print commands but do not run them", default: false
+      opt :rails, "Emit rails routes", default: true
       opt :quiet, "Run with minimal output", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
-
 
     cache_routes if ARGV.empty? || !boutes_file_exists?
 
@@ -33,8 +41,8 @@ class Application
 
   def cache_routes
     puts "Caching routes."
-    run_command "bin/rails routes > #{boutes_path}"
-    run_command "bin/rails grape:routes >> #{boutes_path}"
+    run_command "bin/rails routes > #{boutes_path}" if rails?
+    run_command "bin/rails grape:routes >> #{boutes_path}" if grape?
     number_boute_file_lines
   end
 
@@ -49,11 +57,12 @@ class Application
     lines_with_numbers = lines.map.with_index(1) do |line, index|
       format % [index, line]
     end
-    File.open(boutes_path, "w") { |fp| fp.puts lines_with_numbers }
+    output_lines = line_numbers? ? lines_with_numbers : lines
+    File.open(boutes_path, "w") { |fp| fp.puts output_lines }
   end
 
   def boutes_path
-    @boutes_path ||= File.expand_path("tmp/rails-routes.log")
+    @boutes_path ||= opts[:output_given] ? opts[:output] : DEFAULT_BOUTES_PATH
   end
 
 end
