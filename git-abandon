@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# git-abandon - abandon this branch by jumping back to parent branch.
+# git-abandon - jump back to main branch and delete this branch
 require "colorize"
 require "optimist"
 $:.unshift(File.expand_path("~/bin/lib"))
@@ -9,7 +9,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :new, :update
+  opt_flag :redo, :update
 
   # You know what, paranoia is good here, let's also abort if we're on an important-sounding branch
   BRANCHES_TO_BE_PARANOID_ABOUT = %w(production staging master main develop preflight)
@@ -17,7 +17,7 @@ class Application
   def run
     @opts = Optimist.options do
       banner <<BANNER
-# git-abandon - abandon this branch by jumping back to parent branch.
+# git-abandon - jump back to main branch and delete this branch
 
 Options:
 BANNER
@@ -26,12 +26,10 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
 
-      opt :new, "Check the branch out again by creating a new child branch off the parent", default: false
-      opt :update, "Check the branch out again by pulling it from origin", default: false
+      opt :redo, "Check out a fresh copy of the branch again", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
-    Optimist.die("Cannot specify --new and --update at the same time") if new? && update?
 
     main_branch = `git main-branch`.strip
     current_branch = `git current-branch`.strip
@@ -53,7 +51,7 @@ BANNER
 
     checkout_command = "git checkout #{parent_branch}"
     delete_command = "git branch -D #{current_branch}"
-    rebuild_command = if new?
+    rebuild_command = if redo?
                         "git checkout -b #{current_branch}"
                       elsif update?
                         "git checkout #{current_branch}"
