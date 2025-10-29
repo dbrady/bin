@@ -4,7 +4,7 @@
 # slorks
 #
 # IT JUST CHECKS MY FLAG. IT DOES NOT TRY TO CALCULATE IF A REBASE IS CONFLICTED.
-# (The flag is in ~/bin/db/git-settings.db. SELECT rebasable FROM slorks)
+# (The flag is in ~/bin/db/git-settings.db. SELECT branch, rebasable FROM slorks)
 #
 # Example:
 # git rebasable && git rebase -i master || git merge master
