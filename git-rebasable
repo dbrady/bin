@@ -101,7 +101,7 @@ BANNER
     rebasable = if values.size == 1
                   values.first[:rebasable]
                 elsif values.size.zero?
-                  0
+                  1 # default to true, it IS rebasable
                 else
                   puts "Expected to find at most 1 record, but got #{values.size}:"
                   values.each do |value|
