@@ -9,15 +9,14 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :existing
-  opt_flag :ruby
+  opt_flag :existing, :merge_base, :ruby
 
   def run
     @opts = Optimist.options do
       banner <<~BANNER
 git files-changed - show list of files changed in a range of commits
 
-git files-changed [options] (<n>|<sha1>|<sha1>..<sha2>)
+git files-changed [options] (<n>|<sha1>|<sha1>..<sha2>) [1]
 
 git files-changed <n>                             - Show files changed in the last n commits
 git files-changed <since_commit>                  - Show files changed since a commit or branch
@@ -25,33 +24,39 @@ git files-changed <since_comment>..<until_commit> - Show files changed in a rang
 
 Examples:
 
+git files-changed                  - Show files changed since diverging from main [2]
 git files-changed 7                - Show files changed in the last 7 commits
 git files-changed abcd1234         - Show files changed since commit abcd1234
-git files-changed master           - Show files changed since you forked from master
+git files-changed main             - Show files changed since you forked from main
 git files-changed ab1234..cd5678   - Show files changed in a range of commits
 git files-changed staging..release - Show files changed from one branch to another
 
-Note: This tool assumes that <sha1> is an ancestor of <sha2>. If they are not,
+Note 1: This tool assumes that <sha1> is an ancestor of <sha2>. If they are not,
 git will cheerfully walk up the logs to of both branches back to their common
 ancestor, and then show you the commits from one or both branches at its own
 discretion. In my own tests, it's usually <common>..<sha2> but in once case it
-gave me <common>..<sha1> followed by <common>..<sha2>. &shrug;
+gave me <common>..<sha1> followed by <common>..<sha2>. &shrug; (TODO: `git
+merge-base thatbranch thisbranch` will tell us this.)
 
-See Also: git modified - list files modified since last commit, whether staged or not
+Note 2: With no arguments, we determine the name of the main/master branch, then calculate the merge-base for it.
+
+See Also:
+
+git modified - list files modified since last commit, whether staged or not
+git specs-changed - same as files-changed but finds the affected specs
 
 Options:
 BANNER
 
       opt :debug, "Print extra debug info", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
-      opt :quiet, "Run with minimal output", default: false
-
-      opt :ruby, "Put ruby files in include pattern", default: false
-
-      opt :only, "Pattern to include", short: :o, type: :string, multi: true
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :existing, "Only show files that currently exist (for piping into file processor scripts, e.g. rubocop)", short: :e, default: false
+      opt :merge_base,"Calculate the merge-base of this branch against the given branch name", short: :m, default: false
+      opt :only, "Pattern to include", short: :o, type: :string, multi: true
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :ruby, "Put ruby files in include pattern", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -65,6 +70,7 @@ BANNER
     range = if ARGV.empty?
               parent = git_parent_or_main_branch
               $stderr.puts "Diffing against branch: #{parent.inspect}" if verbose?
+              parent = get_command_output "git merge-base #{parent} HEAD" unless opts[:merge_base_given] && !merge_base?
               "#{parent}..HEAD"
             elsif ARGV.size == 2
               # git files-changed abc123 def456
@@ -81,7 +87,9 @@ BANNER
             else
               # git files-changed abc123
               # look at abc123..HEAD
-              "#{ARGV.first}..HEAD"
+              parent = ARGV.first
+              parent = get_command_output "git merge-base #{parent} HEAD" if merge_base?
+              "#{parent}..HEAD"
             end
 
     files = get_command_output_lines "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq"
