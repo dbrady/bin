@@ -8,7 +8,15 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :bundle, :migrate, :flowchart, :merge, :recurse, :stash
+  opt_flag :flowchart, :merge, :recurse, :stash
+
+  def bundle?
+    opts[:bundle] || opts[:full]
+  end
+
+  def migrate?
+    opts[:migrate] || opts[:full]
+  end
 
   def run
     original_args = ARGV.dup
