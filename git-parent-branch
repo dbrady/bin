@@ -75,7 +75,7 @@ BANNER
       branch = git_parent_branch
       run_command "go '#{branch}'"
     when "unset"
-      unset_parent_branch repo, branch
+      unset_parent_branch repo, git_current_branch
     else # get
       case ARGV.size
       when 0
