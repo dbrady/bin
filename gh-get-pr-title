@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # gh-get-pr-title - get the title of a specific pull request
 require "colorize"
-require "octokit"
+require "json"
 require "optimist"
 require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
@@ -17,14 +17,12 @@ class Application
       opt :pretend, "Print commands but do not run them", default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
-      opt :link, "Print the PR link", default: false
+      opt :link, "Print the PR link instead of the title", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
     access_token = github_pat
-
-    client = Octokit::Client.new(access_token: access_token)
 
     repo_orig, pr_number = if ARGV.size.zero?
                         get_repo_and_pr_from_branch
@@ -34,23 +32,10 @@ class Application
                         ARGV
                       end
 
-    if debug?
-      $stderr.puts "access_token: #{access_token}"
-      $stderr.puts "repo: #{repo}"
-      $stderr.puts "pr: #{pr}"
-    end
-
-    # TODO: get_repo needs to return user/repo format as well
-    repo = "acima-credit/#{repo_orig}"
-
-    if debug?
-      puts "repo: #{repo}"
-      puts "pr_number: #{pr_number}"
-    end
-
-    pull_request = client.pull_request(repo, pr_number)
-
-    puts pull_request.title
+    field = link? ? "url" : "title"
+    command = "gh pr view --json #{field} -- #{pr_number}"
+    json = get_command_output command, quiet: debug? || !quiet?
+    puts JSON.parse(json)[field]
   end
 end
 
