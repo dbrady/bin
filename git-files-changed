@@ -2,6 +2,7 @@
 # git-files-changed (<n>|<sha>|<sha1>..<sha2>) - Show files changed since sha or in the last n commits
 # See Also: git-modified for uncommitted changed files
 require "colorize"
+require "debug"
 require "optimist"
 require_relative "lib/dbrady_cli"
 String.disable_colorization unless $stdout.tty?
@@ -9,7 +10,11 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :existing, :merge_base, :ruby
+  opt_flag :merge_base, :ruby
+
+  def include_deleted?
+    opts[:deleted]
+  end
 
   def run
     @opts = Optimist.options do
@@ -50,7 +55,7 @@ BANNER
 
       opt :debug, "Print extra debug info", default: false
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
-      opt :existing, "Only show files that currently exist (for piping into file processor scripts, e.g. rubocop)", short: :e, default: false
+      opt :deleted, "Include files that have been deleted and are no longer extant", short: :e, default: false
       opt :merge_base,"Calculate the merge-base of this branch against the given branch name", short: :m, default: false
       opt :only, "Pattern to include", short: :o, type: :string, multi: true
       opt :pretend, "Print commands but do not run them", default: false
@@ -59,7 +64,7 @@ BANNER
       opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
-    puts opts.inspect if opts[:debug]
+    dump_opts if debug?
 
     repo = git_repo_for(Dir.pwd)
 
@@ -100,7 +105,8 @@ BANNER
     end
     files = files.reject {|filename| opts[:exclude].any? {|pattern| File.fnmatch(pattern, filename) }}
 
-    files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } if existing?
+    files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } unless include_deleted?
+
 
     puts files
   end
