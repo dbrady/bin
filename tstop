@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# tstop <session> - send Ctrl-C to every window in a tmux session
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+# tstop <session> - send Ctrl-C to every window in a tmux session
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty? # Remove this if your script takes no args
+
+    run!
+  end
+
+  def run!
+    ARGV.each do |session|
+      stop_all_on session
+    end
+  end
+
+  def stop_all_on(session)
+    if session_exists?(session)
+      tmux_sessions[session].times do |window|
+        send_ctrl_c_to(session, window+1)
+      end
+    else
+      puts "Could not find session '#{session}'"
+      exit 1
+    end
+    # make sure session exists
+    #
+  end
+
+  def send_ctrl_c_to(session, window)
+    run_command! "tmux send-keys -t #{session}:#{window} C-c"
+  end
+
+  def session_exists?(session)
+    tmux_sessions.key? session
+  end
+
+  def tmux_sessions
+    return @tmux_sessions if @tmux_sessions
+
+    @tmux_sessions = {}
+    get_command_output_lines("tmux list-sessions").map do |line|
+      line =~ /^([^:]+): (\d+)/
+      @tmux_sessions[$1] = $2.to_i
+    end
+    @tmux_sessions
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
