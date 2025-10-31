@@ -149,7 +149,7 @@ class Application
       end
 
       def ticket_key_and_pr
-        "#{ticket.ticket_key}:#{ticket.pr}"
+        "#{ticket_key}:#{pr}"
       end
 
       def pr_link
@@ -409,6 +409,7 @@ BANNER
       notes: opts[:notes]
     )
     puts "Announcing merge for #{ticket.ticket_key_and_pr}"
+
     run_command "mp-make-merge-announcement #{ticket.ticket_key_and_pr}"
   end
 
