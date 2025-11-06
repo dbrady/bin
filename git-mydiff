@@ -1,0 +1,48 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# git mydiff <sha1>..<sha2> - diff my changes up to the merge base with target
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+# git mydiff <sha1>..<sha2> - diff my changes up to the merge base with target
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    run!
+  end
+
+  def run!
+    # trivial version: you must supply 1 or 2 args
+    # 1 arg - use current branch as the destination
+    # 2 args - use both
+    # source, destination = *ARGV
+    source = ARGV[0] || git_main_branch
+    destination = ARGV[1] || git_current_branch
+
+    puts "Diffing #{source}..#{destination} from merge base..."
+    merge_base = get_command_output "git merge-base #{source.inspect} #{destination.inspect}"
+    run_command "git diff #{merge_base} #{destination}"
+  end
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end
