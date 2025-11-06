@@ -14,8 +14,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :deleted
-  opt_flag :name
+  opt_flag :copy, :deleted, :name
 
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
 
@@ -33,13 +32,13 @@ git parench-branch unset - unset parent branch (reverts to master)
 If branch is omitted, assumes current branch.
 BANNER
 
+      opt :copy, "Copy branch name to clipboard", default: false
+      opt :debug, "Print extra debug info", default: false
       opt :deleted, "Include deleted branches when listing all branches", short: :D, default: false
       opt :name, "List by name when listing all branches", default: false
-
-      opt :debug, "Print extra debug info", default: false
       opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
       opt :quiet, "Run with minimal output", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
@@ -89,6 +88,9 @@ BANNER
 
       parent_branch = get_parent_branch(repo, branch)
       parent_branch = get_command_output("git main-branch", quiet: true) if parent_branch.nil? || parent_branch.empty?
+
+      run_command "echo '#{parent_branch}' | pbcopy" if copy?
+
       puts parent_branch
     end
   end
