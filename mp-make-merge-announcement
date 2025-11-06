@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# mp-make-merge-announcement - "Done with preflight, merging [id](url) to master"
+# mp-make-merge-announcement - "Done with preflight, merging [id](url) to main branch"
 require "colorize"
 require "optimist"
 require_relative "lib/dbrady_cli"
@@ -86,7 +86,7 @@ Options:
     end
     links = links.join(", ")
 
-    "Merging #{links} to master."
+    "Merging #{links} to #{git_main_branch}."
   end
 end
 
