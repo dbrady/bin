@@ -10,7 +10,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :suppress_newline
+  opt_flag :all, :suppress_newline
 
   def run
     @opts = Optimist.options do
@@ -26,6 +26,7 @@ TODO: tsend work --all C-c
 
 Options:
 BANNER
+      opt :all, "Send message to all windows in target session", short: :a, default: false
       opt :debug, "Print extra debug info", short: :d, default: false
       opt :suppress_newline, "Suppress newline/enter after sending", short: :n, default: false
       opt :pretend, "Print commands but do not run them", short: :p, default: false
@@ -41,21 +42,47 @@ BANNER
   def run!
     if ARGV.empty? || ARGV.first.to_s.downcase == "list"
       list_sessions
-    elsif ARGV.size < 3
+    elsif ARGV.size < 3 && !all?
       puts "Expected 3 arguments, got #{ARGV.size}. Currently you must specify session, window, and message"
+      exit 1
+    elsif ARGV.size < 2
+      puts "Expected 2 arguments, got #{ARGV.size}. Currently you must specify session, window, and message or session, message with --all"
       exit 1
     else
       argv = ARGV.dup
       session = argv.shift
-      window = argv.shift.to_i
+      windows = if all?
+                  # BUG: use tmux list-windows, then grab them indexes.
+                  # Open 5 windows, and then kill window 3. You'll have 4,
+                  # but the indices will be 1, 2, 4, 5 and this will fail.
+                  get_sessions[session]
+                else
+                  Array(argv.shift.to_i)
+                end
       message = argv.join(' ').inspect
       # TODO: ensure session and window exist
       message += " C-m" unless suppress_newline?
 
-      command = "tmux send-keys -t #{session}:#{window} #{message}"
-      puts command.magenta
-      run_command command
+      windows.each do |window|
+        command = "tmux send-keys -t #{session}:#{window} #{message}"
+        run_command command
+      end
     end
+  end
+
+  # returns hash of sessions => [window indices]
+  def get_sessions
+    return @sessions if @sessions
+
+    @sessions = Hash.new { |h, k| h[k] = []  }
+    get_command_output_lines("tmux list-sessions").map do |line|
+      name = line.split(/ /).first.sub(/:/, '')
+      get_command_output_lines("tmux list-windows -t #{name}").map do |line|
+        @sessions[name] << line.split(/:/).first.to_i
+      end
+    end
+
+    @sessions
   end
 
   def list_sessions
@@ -65,7 +92,7 @@ BANNER
       puts title
       session = title.split(/ /).first
       puts get_command_output_lines("tmux list-windows -t #{session}")
-             .map { |window| window.sub(/\((\d+ panes)\).*$/, "(\\1 panes)") }
+             .map { |window| window.sub(/\((\d+ panes)\).*$/, "(\\1)") }
 
       puts
     end
