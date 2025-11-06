@@ -14,8 +14,8 @@
 #
 
 # TODO: It's time for some TODO-Driven-Development
-# - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
-# - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
+# - [ ] slorks --interactive - interactively select ticket, status, edit note, etc
+# - [ ] Order by workflow? Just need a status -> position sort order.
 # - [ ] Move the Slork class into a model subdir
 # - [ ] Add a --dry-run option to show all commands
 # - [ ] We're big enough to warrant a proper cleanup refactoring with tests.
@@ -35,12 +35,16 @@
 #   - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes
 #     MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a
 #     note"
-# - [X] Project codes
 # - [ ] Time tracking
 #
 # TODO: YAGNI Failures - Write down Nice To Haves here as we need them
 # - [ ] A log of old slorks: select id, board, ticket, title, status, created_at, deleted_at, project_code, branch from slorks order by created_at;
 # - [ ] slorks code <code> should work, but doesn't, because codes look like jira tickets, and we optimistically snatch the ticket from the command line before we've processed the command.
+#
+# TODONE:
+# - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
+# - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
+# - [X] Project codes
 
 require "clipboard"
 require "colorize"
@@ -60,6 +64,7 @@ class Application
   opt_flag :color,
            :created_at,
            :force,
+           :fresh,
            :humanize,
            :markdown,
            :hide_jira,
@@ -104,15 +109,17 @@ class Application
   NO_LIST_COMMANDS = %w{announce commands console go statuses}
 
   KNOWN_STATUSES = {
-    "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
-    "r" => { name: "In Review",       colors: {mode: :normal, color: :magenta, background: :normal} },
-    "q" => { name: "QA Review",       colors: {mode: :normal, color: :light_magenta, background: :normal} },
-    "p" => { name: "In Progress",     colors: {mode: :normal, color: :blue, background: :normal} },
-    "d" => { name: "Ready to Deploy", colors: {mode: :bold,   color: :light_green, background: :normal} },
-    "D" => { name: "Deployed",        colors: {mode: :normal, color: :green, background: :normal} },
-    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :light_black, background: :normal} },
-    "o" => { name: "Done",            colors: {mode: :normal, color: :light_black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
     ">" => { name: "Deferred",        colors: {mode: :normal, color: :yellow, background: :normal} },
+    "D" => { name: "Deployed",        colors: {mode: :normal, color: :green, background: :normal} },
+    "R" => { name: "Reverted",        colors: {mode: :bold,   color: :light_red, background: :normal}},
+    "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
+    "c" => { name: "Cancelled",       colors: {mode: :bold,   color: :light_red, background: :normal}},
+    "d" => { name: "Ready to Deploy", colors: {mode: :bold,   color: :light_green, background: :normal} },
+    "o" => { name: "Done",            colors: {mode: :normal, color: :light_black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
+    "p" => { name: "In Progress",     colors: {mode: :normal, color: :blue, background: :normal} },
+    "q" => { name: "QA Review",       colors: {mode: :normal, color: :light_magenta, background: :normal} },
+    "r" => { name: "In Review",       colors: {mode: :normal, color: :magenta, background: :normal} },
+    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :light_black, background: :normal} },
   }
 
   if !ARGV.include?("create")
@@ -238,13 +245,14 @@ BANNER
       opt :created_at,   "Show created_at timestamps", default: false
       opt :debug,        "Print extra debug info", short: :d, default: false
       opt :force,        "Force creation of a duplicate ticket if ticket already exists", short: "f", default: false
-      opt :hide_jira,    "Do not display jira column", short: "J", default: false
-      opt :hide_notes,   "Do not display notes column", short: "N", default: false
-      opt :hide_pr,      "Do not display pr column", short: "P", default: false
-      opt :hide_repo,    "Do not display repo column", short: "R", default: false
+      opt :fresh,        "List freshest slorks first", short: :F, default: false
+      opt :hide_jira,    "Do not display jira column", short: :J, default: false
+      opt :hide_notes,   "Do not display notes column", short: :N, default: false
+      opt :hide_pr,      "Do not display pr column", short: :P, default: false
+      opt :hide_repo,    "Do not display repo column", short: :R, default: false
       opt :humanize,     "Humanize timestamps", default: false
       opt :markdown,     "Display output as markdown for Slack", default: false
-      opt :no_color,     "Do not colorize output by status", short: "C", default: false
+      opt :no_color,     "Do not colorize output by status", short: :C, default: false
       opt :notes,        "Notes text", type: :string
       opt :pr,           "ID of PR", type: :int
       opt :pretend,      "Print commands but do not run them", short: :p, default: false
@@ -345,6 +353,7 @@ BANNER
     when "new" then add_new(board, ticket)
     when "notes" then update_notes(board, ticket)
     when "pr" then update_pr(board, ticket)
+    when "progress" then mark_in_progress(board, ticket)
     when "qa" then mark_ready_for_qa(board, ticket)
     when "ready" then ready(board, ticket)
     when "review" then move_into_review(board, ticket)
@@ -381,7 +390,8 @@ BANNER
     end
     table = TinyTable.new(head: )
 
-    Slork.where(deleted_at: nil).order(:created_at, "ASC").all.each do |slork|
+    order_column = fresh? ? :updated_at : :created_at
+    Slork.where(deleted_at: nil).order(order_column, "ASC").all.each do |slork|
       row = [slork.ticket_key]
       row << slork.repo if for_log || !hide_repo?
       row += [slork.pr, slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
@@ -822,7 +832,7 @@ SQL
     puts ticket if debug?
   end
 
-  def mark_in_progres(board, ticket)
+  def mark_in_progress(board, ticket)
     ticket = find_one_ticket(
       board: board,
       ticket: ticket,
