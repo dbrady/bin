@@ -51,7 +51,7 @@ class Application
     puts opts.sort.to_h.inspect if debug?
 
     # if no arguments and nothing's going on, use git main as the sha
-    changed_files = get_command_output_lines("git files-changed --existing #{opts[:since]}")
+    changed_files = get_command_output_lines("git files-changed #{opts[:since]}")
     modified_files = get_command_output_lines("git modified") || []
 
     files = []
@@ -154,7 +154,7 @@ class Application
 
   def rubocop_ignore_patterns(path_to_rubocop_yml=".rubocop.yml")
     return [] unless File.exist?(path_to_rubocop_yml)
-    config = YAML.load_file(path_to_rubocop_yml)["AllCops"]["Exclude"].map do |glob|
+    config = YAML.load_file(path_to_rubocop_yml).fetch("AllCops", {}).fetch("Exclude", []).map do |glob|
       Regexp.new("^" + glob.gsub(".", "\\.").gsub("**", ".*").gsub("*", "[^/]*") + "$")    end
   end
 end
