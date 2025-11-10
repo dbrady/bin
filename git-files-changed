@@ -56,7 +56,7 @@ BANNER
       opt :debug, "Print extra debug info", default: false
       opt :exclude, "Filenames to exclude (fragment)", short: :x, type: :string, multi: true
       opt :deleted, "Include files that have been deleted and are no longer extant", short: :e, default: false
-      opt :merge_base,"Calculate the merge-base of this branch against the given branch name", short: :m, default: false
+      opt :merge_base,"Calculate changes from the shared merge-base of the given branch", short: :m, default: false
       opt :only, "Pattern to include", short: :o, type: :string, multi: true
       opt :pretend, "Print commands but do not run them", default: false
       opt :quiet, "Run with minimal output", default: false
@@ -72,10 +72,17 @@ BANNER
 
     range = "-n 10"
 
+    # git files-changed abc123..def456
+    # look at commits in that range
+    # ARGV.first because "x..y" is one string
+    ARGV.first
+
     range = if ARGV.empty?
               parent = git_parent_or_main_branch
               $stderr.puts "Diffing against branch: #{parent.inspect}" if verbose?
-              parent = get_command_output "git merge-base #{parent} HEAD" unless opts[:merge_base_given] && !merge_base?
+              if merge_base?
+                parent = get_command_output "git merge-base #{parent} HEAD"
+              end
               "#{parent}..HEAD"
             elsif ARGV.size == 2
               # git files-changed abc123 def456
@@ -84,7 +91,7 @@ BANNER
               # git files-changed 5
               # look at last 5 commits
               "-n #{ARGV.first}"
-            elsif ARGV.first =~ /\.\./
+            elsif ARGV.first&.start_with?("..")
               # git files-changed abc123..def456
               # look at commits in that range
               # ARGV.first because "x..y" is one string
@@ -106,7 +113,6 @@ BANNER
     files = files.reject {|filename| opts[:exclude].any? {|pattern| File.fnmatch(pattern, filename) }}
 
     files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } unless include_deleted?
-
 
     puts files
   end

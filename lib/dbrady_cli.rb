@@ -309,6 +309,10 @@ module DbradyCli
     end
   end
 
+  def git_files_changed
+    `git files-changed`.each_line.map(&:strip)
+  end
+
   def get_board_and_ticket_from_branch
     board, ticket = `git current-branch`
                       .strip

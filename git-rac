@@ -10,13 +10,16 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
+  opt_flag :all
+
   def run
     @opts = Optimist.options do
       banner <<BANNER
-# git rac <file(s)> - review and commit
+git rac <file(s)> - review and commit
 
 Options:
 BANNER
+      opt :all, "Automatically include all modified files", short: :a, default: false
       opt :debug, "Print extra debug info", short: :d, default: false
       opt :pretend, "Print commands but do not run them", short: :p, default: false
       opt :quiet, "Run with minimal output", short: :q, default: false
@@ -24,13 +27,16 @@ BANNER
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     dump_opts if debug?
-    Optimist.educate if ARGV.empty? # Remove this if your script takes no args
 
     run!
   end
 
   def run!
-    files = ARGV.join(' ').inspect
+    files = if all?
+              get_command_output_lines("git modified", quiet: true).map(&:inspect).join(' ')
+            else
+              ARGV.join(' ').inspect
+            end
     run_command "git add #{files}"
     if run_command("git commit -v")
       puts "Committed.".light_green
