@@ -33,15 +33,15 @@ BANNER
 
   def run!
     files = if all?
-              get_command_output_lines("git modified", quiet: true).map(&:inspect).join(' ')
+              get_command_output_lines('git modified', quiet: true).map(&:inspect).join(' ')
             else
-              ARGV.join(' ').inspect
+              ARGV.map(&:inspect) * ' '
             end
     run_command "git add #{files}"
-    if run_command("git commit -v")
-      puts "Committed.".light_green
+    if run_command('git commit -v')
+      puts 'Committed.'.light_green
     else
-      puts "Resetting file"
+      puts 'Resetting file'
       # TODO: don't reset files if they were already staged?
       run_command "git reset #{files}"
     end
