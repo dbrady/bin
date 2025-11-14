@@ -1,2 +1,2 @@
 #!/bin/bash
-git rev-parse --abbrev-ref HEAD
+git symbolic-ref --short refs/remotes/origin/HEAD | sed "s|^origin/||"
