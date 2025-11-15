@@ -6,7 +6,13 @@
 # pom # 25:00
 # pom <seconds>
 # pom mm:ss
-
+#
+# TODO: Port this to dbrady_cli, or at least Optimist
+#
+# TODO: Two Rows. pom --title="Fix Banner"
+#  FIX BANNER
+#    25:00
+# Etc
 def osx?
   `uname -s`.strip == "Darwin"
 end
