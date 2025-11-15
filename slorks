@@ -10,7 +10,7 @@
 # slorks update <ticket_details> <new_ticket_details> (no idea how to do this. Find title then set title what)
 #
 # slorks [create|edit|update|list|show]
-# $ slorks   --board=MPS --jira=199 --repo=merchant_portal --title="Remove spiff orders table" --status="p" --notes="blocked by MPS-209"
+# $ slorks   --board=MPS --jira=199 --repo=merchant_portal --title='Remove spiff orders table' --status='p' --notes='blocked by MPS-209'
 #
 
 # TODO: It's time for some TODO-Driven-Development
@@ -25,15 +25,15 @@
 # - [ ] Argv Upgrading
 #    - [ ] think on generalizing optimist (or just adapting my own args handler)
 #      towards a <command> <subcommand> <args> structure where each command
-#      could potentially open up a subinstance of optimist, like how "rails g
-#      help" and "rails g migration help" will send the help arg to generate or
-#      to migration. There's messes in there like tail args, e.g. "foo arg -a"
+#      could potentially open up a subinstance of optimist, like how ''rails g
+#      help' and 'rails g migration help' will send the help arg to generate or
+#      to migration. There's messes in there like tail args, e.g. 'foo arg -a'
 #      is that foo(arg, -a) or foo.arg(-a), etc, but that's a well-studied
-#      problem (Ruby solves it with precedence, "foo arg, -a" means "foo(arg,
-#      -a)" and "foo arg a" means "foo(arg(-a))". Mind you, Ruby has commas and
+#      problem (Ruby solves it with precedence, 'foo arg, -a' means 'foo(arg,
+#      -a)' and 'foo arg a' means 'foo(arg(-a))'. Mind you, Ruby has commas and
 #      bash does not...
 #   - [ ] Accept ARGV[2] as the value for setter commands, e.g. slorks notes
-#     MPS-42 "This is a note" instead of slorks notes MPS-42 --notes="This is a
+#     MPS-42 'This is a note' instead of slorks notes MPS-42 --notes="This is a
 #     note"
 # - [ ] Time tracking
 #
@@ -46,20 +46,20 @@
 # - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [X] Project codes
 
-require "clipboard"
-require "colorize"
-require "erb"
-require "extralite"
-require "fileutils"
-require "optimist"
-require "sequel"
-require_relative "lib/dbrady_cli"
-require_relative "lib/tiny_table"
+require 'clipboard'
+require 'colorize'
+require 'erb'
+require 'extralite'
+require 'fileutils'
+require 'optimist'
+require 'sequel'
+require_relative 'lib/dbrady_cli'
+require_relative 'lib/tiny_table'
 String.disable_colorization unless $stdout.tty?
 
 class Application
   include DbradyCli
-  DEFAULT_REPO = "merchant_portal".freeze
+  DEFAULT_REPO = 'merchant_portal'.freeze
 
   opt_flag :color,
            :created_at,
@@ -75,33 +75,33 @@ class Application
            :updated_at
 
   COMMANDS = {
-    "abandon"   => "Mark ticket as abandoned",
-    "announce"  => "Display merge announcement",
-    "block"     => "Mark ticket as blocked",
-    "branch"    => "Set branch",
-    "c"         => "Open database console",
-    "console"   => "Open database console",
-    "clean"     => "Soft-delete all deployed tickets (use after reporting them as deployed)",
-    "code"      => "Set project code",
-    "commands"  => "List commands",
-    "create"    => "Create slorks database",
-    "delete"    => "Soft-delete ticket",
-    "deploy"    => "Mark ticket as Deployed",
-    "done"      => "Mark ticket as done",
-    "go"        => "Go to branch for this ticket (git checkout)",
-    "merge"     => "Mark this ticket as merge-only (not rebasable by git remaster)",
-    "new"       => "Create new ticket (automatically called from git-new-branch)",
-    "notes"     => "Edit ticket notes",
-    "pr"        => "Edit ticket PR",
-    "progress"  => "Mark ticket as in progress",
-    "qa"        => "Mark ticket as ready for qa",
-    "ready"     => "Mark ticket as ready for deploy",
-    "review"    => "Mark ticket as in review (automatically called from git set-pr)",
-    "status"    => "Edit ticket status",
-    "statuses"  => "List statuses",
-    "time"      => "Log time against a ticket",
-    "title"     => "Edit ticket title",
-    "undelete"  => "Undelete a ticket (provide new status, default is 'p')",
+    'abandon'   => 'Mark ticket as abandoned',
+    'announce'  => 'Display merge announcement',
+    'block'     => 'Mark ticket as blocked',
+    'branch'    => 'Set branch',
+    'c'         => 'Open database console',
+    'console'   => 'Open database console',
+    'clean'     => 'Soft-delete all deployed tickets (use after reporting them as deployed)',
+    'code'      => 'Set project code',
+    'commands'  => 'List commands',
+    'create'    => 'Create slorks database',
+    'delete'    => 'Soft-delete ticket',
+    'deploy'    => 'Mark ticket as Deployed',
+    'done'      => 'Mark ticket as done',
+    'go'        => 'Go to branch for this ticket (git checkout)',
+    'merge'     => 'Mark this ticket as merge-only (not rebasable by git remaster)',
+    'new'       => 'Create new ticket (automatically called from git-new-branch)',
+    'notes'     => 'Edit ticket notes',
+    'pr'        => 'Edit ticket PR',
+    'progress'  => 'Mark ticket as in progress',
+    'qa'        => 'Mark ticket as ready for qa',
+    'ready'     => 'Mark ticket as ready for deploy',
+    'review'    => 'Mark ticket as in review (automatically called from git set-pr)',
+    'status'    => 'Edit ticket status',
+    'statuses'  => 'List statuses',
+    'time'      => 'Log time against a ticket',
+    'title'     => 'Edit ticket title',
+    'undelete'  => 'Undelete a ticket (provide new status, default is "p")',
   }.freeze
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
@@ -109,20 +109,20 @@ class Application
   NO_LIST_COMMANDS = %w{announce commands console go statuses}
 
   KNOWN_STATUSES = {
-    ">" => { name: "Deferred",        colors: {mode: :normal, color: :yellow, background: :normal} },
-    "D" => { name: "Deployed",        colors: {mode: :normal, color: :green, background: :normal} },
-    "R" => { name: "Reverted",        colors: {mode: :bold,   color: :light_red, background: :normal}},
-    "b" => { name: "Blocked",         colors: {mode: :bold,   color: :white, background: :red} },
-    "c" => { name: "Cancelled",       colors: {mode: :bold,   color: :light_red, background: :normal}},
-    "d" => { name: "Ready to Deploy", colors: {mode: :bold,   color: :light_green, background: :normal} },
-    "o" => { name: "Done",            colors: {mode: :normal, color: :light_black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
-    "p" => { name: "In Progress",     colors: {mode: :normal, color: :blue, background: :normal} },
-    "q" => { name: "QA Review",       colors: {mode: :normal, color: :light_magenta, background: :normal} },
-    "r" => { name: "In Review",       colors: {mode: :normal, color: :magenta, background: :normal} },
-    "x" => { name: "Abandoned",       colors: {mode: :normal, color: :light_black, background: :normal} },
+    '>' => { name: 'Deferred',        colors: {mode: :normal, color: :yellow, background: :normal} },
+    'D' => { name: 'Deployed',        colors: {mode: :normal, color: :green, background: :normal} },
+    'R' => { name: 'Reverted',        colors: {mode: :bold,   color: :light_red, background: :normal}},
+    'b' => { name: 'Blocked',         colors: {mode: :bold,   color: :white, background: :red} },
+    'c' => { name: 'Cancelled',       colors: {mode: :bold,   color: :light_red, background: :normal}},
+    'd' => { name: 'Ready to Deploy', colors: {mode: :bold,   color: :light_green, background: :normal} },
+    'o' => { name: 'Done',            colors: {mode: :normal, color: :light_black, background: :black} }, # of a Cadillac, number one with a bullet, I'm a power pack ;^)
+    'p' => { name: 'In Progress',     colors: {mode: :normal, color: :blue, background: :normal} },
+    'q' => { name: 'QA Review',       colors: {mode: :normal, color: :light_magenta, background: :normal} },
+    'r' => { name: 'In Review',       colors: {mode: :normal, color: :magenta, background: :normal} },
+    'x' => { name: 'Abandoned',       colors: {mode: :normal, color: :light_black, background: :normal} },
   }
 
-  if !ARGV.include?("create")
+  if !ARGV.include?('create')
     # Slork represents one slackup entry. Class methods let you find slorks, instance methods let you work with one.
     class Slork < Sequel::Model(DB[:slorks])
       plugin :timestamps, update_on_create: true
@@ -206,7 +206,7 @@ class Application
         save
       end
 
-      def undelete!(status: "p")
+      def undelete!(status: 'p')
         self.deleted_at = nil
         self.status = status
         puts self.inspect if debug?
@@ -239,84 +239,48 @@ Options:
 BANNER
 
       # TODO: drop --board=COR, --ticket=3566 in favor of --ticket=COR-3566
-      opt :board,        "Jira board", type: :string
-      opt :branch,       "Branch name", type: :string
-      opt :color,        "Colorize output by status", default: true
-      opt :created_at,   "Show created_at timestamps", default: false
-      opt :debug,        "Print extra debug info", short: :d, default: false
-      opt :force,        "Force creation of a duplicate ticket if ticket already exists", short: "f", default: false
-      opt :fresh,        "List freshest slorks first", short: :F, default: false
-      opt :hide_jira,    "Do not display jira column", short: :J, default: false
-      opt :hide_notes,   "Do not display notes column", short: :N, default: false
-      opt :hide_pr,      "Do not display pr column", short: :P, default: false
-      opt :hide_repo,    "Do not display repo column", short: :R, default: false
-      opt :humanize,     "Humanize timestamps", default: false
-      opt :markdown,     "Display output as markdown for Slack", default: false
-      opt :no_color,     "Do not colorize output by status", short: :C, default: false
-      opt :notes,        "Notes text", type: :string
-      opt :pr,           "ID of PR", type: :int
-      opt :pretend,      "Print commands but do not run them", short: :p, default: false
-      opt :project_code, "Hide project Code", default: false
-      opt :quiet,        "Run with minimal output", short: :q, default: false
-      opt :repo,         "Repository slug", type: :string, default: DEFAULT_REPO
-      opt :status,       "Status text", type: :string
-      opt :ticket,       "Jira ticket number", type: :int
-      opt :title,        "Title of PR", type: :string
-      opt :updated_at,   "Show updated_at timestamps", default: false
-      opt :verbose,      "Run with verbose output (overrides --quiet)", short: :v, default: false
+      opt :board,        'Jira board', type: :string
+      opt :branch,       'Branch name', type: :string
+      opt :color,        'Colorize output by status', default: true
+      opt :created_at,   'Show created_at timestamps', default: false
+      opt :debug,        'Print extra debug info', short: :d, default: false
+      opt :force,        'Force creation of a duplicate ticket if ticket already exists', short: :f, default: false
+      opt :fresh,        'List freshest slorks first', short: :F, default: false
+      opt :hide_jira,    'Do not display jira column', short: :J, default: false
+      opt :hide_notes,   'Do not display notes column', short: :N, default: false
+      opt :hide_pr,      'Do not display pr column', short: :P, default: false
+      opt :hide_repo,    'Do not display repo column', short: :R, default: false
+      opt :humanize,     'Humanize timestamps', default: false
+      opt :markdown,     'Display output as markdown for Slack', default: false
+      opt :no_color,     'Do not colorize output by status', short: :C, default: false
+      opt :notes,        'Notes text', type: :string
+      opt :pr,           'ID of PR', type: :int
+      opt :pretend,      'Print commands but do not run them', short: :p, default: false
+      opt :project_code, 'Hide project Code', default: false
+      opt :quiet,        'Run with minimal output', short: :q, default: false
+      opt :repo,         'Repository slug', type: :string, default: DEFAULT_REPO
+      opt :status,       'Status text', type: :string
+      opt :ticket,       'Jira ticket number', type: :int
+      opt :title,        'Title of PR', type: :string
+      opt :updated_at,   'Show updated_at timestamps', default: false
+      opt :verbose,      'Run with verbose output (overrides --quiet)', short: :v, default: false
     end
-    if debug?
-      puts opts.sort.to_h.inspect
-      puts "opt_flags: (#{opt_flags.size})"
-      opt_flags.each do |flag|
-        flag_method = "#{flag}?"
-        puts "#{flag}: #{public_send(flag_method).inspect}"
-      end
-      puts "opt_readers: (#{opt_readers.size})"
-      opt_readers.each do |reader|
-        puts "#{reader}: #{public_send(reader).inspect}"
-      end
-    end
+    dump_opts if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     opts[:color] = false if opts[:no_color]
 
     argv = ARGV.dup
     command = argv.shift&.downcase
-    board, ticket = argv.shift&.split("-")
+    board, ticket = argv.shift&.split('-')
     Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.keys.inspect}" unless command.nil? || COMMANDS.keys.include?(command)
 
-    if command == "create"
+    if command == 'create'
       ensure_table_exists!
       exit
     end
 
     backup_schema
     backup_database
-
-    if debug?
-      puts "> board from ARGV: #{board}"
-      puts "> ticket from ARGV: #{ticket}"
-      puts "> !opts[:board_given]: #{(!opts[:board_given]).inspect}"
-      puts "> !opts[:ticket_given]: #{(!opts[:ticket_given]).inspect}"
-      puts "> ticket =~ /^([A-Z]+)-(\d+)$/: #{(ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
-      puts "> !opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/: #{(!opts[:board_given] && !opts[:ticket_given] && ticket =~ /^([A-Z]+)-(\d+)$/).inspect}"
-      puts '> --'
-      puts "> OPT FLAGS:"
-      puts "> debug:      #{debug?.inspect}"
-      puts "> pretend:    #{pretend?.inspect}"
-      puts "> verbose:    #{verbose?.inspect}"
-      puts "> quiet:      #{quiet?.inspect}"
-      puts "> color:      #{color?.inspect}"
-      puts "> created_at: #{created_at?.inspect}"
-      puts "> force:      #{force?.inspect}"
-      puts "> hide_jira:    #{hide_jira?.inspect}"
-      puts "> hide_notes:   #{hide_notes?.inspect}"
-      puts "> hide_pr:      #{hide_pr?.inspect}"
-      puts "> hide_repo:    #{hide_repo?.inspect}"
-      puts "> humanize:   #{humanize?.inspect}"
-      puts "> markdown:   #{markdown?.inspect}"
-      puts "> updated_at: #{updated_at?.inspect}"
-    end
 
     board, ticket = if opts[:board_given] && opts[:ticket_given]
                       # both given, slorks --board=AAA --ticket=42
@@ -338,30 +302,30 @@ BANNER
     puts ["Board: #{board}", "Ticket: #{ticket}"] if debug?
 
     case command
-    when "abandon" then mark_abandoned(board, ticket)
-    when "announce" then announce(board, ticket)
-    when "block" then block(board, ticket, opts[:notes])
-    when "branch" then set_branch(board, ticket, opts[:branch])
-    when "clean" then clean_deploys
-    when "code" then update_project_code(board, ticket)
-    when "commands" then list_commands
-    when "console", "c" then run_command "sqlite3 -table #{DATABASE_PATH}"
-    when "delete" then soft_delete(board, ticket)
-    when "deploy" then deploy(board, ticket)
-    when "done" then mark_done(board, ticket)
-    when "go" then go_to_branch_for(board, ticket)
-    when "new" then add_new(board, ticket)
-    when "notes" then update_notes(board, ticket)
-    when "pr" then update_pr(board, ticket)
-    when "progress" then mark_in_progress(board, ticket)
-    when "qa" then mark_ready_for_qa(board, ticket)
-    when "ready" then ready(board, ticket)
-    when "review" then move_into_review(board, ticket)
-    when "status" then update_status(board, ticket)
-    when "statuses" then list_statuses
-    when "time" then record_time(board, ticket)
-    when "title" then update_title(board, ticket)
-    when "undelete" then undelete(board, ticket)
+    when 'abandon' then mark_abandoned(board, ticket)
+    when 'announce' then announce(board, ticket)
+    when 'block' then block(board, ticket, opts[:notes])
+    when 'branch' then set_branch(board, ticket, opts[:branch])
+    when 'clean' then clean_deploys
+    when 'code' then update_project_code(board, ticket)
+    when 'commands' then list_commands
+    when 'console', 'c' then run_command "sqlite3 -table #{DATABASE_PATH}"
+    when 'delete' then soft_delete(board, ticket)
+    when 'deploy' then deploy(board, ticket)
+    when 'done' then mark_done(board, ticket)
+    when 'go' then go_to_branch_for(board, ticket)
+    when 'new' then add_new(board, ticket)
+    when 'notes' then update_notes(board, ticket)
+    when 'pr' then update_pr(board, ticket)
+    when 'progress' then mark_in_progress(board, ticket)
+    when 'qa' then mark_ready_for_qa(board, ticket)
+    when 'ready' then ready(board, ticket)
+    when 'review' then move_into_review(board, ticket)
+    when 'status' then update_status(board, ticket)
+    when 'statuses' then list_statuses
+    when 'time' then record_time(board, ticket)
+    when 'title' then update_title(board, ticket)
+    when 'undelete' then undelete(board, ticket)
     else
       if markdown?
         puts list_as_markdown if markdown?
@@ -386,12 +350,12 @@ BANNER
     head << :project_code if for_log || project_code?
     if debug?
       puts head.map.with_index {|col, index| "#{index}: #{col}" }
-      puts "----------"
+      puts '----------'
     end
     table = TinyTable.new(head: )
 
     order_column = fresh? ? :updated_at : :created_at
-    Slork.where(deleted_at: nil).order(order_column, "ASC").all.each do |slork|
+    Slork.where(deleted_at: nil).order(order_column, 'ASC').all.each do |slork|
       row = [slork.ticket_key]
       row << slork.repo if for_log || !hide_repo?
       row += [slork.pr, slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
@@ -402,7 +366,7 @@ BANNER
       row << display_time(slork.created_at, for_log:) if for_log || created_at?
       row << display_time(slork.updated_at, for_log:) if for_log || updated_at?
       puts row.map.with_index {|col, index| "#{index}: #{col}" } if debug?
-      puts "--" if debug?
+      puts '--' if debug?
       table.rows << row
     end
     table.to_s
@@ -441,10 +405,10 @@ BANNER
       elsif minutes > 1
         "#{'%.1f' % minutes} minutes ago"
       else
-        "just now"
+        'just now'
       end
     else
-      time.strftime("%Y-%m-%d %H:%M:%S")
+      time.strftime('%Y-%m-%d %H:%M:%S')
     end
   end
 
@@ -460,7 +424,7 @@ BANNER
   end
 
   def list_commands
-    puts "Commands:"
+    puts 'Commands:'
     longest_key = COMMANDS.keys.map(&:length).max + 1
     COMMANDS.each_pair do |key, value|
       puts "  #{(key + ":").ljust(longest_key)} #{value}"
@@ -468,7 +432,7 @@ BANNER
   end
 
   def list_statuses
-    puts "Statuses:"
+    puts 'Statuses:'
     KNOWN_STATUSES.each_pair do |key, value|
       puts "  #{key}: #{colorize_text_by_status(key, value[:name])}"
     end
@@ -476,11 +440,11 @@ BANNER
 
   def copy_list_as_markdown
     Clipboard.copy(list_as_markdown)
-    puts "Slackup report copied to clipboard." if verbose?
+    puts 'Slackup report copied to clipboard.' if verbose?
   end
 
   def log_slorks
-    folder = File.expand_path "~/bin/db/logs"
+    folder = File.expand_path '~/bin/db/logs'
     filename = "slorks.#{Time.now.strftime("%Y%m%d.%H%M%S")}.log"
     full_path = File.join folder, filename
     Dir.mkdir folder unless Dir.exist? folder
@@ -492,7 +456,7 @@ BANNER
     if log_has_changed?(path_to_last_log, the_list)
       write_log(full_path, the_list)
     else
-      puts "No changes to log." if verbose?
+      puts 'No changes to log.' if verbose?
     end
   end
 
@@ -504,8 +468,8 @@ BANNER
 
   def backup_database
     here = File.dirname(File.expand_path(__FILE__))
-    db_file = Time.now.strftime("git-settings.%F.db")
-    backup_filename = File.join(here, "db", "backups", db_file)
+    db_file = Time.now.strftime('git-settings.%F.db')
+    backup_filename = File.join(here, 'db', 'backups', db_file)
     src_filename = DATABASE_PATH
 
     FileUtils.cp(src_filename, backup_filename)
@@ -513,14 +477,14 @@ BANNER
 
   def backup_schema
     here = File.dirname(File.expand_path(__FILE__))
-    schema_file = File.join(here, "db", "schema-git-settings.sql")
+    schema_file = File.join(here, 'db', 'schema-git-settings.sql')
 
     run_command "sqlite3 '#{DATABASE_PATH}' '.schema --nosys --indent' > '#{schema_file}'", quiet: !verbose?
   end
 
   def path_to_last_log
-    folder = File.expand_path "~/bin/db/logs"
-    Dir.glob(File.join(folder, "slorks.*.log")).sort.last
+    folder = File.expand_path '~/bin/db/logs'
+    Dir.glob(File.join(folder, 'slorks.*.log')).sort.last
   end
 
   def write_log(full_path, list)
@@ -535,11 +499,11 @@ BANNER
     slorks = Slork.where(deleted_at: nil).order(:created_at).all
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
-      template_lines << "*Title:* <%= slork.title %>"
-      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !hide_jira?
-      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !hide_pr?
-      template_lines << "*Status:* <%= slork.status_text %>"
-      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !hide_notes?
+      template_lines << '*Title:* <%= slork.title %>'
+      template_lines << '*Ticket:* <%= slork.jira_link %>' if slork.jira_link && !hide_jira?
+      template_lines << '*PR:* <%= slork.pr_link %>' if slork.pr_link && !hide_pr?
+      template_lines << '*Status:* <%= slork.status_text %>'
+      template_lines << '*Notes:* <%= slork.notes %>' if slork.notes && slork.notes != '' && !hide_notes?
 
       template = template_lines * "\n"
 
@@ -611,7 +575,7 @@ SQL
   def add_new(board, ticket)
     # if an undeleted ticket exists matching board and ticket, abort
     if !force? && Slork.find_ticket(board:, ticket:).any?
-      puts "Ticket already exists. Aborting.".red
+      puts 'Ticket already exists. Aborting.'.red
       exit 1
     end
 
@@ -639,9 +603,11 @@ SQL
     tickets = Slork.find_ticket(board:, ticket:, title:, pr:, repo:, status:, notes:, deleted:)
 
     if tickets.size != 1
-      puts tickets.map(&:inspect) if debug?
       inspection = "board: #{board.inspect}, ticket: #{ticket.inspect}, title: #{title.inspect}, pr: #{pr.inspect}, repo: #{repo.inspect}, status: #{status.inspect}, notes: #{notes.inspect}, deleted: #{deleted.inspect}"
-      raise "Expected exactly 1 ticket to be found, got #{tickets.size}. (Searched: #{inspection})"
+      puts "Expected exactly 1 ticket to be found, got #{tickets.size}. (Searched: #{inspection})"
+      puts 'Tickets found:'
+      puts tickets.map(&:values)
+      raise inspection
     end
 
     tickets.first
@@ -653,7 +619,7 @@ SQL
       ticket: ticket,
     )
     ticket.block!(reason: reason)
-    puts "Blocked."
+    puts 'Blocked.'
     puts ticket if debug?
   end
 
@@ -668,7 +634,7 @@ SQL
       notes: opts[:notes],
     )
     ticket.soft_delete! unless pretend?
-    puts "Deleted."
+    puts 'Deleted.'
     puts ticket if debug?
   end
 
@@ -683,13 +649,13 @@ SQL
       notes: opts[:notes],
       deleted: true
     )
-    ticket.undelete!(status: opts[:status] || "p")
-    puts "Undeleted."
+    ticket.undelete!(status: opts[:status] || 'p')
+    puts 'Undeleted.'
     puts ticket if debug?
   end
 
   def clean_deploys
-    Slork.where(deleted_at: nil, status: ["D", "o", "x"]).all.each do |slork|
+    Slork.where(deleted_at: nil, status: ['D', 'o', 'x']).all.each do |slork|
       puts "Cleaning ticket #{slork}"
       slork.soft_delete! unless pretend?
     end
@@ -703,10 +669,10 @@ SQL
       repo: opts[:repo],
       notes: opts[:notes],
     )
-    pr = opts[:pr] || get_command_output("git get-pr-id --quiet")
+    pr = opts[:pr] || get_command_output('git get-pr-id --quiet')
 
     if !pretend?
-      ticket.set_pr!(pr) if pr != ""
+      ticket.set_pr!(pr) if pr != ''
       puts "Set PR id of #{ticket} to #{pr}."
     end
     ticket.move_into_review! unless pretend?
@@ -744,7 +710,7 @@ SQL
   end
 
   def record_time(board, ticket)
-    raise "record_time not yet implemented"
+    raise 'record_time not yet implemented'
   end
 
   def ready(board, ticket)
@@ -776,7 +742,7 @@ SQL
 
     # abort unless git-isclean OR --force
     if !git_isclean && !force?
-      puts "You have unstaged changes. Commit or stash them, or rerun with --force." unless quiet?
+      puts 'You have unstaged changes. Commit or stash them, or rerun with --force.' unless quiet?
       exit 1
     end
 
@@ -798,9 +764,9 @@ SQL
     )
 
     ticket.notes = opts[:notes] if opts[:notes_given]
-    ticket.status = "o"
+    ticket.status = 'o'
     ticket.save
-    puts "Marked done."
+    puts 'Marked done.'
     puts ticket if debug?
   end
 
@@ -812,9 +778,9 @@ SQL
     )
 
     ticket.notes = opts[:notes] if opts[:notes_given]
-    ticket.status = "x"
+    ticket.status = 'x'
     ticket.save
-    puts "Marked abandoned."
+    puts 'Marked abandoned.'
     puts ticket if debug?
   end
 
@@ -826,9 +792,9 @@ SQL
     )
 
     ticket.notes = opts[:notes] if opts[:notes_given]
-    ticket.status = "q"
+    ticket.status = 'q'
     ticket.save
-    puts "Marked as in QA."
+    puts 'Marked as in QA.'
     puts ticket if debug?
   end
 
@@ -840,9 +806,9 @@ SQL
     )
 
     ticket.notes = opts[:notes] if opts[:notes_given]
-    ticket.status = "p"
+    ticket.status = 'p'
     ticket.save
-    puts "Marked as in progress."
+    puts 'Marked as in progress.'
     puts ticket if debug?
   end
 
@@ -859,7 +825,7 @@ SQL
 
     ticket.notes = opts[:notes]
     ticket.save
-    puts "Updated note."
+    puts 'Updated note.'
     puts ticket if debug?
   end
 
@@ -876,7 +842,7 @@ SQL
 
     ticket.title = opts[:title]
     ticket.save
-    puts "Updated title."
+    puts 'Updated title.'
     puts ticket if debug?
   end
 
@@ -889,13 +855,13 @@ SQL
       repo: opts[:repo],
       notes: opts[:notes],
     )
-    Optimist::die "No PR given, please set with --pr=<id>" unless opts[:pr]
+    Optimist::die 'No PR given, please set with --pr=<id>' unless opts[:pr]
 
     opts[:pr] = ARGV[2] unless opts[:pr_given]
 
     ticket.pr = opts[:pr]
     ticket.save
-    puts "Updated pr."
+    puts 'Updated pr.'
     puts ticket if debug?
   end
 
@@ -912,7 +878,7 @@ SQL
     opts[:status] = ARGV[2] unless opts[:status_given]
     ticket.status = opts[:status]
     ticket.save
-    puts "Updated status."
+    puts 'Updated status.'
     puts ticket if debug?
   end
 end
