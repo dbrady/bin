@@ -75,7 +75,7 @@ BANNER
       run_command "go '#{branch}'"
     when "unset"
       unset_parent_branch repo, git_current_branch
-    else # get
+    when nil # get
       case ARGV.size
       when 0
         branch = git_current_branch
@@ -92,6 +92,8 @@ BANNER
       run_command "echo '#{parent_branch}' | pbcopy" if copy?
 
       puts parent_branch
+    else
+      puts "Unrecognized command: #{command.inspect}"
     end
   end
 
