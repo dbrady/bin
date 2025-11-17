@@ -2,5 +2,5 @@
 echo -e '\033[36mgit restore db/seeds.rb\033[0m'
 git restore db/seeds.rb
 
-echo -e '\033[36mgit restore ./swagger/v{1,2}/swagger.yaml\033[0m'
-git restore ./swagger/v{1,2}/swagger.yaml
+echo -e '\033[36mgit restore ./swagger/v?/swagger.yaml\033[0m'
+git restore ./swagger/v?/swagger.yaml
