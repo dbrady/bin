@@ -405,10 +405,10 @@ BANNER
       elsif minutes > 1
         "#{'%.1f' % minutes} minutes ago"
       else
-        'just now'
+        "just now"
       end
     else
-      time.strftime('%Y-%m-%d %H:%M:%S')
+      time.strftime("%Y-%m-%d %H:%M:%S")
     end
   end
 
@@ -444,7 +444,7 @@ BANNER
   end
 
   def log_slorks
-    folder = File.expand_path '~/bin/db/logs'
+    folder = File.expand_path "~/bin/db/logs"
     filename = "slorks.#{Time.now.strftime("%Y%m%d.%H%M%S")}.log"
     full_path = File.join folder, filename
     Dir.mkdir folder unless Dir.exist? folder
@@ -468,8 +468,8 @@ BANNER
 
   def backup_database
     here = File.dirname(File.expand_path(__FILE__))
-    db_file = Time.now.strftime('git-settings.%F.db')
-    backup_filename = File.join(here, 'db', 'backups', db_file)
+    db_file = Time.now.strftime("git-settings.%F.db")
+    backup_filename = File.join(here, "db", "backups", db_file)
     src_filename = DATABASE_PATH
 
     FileUtils.cp(src_filename, backup_filename)
@@ -477,14 +477,14 @@ BANNER
 
   def backup_schema
     here = File.dirname(File.expand_path(__FILE__))
-    schema_file = File.join(here, 'db', 'schema-git-settings.sql')
+    schema_file = File.join(here, "db", "schema-git-settings.sql")
 
     run_command "sqlite3 '#{DATABASE_PATH}' '.schema --nosys --indent' > '#{schema_file}'", quiet: !verbose?
   end
 
   def path_to_last_log
-    folder = File.expand_path '~/bin/db/logs'
-    Dir.glob(File.join(folder, 'slorks.*.log')).sort.last
+    folder = File.expand_path "~/bin/db/logs"
+    Dir.glob(File.join(folder, "slorks.*.log")).sort.last
   end
 
   def write_log(full_path, list)
@@ -499,11 +499,11 @@ BANNER
     slorks = Slork.where(deleted_at: nil).order(:created_at).all
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
-      template_lines << '*Title:* <%= slork.title %>'
-      template_lines << '*Ticket:* <%= slork.jira_link %>' if slork.jira_link && !hide_jira?
-      template_lines << '*PR:* <%= slork.pr_link %>' if slork.pr_link && !hide_pr?
-      template_lines << '*Status:* <%= slork.status_text %>'
-      template_lines << '*Notes:* <%= slork.notes %>' if slork.notes && slork.notes != '' && !hide_notes?
+      template_lines << "*Title:* <%= slork.title %>"
+      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !hide_jira?
+      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !hide_pr?
+      template_lines << "*Status:* <%= slork.status_text %>"
+      template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !hide_notes?
 
       template = template_lines * "\n"
 
@@ -649,13 +649,13 @@ SQL
       notes: opts[:notes],
       deleted: true
     )
-    ticket.undelete!(status: opts[:status] || 'p')
+    ticket.undelete!(status: opts[:status] || "p")
     puts 'Undeleted.'
     puts ticket if debug?
   end
 
   def clean_deploys
-    Slork.where(deleted_at: nil, status: ['D', 'o', 'x']).all.each do |slork|
+    Slork.where(deleted_at: nil, status: ["D", "o", "x"]).all.each do |slork|
       puts "Cleaning ticket #{slork}"
       slork.soft_delete! unless pretend?
     end
@@ -672,7 +672,7 @@ SQL
     pr = opts[:pr] || get_command_output('git get-pr-id --quiet')
 
     if !pretend?
-      ticket.set_pr!(pr) if pr != ''
+      ticket.set_pr!(pr) if pr != ""
       puts "Set PR id of #{ticket} to #{pr}."
     end
     ticket.move_into_review! unless pretend?
@@ -710,7 +710,7 @@ SQL
   end
 
   def record_time(board, ticket)
-    raise 'record_time not yet implemented'
+    raise "record_time not yet implemented"
   end
 
   def ready(board, ticket)
@@ -742,7 +742,7 @@ SQL
 
     # abort unless git-isclean OR --force
     if !git_isclean && !force?
-      puts 'You have unstaged changes. Commit or stash them, or rerun with --force.' unless quiet?
+      puts "You have unstaged changes. Commit or stash them, or rerun with --force." unless quiet?
       exit 1
     end
 
@@ -855,7 +855,7 @@ SQL
       repo: opts[:repo],
       notes: opts[:notes],
     )
-    Optimist::die 'No PR given, please set with --pr=<id>' unless opts[:pr]
+    Optimist::die "No PR given, please set with --pr=<id>" unless opts[:pr]
 
     opts[:pr] = ARGV[2] unless opts[:pr_given]
 
