@@ -5,7 +5,27 @@
 # looking for hardcoded strings with spaces in them, as these are the least
 # likely to be constants or enums.
 #
+# This tool is for finding hardcodes that should be localized, so we want to
+# ignore interpolated strings. Also, SQL fragments are normally a terrible code
+# smell, but in this case, it's not a translation problem so we'd like to ignore
+# them.
+#
 # Vibcoded with Claude on 2025-11-18.
+
+# # For testing string finder
+# %Q|%Q pants pants this should show up|
+# %q|%q pants pants pants this should show up|
+# '\'pants pants #{first_name} this SHOULD show up because it is NOT interpolated'
+# "This is an interpolated string, whouch should be safe, but #{'it contains a hardcode'} so it SHOULD show up! But only the hardcoded bit."
+#
+# %Q|%Q{} pants pants #{first_name} this should NOT show up because it is interpolated|
+# %q|%q{} pants pants #{first_name} this SHOULD show up because it is NOT interpolated|
+
+# TODO:
+# - Heredocs
+# - Newlines
+#
+# - Detect and maybe ignore SQL fragments?
 
 require 'ripper'
 
