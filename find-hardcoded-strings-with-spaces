@@ -1,0 +1,75 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+#
+# find-hardcoded-string-with-spaces <path/to/file.rb> - parse a ruby file
+# looking for hardcoded strings with spaces in them, as these are the least
+# likely to be constants or enums.
+#
+# Vibcoded with Claude on 2025-11-18.
+
+require 'ripper'
+
+# Finds all hardcoded string literals that contain spaces
+class StringWithSpacesFinder
+  def initialize(file_path)
+    @file_path = file_path
+    @source = File.read(file_path)
+    @results = []
+  end
+
+  def find_strings_with_spaces
+    sexp = Ripper.sexp(@source)
+    walk_tree(sexp)
+    @results.sort_by { |r| r[:line] }.uniq { |r| [r[:line], r[:content]] }
+  end
+
+  private
+
+  def walk_tree(node)
+    return unless node.is_a?(Array)
+    return if node.empty?
+
+    # Check if this is a string content node: [:@tstring_content, "content", [line, col]]
+    if node[0] == :@tstring_content && node[1].is_a?(String) && node[2].is_a?(Array)
+      string_content = node[1]
+      line_number = node[2][0]
+
+      if string_content.include?(' ')
+        @results << { line: line_number, content: string_content }
+      end
+    end
+
+    # Recursively process all children
+    node.each do |child|
+      walk_tree(child)
+    end
+  end
+end
+
+# Main execution
+if __FILE__ == $PROGRAM_NAME
+  file_path = ARGV[0] || 'app/models/lease.rb'
+
+  unless File.exist?(file_path)
+    puts "Error: File not found: #{file_path}"
+    exit 1
+  end
+
+  puts "Analyzing: #{file_path}"
+  puts "=" * 80
+  puts
+
+  finder = StringWithSpacesFinder.new(file_path)
+  results = finder.find_strings_with_spaces
+
+  if results.empty?
+    puts "No hardcoded strings with spaces found."
+  else
+    results.each do |result|
+      puts "Line #{result[:line]}: \"#{result[:content]}\""
+    end
+    puts
+    puts "=" * 80
+    puts "Total: #{results.length} string(s) with spaces found"
+  end
+end
