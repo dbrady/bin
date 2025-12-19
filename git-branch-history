@@ -28,13 +28,8 @@ class Application
 
   attr_reader :db
 
-  opt_flag :console, :go, :journal, :log, :sort, :today, :unique, :utc, :yesterday
+  opt_flag :console, :go, :journal, :line_number, :log, :sort, :today, :unique, :utc, :yesterday
 
-  # TODO: opt_flag with rename? E.g.
-  # opt_flag( line_numbers: :"line-numbers" )
-  def line_numbers?
-    opts[:"line-number"]
-  end
 
   # this would be unnecessary if the tzinfo gem wasn't currently incompatible with my current ruby setup
   def convert_to_localtime_poro(time)
@@ -218,7 +213,7 @@ QUERY
                          else
                            convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
                          end
-            line_num = (line_numbers? && !quiet?) ? "%2d " % index : ""
+            line_num = (line_number? && !quiet?) ? "%2d " % index : ""
             puts "#{line_num}#{created_at}: #{row[:branch]}"
           end
         end

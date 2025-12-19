@@ -92,6 +92,17 @@ class Application
       run_command "git checkout '#{current_branch}'"
     end
 
+    # merge vs. rebase
+
+    # simpler:
+    # if user specified --merge
+    #   mark branch as unrebasable
+    #
+    # if branch is rebasable
+    #   proceed with rebase
+    # else
+    #   proceed with merge
+
     # if the branch is not rebasable, turn on --merge
     debug "branch_is_rebasable? #{branch_is_rebasable?.inspect}"
     if !branch_is_rebasable? && !opts[:merge]
@@ -99,6 +110,7 @@ class Application
       $stderr.puts "Branch is not rebasable; using merge strategy.".yellow unless quiet?
       opts[:merge_given] = opts[:merge] = true
     end
+
 
     stashed = if branch_is_dirty? && stash?
                 run_command("git stash")

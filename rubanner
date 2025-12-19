@@ -8,12 +8,14 @@
 # TODO: Have an optional ~/.rubanner.yml file, with defaults: font, fg_color, bg_color, and style (dim|bold|normal)
 
 # TODO: load defaults from ~/.rubanner.yml if present, otherwise keep hardcodes
+#
+# TODO: Port to dbrady_cli
 DEFAULTS = {
   font: "dos-rebel",
   bg_color: "light_blue",
   fg_color: "white",
   bold: true,
-  clear_screen: false,
+  clear: false,
 }
 
 require 'colorize'
@@ -24,15 +26,15 @@ require 'yaml'
 String.disable_colorization unless $stdout.tty?
 
 class Rubanner
-  attr_reader :messages, :colors, :output, :screen_width, :font, :clear_screen, :debug
+  attr_reader :messages, :colors, :output, :screen_width, :font, :clear, :debug
 
-  def initialize(messages:, colors:, output:, screen_width:, font:, clear_screen:, debug:)
+  def initialize(messages:, colors:, output:, screen_width:, font:, clear:, debug:)
     @output = output
     @screen_width = screen_width
     @font = font
     @messages = Array(messages)
     @colors = colors
-    @clear_screen = clear_screen
+    @clear = clear
     @debug = debug
   end
 
@@ -59,6 +61,9 @@ class Rubanner
       rpad = ' ' * right_size
 
       # Okay, calculations done, here comes the output!
+
+      # delay clear screen until after ALL shell commands to prevent flicker
+      puts "\033[2J\033[0;0H" if @clear
       blank_line
       banner.each_line do |line|
         output.puts colorize("#{lpad}#{line.chomp}#{rpad}", colors)
@@ -101,7 +106,7 @@ Options:
     opt :bold, "bold", short: "B", type: :boolean, default: DEFAULTS[:bold]
     opt :output, "Output File", type: :string, default: nil
     opt :screen_width, "Screen Width (specify when using --output)", type: :integer, default: nil
-    opt :clear_screen, "Clear Screen before printing banner", type: :boolean, default: DEFAULTS[:clear_screen]
+    opt :clear, "Clear Screen before printing banner", type: :boolean, default: DEFAULTS[:clear]
     opt :width, "Use this screen width", type: :integer
   end
   puts opts.inspect if opts[:debug]
@@ -126,7 +131,7 @@ Options:
     output: opts[:output],
     screen_width: opts[:screen_width],
     font: opts[:font],
-    clear_screen: opts[:clear_screen],
-    debug: opts[:debug]
+    clear: opts[:clear],
+    debug: opts[:debug],
   ).run
 end

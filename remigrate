@@ -1,33 +1,68 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
 
-puts "This will migrate your local development and test databases."
+# - [X] TODO: If I have just a seed migration or just a data migration, don't
+#   waste my time running the other one. I could run the are-migrations-current
+#   script twice; that would make this script take an extra 850ms on every no-op
+#   in order to save 7-9sec once a year or so. Yeah, I'm being stupid here.
+#
+#   Okay, it could be a win if are-rails-migrations-current could exit with a
+#   status code, like 0 for success, 1 for schema migrations needed, 2 for seed
+#   migrations, 3 for both, etc. Then it would only need to run once and would
+#   save me that 7 seconds once a year. Given that dicking with my ops scripts
+#   is fun enough to make me completely discount the hours and hours of
+#   development cost, this is almost certainly going to be another one of my
+#   "terrible ideas, enthusiastically pursued".
 
-def log(msg)
-  puts "\033[32m#{msg}\033[0m"
+class Application
+  include DbradyCli
+
+  opt_flag :force
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+remigrate - migrate your local development and test databases.
+
+This script:
+
+1. uses are-rails-migrations-current to peek without starting Rails
+2. If no migrations are needed, bails out quickly - no 10s Rails startup.
+3. If any are needed, runs them in both development and test environments - no
+   more forgetting to update your test environment.
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :force, "Force migrations to run anyway", short: :f, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    run!
+  end
+
+  def run!
+    if force? || !system("are-rails-migrations-current")
+      run_command "diespringdie --db"
+      run_command "bin/rails db:migrate"
+      run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "test"}
+    else
+      log "Your schema migrations appear to be up to date."
+    end
+  end
+
 end
 
-# TODO: If I have just a seed migration or just a data migration, don't waste my
-# time running the other one. I could run the are-migrations-current script
-# twice; that would make this script take an extra 850ms on every no-op in order
-# to save 7-9sec once a year or so. Yeah, I'm being stupid here.
-#
-# Okay, it could be a win if are-rails-migrations-current could exit with a
-# status code, like 0 for success, 1 for schema migrations needed, 2 for seed
-# migrations, 3 for both, etc. Then it would only need to run once and would
-# save me that 7 seconds once a year. Given that dicking with my ops scripts is
-# fun enough to make me completely discount the hours and hours of development
-# cost, this is almost certainly going to be another one of my "terrible ideas,
-# enthusiastically pursued".
 
-force = ARGV.include?("-f") || ARGV.include?("--force")
-
-if force || !system("are-rails-migrations-current")
-  log "diespringdie --db"
-  system "diespringdie --db"
-  log "bin/rails db:migrate"
-  system "bin/rails db:migrate"
-  log "RAILS_ENV=test bin/rails db:migrate"
-  system({"RAILS_ENV" => "test"}, "bin/rails db:migrate")
-else
-  log "Your schema migrations appear to be up to date."
+if __FILE__ == $0
+  Application.new.run
 end

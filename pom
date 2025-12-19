@@ -13,6 +13,8 @@
 #  FIX BANNER
 #    25:00
 # Etc
+#
+# TODO: --hide timer until it's yellow?
 def osx?
   `uname -s`.strip == "Darwin"
 end
@@ -140,7 +142,6 @@ first_arg = if known_poms.keys.include? ARGV[0]
                 pom = known_poms[the_alias]
                 fail "Unrecognized alias: '#{the_alias}'" unless known_poms.key? the_alias
               end
-              say pom['start_message'] if pom['start_message']
               pom['time']
             else
               ARGV[0]
@@ -148,18 +149,18 @@ first_arg = if known_poms.keys.include? ARGV[0]
 
 time = case first_arg
        when /^\d*:\d\d:\d\d$/
-         puts "H:MM:SS"
+         # puts "H:MM:SS"
          h,m,s = *first_arg.split(/:/).map(&:to_i)
          h * 3600 + m * 60 + s
        when /^\d+:\d\d$/
-         puts "MM:SS"
+         # puts "MM:SS"
          m,s = *first_arg.split(/:/).map(&:to_i)
          m * 60 + s
        when /^\d+$/
-         puts "SS"
+         # puts "SS"
          first_arg.to_i
        when /^\d+m$/
-         puts "MM:SS"
+         # puts "MM:SS"
          first_arg.to_i * 60
        # when /^b(reak)?$/
        #   puts "MM:SS"
@@ -177,7 +178,9 @@ ESC = 27.chr
 # 20% of total time OR 1 minute, whichever is smaller
 warning_time = [time * 0.2, 60].min
 
-say "Starting pom"
+# ugh, hacky
+start_message = known_poms.fetch(ARGV[0], {}).fetch("start_message") { "Starting pom." }
+say start_message
 
 time.downto(0).each do |seconds|
   hours = seconds / 3600
@@ -198,13 +201,16 @@ time.downto(0).each do |seconds|
   # massive flicker.  It's the startup delay of system("rubanner"). Consider
   # making rubanner take a --clear option?
   # print "#{ESC}[2J#{ESC}[0;0H"
-
-  system "rubanner --font=dos-rebel --bg=#{bg_color} '#{display}'"
+  system "rubanner --font=dos-rebel --bg=#{bg_color} '#{display}' --clear"
   sleep 1
 end
-system "rubanner --font=dos-rebel --fg=white --bg=green 'DONE'"
+system "rubanner --font=dos-rebel --fg=white --bg=green 'DONE' --clear"
 
-say "Timer is done"
+stop_message = known_poms.fetch(ARGV[0], {}).fetch("stop_message") { "Timer is done." }
+say stop_message
+
+
+# NOTE: This is just an example. We never read from DATA
 __END__
 ---
 b:
