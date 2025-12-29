@@ -91,6 +91,11 @@ end
 module DbradyCli
   attr_reader :opts
 
+  # Autoload class methods
+  def self.included(including_module)
+    including_module.extend ClassMethods
+  end
+
   # opt_flag :debug, :quiet, :verbose, :pretend
   def debug?
     opts[:debug]
@@ -166,11 +171,9 @@ module DbradyCli
       exit status
     end
   end
-
-  # Autoload class methods
-  def self.included(including_module)
-    including_module.extend ClassMethods
-  end
+  # ----------------------------------------------------------------------
+  # END CLASS METHODS
+  # ======================================================================
 
   def opt_flags
     self.class.opt_flags
@@ -193,10 +196,13 @@ module DbradyCli
     end
   end
 
-  # ----------------------------------------------------------------------
-  # END CLASS METHODS
-  # ======================================================================
+  # Debug logging prints - no timestamp, always to $stdout
+  # color: nil will suppress color
+  def log(message="", color: [:cyan, :normal])
+    message = message.colorize(color) if color
 
+    puts message
+  end
 
   # ----------------------------------------------------------------------
   # BASH STUFF
