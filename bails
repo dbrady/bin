@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# bails - bin/rails, ensuring that aws login is current
+# bails - bin/rails > bundle exec rails > rails, if OSX, ensures that aws login is current
 require "colorize"
 require "optimist"
 require_relative "lib/dbrady_cli"
@@ -25,7 +25,9 @@ class Application
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     puts opts.inspect if opts[:debug]
 
-    ensure_aws_sso_login
+    # Right now, I only want to check aws from my work machine
+    # If this changes, touch ~/.aws or something?
+    ensure_aws_sso_login if osx?
     command = "bin/rails #{arglist}"
     command = "time #{command}" if time?
     run_command command
