@@ -130,7 +130,15 @@ BANNER
 
     files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } if existing?
 
+    # digtest
+    # | File                               | Spec                                    | Exists? |
+    # | app/models/merchant_onboarding.rb  | spec/models/merchant_onboarding_spec.rb | No      |
+    # |
+
     diggable_files = if dig?
+                       puts "DIGGING!".magenta
+                       puts all_files.to_s.magenta
+
                        (all_files - files)
                          .reject { |filename| !filename.start_with?("app/") }
                          .map { |filename| filename.sub(%r|^app\/|, "spec/").sub(/\.rb$/, "_spec.rb") }

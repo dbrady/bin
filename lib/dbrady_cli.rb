@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require "colorize"
+require "json"
 require "optimist"
 
 # TODO:
@@ -304,6 +305,12 @@ module DbradyCli
 
   def git_parent_branch
     `git parent-branch`.strip
+  end
+
+  def gh_parent_branch
+    JSON.parse(`gh pr view --json baseRefName`)["baseRefName"]
+  rescue JSON::ParserError
+    nil
   end
 
   def git_parent_or_main_branch

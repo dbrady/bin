@@ -104,6 +104,8 @@ BANNER
               "#{parent}..HEAD"
             end
 
+    opts[:exclude] << ".*env*"
+
     files = get_command_output_lines "git log #{range} --name-only --pretty=format: | sed '/^$/d' | sort | uniq"
 
     # filter files through only_patterns, patterns_to_exclude, fragments_to_exclude
