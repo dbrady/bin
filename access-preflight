@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+require "clipboard"
 require "colorize"
 require "optimist"
 $:.unshift(File.expand_path("~/bin/lib"))
@@ -51,7 +52,10 @@ BANNER
     acimos_command = "acimos run merchant-portal"
     acimos_command += " -i #{image.inspect}" if image?
 
-    puts "#{env_str} eval $(#{acimos_command})"
+    puts "Putting this in the clipboard. Run this:".yellow
+    command = "#{env_str} eval $(#{acimos_command})"
+    puts command
+    Clipboard.copy command
   end
 end
 
