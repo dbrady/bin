@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+# tresearch-start - hack to researcharound my crippled tshare-start script
+
+require_relative 'tmuxinatrix/tmux_settings'
+require_relative 'tmuxinatrix/tmuxinatrix'
+
+settingses = [
+  TmuxSettings.new(name: "emacs", folder: "merchant_portal.2", commands: "emacs"),
+  TmuxSettings.new(name: "bash", folder: "merchant_portal.2"),
+  TmuxSettings.new(name: "clod", folder: "merchant_portal.2"),
+]
+$logging = true
+
+Tmuxinatrix.run('research', settingses)
