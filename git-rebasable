@@ -8,6 +8,8 @@
 #
 # Example:
 # git rebasable && git rebase -i master || git merge master
+#
+# TODO: --set option so I don't have to do it in the sqlite cli? :-P
 require "colorize"
 require "extralite"
 require "optimist"
@@ -17,6 +19,8 @@ String.disable_colorization unless $stdout.tty?
 
 class Application
   include DbradyCli
+
+  opt_flag :set
 
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
 
@@ -42,8 +46,9 @@ Options:
 BANNER
       opt :debug, "Print extra debug info", short: :d, default: false
       opt :pretend, "Print commands but do not run them", short: :p, default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
       opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :set, "Set the flag (cannot be unset automatically)", short: :s, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     if debug?
@@ -82,6 +87,11 @@ BANNER
                   exit
                 end
     puts "rebasable: #{rebasable.inspect}" if debug?
+
+    if set?
+      query("UPDATE slorks SET rebasable=0 WHERE branch= '#{branch}'")
+    end
+
     exit rebasable.zero? ? 1 : 0
   end
 
