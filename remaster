@@ -1,6 +1,9 @@
 #!/bin/bash
 # remaster - pull down latest master, merge, rebundle and rerun database migrations, then rebase master into the current branch.
 
+echo -e '\033[1;37;41mremaster is deprecated. Use git-remaster instead.\033[0m'
+exit 1
+
 # TODO: PORT THIS TO RUBY WITH OPTIMIST
 # TODO:  PORT THIS TO RUBY WITH OPTIMIST
 # TODO:   PORT THIS TO RUBY WITH OPTIMIST
