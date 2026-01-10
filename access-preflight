@@ -22,6 +22,8 @@ class Application
       banner <<BANNER
 access-preflight [-i <image-tag>] [--no-aws]
 
+access-preflight --no-aws -i dbrady-MPI-312-install-coverband-67c5e86
+
 Options:
 BANNER
       opt :aws, "Automatically check aws sso login", short: :a, default: true
