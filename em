@@ -50,7 +50,10 @@ class Application
     if force? || File.exist?(path)
       # TODO: git-new-branch duplicates this code. Refactor this to emacs-send?
       tmux_command = "tmux send-keys -t#{opts[:session]}:#{opts[:window]}"
+      # Send "open this file" to emacs
       run_command "#{tmux_command} C-x C-f C-a C-k #{path} C-m"
+
+      # Send "go to that line number" if a number was included, e.g. filename.md:23
       run_command "#{tmux_command} M-x goto-line C-m #{line} C-m M-x recenter-top-bottom C-m" if line
     else
       puts "File does not exist: #{path}"
