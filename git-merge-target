@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+# git-merge-target - get the merge target of this branch (git parent-branch but for PRs)
+#
+
+# I would do this as gh-merge-target but gh doesn't do command inflection like
+# git does. Another data point for writing my own scriptlet command dispatcher.
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+git-merge-target - get the merge target of this branch (git parent-branch but for PRs)
+
+Options:
+BANNER
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    run!
+  end
+
+  # APP CODE GOES HERE
+  def run!
+    puts gh_parent_branch
+  end
+
+end
+
+
+if __FILE__ == $0
+  Application.new.run
+end

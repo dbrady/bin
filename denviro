@@ -15,23 +15,58 @@
 # such a problem that writing a custom solution became necessary to prevent
 # developer revolt. (It was an in-house gem called Enviro, hence the name of
 # this script).
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
 
-# Part I - If you launched this script without rails runner, relaunch itself
-# under rails runner
-unless defined? Rails
-  cmd = "bundle exec rails runner #{__FILE__}"
-  puts cmd
-  system cmd
-  exit $?.to_i
+class Application
+  include DbradyCli
+
+  ensure_rails_runner!
+
+  attr_reader :target_file
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+denviro - Dump environment - cat a file in Rails environment with interpolations
+
+Usage:
+
+Use with any ERB template that needs rails or system vars:
+
+denviro                                # assumes ./config/database.yml
+denviro app/views/users/edit.html.slim # works on any erb
+denviro ~/.current-project             # can target outside
+
+TL;dr:
+rails r 'puts ERB.new(File.read("./config/database.yml")).result(binding)'
+
+Options:
+BANNER
+      opt :bat, "Use bat as the pager", short: :b, default: false
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    @target_file = File.expand_path(ARGV.first || "./config/database.yml")
+
+    run!
+  end
+
+  def run!
+    puts ERB.new(File.read(target_file)).result(binding)
+  end
+
 end
 
-# Part II - Accept an arg for  filename to parse. Defaults to config/database.yml
-if ARGV.count > 0
-  file = ARGV.pop
-else
-  file = "./config/database.yml"
-end
 
-# Part III - Load it, bind it, parse it, puts it
-# puts Erubis::Eruby.new(File.read(file)).result binding
-puts ERB.new(File.read(file)).result(binding)
+if __FILE__ == $0
+  Application.new.run
+end

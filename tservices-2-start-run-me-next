@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby
 # tservices-start - hack to workaround my crippled tshare-start script
-
+#
+# TODO: port to tgo
 require_relative 'tmuxinatrix/tmux_settings'
 require_relative 'tmuxinatrix/tmuxinatrix'
 

@@ -1,2 +1,4 @@
 #!/bin/bash
+#
+# TODO: port to tgo
 tmux attach -t services

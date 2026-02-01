@@ -1,0 +1,66 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+require "clipboard"
+require "colorize"
+require "optimist"
+$:.unshift(File.expand_path("~/bin/lib"))
+require "dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :aws
+  opt_reader :image
+
+  def image?
+    opts[:image_given]
+  end
+
+  def run
+    @opts = Optimist.options do
+      banner <<BANNER
+access-preflight [-i <image-tag>] [--no-aws]
+
+access-preflight --no-aws -i dbrady-MPI-312-install-coverband-67c5e86
+
+Options:
+BANNER
+      opt :aws, "Automatically check aws sso login", short: :a, default: true
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :image, "Image tag to use", short: :i, type: :string
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    run!
+  end
+
+  def run!
+    if aws? && !run_command("aws_check-sso-login")
+      run_command "aws sso login --profile AcimaNonprod-NonProdDeveloperAccess"
+    end
+
+    env = {
+      "AWS_PROFILE" => "AcimaNonprod-NonProdDeveloperAccess"
+    }
+    env_str = env.map { |k, v| "#{k}=#{v}" }.join " "
+
+    run_command "kubectl config use-context preflight", env: env
+
+    acimos_command = "acimos run merchant-portal"
+    acimos_command += " -i #{image.inspect}" if image?
+
+    puts "Putting this in the clipboard. Run this:".yellow
+    command = "#{env_str} eval $(#{acimos_command})"
+    puts command
+    Clipboard.copy command
+  end
+end
+
+if __FILE__ == $0
+  Application.new.run
+end

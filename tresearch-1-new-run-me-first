@@ -1,0 +1,5 @@
+#!/bin/bash
+# tresearch-new - create new session for tresearch. Run this, jump into window 1 and run
+# tresearch-2-start-run-me-next
+echo "tmux new-session -s research"
+tmux new-session -s research
