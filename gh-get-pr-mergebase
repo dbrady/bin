@@ -1,0 +1,46 @@
+#!/usr/bin/env ruby
+# gh-get-pr-mergebase - git parent-branch but authoritative from github
+require "colorize"
+require "json"
+require "optimist"
+require_relative "lib/dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :link
+
+  def run
+    @opts = Optimist.options do
+      opt :debug, "Print extra debug info", default: false
+      opt :pretend, "Print commands but do not run them", default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
+      opt :quiet, "Run with minimal output", default: false
+      opt :link, "Print the PR link instead of the title", default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    puts opts.inspect if opts[:debug]
+
+    access_token = github_pat
+
+    repo_orig, pr_number = if ARGV.size.zero?
+                        get_repo_and_pr_from_branch
+                      elsif ARGV.size == 1
+                        [get_repo_and_pr_from_branch.first, ARGV.first]
+                      else
+                        ARGV
+                      end
+
+    field = "baseRefName"
+    command = "gh pr view --json #{field} -- #{pr_number}"
+    json = get_command_output command, quiet: debug? || !quiet?
+    puts JSON.parse(json)[field]
+  rescue JSON::ParserError
+    # gh pr view will put a message to stderr for us already.
+    # puts "Could not get baseRefName. Are you on a branch that has a PR?"
+  end
+end
+
+# Run the application
+Application.new.run
