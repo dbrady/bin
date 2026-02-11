@@ -16,7 +16,7 @@ class Application
 
   attr_reader :infile, :outfile
 
-  opt_flag :auto
+  opt_flag :auto, :description, :first
 
   def run
     @opts = Optimist.options do
@@ -25,12 +25,13 @@ v2-char-dump <infile.png> [<outfile.json>] - dump a v2 png character as json
 
 Options:
 BANNER
-      opt :debug, "Print extra debug info", default: false
-      opt :pretend, "Print commands but do not run them", default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", default: false
-      opt :quiet, "Run with minimal output", default: false
-
-      opt :auto, "Automatically set json filename from source", default: false
+      opt :auto,        "Automatically set json filename from source", default: false
+      opt :debug,       "Print extra debug info", default: false
+      opt :description, "Render the character description field", short: :D, default: false
+      opt :first,       "Render the first_mes field", short: :f, default: false
+      opt :pretend,     "Print commands but do not run them", default: false
+      opt :quiet,       "Run with minimal output", default: false
+      opt :verbose,     "Run with verbose output (overrides --quiet)", default: false
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     if debug?
@@ -66,8 +67,13 @@ BANNER
     text_value = extract_text_chunk(ARGV[0])
     spec = decode_character_spec(text_value)
 
-    puts "outfile: #{outfile.inspect}"
-    outfile.puts JSON.pretty_generate(spec)
+    if description?
+      outfile.puts spec["description"].gsub("\\r\\n", "\n")
+    elsif first?
+      outfile.puts spec["first_mes"].gsub("\\r\\n", "\n")
+    else
+      outfile.puts JSON.pretty_generate(spec)
+    end
   end
 
   def extract_text_chunk(file_path)
