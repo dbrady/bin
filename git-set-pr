@@ -62,8 +62,6 @@ class Application
       run_command "slorks pr #{board}-#{ticket} --pr=#{pr}"
       run_command "slorks status #{board}-#{ticket} --status=r"
     end
-
-    puts "Use pull request assigner, " + (rand(2).zero? ? "but flip the reviewers" : "and keep the reviewers the same")
   end
 end
 
