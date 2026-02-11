@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# passencrypt - symmetric encrypt stdin to stdout
+# Usage: echo "secret" | passencrypt > encrypted.txt
+#        pbpaste | passencrypt > encrypted.txt
+
+# Prompt goes to /dev/tty so it doesn't pollute stdout or interfere with stdin
+openssl enc -aes-256-cbc -pbkdf2 -base64 -pass fd:3 3< <(
+  read -rsp "Password: " pass < /dev/tty
+  echo >&2  # newline after password prompt
+  printf '%s' "$pass"
+)

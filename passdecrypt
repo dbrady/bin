@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# passdecrypt - symmetric decrypt to stdout
+# Usage: passdecrypt encrypted.txt | pbcopy
+#        passdecrypt encrypted.txt
+#        cat encrypted.txt | passdecrypt | pbcopy
+
+# If a filename is given, use it; otherwise read stdin
+input_args=()
+if [[ $# -ge 1 && -f "$1" ]]; then
+  input_args=(-in "$1")
+fi
+
+openssl enc -aes-256-cbc -pbkdf2 -d -base64 "${input_args[@]}" -pass fd:3 3< <(
+  read -rsp "Password: " pass < /dev/tty
+  echo >&2
+  printf '%s' "$pass"
+)
