@@ -164,7 +164,7 @@ end
 File.open(File.expand_path("~/.current-project"), "w") do |file|
   file.puts <<EOF
 CURRENT_PROJECT="#{target}"
-cd "$CURRENT_PROJECT"
+# cd "$CURRENT_PROJECT"
 
 # Path
 if [[ -e "$CURRENT_PROJECT/script" ]] ; then
