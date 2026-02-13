@@ -8,9 +8,10 @@ require_relative 'tmuxinatrix/tmuxinatrix'
 settingses = [
   TmuxSettings.new(name: "emacs", folder: "merchant_portal", commands: "emacs"),
   TmuxSettings.new(name: "bash", folder: "merchant_portal"),
-  TmuxSettings.new(name: "clod", folder: "merchant_portal"),
+  TmuxSettings.new(name: "clod", folder: "merchant_portal", commands: "clod"),
   TmuxSettings.new(name: "console", folder: "merchant_portal", commands: "bin/rails console"),
   TmuxSettings.new(name: "server", folder: "merchant_portal", commands: "bin/rails server"),
+  TmuxSettings.new(name: "haiku", folder: "merchant_portal", commands: "haiku"),
 
   # TmuxSettings.new("mp", folder: "merchant_portal"),
   # TmuxSettings.new("mpq", folder: "merchant_portal", "besq"),
