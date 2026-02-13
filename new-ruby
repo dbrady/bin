@@ -1,28 +1,32 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+
 # NOCOMMIT: You need to name this script!
 # {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
-require "colorize"
-require "optimist"
-$:.unshift(File.expand_path("~/bin/lib"))
-require "dbrady_cli"
+require 'colorize'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
 String.disable_colorization unless $stdout.tty?
 
+# CLI Application
 class Application
   include DbradyCli
 
-  def run
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
+  def parse_options
     @opts = Optimist.options do
-      banner <<BANNER
-# NOCOMMIT: You need to name this script!
-{{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+      banner <<~BANNER
+        # NOCOMMIT: You need to name this script!
+        {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
 
-Options:
-BANNER
-      opt :debug, "Print extra debug info", short: :d, default: false
-      opt :pretend, "Print commands but do not run them", short: :p, default: false
-      opt :quiet, "Run with minimal output", short: :q, default: false
-      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+        Options:
+      BANNER
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
 
       # @ignore_invalid_options = true # no error given if you call this with other options (good for passthru)
 
@@ -55,18 +59,17 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     dump_opts if debug?
     Optimist.educate if ARGV.empty? # Remove this if your script takes no args
+  end
+  # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/AbcSize
 
+  def run
+    parse_options
     run!
   end
 
   # APP CODE GOES HERE
-  def run!
-
-  end
-
+  def run!; end
 end
 
-
-if __FILE__ == $0
-  Application.new.run
-end
+Application.new.run if __FILE__ == $PROGRAM_NAME
