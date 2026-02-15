@@ -31,6 +31,11 @@
 # * I think aliases like db_development are cleaner and easier to read
 #   than aliases like dbdevelopment, but dbd<TAB> is a LOT easier to
 #   type, so that's why.
+#
+# TODO:
+# - handle env and credentials so that $DB_NAME and $DB_USER etc all work.
+# .env, .dev.env, rails credentials:show | grep DB_, .local.env. Don't care about credentials yet.
+require 'erb'
 require 'yaml'
 
 $known_databases = {
@@ -98,6 +103,31 @@ def recognized_adapter?(env)
   fetch_adapter env["adapter"]
 end
 
+def read_env_file(filename)
+  File.readlines(filename).each_with_object({}) do |line, hash|
+    line.strip!
+    next if line.empty? || line.start_with?('#')
+    key, value = line.split('=', 2)
+    hash[key.strip] = value.strip if key && value
+  end
+rescue
+  {}
+end
+
+def credentials
+  @credentials ||= YAML.load(`bin/rails credentials:show`)
+rescue
+  {}
+end
+
+def system_vars(env)
+  bash_env = ENV.to_h.dup
+               .merge(read_env_file('.env'))
+               .merge(read_env_file('.dev.env'))
+               .merge(credentials.dup.fetch(env.to_s, {}))
+               .merge(read_env_file('.local.env'))
+end
+
 def build_config_aliases(config, prefix='')
   aliases = []
   Array(config).each do |name, env|
@@ -139,13 +169,27 @@ def config_filename_prefix(config_filename)
   prefix
 end
 
+# TODO: FINISH ME
+# puts "Development:"
+# puts system_vars("development").keep_if { |key,_| key =~ /^DB_/ }
+
+# puts "Test:"
+# puts system_vars("test").keep_if { |key,_| key =~ /^DB_/ }
+# exit
+
+
+# ======================================================================
+# MAIN SCRIPT
+
 aliases = []
 if include_aliases
   Dir.glob(File.join(target, 'config/database*.yml')).each do |config_file|
     if File.exist? config_file
       # Don't use YAML.load_file, Syck barfs when the yaml file lacks \n at EOF
-      output = File.read(config_file)
-      config = YAML.load(output, aliases: true)
+
+      # output = File.read(config_file)
+      # config = YAML.load(output, aliases: true)
+      config = YAML.parse(`denviro`)
       prefix = config_filename_prefix(config_file)
       aliases += build_config_aliases config, prefix
     end

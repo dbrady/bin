@@ -165,9 +165,9 @@ module DbradyCli
 
       rails_command = File.exist?(spring) ? spring : "bundle exec rails"
 
-      command = "#{rails_command} runner #{caller_file} #{ARGV.map(&:inspect).join(' ')}"
+      command = "#{rails_command} runner #{caller_file} #{ARGV.map(&:inspect).join(' ')} 2>/dev/null"
 
-      puts command.cyan
+      # puts command.cyan
       status = system(command)
       exit status
     end
