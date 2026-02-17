@@ -72,6 +72,9 @@ BANNER
     focus = File.readlines(File.expand_path("~/.spec_focus")).map(&:strip).join('')
 
     run_specs best_rspec_command(focus)
+
+    # And now, because Spring and OSX and FSEvent and crew can't get their shit together
+    run_command 'diespringdie -q'
   end
 
   def best_rspec_command(focus)
