@@ -29,12 +29,15 @@ class Application
     current_branch = `git current-branch`.strip
     query = "SELECT pr FROM pr_history WHERE repo='#{repo}' AND branch='#{current_branch}' AND deleted_at IS NULL"
     puts query.cyan if debug?
-    # pr = db.query_single_array(query)
     pr = db.query_single(query)&.fetch(:pr, nil)
 
     if pr.nil?
-      $stderr.puts "No PR for #{repo}" if !quiet? && $stderr.tty?
-      exit -1
+      pr = get_command_output "gh pr view --json number --jq '.number'", quiet: !(debug? || verbose?)
+
+      if pr.empty?
+        $stderr.puts "No PR for #{repo}" if !quiet? && $stderr.tty?
+        exit -1
+      end
     end
 
     puts pr
