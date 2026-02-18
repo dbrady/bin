@@ -105,12 +105,11 @@ class Application
 
     # if the branch is not rebasable, turn on --merge
     debug "branch_is_rebasable? #{branch_is_rebasable?.inspect}"
-    if !branch_is_rebasable? && !opts[:merge]
-      # TODO: I still need the ability to set the rebase/merge values here
-      $stderr.puts "Branch is not rebasable; using merge strategy.".yellow unless quiet?
+    if !branch_is_rebasable? || merge?
+      run_command "git rebasable --set"
+      $stderr.puts "Branch is not rebasable; using merge strategy.".yellow unless (quiet? || merge?)
       opts[:merge_given] = opts[:merge] = true
     end
-
 
     stashed = if branch_is_dirty? && stash?
                 run_command("git stash")
