@@ -74,7 +74,7 @@ BANNER
     run_specs best_rspec_command(focus)
 
     # And now, because Spring and OSX and FSEvent and crew can't get their shit together
-    run_command 'diespringdie -q'
+    run_command 'diespringdie -q &'
   end
 
   def best_rspec_command(focus)
