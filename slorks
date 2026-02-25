@@ -67,6 +67,7 @@ class Application
            :fresh,
            :humanize,
            :markdown,
+           :hide_branch,
            :hide_jira,
            :hide_notes,
            :hide_pr,
@@ -246,6 +247,7 @@ BANNER
       opt :debug,        'Print extra debug info', short: :d, default: false
       opt :force,        'Force creation of a duplicate ticket if ticket already exists', short: :f, default: false
       opt :fresh,        'List freshest slorks first', short: :F, default: false
+      opt :hide_branch,  'Do not display branch', short: :B, default: false
       opt :hide_jira,    'Do not display jira column', short: :J, default: false
       opt :hide_notes,   'Do not display notes column', short: :N, default: false
       opt :hide_pr,      'Do not display pr column', short: :P, default: false
@@ -345,6 +347,7 @@ BANNER
     head << :notes if for_log || !hide_notes?
     head << :pr_link if for_log || !hide_pr?
     head << :jira_link if for_log || !hide_jira?
+    head << :branch if for_log || !hide_branch?
     head << :created_at if for_log || created_at?
     head << :updated_at if for_log || updated_at?
     head << :project_code if for_log || project_code?
@@ -362,6 +365,7 @@ BANNER
       row << slork.notes if for_log || !hide_notes?
       row << slork.pr_link if for_log || !hide_pr?
       row << slork.jira_link if for_log || !hide_jira?
+      row << slork.branch if for_log || !hide_branch?
       row << slork.project_code if for_log || project_code?
       row << display_time(slork.created_at, for_log:) if for_log || created_at?
       row << display_time(slork.updated_at, for_log:) if for_log || updated_at?
