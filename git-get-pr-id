@@ -32,9 +32,9 @@ class Application
     pr = db.query_single(query)&.fetch(:pr, nil)
 
     if pr.nil?
-      pr = get_command_output "gh pr view --json number --jq '.number'", quiet: !(debug? || verbose?)
+      pr = get_command_output "gh pr view --json number --jq '.number' 2>&1", quiet: !(debug? || verbose?)
 
-      if pr.empty?
+      if pr.empty? || pr =~ /no pull requests found/
         $stderr.puts "No PR for #{repo}" if !quiet? && $stderr.tty?
         exit -1
       end
