@@ -1,0 +1,3 @@
+#!/bin/bash
+ 
+tail -f /tmp/openclaw-1000/openclaw-$(date +%Y-%m-%d).log | jq -r '."1" // empty'
