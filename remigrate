@@ -52,7 +52,7 @@ BANNER
 
   def run!
     if force? || !system("are-rails-migrations-current")
-      run_command "diespringdie --db"
+      # run_command "diespringdie --db"
       run_command "bin/rails db:migrate"
       run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "test"}
     else
