@@ -1,0 +1,117 @@
+#!/usr/bin/env ruby
+# gh-reviews-waiting - show open PRs waiting for your review
+require "colorize"
+require "json"
+require "time"
+require "optimist"
+require_relative "lib/dbrady_cli"
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  opt_flag :direct_only, :json
+  opt_reader :order, :direction
+
+  ORDERS = %w[date user].freeze
+  DIRECTIONS = %w[asc desc].freeze
+
+  def run
+    @opts = Optimist.options do
+      banner <<~BANNER
+        gh-reviews-waiting - show open PRs waiting for your review
+
+        Options:
+      BANNER
+      opt :debug, "Print extra debug info", short: :d, default: false
+      opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :quiet, "Run with minimal output", short: :q, default: false
+      opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
+      opt :direct_only, "Only show PRs where you are directly requested (not via team)", default: false
+      opt :json, "Output raw JSON", default: false
+      opt :order, "Sort order: date, user", short: :o, default: "date"
+      opt :direction, "Sort direction: asc, desc", short: :r, default: "asc"
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    Optimist.die :order, "must be one of: #{ORDERS.join(', ')}" unless ORDERS.include?(opts[:order])
+    Optimist.die :direction, "must be one of: #{DIRECTIONS.join(', ')}" unless DIRECTIONS.include?(opts[:direction])
+    dump_opts if debug?
+
+    run!
+  end
+
+  def run!
+    qualifier = direct_only? ? "user-review-requested" : "review-requested"
+    command = %Q{gh pr list --search "#{qualifier}:@me state:open" --json number,title,author,url,createdAt}
+
+    raw = get_command_output(command, quiet: !debug?)
+    prs = JSON.parse(raw)
+    prs = sort_prs(prs)
+
+    if json?
+      puts JSON.pretty_generate(prs)
+      return
+    end
+
+    if prs.empty?
+      puts "No reviews waiting!".green unless quiet?
+      return
+    end
+
+    puts "#{prs.size} review(s) waiting:".bold unless quiet?
+    puts unless quiet?
+
+    prs.each do |pr|
+      age = age_in_days(pr["createdAt"])
+      age_text = format_age(age)
+      number = "##{pr['number']}"
+      title = pr["title"]
+      author = pr.dig("author", "login") || "unknown"
+      url = pr["url"]
+
+      line = "  #{number.ljust(8)} #{title}"
+      line = colorize_by_age(line, age)
+
+      puts line
+      puts "           #{author.light_black}  #{age_text}  #{url.light_black}" unless quiet?
+    end
+  end
+
+  private
+
+  def sort_prs(prs)
+    sorted = case order
+             when "date"
+               prs.sort_by { |pr| pr["createdAt"] }
+             when "user"
+               prs.sort_by { |pr| (pr.dig("author", "login") || "").downcase }
+             end
+    direction == "desc" ? sorted.reverse : sorted
+  end
+
+  def age_in_days(created_at)
+    (Time.now - Time.parse(created_at)) / 86400.0
+  end
+
+  def format_age(days)
+    if days < 1
+      "today".green
+    elsif days < 2
+      "1 day ago".yellow
+    else
+      "#{days.floor} days ago".red
+    end
+  end
+
+  def colorize_by_age(text, days)
+    if days < 2
+      text.green
+    elsif days < 7
+      text.yellow
+    else
+      text.red
+    end
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
