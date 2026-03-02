@@ -45,6 +45,11 @@
 # - [X] I can't deal with Text::Table's inability to handle ANSI colors. I need to write my own table formatter.
 # - [X] Move dbradycli into a gem or library subdir (I like subdir because every so often I don't have deploy/gem install rights)
 # - [X] Project codes
+#
+# TODO: TIME FOR A REWRITE
+# - [ ] this needs a full rewrite now that we're timekeeping in Clarity and Travis wants to see weekly deltas. Daily slorkups are out of fashion. This tool beautifully supports a feature we've outgrown.
+# - [ ] board, ticket - I never want to use these separately. Combine. If I ever want to search by board="DS" that would just be "WHERE ticket ILIKE 'DS-%'", and it's never meaningful to sort by ticket number without grouping. That's like "search by apartment number but not street address"
+# - [ ] Do we we need repo? Maybe, but lets make it a second-class citizen. Honestly I use it to find the folder of the repo in ~/acima/devel/#{repo} so path_to_repo is probably fine, and we could dispense with it entirely as long as the tool fails cleanly when trying to checkout a branch that doesn't exist (because it's in the wrong repo)
 
 require 'clipboard'
 require 'colorize'
@@ -251,7 +256,7 @@ BANNER
       opt :hide_jira,    'Do not display jira column', short: :J, default: false
       opt :hide_notes,   'Do not display notes column', short: :N, default: false
       opt :hide_pr,      'Do not display pr column', short: :P, default: false
-      opt :hide_repo,    'Do not display repo column', short: :R, default: false
+      opt :hide_repo,    'Do not display repo column', short: :R, default: true
       opt :humanize,     'Humanize timestamps', default: false
       opt :markdown,     'Display output as markdown for Slack', default: false
       opt :no_color,     'Do not colorize output by status', short: :C, default: false
