@@ -15,7 +15,7 @@
 
 # TODO: It's time for some TODO-Driven-Development
 # - [ ] slorks --interactive - interactively select ticket, status, edit note, etc
-# - [ ] Order by workflow? Just need a status -> position sort order.
+# - [X] Order by workflow? Just need a status -> position sort order. (--order flag)
 # - [ ] Move the Slork class into a model subdir
 # - [ ] Add a --dry-run option to show all commands
 # - [ ] We're big enough to warrant a proper cleanup refactoring with tests.
@@ -113,6 +113,18 @@ class Application
   DB = Sequel::sqlite(DATABASE_PATH)
 
   NO_LIST_COMMANDS = %w{announce commands console go statuses}
+
+  WORKFLOW_ORDER = {
+    'b' => 1,   # Blocked
+    'p' => 2,   # In Progress
+    'r' => 3,   # In Review
+    'q' => 4,   # QA Review
+    'd' => 5,   # Ready to Deploy
+    'o' => 6,   # Done
+    '>' => 7,   # Deferred
+    'x' => 8,   # Abandoned
+    'c' => 9,   # Cancelled
+  }.freeze
 
   KNOWN_STATUSES = {
     '>' => { name: 'Deferred',        colors: {mode: :normal, color: :yellow, background: :normal} },
@@ -261,6 +273,7 @@ BANNER
       opt :markdown,     'Display output as markdown for Slack', default: false
       opt :no_color,     'Do not colorize output by status', short: :C, default: false
       opt :notes,        'Notes text', type: :string
+      opt :order,        'Order by: (s)tatus, (w)orkflow, (t)icket, (p)r', type: :string, short: :o
       opt :pr,           'ID of PR', type: :int
       opt :pretend,      'Print commands but do not run them', short: :p, default: false
       opt :project_code, 'Hide project Code', default: false
@@ -362,8 +375,8 @@ BANNER
     end
     table = TinyTable.new(head: )
 
-    order_column = fresh? ? :updated_at : :created_at
-    Slork.where(deleted_at: nil).order(order_column, 'ASC').all.each do |slork|
+    order = order_clause
+    Slork.where(deleted_at: nil).order(*order).all.each do |slork|
       row = [slork.ticket_key]
       row << slork.repo if for_log || !hide_repo?
       row += [slork.pr, slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
@@ -418,6 +431,23 @@ BANNER
       end
     else
       time.strftime("%Y-%m-%d %H:%M:%S")
+    end
+  end
+
+  def order_clause
+    if opts[:order_given]
+      case opts[:order][0].downcase
+      when 's' then [:status]
+      when 'w' then [Sequel.case(WORKFLOW_ORDER, 99, :status)]
+      when 't' then [:board, :ticket]
+      when 'p' then [:pr]
+      else
+        Optimist::die :order, "must be one of: (s)tatus, (w)orkflow, (t)icket, (p)r"
+      end
+    elsif fresh?
+      [:updated_at]
+    else
+      [:created_at]
     end
   end
 
@@ -505,7 +535,7 @@ BANNER
 
   def list_as_markdown
     list = []
-    slorks = Slork.where(deleted_at: nil).order(:created_at).all
+    slorks = Slork.where(deleted_at: nil).order(*order_clause).all
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
       template_lines << "*Title:* <%= slork.title %>"
