@@ -1,0 +1,2 @@
+#!/bin/bash
+ssh vapor "echo '$@' >> twoots.md; cat -n twoots.md | tail -n 3"
