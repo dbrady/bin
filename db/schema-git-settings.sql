@@ -56,3 +56,4 @@ CAST(ms/1000 AS INTEGER) % 60,
 ms % 1000)) VIRTUAL,
   FOREIGN KEY(slork_id) REFERENCES slorks(id)
 );
+CREATE TABLE test(x BANANA);
