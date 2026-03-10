@@ -95,6 +95,7 @@ class Application
     'deploy'    => 'Mark ticket as Deployed',
     'done'      => 'Mark ticket as done',
     'go'        => 'Go to branch for this ticket (git checkout)',
+    'history'   => 'Show change history for a ticket',
     'merge'     => 'Mark this ticket as merge-only (not rebasable by git remaster)',
     'new'       => 'Create new ticket (automatically called from git-new-branch)',
     'notes'     => 'Edit ticket notes',
@@ -112,7 +113,7 @@ class Application
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
-  NO_LIST_COMMANDS = %w{announce commands console go statuses}
+  NO_LIST_COMMANDS = %w{announce commands console go history statuses}
 
   WORKFLOW_ORDER = {
     'b' => 1,   # Blocked
@@ -144,6 +145,24 @@ class Application
     # Slork represents one slackup entry. Class methods let you find slorks, instance methods let you work with one.
     class Slork < Sequel::Model(DB[:slorks])
       plugin :timestamps, update_on_create: true
+      plugin :dirty
+
+      TRACKED_FIELDS = %i[status title notes].freeze
+
+      def before_update
+        TRACKED_FIELDS.each do |field|
+          if column_changed?(field)
+            DB[:slork_history].insert(
+              slork_id:   id,
+              field:      field.to_s,
+              old_value:  initial_value(field)&.to_s,
+              new_value:  send(field)&.to_s,
+              changed_at: Time.now
+            )
+          end
+        end
+        super
+      end
 
       class <<self
         def find_ticket(board: nil, ticket: nil, title: nil, pr: nil, repo: nil, status: nil, notes: nil, deleted: false)
@@ -299,6 +318,8 @@ BANNER
       exit
     end
 
+    ensure_history_table_exists!
+
     backup_schema
     backup_database
 
@@ -334,6 +355,7 @@ BANNER
     when 'deploy' then deploy(board, ticket)
     when 'done' then mark_done(board, ticket)
     when 'go' then go_to_branch_for(board, ticket)
+    when 'history' then show_history(board, ticket)
     when 'new' then add_new(board, ticket)
     when 'notes' then update_notes(board, ticket)
     when 'pr' then update_pr(board, ticket)
@@ -600,6 +622,21 @@ CREATE TABLE IF NOT EXISTS durations (
   FOREIGN KEY (slork_id) REFERENCES slorks(id)
 );
 SQL
+    execute_query sql
+  end
+
+  def ensure_history_table_exists!
+    sql = <<~SQL
+      CREATE TABLE IF NOT EXISTS slork_history (
+        id         INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        slork_id   INTEGER NOT NULL,
+        field      VARCHAR(255) NOT NULL,
+        old_value  TEXT,
+        new_value  TEXT,
+        changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (slork_id) REFERENCES slorks(id)
+      );
+    SQL
     execute_query sql
   end
 
@@ -903,6 +940,30 @@ SQL
     ticket.save
     puts 'Updated pr.'
     puts ticket if debug?
+  end
+
+  def show_history(board, ticket)
+    slork = find_one_ticket(
+      board: board,
+      ticket: ticket,
+      title: opts[:title],
+      repo:  opts[:repo],
+    )
+
+    rows = DB[:slork_history]
+             .where(slork_id: slork.id)
+             .order(:changed_at)
+             .all
+
+    if rows.empty?
+      puts "No history for #{slork.ticket_key}."
+      return
+    end
+
+    puts "History for #{slork.ticket_key}:"
+    rows.each do |row|
+      puts "  #{row[:changed_at]}  #{row[:field].ljust(8)}  #{row[:old_value].inspect} -> #{row[:new_value].inspect}"
+    end
   end
 
   def update_status(board, ticket)
