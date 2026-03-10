@@ -273,7 +273,7 @@ BANNER
       opt :markdown,     'Display output as markdown for Slack', default: false
       opt :no_color,     'Do not colorize output by status', short: :C, default: false
       opt :notes,        'Notes text', type: :string
-      opt :order,        'Order by: (s)tatus, (w)orkflow, (t)icket, (p)r', type: :string, short: :o
+      opt :order,        'Order by: (s)tatus, (w)orkflow, (t)icket, (p)r', type: :string, short: :o, default: "workflow"
       opt :pr,           'ID of PR', type: :int
       opt :pretend,      'Print commands but do not run them', short: :p, default: false
       opt :project_code, 'Hide project Code', default: false
@@ -435,14 +435,15 @@ BANNER
   end
 
   def order_clause
-    if opts[:order_given]
+    if opts[:order]
       case opts[:order][0].downcase
+      when 'd' then [:created_at]
       when 's' then [:status]
       when 'w' then [Sequel.case(WORKFLOW_ORDER, 99, :status)]
       when 't' then [:board, :ticket]
       when 'p' then [:pr]
       else
-        Optimist::die :order, "must be one of: (s)tatus, (w)orkflow, (t)icket, (p)r"
+        Optimist::die :order, "must be one of: (s)tatus, (w)orkflow, (t)icket, (p)r, (d)ate"
       end
     elsif fresh?
       [:updated_at]
