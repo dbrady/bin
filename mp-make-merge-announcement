@@ -1,5 +1,5 @@
 #!/usr/bin/env ruby
-# mp-make-merge-announcement - "Done with preflight, merging [id](url) to main branch"
+# mp-make-merge-announcement [<team>-<ticket>:<pr>] - "Done with preflight, merging [id](url) to main branch"
 require "colorize"
 require "optimist"
 require_relative "lib/dbrady_cli"

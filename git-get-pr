@@ -43,7 +43,8 @@ class Application
     if opts[:search_given]
       puts search_for(opts[:search])
     else
-      pr = get_command_output "git get-pr-id"
+      pr = get_command_output "git get-pr-id -q 2>&1"
+      exit -1 if pr =~ /no pull requests found/
 
       path = get_command_output("git remote get-url origin")
                .sub(/\.git$/, '')

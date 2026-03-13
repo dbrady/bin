@@ -1,0 +1,195 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# lbs - Lightweight stat tracker (dated key/value stream)
+require 'colorize'
+require 'optimist'
+require 'extralite'
+require 'fileutils'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+DB_PATH = ENV.fetch('LBS_DB_PATH', File.join(File.expand_path('~/bin/db'), 'lbs.db'))
+DB_DIR = File.dirname(DB_PATH)
+
+class Application
+  include DbradyCli
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        lbs - Lightweight stat tracker
+
+        Usage:
+          lbs <stat> <value> [options]   Record a value
+          lbs <stat> [options]           Show history
+          lbs console | c                Open sqlite3 console
+
+        Options:
+      BANNER
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+      opt :new, 'Create stat if it does not exist', default: false
+      opt :date, 'Display dates only (no time)', default: false
+      opt :format, 'Printf format for value display', type: :string, default: nil
+      opt :at, 'Timestamp for the recording (YYYY-MM-DD or YYYY-MM-DD.HH:MM:SS)', type: :string, default: nil
+      opt :start, 'Start date for history', type: :string, default: nil
+      opt :end, 'End date for history', type: :string, default: nil
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty?
+  end
+
+  def db
+    @db ||= begin
+      FileUtils.mkdir_p(DB_DIR)
+      d = Extralite::Database.new(DB_PATH)
+      d.execute <<~SQL
+        CREATE TABLE IF NOT EXISTS stats (
+          name TEXT NOT NULL UNIQUE,
+          date_format TEXT NOT NULL DEFAULT '%F %T',
+          format TEXT DEFAULT NULL
+        );
+      SQL
+      d.execute <<~SQL
+        CREATE TABLE IF NOT EXISTS readings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL,
+          value TEXT NOT NULL,
+          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%d %H:%M:%S', 'now', 'localtime')),
+          FOREIGN KEY (name) REFERENCES stats(name)
+        );
+      SQL
+      d.execute <<~SQL
+        CREATE INDEX IF NOT EXISTS idx_readings_name_time ON readings(name, created_at);
+      SQL
+      # Migration: rename stat_name -> name if old schema exists
+      cols = d.query_splat("PRAGMA table_info(readings)").map { |r| r }
+      # handled by CREATE IF NOT EXISTS; old dbs will need manual migration
+      d
+    end
+  end
+
+  def stat_exists?(name)
+    db.query_single_splat('SELECT COUNT(*) FROM stats WHERE name = ?', name) > 0
+  end
+
+  def get_stat(name)
+    db.query_single_hash('SELECT * FROM stats WHERE name = ?', name)
+  end
+
+  def parse_timestamp(s)
+    return Time.now.strftime('%Y-%m-%d %H:%M:%S') if s.nil?
+    s = s.tr('.', ' ') if s.length > 10
+    s = "#{s} 00:00:00" if s.length == 10
+    s
+  end
+
+  def format_timestamp(ts, date_format)
+    case date_format
+    when '%F'
+      ts[0, 10]
+    else
+      ts
+    end
+  end
+
+  def format_value(val, fmt)
+    return val unless fmt
+    if fmt.match?(/[dioxX]/)
+      fmt % val.to_i rescue val
+    elsif fmt.match?(/[feEgG]/)
+      fmt % val.to_f rescue val
+    else
+      fmt % val rescue val
+    end
+  end
+
+  def run
+    parse_options
+
+    stat_name = ARGV.shift
+
+    # Handle console command
+    if stat_name == 'console' || stat_name == 'c'
+      db # ensure db exists
+      exec "sqlite3", DB_PATH
+    end
+
+    value = ARGV.shift
+
+    if value
+      record(stat_name, value)
+    else
+      show_history(stat_name)
+    end
+  end
+
+  def record(stat_name, value)
+    stat = get_stat(stat_name)
+
+    unless stat
+      if opts[:new]
+        date_fmt = opts[:date] ? '%F' : '%F %T'
+        val_fmt = opts[:format]
+        db.execute('INSERT INTO stats (name, date_format, format) VALUES (?, ?, ?)', stat_name, date_fmt, val_fmt)
+        stat = get_stat(stat_name)
+        puts "created new stat, '#{stat_name}'".green
+      else
+        puts "unable to record: no stat called '#{stat_name}'".red
+        puts "use --new to create it"
+        exit 1
+      end
+    end
+
+    ts = parse_timestamp(opts[:at])
+    db.execute('INSERT INTO readings (name, value, created_at) VALUES (?, ?, ?)', stat_name, value, ts)
+    puts "recorded #{format_value(value, stat[:format])} on #{format_timestamp(ts, stat[:date_format])}".green
+  end
+
+  def show_history(stat_name)
+    stat = get_stat(stat_name)
+    unless stat
+      puts "no stat called '#{stat_name}'".red
+      exit 1
+    end
+
+    # CLI flags override stored defaults
+    date_fmt = opts[:date_given] ? (opts[:date] ? '%F' : '%F %T') : stat[:date_format]
+    val_fmt = opts[:format_given] ? opts[:format] : stat[:format]
+
+    start_ts = if opts[:start]
+                 parse_timestamp(opts[:start])
+               else
+                 (Time.now - 14 * 86400).strftime('%Y-%m-%d %H:%M:%S')
+               end
+
+    end_ts = if opts[:end]
+               ts = parse_timestamp(opts[:end])
+               ts = "#{ts[0,10]} 23:59:59" if opts[:end].length == 10
+               ts
+             else
+               Time.now.strftime('%Y-%m-%d %H:%M:%S')
+             end
+
+    rows = db.query_array(
+      'SELECT created_at, value FROM readings WHERE name = ? AND created_at >= ? AND created_at <= ? ORDER BY created_at',
+      stat_name, start_ts, end_ts
+    )
+
+    if rows.empty?
+      puts "no readings for '#{stat_name}' in range".yellow
+      return
+    end
+
+    rows.each do |ts, val|
+      puts "#{format_timestamp(ts, date_fmt)}: #{format_value(val, val_fmt)}"
+    end
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
