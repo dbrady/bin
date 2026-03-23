@@ -11,6 +11,10 @@ Options:
 
 By default, json2ruby preserves the formatting of the existing json; use -p or
 --pretty to reformat the JSON (via Ruby's pretty_generate)
+
+TODO: Port this to DbradyCli
+TODO: --symbols - force keys to be symbolized
+TODO: consider rewrite, this is just Hash#pretty_generate (which doesn't exist, go make that happen)
 DOC
 end
 

@@ -2,8 +2,8 @@
 # gfm <file.md> - style document with github-flavored markdown and open it in browser
 HTML_PATH=/tmp/$(basename $1 .md).html
 
-echo "flavor $1 > $HTML_PATH"
-flavor $1 > $HTML_PATH
+echo "kramdown --input GFM $1 > $HTML_PATH"
+kramdown --input GFM $1 > $HTML_PATH
 
 echo open $HTML_PATH
 open $HTML_PATH

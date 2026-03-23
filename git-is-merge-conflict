@@ -1,0 +1,18 @@
+#!/bin/bash
+# Check if in a merge and report conflict status
+
+if ! git rev-parse -q --verify MERGE_HEAD; then
+    echo "Not in a merge"
+    exit 0
+fi
+
+echo "In merge state"
+
+if git diff --quiet --diff-filter=U; then
+    echo "✓ All conflicts resolved"
+    exit 0
+else
+    echo "✗ Unresolved conflicts in:"
+    git diff --name-only --diff-filter=U
+    exit 1
+fi

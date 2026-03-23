@@ -68,6 +68,12 @@ module DbradyCli
     run_command "git isclean", force: true
   end
 
+  # returns true if we're currently in a conflicted merge
+  def git_is_merge_conflict
+    success = run_command "git diff --quiet --diff-filter=U"
+    !success
+  end
+
   # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)
   # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
   def is_git_repo?(path)
