@@ -1,0 +1,116 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# haiku - Send a completion request to OpenRouter
+require 'colorize'
+require 'optimist'
+require 'net/http'
+require 'json'
+require 'uri'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        haiku - Send a completion request via OpenRouter
+
+        Usage:
+          haiku [options] <prompt text...>
+
+        Options:
+      BANNER
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+      opt :model, 'Model to use', short: :m, default: 'anthropic/claude-haiku-4.5'
+      opt :max_tokens, 'Max tokens in response', default: 1024
+      opt :prompt, 'System prompt file (overrides default instructions)', short: :P, type: :string
+      opt :input_file, 'Read message from file instead of CLI args', short: :i, type: :string
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty? && !opts[:input_file_given]
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    api_key = ENV.fetch('OPENROUTER_API_KEY') do
+      $stderr.puts 'Error: OPENROUTER_API_KEY not set'.red
+      exit 1
+    end
+
+    messages = []
+
+    if opts[:prompt]
+      system_text = File.read(opts[:prompt])
+      messages << { role: 'system', content: system_text }
+    end
+
+    input_text = if opts[:input_file_given]
+      File.read(opts[:input_file])
+    else
+      ARGV * ' '
+    end
+
+    messages << { role: 'user', content: input_text }
+
+    body = {
+      model: opts[:model],
+      max_tokens: opts[:max_tokens],
+      messages: messages,
+      stream: true
+    }
+
+    if debug?
+      $stderr.puts "Model: #{opts[:model]}".cyan
+      $stderr.puts "Messages: #{JSON.pretty_generate(messages)}".cyan
+    end
+
+    uri = URI(OPENROUTER_URL)
+    http = Net::HTTP.new(uri.host, uri.port)
+    http.use_ssl = true
+
+    request = Net::HTTP::Post.new(uri)
+    request['Authorization'] = "Bearer #{api_key}"
+    request['Content-Type'] = 'application/json'
+    request.body = JSON.generate(body)
+
+    http.request(request) do |response|
+      unless response.is_a?(Net::HTTPSuccess)
+        $stderr.puts "Error: #{response.code} #{response.message}".red
+        $stderr.puts response.body
+        exit 1
+      end
+
+      response.read_body do |chunk|
+        chunk.split("\n").each do |line|
+          next unless line.start_with?('data: ')
+
+          data = line.sub('data: ', '')
+          next if data == '[DONE]'
+
+          parsed = JSON.parse(data)
+          content = parsed.dig('choices', 0, 'delta', 'content')
+          print content if content
+        end
+      end
+    end
+
+    puts
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
