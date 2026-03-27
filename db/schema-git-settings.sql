@@ -56,3 +56,13 @@ CAST(ms/1000 AS INTEGER) % 60,
 ms % 1000)) VIRTUAL,
   FOREIGN KEY(slork_id) REFERENCES slorks(id)
 );
+CREATE TABLE test(x BANANA);
+CREATE TABLE slork_history(
+  id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  slork_id INTEGER NOT NULL,
+  field VARCHAR(255) NOT NULL,
+  old_value TEXT,
+  new_value TEXT,
+  changed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY(slork_id) REFERENCES slorks(id)
+);

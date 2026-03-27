@@ -138,6 +138,11 @@ class Application
       run_command "git #{rebase_or_merge_command} #{parent_branch}"
     end
 
+    if git_is_merge_conflict || !git_is_clean
+      puts "BRANCH IS IN A MERGE CONFLICT, ABORTING".white.bold.on_red
+      exit 1
+    end
+
     run_command "bundle" if bundle?
     run_command "remigrate -f" if migrate?
 
@@ -203,7 +208,7 @@ FLOWCHART
     return @branch_is_dirty if @branch_is_dirty_is_cached
 
     puts "Checking to see if branch is clean..."
-    @branch_is_dirty = !run_command("git isclean")
+    @branch_is_dirty = !git_isclean
     @branch_is_dirty_is_cached = true
     @branch_is_dirty
   end
