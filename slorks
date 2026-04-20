@@ -732,7 +732,7 @@ SQL
   end
 
   def clean_deploys
-    Slork.where(deleted_at: nil, status: ["D", "o", "x"]).all.each do |slork|
+    Slork.where(deleted_at: nil, status: ["D", "o", "x", "R"]).all.each do |slork|
       puts "Cleaning ticket #{slork}"
       slork.soft_delete! unless pretend?
     end
