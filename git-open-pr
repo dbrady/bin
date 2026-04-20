@@ -1,3 +1,9 @@
 #!/bin/bash
-echo -e '\033[36mgh pr view -w\033[0m'
-gh pr view -w
+if [ "$1" == "" ]; then
+    echo -e '\033[36mgh pr view -w\033[0m'
+    gh pr view -w
+else
+
+    echo -e '\033[36m'"$(git home-url)/pull/$1"'\033[0m'
+    open "$(git home-url)/pull/$1"
+fi
