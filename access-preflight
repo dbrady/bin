@@ -36,6 +36,9 @@ BANNER
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     dump_opts if debug?
 
+    # if you invoke access-preflight <image>, you probably meant access-preflight -i <image>
+    Optimist.educate unless ARGV.empty?
+
     run!
   end
 
