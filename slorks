@@ -96,6 +96,7 @@ class Application
     'done'      => 'Mark ticket as done',
     'go'        => 'Go to branch for this ticket (git checkout)',
     'history'   => 'Show change history for a ticket',
+    'list-tickets' => 'Emit ticket ids (BOARD-NUM) one per line, for scripting',
     'merge'     => 'Mark this ticket as merge-only (not rebasable by git remaster)',
     'new'       => 'Create new ticket (automatically called from git-new-branch)',
     'notes'     => 'Edit ticket notes',
@@ -113,7 +114,7 @@ class Application
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
-  NO_LIST_COMMANDS = %w{announce commands console go history statuses}
+  NO_LIST_COMMANDS = %w{announce commands console go history list-tickets statuses}
 
   WORKFLOW_ORDER = {
     'b' => 1,   # Blocked
@@ -356,6 +357,7 @@ BANNER
     when 'done' then mark_done(board, ticket)
     when 'go' then go_to_branch_for(board, ticket)
     when 'history' then show_history(board, ticket)
+    when 'list-tickets' then list_tickets
     when 'new' then add_new(board, ticket)
     when 'notes' then update_notes(board, ticket)
     when 'pr' then update_pr(board, ticket)
@@ -940,6 +942,12 @@ SQL
     ticket.save
     puts 'Updated pr.'
     puts ticket if debug?
+  end
+
+  def list_tickets
+    Slork.where(deleted_at: nil).order(*order_clause).all.each do |slork|
+      puts slork.ticket_key
+    end
   end
 
   def show_history(board, ticket)
