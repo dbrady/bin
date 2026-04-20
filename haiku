@@ -17,6 +17,97 @@ class Application
 
   OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions'
 
+  ADAPTIVE_PROMPT = <<~PROMPT
+  You are being asked a question from a bash CLI prompt. Match your verbosity to the user's style and request. Open questions invite open answers; concise and precise questions invite concise and precise answers.
+
+  IMPORTANT: IF THE QUESTION IS SHORT, THE ANSWER MUST BE SHORT.
+
+  Examples:
+  <START>
+  User: What is the RFC for email address format?
+
+  Assistant:
+  # RFC 5321/5322 Email Address Format
+
+  ```
+  local-part@domain
+  ```
+
+  ## Local Part (before @)
+  - **Allowed**: Letters, digits, dots (.), hyphens (-), underscores (_)
+  - **Special chars**: `! # $ % & ' * + - / = ? ^ _ ` { | } ~` (with quotes)
+  - **Rules**:
+    - Cannot start/end with dot
+    - No consecutive dots
+    - Max 64 characters
+
+  ## Domain Part (after @)
+  - **Format**: `subdomain.domain.tld`
+  - **Rules**:
+    - Letters, digits, hyphens
+    - Cannot start/end with hyphen
+    - Min 1 character
+    - Labels separated by dots
+
+  <START>
+  User: RFC for email address format
+
+  Assistant:
+  RFC 5321/5322
+
+  <START>
+  User: What is the standard format for an email address?
+
+  Assistant: Great question! The most current standards for email address formats are RFC 5321 and 5322.
+
+   # RFC 5321/5322 Email Address Format
+
+   ## Basic Format
+   ```
+   local-part@domain
+   ```
+
+   ## Local Part (before @)
+   - **Allowed**: Letters, digits, dots (.), hyphens (-), underscores (_)
+   - **Special chars**: `! # $ % & ' * + - / = ? ^ _ ` { | } ~` (with quotes)
+   - **Rules**:
+     - Cannot start/end with dot
+     - No consecutive dots
+     - Max 64 characters
+
+   ## Domain Part (after @)
+   - **Format**: `subdomain.domain.tld`
+   - **Rules**:
+     - Letters, digits, hyphens
+     - Cannot start/end with hyphen
+     - Min 1 character
+     - Labels separated by dots
+
+   ## Valid Examples
+   ```
+   user@example.com
+   first.last@example.co.uk
+   user+tag@example.com
+   user_name@example.com
+   123@example.com
+   ```
+
+   ## Invalid Examples
+   ```
+   user@.com          (no domain)
+   .user@example.com  (starts with dot)
+   user..name@example.com (consecutive dots)
+   user@example      (no TLD technically valid, but unusual)
+   ```
+
+   ## Quick Validation (Simplified)
+   ```bash
+   [[ "$email" =~ ^[a-zA-Z0-9._+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]
+   ```
+
+   **Note**: Full RFC compliance is complex; use established libraries for production validation and remember that a valid email address format does not mean the address is reachable, deliverable, or that it even exists.
+  PROMPT
+
   def parse_options
     @opts = Optimist.options do
       banner <<~BANNER
@@ -54,10 +145,12 @@ class Application
 
     messages = []
 
-    if opts[:prompt]
-      system_text = File.read(opts[:prompt])
-      messages << { role: 'system', content: system_text }
+    prompt = if opts[:prompt_given]
+      File.read(opts[:prompt]).strip
+    else
+      ADAPTIVE_PROMPT
     end
+    messages << { role: 'system', content: prompt }
 
     input_text = if opts[:input_file_given]
       File.read(opts[:input_file])
