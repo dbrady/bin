@@ -1,0 +1,18 @@
+#!/bin/bash
+slorks list-tickets | while read ticket; do
+    rub1nner $ticket &&
+        echo "Checking out branch for $ticket" &&
+        go $ticket &&
+        git pull &&
+
+        echo "Forcing rvm reload" &&
+        cd . && # force rvm reload
+
+        echo "Remastering branch" &&
+        git remaster --full &&
+
+        echo "Pushing" &&
+        (git is-rebasable && git yolo || git push)
+
+        echo "Done with $ticket"
+done
