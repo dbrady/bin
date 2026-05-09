@@ -22,9 +22,10 @@ class Application
         lbs - Lightweight stat tracker
 
         Usage:
-          lbs <stat> <value> [options]   Record a value
+          lbs <stat> <value> [notes]     Record a value (with optional notes)
           lbs <stat> [options]           Show history
-          lbs console | c                Open sqlite3 console
+          lbs list | ls                  List all stats with reading counts
+          lbs console | c               Open sqlite3 console
 
         Options:
       BANNER
@@ -120,16 +121,43 @@ class Application
       exec "sqlite3", DB_PATH
     end
 
+    # Handle list command
+    if stat_name == 'list' || stat_name == 'ls'
+      list_stats
+      return
+    end
+
     value = ARGV.shift
+    notes = ARGV.join(' ') if ARGV.any?
 
     if value
-      record(stat_name, value)
+      record(stat_name, value, notes)
     else
       show_history(stat_name)
     end
   end
 
-  def record(stat_name, value)
+  def list_stats
+    rows = db.query_array(<<~SQL)
+      SELECT s.name, COUNT(r.id) AS cnt
+      FROM stats s
+      LEFT JOIN readings r ON r.name = s.name
+      GROUP BY s.name
+      ORDER BY s.name
+    SQL
+
+    if rows.empty?
+      puts "no stats defined yet".yellow
+      return
+    end
+
+    rows.each do |name, cnt|
+      label = cnt == 1 ? "reading" : "readings"
+      puts "#{name} (#{cnt} #{label})"
+    end
+  end
+
+  def record(stat_name, value, notes = nil)
     stat = get_stat(stat_name)
 
     unless stat
@@ -147,8 +175,10 @@ class Application
     end
 
     ts = parse_timestamp(opts[:at])
-    db.execute('INSERT INTO readings (name, value, created_at) VALUES (?, ?, ?)', stat_name, value, ts)
-    puts "recorded #{format_value(value, stat[:format])} on #{format_timestamp(ts, stat[:date_format])}".green
+    db.execute('INSERT INTO readings (name, value, notes, created_at) VALUES (?, ?, ?, ?)', stat_name, value, notes, ts)
+    msg = "recorded #{format_value(value, stat[:format])} on #{format_timestamp(ts, stat[:date_format])}"
+    msg += " - #{notes}" if notes
+    puts msg.green
   end
 
   def show_history(stat_name)
@@ -177,7 +207,7 @@ class Application
              end
 
     rows = db.query_array(
-      'SELECT created_at, value FROM readings WHERE name = ? AND created_at >= ? AND created_at <= ? ORDER BY created_at',
+      'SELECT created_at, value, notes FROM readings WHERE name = ? AND created_at >= ? AND created_at <= ? ORDER BY created_at',
       stat_name, start_ts, end_ts
     )
 
@@ -186,8 +216,10 @@ class Application
       return
     end
 
-    rows.each do |ts, val|
-      puts "#{format_timestamp(ts, date_fmt)}: #{format_value(val, val_fmt)}"
+    rows.each do |ts, val, notes|
+      line = "#{format_timestamp(ts, date_fmt)}: #{format_value(val, val_fmt)}"
+      line += " - #{notes}" if notes && !notes.empty?
+      puts line
     end
   end
 end
