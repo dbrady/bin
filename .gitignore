@@ -8,3 +8,4 @@ db/*.db
 db/logs/*
 db/backups/*
 .claude
+.ntm/human_inbox
