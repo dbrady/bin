@@ -59,9 +59,13 @@ module DbradyCli
       caller_file = caller_locations(1, 1).first.path
 
       # favor the spring binstub over bundler, because spring go fast.
-      spring = File.join(Dir.pwd, "bin/rails")
+      rails_command = "bundle exec rails"
 
-      rails_command = File.exist?(spring) ? spring : "bundle exec rails"
+      spring_command = File.join(Dir.pwd, "bin/rails")
+
+      if ENV["DISABLE_SPRING"] != "1" && File.exist?(spring)
+        rails_command = spring_command
+      end
 
       command = "#{rails_command} runner #{caller_file} #{ARGV.map(&:inspect).join(' ')} 2>/dev/null"
 
