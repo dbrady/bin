@@ -28,7 +28,7 @@ class Application
     # Right now, I only want to check aws from my work machine
     # If this changes, touch ~/.aws or something?
     ensure_aws_sso_login if osx?
-    command = "bin/rails #{arglist}"
+    command = "bundle exec rails #{arglist}"
     command = "time #{command}" if time?
     run_command command
   end
