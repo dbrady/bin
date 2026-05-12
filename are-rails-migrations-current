@@ -3,6 +3,8 @@
 # folder, and potentially seed_migrations vs db/data/older, but without starting
 # rails because ain't nobody got time for that
 #
+# 2026-05-12 - seed_migrations has been deprecated in merchant_portal
+#
 # returns successful exit code to bash if migrations are current to allow
 # chaining this command from remigrate and other scripts
 
@@ -51,8 +53,9 @@ end
 def seed_migrations_tablename
   folder = Dir.pwd.split(/\//).last
   case folder
-  when "underwriting" then "seed_migration_data_migrations"
-  when "credit_card_service" then nil
+  when /underwriting/ then "seed_migration_data_migrations"
+  when /credit_card_service/ then nil
+  when /merchant_portal/ then nil
   else
     "seed_migrations"
   end
