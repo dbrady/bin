@@ -7,3 +7,4 @@ testit
 db/*.db
 db/logs/*
 db/backups/*
+.claude
