@@ -1,3 +1,0 @@
-#!/bin/bash
-# git-nuke-and-start-over - throw away current branch and re-cut it from master to start over
-echo "DEPRECATED: Use git abandon"
