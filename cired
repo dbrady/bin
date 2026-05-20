@@ -1,6 +1,4 @@
 #!/bin/sh
-# cigreen - like cipass but no text banner, just diddles the lights. I use this to create a visual alert. Use cioff to clear it.
-
 # | color   |   hue |
 # |---------+-------|
 # | red     |     0 |
@@ -11,7 +9,8 @@
 #
 # Office Lamp Arrangement 2018
 # 4 - Office Spotlight
-# 9 - Office Lightstrip
+# 5 - Main Floor Office Lighstrip
+# 9 - Upstairs Office Lightstrip
 # 10 - Office Light Fixture (North Bulb)
 # 11 - Office Light Fixture (South Bulb)
 
@@ -20,7 +19,7 @@ if [ -e ~/onsite.touch ]; then
     exit 0
 else
     for light in 5; do
-        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
     done
     # the spotlight is wayyyy too strong, let's back it off
     sleep 1

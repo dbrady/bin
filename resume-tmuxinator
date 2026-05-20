@@ -1,0 +1,11 @@
+#!/bin/bash
+claude --resume a992520d-2ce0-4af4-8f33-d1b06a9f93b5
+
+
+# ⏺ Wrote ~/.tmuxinator/services.yml — 7 windows mirroring tservices-2-start-run-me-next (ams, amq, mpq, anycable, anycable-go, kipper, gc), each rooted in its own ~/acima/devel/<folder> and auto-running its server/worker command.
+#
+#   Usage:
+#   - tmuxinator start services (or mux start services) — creates the session, opens all windows, runs the commands. Replaces all three of tservices-1-new-run-me-first + manual window-spawning + tservices-2-start-run-me-next.
+#   - tmuxinator stop services — replaces tservices-stop.
+#   - tmux attach -t services — replaces tservices-3-attach....
+#   - tmuxinator edit services to tweak.

@@ -1,0 +1,2 @@
+#!/bin/bash
+echo 'mux stop more' && mux stop more
