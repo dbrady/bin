@@ -78,7 +78,8 @@ class Application
            :hide_pr,
            :hide_repo,
            :project_code,
-           :updated_at
+           :updated_at,
+           :with_prs
 
   COMMANDS = {
     'abandon'   => 'Mark ticket as abandoned',
@@ -304,6 +305,8 @@ BANNER
       opt :title,        'Title of PR', type: :string
       opt :updated_at,   'Show updated_at timestamps', default: false
       opt :verbose,      'Run with verbose output (overrides --quiet)', short: :v, default: false
+      opt :with_prs,     'Include PR with ticket in list-tickets, e.g. MP-906:17372 (for mp_make_merge_announcement)'
+      opt :except,       'Exclude tickets from list-tickets (e.g. --except=MP-906,MP-144 or --except=MP-906 --except=144). Bare numbers match any board.', type: :strings, multi: true, default: []
     end
     dump_opts if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
@@ -945,9 +948,38 @@ SQL
   end
 
   def list_tickets
+    excluded_keys, excluded_numbers = parse_excepts(opts[:except])
+
     Slork.where(deleted_at: nil).order(*order_clause).all.each do |slork|
-      puts slork.ticket_key
+      next unless ['d', 'p', 'q', 'r'].include? slork.status
+      next unless slork.pr if with_prs?
+      next if excluded_keys.include?(slork.ticket_key.upcase)
+      next if excluded_numbers.include?(slork.ticket.to_s)
+
+      ticket = slork.ticket_key
+      ticket = [ticket, slork.pr].join(':') if with_prs?
+
+      puts ticket
     end
+  end
+
+  # --except accepts both `type: :strings` (comma list) and `multi: true`
+  # (repeated flag), so opts[:except] is an array of arrays. Flatten,
+  # then split each entry: "MP-906" is a full key, "144" is a bare
+  # ticket number that excludes that number from any board.
+  def parse_excepts(raw)
+    keys = []
+    numbers = []
+    Array(raw).flatten.compact.each do |entry|
+      entry.to_s.split(',').map(&:strip).reject(&:empty?).each do |token|
+        if token.include?('-')
+          keys << token.upcase
+        else
+          numbers << token
+        end
+      end
+    end
+    [keys, numbers]
   end
 
   def show_history(board, ticket)
