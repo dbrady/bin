@@ -11,6 +11,10 @@ slorks list-tickets | while read ticket; do
         echo "Forcing rvm reload" &&
         cd . && # force rvm reload
 
+        echo "Nuking database" &&
+        bails db:reset &&
+        bails seeder:required_data:run &&
+
         echo "Remastering branch" &&
         git remaster --full &&
 
