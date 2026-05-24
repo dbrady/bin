@@ -3,6 +3,11 @@
 
 # NOCOMMIT: You need to name this script!
 # {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+#
+# Single-purpose script template. For a script with subcommands
+# (`foo init`, `foo log ...`, etc.), copy `new-ruby-with-subcommands`
+# instead — it shows the Optimist `stop_on` pattern with per-subcommand
+# banners and --help.
 require 'colorize'
 require 'optimist'
 $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
