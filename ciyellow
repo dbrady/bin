@@ -20,6 +20,6 @@ if [ -e ~/onsite.touch ]; then
     exit 0
 else
     for light in 5; do
-        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":7750, "transitiontime":0}' 2>/dev/null > /dev/null
+        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":12750, "transitiontime":0}' 2>/dev/null > /dev/null
     done
 fi
