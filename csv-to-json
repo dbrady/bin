@@ -14,4 +14,5 @@ opts = Optimist.options do
 end
 
 csv = ARGF.readlines.join
-puts JSON.pretty_generate(CSV.parse(csv, headers: true, col_sep: opts[:delimiter]).map(&:to_h))
+parsed_csv = CSV.parse(csv, headers: true, col_sep: opts[:delimiter], converters: :numeric).map(&:to_h)
+puts JSON.pretty_generate(parsed_csv)
