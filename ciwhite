@@ -7,4 +7,11 @@
 # | blue    | 46920 |
 # | magenta | 56100 |
 
-curl -X PUT "http://192.168.0.66/api/$HUE/lights/5/state" -d '{"on":true, "bri":254,"sat":0,"hue":25000, "transitiontime":0}' 2>/dev/null > /dev/null
+if [ -e ~/onsite.touch ]; then
+    # echo "You're onsite! Skipping HUE lights."
+    exit 0
+else
+    for light in 5; do
+        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":0,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
+    done
+fi
