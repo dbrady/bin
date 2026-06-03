@@ -1,0 +1,24 @@
+#!/bin/sh
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | green   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 5 - Main Floor Office Lighstrip
+# 9 - Upstairs Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+
+if [ -e ~/onsite.touch ]; then
+    # echo "You're onsite! Skipping HUE lights."
+    exit 0
+else
+    for light in 5; do
+        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":254,"sat":254,"hue":46920, "transitiontime":0}' 2>/dev/null > /dev/null
+    done
+fi

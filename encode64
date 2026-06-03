@@ -1,7 +1,4 @@
 #!/usr/bin/env ruby
-# decode64 "<str>"
-# echo "str" | decode64
-#
 # encode64 "<str>"
 # echo "str" | encode64
 #
@@ -16,13 +13,16 @@
 #
 # $ decode64 $(encode64 "blah blah ARGV")
 # blah blah ARGV
+
 #
 # note, you can do this on OSX (and probably linux) with
-# echo "this as inline" | base64 | base64 -d
+# echo <str> | base64
 #
 # I'm doing this here anyway, mostly to remind myself how to do it in ruby
 require "base64"
 
+# puts "stdin is a tty? #{$stdin.tty?.inspect}"
+
 text = $stdin.tty? ? ARGV.join(' ') : $stdin.read
 
-puts Base64.decode64(text)
+puts Base64.encode64(text)

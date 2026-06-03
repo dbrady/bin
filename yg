@@ -1,0 +1,218 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# yg - grep-with-breadcrumbs for indent-structured files (YAML, etc.)
+#
+# Prints each line matching PATTERN along with the chain of enclosing
+# mapping keys, preserving original indentation. Ancestors already printed
+# for a previous match are not repeated.
+#
+# Vibecoded with Claude 4.7 (1M Context with Medium effort)
+require 'colorize'
+require 'optimist'
+require 'yaml'
+require 'json'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+class Application
+  include DbradyCli
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        yg - grep PATTERN in a YAML-ish file and show the breadcrumb path
+             (chain of enclosing keys) for each hit.
+
+        Usage: yg [options] PATTERN [FILE...]
+               cat foo.yaml | yg PATTERN
+
+        Examples:
+          yg -n db_pool config/database.yml         # YAML, with line numbers
+          yg -Hn secret config/*.yml                # grep-style filename prefix
+          yg -P version package.json                # parse JSON, walk tree
+          yg -b rails Gemfile.lock                  # blank-line-separated blocks
+          yg -b 'def ' app.py                       # Python: find defs in context
+          yg -d '=' database_url app.ini            # custom delimiter for INI-ish
+          git diff | yg -b '^\\+'                    # breadcrumb a diff hunk
+
+        Options:
+      BANNER
+      opt :line_numbers, 'Prefix each line with its line number',
+          short: :n, default: false
+      opt :heading, 'Prefix each emitted line with the filename ' \
+                    '(grep -H style)',
+          short: :H, default: false
+      opt :ignore_case, 'Case-insensitive match', short: :i, default: false
+      opt :case_sensitive, 'Case-sensitive match', short: :s, default: false
+      opt :smart_case, 'Case-insensitive unless PATTERN has an uppercase ' \
+                       'letter (default)',
+          short: :S, default: false
+      opt :parse, 'Parse input as YAML/JSON and walk the structure ' \
+                  '(matches keys or scalar values; loses line numbers)',
+          short: :P, default: false
+      opt :delimiter, 'Character marking a line as a parent (default ":")',
+          type: :string, default: ':'
+      opt :blank, 'Treat every non-blank line as a parent; blank lines ' \
+                  'reset the stack (Gemfile.lock, Python, etc.)',
+          short: :b, default: false
+      opt :debug, 'Print extra debug info', default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)',
+          short: :v, default: false
+      conflicts :line_numbers, :parse
+      conflicts :parse, :blank
+      conflicts :parse, :delimiter
+      conflicts :ignore_case, :case_sensitive, :smart_case
+      conflicts :delimiter, :blank
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    Optimist.educate if ARGV.empty?
+  end
+
+  def run
+    parse_options
+    raw = ARGV.shift
+    @pattern = Regexp.new(raw, case_insensitive?(raw) ? Regexp::IGNORECASE : 0)
+    run!
+  end
+
+  def case_insensitive?(raw_pattern)
+    return true if opts[:ignore_case]
+    return false if opts[:case_sensitive]
+    # smart-case (explicit or default): insensitive iff no uppercase in pattern
+    raw_pattern !~ /[A-Z]/
+  end
+
+  def run!
+    files = ARGV.empty? ? [$stdin] : ARGV
+    files.each do |f|
+      label = f.is_a?(IO) ? '(stdin)' : f
+      if opts[:parse]
+        content = f.is_a?(IO) ? f.read : File.read(f)
+        process_parsed(load_structured(content, f.is_a?(IO) ? nil : f), label)
+      else
+        lines = f.is_a?(IO) ? f.readlines : File.readlines(f)
+        process(lines, label)
+      end
+    end
+  end
+
+  def load_structured(content, path)
+    if path && File.extname(path).downcase == '.json'
+      JSON.parse(content)
+    else
+      YAML.safe_load(content, aliases: true,
+                              permitted_classes: [Symbol, Date, Time])
+    end
+  end
+
+  # Walk the file tracking a stack of enclosing keys by indent.
+  # When a line matches the pattern, print only the portion of the
+  # path that wasn't printed for the previous match.
+  def process(lines, label)
+    stack = []
+    last_printed = []
+    delim = Regexp.escape(opts[:delimiter])
+    key_re = /#{delim}\s*(#.*)?\z/
+
+    lines.each_with_index do |raw, i|
+      line = raw.chomp
+      if line.strip.empty?
+        if opts[:blank]
+          stack = []
+          last_printed = []
+        end
+        next
+      end
+      next if line.strip.start_with?('#')
+
+      lineno = i + 1
+      indent = line[/\A */].length
+
+      stack.pop while stack.any? && stack.last[0] >= indent
+
+      if line =~ @pattern
+        path = stack + [[indent, lineno, line]]
+        common = 0
+        path.each_with_index do |(_, ln, _), idx|
+          break unless last_printed[idx] == ln
+          common = idx + 1
+        end
+        path[common..].each { |(_, ln, r)| emit(label, ln, r) }
+        last_printed = path.map { |e| e[1] }
+      end
+
+      if opts[:blank] || line =~ key_re
+        stack.push([indent, lineno, line])
+      end
+    end
+  end
+
+  # Walk the parsed tree, emitting breadcrumbs for any path whose keys
+  # or leaf value match the pattern. Output is rendered with normalized
+  # 2-space YAML indent.
+  def process_parsed(data, label)
+    last_printed = []
+    walk(data, []) do |path, value|
+      next unless path_matches?(path, value)
+      common = 0
+      path.each_with_index do |k, i|
+        break unless last_printed[i] == k
+        common = i + 1
+      end
+      (common...path.size - 1).each do |i|
+        emit(label, nil, "#{'  ' * i}#{render_key(path[i])}:")
+      end
+      leaf_indent = '  ' * (path.size - 1)
+      emit(label, nil, "#{leaf_indent}#{render_leaf(path.last, value)}")
+      last_printed = path
+    end
+  end
+
+  def walk(node, path, &blk)
+    case node
+    when Hash
+      node.each { |k, v| walk_child(k, v, path, &blk) }
+    when Array
+      node.each_with_index { |v, i| walk_child(i, v, path, &blk) }
+    else
+      yield path, node unless path.empty?
+    end
+  end
+
+  def walk_child(key, value, path, &blk)
+    new_path = path + [key]
+    if value.is_a?(Hash) || value.is_a?(Array)
+      walk(value, new_path, &blk)
+    else
+      yield new_path, value
+    end
+  end
+
+  def path_matches?(path, value)
+    path.any? { |k| k.to_s =~ @pattern } || value.to_s =~ @pattern
+  end
+
+  def render_key(key)
+    key.is_a?(Integer) ? "[#{key}]" : key.to_s
+  end
+
+  def render_leaf(key, value)
+    YAML.dump(render_key(key) => value).sub(/\A---\s*\n?/, '').chomp
+  end
+
+  def emit(label, lineno, raw)
+    parts = []
+    parts << label if opts[:heading]
+    parts << lineno.to_s if lineno && opts[:line_numbers]
+    if parts.empty?
+      puts raw
+    else
+      puts "#{parts.join(':')}: #{raw}"
+    end
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME

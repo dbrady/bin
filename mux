@@ -1,0 +1,6 @@
+#!/bin/bash
+# Shim so `mux` works in scripts and subshells, not just interactive shells.
+# An alias in ~/.aliases only helps the human at a prompt — aliases aren't
+# inherited by child processes and bash disables alias expansion in
+# non-interactive shells anyway. A real executable on PATH avoids both.
+exec tmuxinator "$@"

@@ -138,7 +138,7 @@ class Application
       run_command "git #{rebase_or_merge_command} #{parent_branch}"
     end
 
-    if git_is_merge_conflict || !git_is_clean
+    if git_is_merge_conflict || !git_isclean
       puts "BRANCH IS IN A MERGE CONFLICT, ABORTING".white.bold.on_red
       exit 1
     end

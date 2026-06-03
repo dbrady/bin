@@ -1,0 +1,28 @@
+#!/bin/bash
+BRANCH=$(git current-branch)
+echo "Saving current branch $BRANCH"
+
+slorks list-tickets | while read ticket; do
+    rub1nner $ticket &&
+        echo "Checking out branch for $ticket" &&
+        go $ticket &&
+        git pull &&
+
+        echo "Forcing rvm reload" &&
+        cd . && # force rvm reload
+
+        echo "Nuking database" &&
+        bails db:reset &&
+        bails seeder:required_data:run &&
+
+        echo "Remastering branch" &&
+        git remaster --full &&
+
+        echo "Pushing" &&
+        (git is-rebasable && git yolo || git push)
+
+        echo "Done with $ticket"
+done
+
+echo "Returning to original branch $BRANCH"
+go $BRANCH

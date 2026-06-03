@@ -1,0 +1,3 @@
+#!/bin/bash
+# Teach-and-run wrapper for tmuxinator. Config: ~/.tmuxinator/work.yml
+echo 'mux start work' && mux start work

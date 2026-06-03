@@ -1,0 +1,129 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# vclip - Multiserver clipboard. pbcopy/pbpaste, but the store is a set of
+# files on a remote ssh host (vapor:~/vee), so it follows you between machines.
+#
+# Direction is inferred from stdin, exactly like pbcopy/pbpaste are two halves:
+#   echo hi | vclip            # piped stdin  -> SET the "default" clipboard
+#   echo hi | vclip notes      # piped stdin  -> SET the "notes" clipboard
+#   vclip                      # tty stdin    -> GET the "default" clipboard
+#   vclip notes                # tty stdin    -> GET the "notes" clipboard
+#
+# Content travels over ssh's stdin (never the remote command line), so it needs
+# no escaping and has no size limit. The only thing that reaches the remote
+# shell is the clipboard name, which we sanitize down to a safe charset.
+require 'colorize'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  HOST = 'vapor'
+  REMOTE_DIR = '~/vee'
+  DEFAULT_NAME = 'default'
+  # Anything outside this set is stripped from the name before it ever touches
+  # the remote shell, so a name like 'foo; rm -rf /' can't break out.
+  SAFE_NAME = /[^A-Za-z0-9._-]/
+
+  opt_flag :list
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        vclip - Multiserver clipboard stored on #{HOST}:#{REMOTE_DIR}
+
+        Piped stdin sets, a terminal gets. No name uses "#{DEFAULT_NAME}".
+          echo hi | vclip [name]   # set
+          vclip [name]             # get
+
+        Options:
+      BANNER
+      opt :list, "List the clipboards on #{HOST}", short: :l, default: false
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    return list if list?
+
+    name = clipboard_name(ARGV.shift)
+    $stdin.tty? ? get(name) : set(name)
+  end
+
+  private
+
+  def list
+    warn "list clipboards on #{HOST}".cyan if verbose?
+    # ls -1 already sorts; 2>/dev/null so an absent ~/vee just lists nothing.
+    remote = "ls -1 #{REMOTE_DIR} 2>/dev/null"
+    return announce(remote) if pretend?
+
+    output = IO.popen(['ssh', HOST, remote], 'r', &:read)
+    abort "vclip: could not connect to #{HOST}".red if $?.exitstatus == 255
+    warn "vclip: no clipboards on #{HOST}".yellow if output.empty?
+    $stdout.write(output)
+  end
+
+  # Strip to a safe charset and never let it collapse to a path traversal.
+  def clipboard_name(raw)
+    name = (raw || DEFAULT_NAME).gsub(SAFE_NAME, '')
+    name = DEFAULT_NAME if name.empty? || name == '.' || name == '..'
+    name
+  end
+
+  def set(name)
+    text = $stdin.read
+    # Status/verbose chatter goes to stderr so it can never corrupt content.
+    warn "set '#{name}' on #{HOST}".cyan if verbose?
+    remote = "mkdir -p #{REMOTE_DIR} && cat > #{REMOTE_DIR}/#{name}"
+    return announce(remote) if pretend?
+
+    IO.popen(['ssh', HOST, remote], 'w') { |io| io.write(text) }
+    abort "vclip: failed to set '#{name}' (#{describe_exit($?)})".red unless $?.success?
+  end
+
+  def get(name)
+    warn "get '#{name}' from #{HOST}".cyan if verbose?
+    # 2>/dev/null swallows the remote "cat: No such file" so a missing
+    # clipboard becomes our own clean message instead.
+    remote = "cat #{REMOTE_DIR}/#{name} 2>/dev/null"
+    return announce(remote) if pretend?
+
+    output = IO.popen(['ssh', HOST, remote], 'r', &:read)
+    handle_get_failure(name, $?) unless $?.success?
+    $stdout.write(output)
+  end
+
+  def announce(remote)
+    puts "ssh #{HOST} #{remote.inspect}".cyan
+  end
+
+  def handle_get_failure(name, status)
+    if status.exitstatus == 255
+      abort "vclip: could not connect to #{HOST}".red
+    else
+      abort "vclip: no clipboard named '#{name}'".red
+    end
+  end
+
+  def describe_exit(status)
+    status.exitstatus == 255 ? "could not connect to #{HOST}" : "exit #{status.exitstatus}"
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME

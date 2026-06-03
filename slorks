@@ -78,7 +78,8 @@ class Application
            :hide_pr,
            :hide_repo,
            :project_code,
-           :updated_at
+           :updated_at,
+           :with_prs
 
   COMMANDS = {
     'abandon'   => 'Mark ticket as abandoned',
@@ -96,6 +97,7 @@ class Application
     'done'      => 'Mark ticket as done',
     'go'        => 'Go to branch for this ticket (git checkout)',
     'history'   => 'Show change history for a ticket',
+    'list-tickets' => 'Emit ticket ids (BOARD-NUM) one per line, for scripting',
     'merge'     => 'Mark this ticket as merge-only (not rebasable by git remaster)',
     'new'       => 'Create new ticket (automatically called from git-new-branch)',
     'notes'     => 'Edit ticket notes',
@@ -113,7 +115,7 @@ class Application
   DATABASE_PATH = File.expand_path('~/bin/db/git-settings.db')
   DB = Sequel::sqlite(DATABASE_PATH)
 
-  NO_LIST_COMMANDS = %w{announce commands console go history statuses}
+  NO_LIST_COMMANDS = %w{announce commands console go history list-tickets statuses}
 
   WORKFLOW_ORDER = {
     'b' => 1,   # Blocked
@@ -303,6 +305,8 @@ BANNER
       opt :title,        'Title of PR', type: :string
       opt :updated_at,   'Show updated_at timestamps', default: false
       opt :verbose,      'Run with verbose output (overrides --quiet)', short: :v, default: false
+      opt :with_prs,     'Include PR with ticket in list-tickets, e.g. MP-906:17372 (for mp_make_merge_announcement)'
+      opt :except,       'Exclude tickets from list-tickets (e.g. --except=MP-906,MP-144 or --except=MP-906 --except=144). Bare numbers match any board.', type: :strings, multi: true, default: []
     end
     dump_opts if debug?
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
@@ -356,6 +360,7 @@ BANNER
     when 'done' then mark_done(board, ticket)
     when 'go' then go_to_branch_for(board, ticket)
     when 'history' then show_history(board, ticket)
+    when 'list-tickets' then list_tickets
     when 'new' then add_new(board, ticket)
     when 'notes' then update_notes(board, ticket)
     when 'pr' then update_pr(board, ticket)
@@ -732,7 +737,7 @@ SQL
   end
 
   def clean_deploys
-    Slork.where(deleted_at: nil, status: ["D", "o", "x"]).all.each do |slork|
+    Slork.where(deleted_at: nil, status: ["D", "o", "x", "R"]).all.each do |slork|
       puts "Cleaning ticket #{slork}"
       slork.soft_delete! unless pretend?
     end
@@ -940,6 +945,41 @@ SQL
     ticket.save
     puts 'Updated pr.'
     puts ticket if debug?
+  end
+
+  def list_tickets
+    excluded_keys, excluded_numbers = parse_excepts(opts[:except])
+
+    Slork.where(deleted_at: nil).order(*order_clause).all.each do |slork|
+      next unless ['d', 'p', 'q', 'r'].include? slork.status
+      next unless slork.pr if with_prs?
+      next if excluded_keys.include?(slork.ticket_key.upcase)
+      next if excluded_numbers.include?(slork.ticket.to_s)
+
+      ticket = slork.ticket_key
+      ticket = [ticket, slork.pr].join(':') if with_prs?
+
+      puts ticket
+    end
+  end
+
+  # --except accepts both `type: :strings` (comma list) and `multi: true`
+  # (repeated flag), so opts[:except] is an array of arrays. Flatten,
+  # then split each entry: "MP-906" is a full key, "144" is a bare
+  # ticket number that excludes that number from any board.
+  def parse_excepts(raw)
+    keys = []
+    numbers = []
+    Array(raw).flatten.compact.each do |entry|
+      entry.to_s.split(',').map(&:strip).reject(&:empty?).each do |token|
+        if token.include?('-')
+          keys << token.upcase
+        else
+          numbers << token
+        end
+      end
+    end
+    [keys, numbers]
   end
 
   def show_history(board, ticket)

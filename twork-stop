@@ -1,10 +1,2 @@
 #!/bin/bash
-target=work
-count=8
-
-for i in $(seq $count); do
-    echo $i
-    echo "tmux send-keys -t${target}:$i C-c"
-    tmux send-keys -t${target}:$i "C-c"
-    tmux send-keys -t${target}:$i "C-d"
-done
+echo 'mux stop work' && mux stop work

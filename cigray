@@ -1,0 +1,25 @@
+#!/bin/sh
+# cigray - sets lights to a dim grey
+
+# | color   |   hue |
+# |---------+-------|
+# | red     |     0 |
+# | yellow  | 12750 |
+# | gray   | 25500 |
+# | blue    | 46920 |
+# | magenta | 56100 |
+#
+# Office Lamp Arrangement 2018
+# 4 - Office Spotlight
+# 9 - Office Lightstrip
+# 10 - Office Light Fixture (North Bulb)
+# 11 - Office Light Fixture (South Bulb)
+
+if [ -e ~/onsite.touch ]; then
+    # echo "You're onsite! Skipping HUE lights."
+    exit 0
+else
+    for light in 5; do
+        curl -X PUT "http://$HUE_IP/api/$HUE/lights/$light/state" -d '{"on":true, "bri":63,"sat":0,"hue":0, "transitiontime":0}' 2>/dev/null > /dev/null
+    done
+fi

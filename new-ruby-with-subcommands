@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# NOCOMMIT: You need to name this script!
+# {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+#
+# Subcommand template. Use this when your script has verbs (`foo init`,
+# `foo log ...`, `foo report ...`). For a single-purpose script, copy
+# `new-ruby` instead.
+#
+# How Optimist subcommands work (the load-bearing trick):
+#
+#   1. The TOP-LEVEL `Optimist.options` block declares GLOBAL flags and
+#      calls `stop_on SUBCOMMANDS`. Optimist consumes any global flags
+#      it sees in ARGV up to the first token in SUBCOMMANDS, then stops
+#      and leaves the rest of ARGV alone.
+#   2. You then `ARGV.shift` the subcommand name and `case` on it.
+#   3. Inside each `when`, you call `Optimist.options` AGAIN with its
+#      own banner and its own flags. This gives each subcommand its
+#      own `--help` (run `foo log --help` and you get the log banner)
+#      and keeps each subcommand's options local and legible.
+#
+# Calling order — global flags must come BEFORE the subcommand:
+#
+#     foo --debug log MP-1 2h          # --debug is parsed globally
+#     foo log MP-1 2h --note "wat"     # --note is parsed by the log subcommand
+#     foo log --debug MP-1 2h          # WRONG: --debug is unknown to `log`
+#
+# Per-subcommand --help comes for free because each `Optimist.options`
+# block installs its own help handler against its own banner.
+
+require 'colorize'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  SUBCOMMANDS = %w[init log report].freeze
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        # NOCOMMIT: You need to name this script!
+        {{SCRIPT}} - HEY DAVE COME DESCRIBE THIS SCRIPT
+
+        Usage:
+          {{SCRIPT}} [global options] <subcommand> [subcommand options]
+
+        Subcommands:
+          init     Bootstrap or heal local state (idempotent)
+          log      Record something
+          report   Print a summary
+
+        Global options (must come BEFORE the subcommand):
+      BANNER
+      opt :debug,   'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet,   'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+      stop_on SUBCOMMANDS
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    @subcommand = ARGV.shift
+    Optimist.educate if @subcommand.nil?
+  end
+
+  def run
+    parse_options
+    case @subcommand
+    when 'init'   then run_init
+    when 'log'    then run_log
+    when 'report' then run_report
+    else
+      warn "{{SCRIPT}}: unknown subcommand '#{@subcommand}'"
+      warn "Run '{{SCRIPT}} --help' for usage."
+      exit 1
+    end
+  end
+
+  # Each subcommand calls Optimist.options AGAIN with its own banner and
+  # flags. That block handles `--help` for the subcommand automatically.
+  def run_init
+    Optimist.options do
+      banner <<~BANNER
+        Usage: {{SCRIPT}} init
+
+        Bootstrap or heal local state. Idempotent — safe to run anytime.
+      BANNER
+    end
+    # ... do init work ...
+  end
+
+  def run_log
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: {{SCRIPT}} log <target> <duration> [--on DATE] [--note TEXT]
+
+        Record a time entry against <target>.
+
+        Options:
+      BANNER
+      opt :on,   'Date worked on (YYYY-MM-DD, today, yesterday)', type: :string, short: '-O'
+      opt :note, 'Free-text note', type: :string, short: '-m'
+    end
+    target   = ARGV.shift
+    duration = ARGV.shift
+    if target.nil? || duration.nil?
+      warn 'Usage: {{SCRIPT}} log <target> <duration> [--on DATE] [--note TEXT]'
+      exit 1
+    end
+    # ... do log work with target, duration, subopts[:on], subopts[:note] ...
+  end
+
+  def run_report
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: {{SCRIPT}} report [--week DATE | --start DATE --end DATE]
+
+        Summarize logged entries. Defaults to the current Sun-Sat week.
+
+        Options:
+      BANNER
+      opt :week,  'Sun-Sat week containing this date (YYYY-MM-DD)', type: :string, short: :none
+      opt :start, 'Range start (YYYY-MM-DD)', type: :string, short: '-s'
+      opt :end,   'Range end (YYYY-MM-DD)',   type: :string, short: '-e'
+    end
+    # ... do report work with subopts[:week], subopts[:start], subopts[:end] ...
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
