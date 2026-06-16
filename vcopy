@@ -1,0 +1,18 @@
+#!/bin/bash
+# vcopy - like pbcopy but from local clipboard to vapor
+#
+# ARG. work out the use cases. does vcopy take stdin and pipe it to vapor?
+# That's semantic sugar for vclip and I like it, but it does NOT interact with
+# local clipboard.
+#
+# Interacting with local clipboard: vcopy does a "pbpaste | vclip" and that's
+# fine. But vpaste does "vclip | pbcopy", and arguably should not print to
+# screen, but now you have reverse semantics. vpaste pastes vapor into local and
+# does not paste.
+
+# BOTH at same time? Probably the most intuitive option, BUT it DOES overwrite
+# the local clipboard.
+
+# I think let's go with the simplest version for now. NO LOCAL CLIPBOARD
+# INTERACTION. It's JUST semantic sugar for vclip.
+vclip default

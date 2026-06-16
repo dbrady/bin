@@ -1,0 +1,9 @@
+#!/bin/bash
+# See notes on vcopy. This is just semantic sugar for vclip.
+# Weird, tho: echo "foo" | vpaste should be a syntax error, but vclip will silently do a vpaste.
+#
+# Sigh. Maybe I should just learn the dang tool. I just want to leverage my pbcopy / pbpaste muscle memory.
+# echo "poo" | vcopy; vpaste => "poo"
+#
+# But that's just echo "poo" | vclip; vclip => "poo", innit.
+vclip default
