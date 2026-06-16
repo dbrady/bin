@@ -107,6 +107,9 @@ BANNER
       "#{ACIMA_DEVEL}/merchant_portal/.bundle/config",
       "#{ACIMA_DEVEL}/funding-request-service/.bundle/config",
       "#{ACIMA_DEVEL}/global_customer/.bundle/config",
+
+      # already symlinked
+      # "#{ACIMA_DEVEL}/review.merchant_portal/.bundle/config",
     ].map {|file| File.expand_path(file)}
 
     # TOKENS TO SET
