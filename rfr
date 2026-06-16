@@ -33,6 +33,6 @@ if [ "$SING" = 'y' ]; then
     singbegin
     (time bin/rspec  --format=documentation --order=defined $@ && cipass && singpass || (cifail && singfail && exit -1))
 else
-    echo 'Non-singing specs (you can turn them on with --sing as the first argument)'
+    # echo 'Non-singing specs (you can turn them on with --sing as the first argument)'
     (time bin/rspec  --format=documentation --order=defined $@ && cipass || (cifail && exit -1))
 fi
