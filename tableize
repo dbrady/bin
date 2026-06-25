@@ -1,0 +1,328 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# tableize - align ragged pipe-delimited (or CSV) tables into clean,
+# column-aligned text, markdown, or emacs org-mode tables.
+#
+# Reads stdin (or file args) as ONE table, finds the widest cell per
+# column, and re-emits every row aligned. Numeric columns auto
+# right-align; everything else left-aligns. Separator rows (all dashes,
+# optional :/+ ) are detected, consumed, and regenerated so round-trips
+# are idempotent.
+#
+#   cat poo.txt | tableize
+#   cat data.csv | tableize --csv
+#   tableize --markdown < t.md
+#   tableize --align 2:l --format '4:$%.2f' < invoice.txt
+require 'colorize'
+require 'optimist'
+require 'csv'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  NUMERIC = /\A[-+]?\d[\d,]*(\.\d+)?\z/.freeze
+  SEP_CELL = /\A:?[-+]+:?\z/.freeze
+
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        tableize - align ragged pipe/CSV tables into clean columns.
+
+        Reads stdin (or files) as one table and re-emits it aligned.
+        Numeric columns auto right-align; text left-aligns. Separator
+        rows are detected, consumed, and regenerated (idempotent).
+
+        Examples:
+          cat poo.txt | tableize
+          cat data.csv | tableize --csv
+          tableize --markdown < table.md
+          tableize --align '*:c' --align 3,5:r --format '4:$%.2f'
+
+        Column targeting (1-based): N | N,M | N-M | * , last-one-wins.
+        Alignment precedence: --align > harvested ':' > numeric > left.
+
+        Options:
+      BANNER
+      opt :delim, 'Input delimiter (default | , or , for --csv)', type: :string
+      opt :csv, 'Parse input as CSV (honors quoting)', default: false
+      opt :header_lines, 'Leading header rows (draws a rule below them)', short: :l, type: :integer, default: 1
+      opt :markdown, 'Emit GitHub-flavored markdown', short: :m, default: false
+      opt :org, 'Emit emacs org-mode table', short: :o, default: false
+      opt :align, 'Per-column alignment, N:<l|r|c> (repeatable)', type: :string, multi: true
+      opt :format, 'Per-column printf format, N:<fmt> (repeatable)', type: :string, multi: true
+
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+
+      conflicts :markdown, :org
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+  end
+  # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/AbcSize
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    rows = parse_input(ARGF.read)
+    data = rows.select { |kind, _| kind == :data }.map { |_, cells| cells }
+    return if data.empty?
+
+    ncols = data.map(&:length).max
+    data.each { |cells| cells.fill('', cells.length, ncols - cells.length) }
+
+    aligns = resolve_alignments(rows, ncols)
+    formats = resolve_formats(ncols)
+
+    grid = build_grid(rows, ncols, formats)
+    widths = column_widths(grid, ncols)
+
+    puts render(rows, grid, widths, aligns, ncols)
+  end
+
+  # ---- input -------------------------------------------------------------
+
+  def parse_input(text)
+    text.split("\n").map do |line|
+      cells = split_cells(line)
+      separator?(cells) ? [:sep, cells] : [:data, cells]
+    end
+  end
+
+  def split_cells(line)
+    return parse_csv(line) if csv?
+
+    parts = line.split(/(?<!\\)#{Regexp.escape(delim)}/, -1)
+    parts.shift if parts.first == ''
+    parts.pop if parts.last == ''
+    parts.map { |c| c.gsub('\\' + delim, delim).strip }
+  end
+
+  def parse_csv(line)
+    CSV.parse_line(line, col_sep: delim)&.map { |c| c.to_s.strip } || []
+  end
+
+  def separator?(cells)
+    !cells.empty? && cells.all? { |c| c =~ SEP_CELL && c.include?('-') }
+  end
+
+  def delim
+    @delim ||= opts[:delim] || (csv? ? ',' : '|')
+  end
+
+  def csv?
+    opts[:csv]
+  end
+
+  # ---- alignment ---------------------------------------------------------
+
+  def resolve_alignments(rows, ncols)
+    data = rows.select { |k, _| k == :data }.map { |_, c| c }
+    body = data.drop(opts[:header_lines])
+    harvested = harvest_alignment(rows, ncols)
+    explicit = directive_map(opts[:align], ncols) { |r| normalize_align(r) }
+    formats = resolve_formats(ncols)
+
+    (0...ncols).map do |i|
+      align = :left
+      align = :right if numeric_column?(body, i)
+      align = :right if formats[i]
+      align = harvested[i] if harvested[i]
+      align = explicit[i] if explicit[i]
+      align
+    end
+  end
+
+  def numeric_column?(body, col)
+    cells = body.map { |row| row[col].to_s }
+    seen = cells.reject(&:empty?)
+    !seen.empty? && seen.all? { |c| c =~ NUMERIC }
+  end
+
+  def harvest_alignment(rows, ncols)
+    sep = rows.find { |k, c| k == :sep && c.length == ncols && c.any? { |x| x.include?(':') } }
+    return Array.new(ncols) unless sep
+
+    sep.last.map { |cell| cell_align(cell) }
+  end
+
+  def cell_align(cell)
+    left = cell.start_with?(':')
+    right = cell.end_with?(':')
+    return :center if left && right
+    return :left if left
+    return :right if right
+
+    nil
+  end
+
+  def normalize_align(rule)
+    case rule.to_s.strip.downcase[0]
+    when 'l' then :left
+    when 'r' then :right
+    when 'c' then :center
+    end
+  end
+
+  # ---- formats -----------------------------------------------------------
+
+  def resolve_formats(ncols)
+    @resolve_formats ||= directive_map(opts[:format], ncols) { |r| r }
+  end
+
+  def directive_map(specs, ncols)
+    map = Array.new(ncols)
+    specs.each do |spec|
+      idx, rule = spec.split(':', 2)
+      next if rule.nil?
+
+      value = yield(rule)
+      next if value.nil?
+
+      expand_columns(idx, ncols).each { |c| map[c - 1] = value if c.between?(1, ncols) }
+    end
+    map
+  end
+
+  def expand_columns(idx, ncols)
+    return (1..ncols).to_a if idx.strip == '*'
+
+    idx.split(',').flat_map do |tok|
+      if (m = tok.match(/\A(\d+)-(\d+)\z/))
+        (m[1].to_i..m[2].to_i).to_a
+      else
+        [tok.to_i]
+      end
+    end
+  end
+
+  def apply_format(fmt, cell)
+    return cell if cell.nil? || cell.strip.empty?
+
+    letter = fmt[/%[-+ 0#]*[\d.*]*([a-zA-Z])/, 1]
+    clean = cell.tr(',', '')
+    value =
+      case letter
+      when 'f', 'e', 'g', 'E', 'G', 'a', 'A' then Float(clean)
+      when 'd', 'i', 'u', 'x', 'X', 'o', 'b', 'B' then int_of(clean)
+      else cell
+      end
+    format(fmt, value)
+  rescue ArgumentError, TypeError
+    cell
+  end
+
+  def int_of(str)
+    Integer(str)
+  rescue ArgumentError
+    Integer(Float(str))
+  end
+
+  # ---- rendering ---------------------------------------------------------
+
+  def build_grid(rows, ncols, formats)
+    seen = 0
+    rows.map do |kind, cells|
+      next [:sep, nil] unless kind == :data
+
+      header = seen < opts[:header_lines]
+      seen += 1
+      cooked = (0...ncols).map do |i|
+        text = cells[i].to_s
+        formats[i] && !header ? apply_format(formats[i], text) : text
+      end
+      [:data, cooked]
+    end
+  end
+
+  def column_widths(grid, ncols)
+    (0...ncols).map do |i|
+      grid.select { |k, _| k == :data }.map { |_, c| c[i].to_s.length }.max || 0
+    end
+  end
+
+  def render(rows, grid, widths, aligns, _ncols)
+    data_total = grid.count { |k, _| k == :data }
+    data_seen = 0
+    lines = []
+    grid.each_with_index do |(kind, cells), idx|
+      if kind == :data
+        lines << render_row(cells, widths, aligns)
+        data_seen += 1
+        if markdown? && data_seen == 1
+          # GFM mandates the separator as line 2 (after the first row).
+          lines << markdown_separator(widths, aligns)
+        elsif header_rule_after?(data_seen, data_total) && grid[idx + 1]&.first != :sep
+          # --header-lines draws a rule under the header (unless one already follows).
+          lines << separator_line(widths, aligns)
+        end
+      elsif !markdown? # markdown can't render mid-table rules; drop them
+        lines << separator_line(widths, aligns)
+      end
+    end
+    lines
+  end
+
+  def header_rule_after?(data_seen, data_total)
+    !markdown? && opts[:header_lines_given] &&
+      opts[:header_lines].positive? && opts[:header_lines] < data_total &&
+      data_seen == opts[:header_lines]
+  end
+
+  def render_row(cells, widths, aligns)
+    inner = (0...widths.length).map { |i| justify(cells[i].to_s, widths[i], aligns[i]) }
+    "| #{inner.join(' | ')} |"
+  end
+
+  def justify(text, width, align)
+    pad = width - text.length
+    return text if pad <= 0
+
+    case align
+    when :right then (' ' * pad) + text
+    when :center then (' ' * (pad - pad / 2)) + text + (' ' * (pad / 2))
+    else text + (' ' * pad)
+    end
+  end
+
+  def separator_line(widths, _aligns)
+    cells = widths.map { |w| '-' * (w + 2) }
+    join = org? ? '+' : '|'
+    "|#{cells.join(join)}|"
+  end
+
+  def markdown_separator(widths, aligns)
+    cells = widths.each_with_index.map do |w, i|
+      run = w + 2
+      case aligns[i]
+      when :right then ('-' * (run - 1)) + ':'
+      when :center then ":#{'-' * (run - 2)}:"
+      else ":#{'-' * (run - 1)}"
+      end
+    end
+    "|#{cells.join('|')}|"
+  end
+
+  def markdown?
+    opts[:markdown]
+  end
+
+  def org?
+    opts[:org]
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
