@@ -1,0 +1,294 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# ls-ruby-ports - Show which processes are holding which listening TCP ports.
+#
+# Built for SOA dev work where 5-10 Rails (puma) servers run at once and you
+# need to know who owns port 3002 vs 3008. Joins three sources on PID:
+#   - lsof: the listening ports (and a truncated command name)
+#   - ps:   the full command line (puma stamps the app as `[app_name]`)
+#   - lsof -d cwd: the working directory (best identity for non-puma procs)
+#
+# Default shows ALL port holders (ruby, node, redis, postgres, MCP, java...).
+# Pass --rails to scope down to just the puma web servers.
+require 'colorize'
+require 'optimist'
+require 'set'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  # Accepted --sort tokens mapped to their canonical sort key. Aliases live
+  # here as extra rows (id/i -> identity, c -> command) so the lookup is a flat
+  # table with no fallback logic; the only duplication is in the values, which
+  # is a fair trade for crystal-clear mapping. Keep this alphabetized by key.
+  SORT_KEYS = {
+    'c' => 'command',
+    'command' => 'command',
+    'i' => 'identity',
+    'id' => 'identity',
+    'identity' => 'identity',
+    'pid' => 'pid',
+    'port' => 'port',
+  }.freeze
+
+  attr_accessor :sort_key
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        ls-ruby-ports - Show which processes hold which listening TCP ports.
+
+        Shows ALL port holders by default. The name reflects its reason to
+        exist: hunting down the Rails/Ruby servers in an SOA dev stack.
+
+        Usage:
+          ls-ruby-ports                # every process holding a listening port
+          ls-ruby-ports --rails        # only the puma web servers (port + app + role)
+          ls-ruby-ports --sort=identity  # sort by project/app instead of port
+          ls-ruby-ports -v             # add working directory / full command
+
+        Options:
+      BANNER
+      opt :rails, 'Scope to puma/Rails web servers only', short: :r, default: false
+      opt :sort, "Sort by: #{SORT_KEYS.values.uniq.sort.join(', ')} (aliases: id, i, c)", short: :s, default: 'port'
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print the lsof/ps commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output (port + identity only)', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    Optimist.die :sort, "must be one of: #{SORT_KEYS.keys.join(', ')}" unless SORT_KEYS.key?(opts[:sort])
+    self.sort_key = SORT_KEYS.fetch(opts[:sort])
+    dump_opts if debug?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    procs = listening_processes
+    return log('No listening TCP ports found.', color: :yellow) if procs.empty?
+
+    enrich!(procs)
+    listeners = group_listeners(procs)
+    rows = opts[:rails] ? rails_rows(listeners) : all_rows(listeners)
+    return log('No Rails (puma) servers are listening.', color: :yellow) if rows.empty?
+
+    print_table(rows)
+  end
+
+  # --- gather -------------------------------------------------------------
+
+  # Returns { pid => { command:, ports: SortedSet<Integer> } } for every
+  # process holding a listening TCP socket.
+  def listening_processes
+    output = capture('lsof -nP -iTCP -sTCP:LISTEN -FpcnL')
+    procs = {}
+    current = nil
+    output.each_line do |line|
+      tag = line[0]
+      value = line[1..].chomp
+      case tag
+      when 'p' then current = (procs[value] = { pid: value, command: nil, ports: SortedSet.new })
+      when 'c' then current[:command] = value if current
+      when 'n' then (port = port_from(value)) && current[:ports] << port
+      end
+    end
+    procs.reject { |_pid, info| info[:ports].empty? }
+  end
+
+  # Adds :cwd and :title (full ps command line) to each process in place.
+  def enrich!(procs)
+    pids = procs.keys
+    cwds = cwds_for(pids)
+    titles = titles_for(pids)
+    procs.each do |pid, info|
+      info[:cwd] = cwds[pid]
+      info[:title] = titles[pid].to_s
+    end
+  end
+
+  def cwds_for(pids)
+    output = capture("lsof -a -d cwd -Fpn -p #{pids.join(',')}")
+    cwds = {}
+    current = nil
+    output.each_line do |line|
+      current = line[1..].chomp if line[0] == 'p'
+      cwds[current] = line[1..].chomp if line[0] == 'n' && current
+    end
+    cwds
+  end
+
+  def titles_for(pids)
+    output = capture("ps -o pid=,command= -p #{pids.join(',')}")
+    output.each_line.each_with_object({}) do |line, titles|
+      pid, command = line.strip.split(/\s+/, 2)
+      titles[pid] = command
+    end
+  end
+
+  # --- listeners ----------------------------------------------------------
+
+  # One row per individual port. Grouping by single port (not by port set)
+  # does two things at once: a process holding several ports (e.g. anycable on
+  # 3334 and 8090) gets one row per port, while a puma cluster's master + N
+  # workers — which all inherit the SAME listening socket — collapse to one row
+  # with the cluster shape recorded in :role. Two unrelated services never
+  # share a port, so each port maps to exactly one logical listener.
+  def group_listeners(procs)
+    by_port = Hash.new { |hash, port| hash[port] = [] }
+    procs.each_value do |info|
+      info[:ports].each { |port| by_port[port] << info }
+    end
+    by_port.map { |port, members| build_listener(port, members) }
+  end
+
+  def build_listener(port, members)
+    representative = members.find { |info| puma?(info) && !worker?(info) } || members.first
+    {
+      port: port,
+      pid: representative[:pid],
+      command: representative[:command].to_s,
+      identity: identity(representative),
+      cwd: representative[:cwd].to_s,
+      puma: puma?(representative),
+      role: role_for(members),
+    }
+  end
+
+  def role_for(members)
+    puma_members = members.select { |info| puma?(info) }
+    return "#{members.size} procs" if puma_members.empty? && members.size > 1
+    return '' if puma_members.empty?
+
+    workers = puma_members.count { |info| worker?(info) }
+    workers.positive? ? "cluster (#{workers} workers)" : 'single'
+  end
+
+  # --- rows ---------------------------------------------------------------
+
+  def all_rows(listeners)
+    rows = sort_listeners(listeners).map do |listener|
+      [listener[:port].to_s, listener[:pid], listener[:command], listener[:identity],
+       listener[:role], listener[:cwd]]
+    end
+    headerize(%w[PORT PID COMMAND IDENTITY ROLE CWD], rows, all_columns)
+  end
+
+  def rails_rows(listeners)
+    rails = listeners.select { |listener| listener[:puma] }
+    rows = sort_listeners(rails).map do |listener|
+      [listener[:port].to_s, listener[:pid], listener[:identity], listener[:role], listener[:cwd]]
+    end
+    headerize(%w[PORT PID APP ROLE CWD], rows, rails_columns)
+  end
+
+  # Sorts by the --sort key, always tie-breaking on port so rows stay stable
+  # and predictable when identities or commands collide.
+  def sort_listeners(listeners)
+    case sort_key
+    when 'pid'      then listeners.sort_by { |listener| [listener[:pid].to_i, listener[:port]] }
+    when 'identity' then listeners.sort_by { |listener| [listener[:identity].downcase, listener[:port]] }
+    when 'command'  then listeners.sort_by { |listener| [listener[:command].downcase, listener[:port]] }
+    else listeners.sort_by { |listener| listener[:port] }
+    end
+  end
+
+  # Column richness is driven by the explicit -q/-v flags, NOT by quiet?
+  # (which folds in headless?). An inspector piped to `grep 3000` should keep
+  # its PID column, so TTY detection must not silently drop columns here.
+  def all_columns
+    return [0, 3] if opts[:quiet] && !opts[:verbose]
+
+    opts[:verbose] ? [0, 1, 2, 3, 4, 5] : [0, 1, 2, 3, 4]
+  end
+
+  def rails_columns
+    return [0, 2] if opts[:quiet] && !opts[:verbose]
+
+    opts[:verbose] ? [0, 1, 2, 3, 4] : [0, 1, 2, 3]
+  end
+
+  # --- identity helpers ---------------------------------------------------
+
+  def puma?(info)
+    info[:title].include?('puma')
+  end
+
+  def worker?(info)
+    info[:title].include?('cluster worker')
+  end
+
+  # The app name puma stamps into its process title, e.g. "[merchant_portal]".
+  def puma_app(info)
+    info[:title][/\[([^\]]+)\]/, 1] || File.basename(info[:cwd].to_s)
+  end
+
+  # The acima/devel checkout folder, e.g. "merchant_portal" or the sibling
+  # worktrees "review.merchant_portal" / "clankers.merchant_portal". This is
+  # the true identity: puma stamps the SAME app name ("[merchant_portal]") into
+  # every checkout's title, so only the folder distinguishes them.
+  def project_name(info)
+    info[:cwd].to_s[%r{/acima/devel/([^/]+)}, 1]
+  end
+
+  # Best human label for any process: the acima/devel project folder when the
+  # process runs from one, else the puma app name, else the working-directory
+  # basename (which cleanly names redis, postgres, MCP, etc).
+  def identity(info)
+    project_name(info) || (puma?(info) ? puma_app(info) : File.basename(info[:cwd].to_s))
+  end
+
+  # Port is whatever follows the final colon: handles *:3000, 127.0.0.1:3030,
+  # and [::1]:3030 alike. Returns an Integer (so ports sort numerically, not
+  # lexicographically — else 50051 would sort before 5432) or nil if non-numeric.
+  def port_from(name)
+    port = name.split(':').last
+    port.to_i if port =~ /\A\d+\z/
+  end
+
+  # --- output -------------------------------------------------------------
+
+  # Keeps only the requested column indexes, then prepends a header row.
+  def headerize(all_headers, rows, columns)
+    sliced = rows.map { |row| columns.map { |index| row[index] } }
+    header = columns.map { |index| all_headers[index] }
+    [header] + sliced
+  end
+
+  def print_table(rows)
+    widths = column_widths(rows)
+    rows.each_with_index do |row, index|
+      line = row.each_with_index.map { |cell, col| cell.to_s.ljust(widths[col]) }.join('  ').rstrip
+      log(index.zero? ? line.bold : colorize_row(line), color: :default)
+    end
+  end
+
+  def column_widths(rows)
+    count = rows.first.length
+    (0...count).map { |col| rows.map { |row| row[col].to_s.length }.max }
+  end
+
+  def colorize_row(line)
+    line.colorize(:green)
+  end
+
+  # --- shell --------------------------------------------------------------
+
+  # Runs a read-only command. Honors --debug/--pretend by echoing the command;
+  # under --pretend we still run it because the tool is purely observational
+  # and would produce no output otherwise.
+  def capture(command)
+    log("$ #{command}", color: :magenta) if debug? || pretend?
+    `#{command} 2>/dev/null`
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME

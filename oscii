@@ -1,0 +1,67 @@
+#!/bin/bash
+#
+# oscii - a reference chart for the OSC ("Operating System Command") escape
+# family, the ESC ] cousins of the ESC [ (CSI/SGR) codes that `ansicolors`
+# charts. Where CSI changes how glyphs are DRAWN (color, cursor), OSC hands the
+# terminal program a STRING to act on (titles, hyperlinks, clipboard, colors).
+#
+# Static text + a few live demos, so it renders instantly. No caching needed.
+
+# --- The reference (literal text; \033 and \a shown verbatim) ----------------
+cat <<'EOF'
+OSCii - the ESC ] (OSC) escape family            cousin of ESC [ (CSI/SGR)
+
+STRUCTURE
+  CSI:  ESC [ <numbers> <final-letter>      e.g.  \033[1;4;32m   (self-terminating: the letter ends it)
+  OSC:  ESC ] <code> ; <string> <ST>        e.g.  \033]2;Title\a (needs a String Terminator: the payload is a string)
+
+STRING TERMINATOR (ST) - two spellings, both valid:
+  BEL      = \a   = \007        xterm shortcut; most widely honored (what gh emits)
+  ESC \    = \033\\             the spec-proper form; a few terminals mishandle it
+
+CODES                                                                SET/QUERY  SAFE
+  0    set window title AND icon name      \033]0;My Title\a              set     ok
+  1    set icon name only                  \033]1;icon\a                  set     ok
+  2    set window title only               \033]2;Just Title\a            set     ok
+  4    set / query a palette color         \033]4;1;rgb:ff/00/00\a        set+qry ok
+  7    report current working directory    \033]7;file://host/path\a      set     ok    (new tab opens here)
+  8    HYPERLINK                           \033]8;;URL\a TEXT \033]8;;\a   set     ok    (see: ansilink)
+  10   set default foreground color        \033]10;#cdd6f4\a              set+qry ok
+  11   set default background color        \033]11;#1e1e2e\a              set+qry ok
+  12   set cursor color                    \033]12;#f5e0dc\a              set+qry ok
+  52   read / WRITE the system clipboard   \033]52;c;<base64>\a           set+qry WARN  (often disabled)
+  104  reset palette to defaults           \033]104\a                     set     ok
+  133  shell integration / prompt marks    \033]133;A\a  B  C  D;<exit>   set     ok    (jump-to-prompt, exit status)
+  9    desktop notification (iTerm2)        \033]9;message\a               set     varies
+  99   desktop notification (kitty)         \033]99;;message\a             set     varies
+  777  desktop notification (urxvt)         \033]777;notify;title;body\a   set     varies
+  1337 iTerm2 proprietary                   \033]1337;...\a                set+qry varies (inline images, user vars, downloads)
+
+NOTES
+  - "set+qry": append ? in place of a value to ASK the terminal; it writes the answer back onto stdin.
+  - SAFE/WARN: OSC 52 (clipboard) and OSC 8 (arbitrary URLs) are power tools; some terminals gate or
+    disable them. Treat any sequence that reaches the OS or clipboard as "may be blocked."
+  - In Ruby/bash you may see ESC written as \033 (octal), \x1b (hex), \e, or chr(27). All identical.
+  - To build OSC 8 links as paste-ready text, use:  ansilink URL [TEXT]   (-m markdown, -p escaped)
+
+EOF
+
+# --- Live demos (real escapes; only the safe, self-reverting ones) -----------
+echo "LIVE DEMOS (your terminal is rendering these for real):"
+echo
+
+printf '  OSC 8 hyperlink : '
+printf '\033]8;;https://example.com\aexample.com\033]8;;\a'
+printf '   <- cmd/ctrl-click it\n'
+
+printf '  OSC 11 (bg query): '
+printf '\033]11;?\033\\'
+printf '   (if your terminal answered, you may see a stray reply here)\n'
+
+printf '  OSC 2 (title)    : setting window title to "oscii lives" for a moment...'
+printf '\033]2;oscii lives\a'
+printf ' done (your next prompt restores it)\n'
+
+echo
+echo "Bytes behind that hyperlink (what ansilink -p prints):"
+echo '  \033]8;;https://example.com\aexample.com\033]8;;\a'

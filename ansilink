@@ -1,0 +1,94 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# ansilink - emit an OSC 8 terminal hyperlink as text
+#
+# Wraps link text in the OSC 8 escape sequence so terminals that support it
+# (iTerm2, kitty, WezTerm, modern xterm, VS Code, Claude Code) render it as a
+# clickable, underlined link. Output is plain text on stdout: capture it,
+# redirect it, or paste it into a document.
+#
+#   ansilink https://example.com "click me"   # raw OSC 8 (clickable)
+#   ansilink -m https://example.com "click"   # [click](https://example.com)
+#   ansilink -p https://example.com "click"   # escaped, human-readable bytes
+require 'colorize'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  # OSC 8 hyperlink markers. The opening marker carries the URL; the empty
+  # closing marker turns the link off so trailing text isn't swept into it.
+  #
+  # We terminate with BEL (\a) rather than the spec-proper String Terminator
+  # (ESC \) because BEL is the xterm shortcut and is the more widely-honored of
+  # the two across terminals -- it's what gh and most CLIs emit, while a few
+  # terminals mishandle ESC \. The structure is:
+  #   ESC ] 8 ; <params> ; <url> ST   <text>   ESC ] 8 ; ; ST
+  # params is almost always empty (it can hold id=... to group multi-line links).
+  OSC8_OPEN = "\e]8;;"
+  BEL       = "\a"
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        ansilink - emit an OSC 8 terminal hyperlink as text
+
+        Usage:
+          ansilink [options] URL [TEXT...]
+
+        TEXT defaults to URL when omitted. Output is plain text on stdout, so
+        you can capture it, redirect it, or paste it into a document.
+
+        Options:
+      BANNER
+      opt :markdown, 'Emit [TEXT](URL) markdown instead of an OSC 8 sequence', short: :m, default: false
+      opt :debug,    'Print extra debug info', short: :d, default: false
+      opt :pretend,  'Print the escaped bytes (\\033...\\a) instead of raw control codes', short: :p, default: false
+      opt :quiet,    'Run with minimal output', short: :q, default: false
+      opt :verbose,  'Run with verbose output (overrides --quiet)', short: :v, default: false
+      conflicts :markdown, :pretend
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    url  = ARGV.shift
+    text = ARGV.empty? ? url : ARGV.join(' ')
+
+    warn("ansilink: #{mode_name} mode -> #{url}") if opts[:verbose]
+
+    puts(render(url, text))
+  end
+
+  private
+
+  def mode_name
+    return 'markdown' if opts[:markdown]
+    return 'pretend'  if opts[:pretend]
+
+    'osc8'
+  end
+
+  def render(url, text)
+    return "[#{text}](#{url})" if opts[:markdown]
+
+    # Built as a literal so the backslashes print verbatim for inspection.
+    return "\\033]8;;#{url}\\a#{text}\\033]8;;\\a" if opts[:pretend]
+
+    "#{OSC8_OPEN}#{url}#{BEL}#{text}#{OSC8_OPEN}#{BEL}"
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME

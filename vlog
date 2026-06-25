@@ -1,0 +1,107 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# vlog - Quick titled note capture to a markdown vlog on a remote ssh host
+# (vapor:~/vlog/vlog.md). Each call appends one "# title\n\nbody" entry.
+#
+#   vlog "title" "body text"      # body from args
+#   vlog "title" url - a note     # trailing args are joined with spaces
+#   pbpaste | vlog "title"        # body from stdin
+#   vlog "title"                  # title-only entry
+#
+# Title and body travel over ssh's stdin, never the remote command line, so
+# content needs no escaping: '#', '!', quotes, multiline tables, and markdown
+# all pass through untouched. The only thing the remote shell sees is the
+# fixed `cat >>` command. Read mode is intentionally absent -- to read the log,
+# just `ssh vapor cat vlog/vlog.md`.
+require 'colorize'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  HOST = 'vapor'
+  REMOTE_DIR = '~/vlog'
+  REMOTE_FILE = "#{REMOTE_DIR}/vlog.md".freeze
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        vlog - Append a titled note to #{HOST}:#{REMOTE_FILE}
+
+          vlog "title" "body text"   # body from args
+          pbpaste | vlog "title"     # body from stdin
+          vlog "title"               # title-only entry
+
+        Body comes from the args after the title, OR from piped stdin -- not
+        both (passing both is an error). To read the log: ssh #{HOST} cat vlog/vlog.md
+
+        Options:
+      BANNER
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    title = ARGV.shift
+    body = resolve_body(ARGV.join(' '))
+    write(build_entry(title, body))
+  end
+
+  private
+
+  # Body source is the trailing args OR piped stdin, never both. Empty/whitespace
+  # stdin counts as absent -- a tty pipes nothing, and so does a non-tty with no
+  # real content (cron, subshells), which must not clobber an arg body.
+  def resolve_body(arg_body)
+    piped = $stdin.read unless $stdin.tty?
+    piped = nil if piped && piped.strip.empty?
+    arg = arg_body.empty? ? nil : arg_body
+    abort 'vlog: ambiguous body -- got both piped stdin and a text argument'.red if piped && arg
+    (piped || arg).to_s
+  end
+
+  # Mirrors the file's shape: a blank line separates entries, and a blank line
+  # follows the title before the body. A title-only entry omits the body block.
+  def build_entry(title, body)
+    body = body.strip
+    return "\n# #{title}\n" if body.empty?
+
+    "\n# #{title}\n\n#{body}\n"
+  end
+
+  def write(entry)
+    warn "append entry to #{HOST}:#{REMOTE_FILE}".cyan if verbose?
+    remote = "mkdir -p #{REMOTE_DIR} && cat >> #{REMOTE_FILE}"
+    return announce(remote, entry) if pretend?
+
+    IO.popen(['ssh', HOST, remote], 'w') { |io| io.write(entry) }
+    abort "vlog: failed to append (#{describe_exit($?)})".red unless $?.success?
+  end
+
+  def announce(remote, entry)
+    puts "ssh #{HOST} #{remote.inspect}".cyan
+    puts entry.inspect.cyan
+  end
+
+  def describe_exit(status)
+    status.exitstatus == 255 ? "could not connect to #{HOST}" : "exit #{status.exitstatus}"
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
