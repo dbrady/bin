@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "Srsly these guys need to figure out installers on linux amirite"
+
+(
+    ls  ~/Downloads/discord-*.deb &&
+        echo "sudo dpkg -i" $(ls ~/Downloads/discord-*.deb | tail -n 1) &&
+        sudo dpkg -i $(ls ~/Downloads/discord-*.deb | tail -n 1) &&
+        rm $(ls ~/Downloads/discord-*.deb | tail -n 1)
+) ||
+    echo "Not Found"

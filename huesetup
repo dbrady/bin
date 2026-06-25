@@ -1,0 +1,231 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# huesetup - Find the Philips Hue bridge on the LAN, register a new API user
+# via the link button, and write HUE_IP + HUE to ~/.hue.conf so the rest of
+# the hue* scripts (huelist, hueon, hueoff, ...) work again.
+#
+# Vibecoded with Claude 4.8 as "Make my HUE lights work again lol"
+require 'colorize'
+require 'optimist'
+require 'json'
+require 'net/http'
+require 'socket'
+require 'timeout'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+HUE_CONF_PATH = File.expand_path('~/.hue.conf')
+DISCOVERY_URL = 'https://discovery.meethue.com/'
+REGISTER_TIMEOUT_SECONDS = 60
+REGISTER_POLL_INTERVAL = 2
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        huesetup - Discover the Hue bridge, register via the link button,
+        and write ~/.hue.conf with HUE_IP and HUE.
+
+        Usage: huesetup [options]
+
+        Options:
+      BANNER
+      opt :ip, 'Skip discovery and use this bridge IP', type: :string
+      opt :subnet, 'Subnet to scan if cloud discovery fails (e.g. 192.168.0)',
+          type: :string, default: '192.168.0'
+      opt :devicetype, 'Devicetype string sent to bridge during registration',
+          type: :string, default: "my_hue_app##{Socket.gethostname}"
+      opt :timeout, 'Seconds to wait for the link button press',
+          type: :int, default: REGISTER_TIMEOUT_SECONDS
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print actions but do not write ~/.hue.conf', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    print_instructions
+    ip = opts[:ip] || discover_bridge_ip
+    abort 'Could not find a Hue bridge. Try --ip=<addr> or --subnet=<x.y.z>.'.red unless ip
+    config = verify_bridge(ip)
+    abort "No Hue bridge responded at #{ip}.".red unless config
+    puts "Bridge found at #{ip.green} (#{config['name']}, API #{config['apiversion']}, id #{config['bridgeid']})"
+
+    token = register_with_bridge(ip)
+    abort 'Registration failed or timed out.'.red unless token
+
+    write_conf(ip, token)
+    verify_token(ip, token)
+  end
+
+  private
+
+  def print_instructions
+    return if quiet?
+    puts <<~MSG
+      #{'Hue bridge setup'.cyan}
+      1. Make sure the bridge is powered on (all three lights blue) and wired to the LAN.
+      2. We'll locate the bridge automatically (cloud discovery, then subnet scan).
+      3. When prompted, walk to the bridge and press the round link button on top.
+      4. You'll have about #{opts[:timeout]} seconds for the press to be registered.
+
+    MSG
+  end
+
+  def discover_bridge_ip
+    puts 'Trying Philips cloud discovery...'.cyan unless quiet?
+    ip = cloud_discover
+    return ip if ip
+
+    puts "Cloud discovery found nothing; scanning #{opts[:subnet]}.0/24 ...".yellow unless quiet?
+    scan_subnet(opts[:subnet])
+  end
+
+  def cloud_discover
+    body = http_get(DISCOVERY_URL, timeout: 10)
+    return nil unless body
+    entries = JSON.parse(body)
+    entry = entries.find { |e| e['internalipaddress'] } if entries.is_a?(Array)
+    entry && entry['internalipaddress']
+  rescue StandardError => e
+    puts "Cloud discovery error: #{e.message}".yellow if debug?
+    nil
+  end
+
+  # Concurrently probe every host in subnet.1..254 for a Hue bridge config endpoint.
+  def scan_subnet(subnet)
+    candidates = (1..254).map { |n| "#{subnet}.#{n}" }
+    found = nil
+    mutex = Mutex.new
+
+    candidates.each_slice(32) do |batch|
+      break if found
+      threads = batch.map do |ip|
+        Thread.new do
+          cfg = fetch_bridge_config(ip, timeout: 1)
+          if cfg && cfg['bridgeid']
+            mutex.synchronize { found ||= ip }
+          end
+        end
+      end
+      threads.each(&:join)
+    end
+    found
+  end
+
+  def verify_bridge(ip)
+    fetch_bridge_config(ip, timeout: 5)
+  end
+
+  def fetch_bridge_config(ip, timeout:)
+    body = http_get("http://#{ip}/api/0/config", timeout: timeout)
+    return nil unless body
+    cfg = JSON.parse(body)
+    cfg.is_a?(Hash) && cfg['bridgeid'] ? cfg : nil
+  rescue StandardError
+    nil
+  end
+
+  def register_with_bridge(ip)
+    puts
+    puts "Press the link button on the bridge NOW.".yellow.bold
+    puts "Polling http://#{ip}/api for up to #{opts[:timeout]} seconds..." unless quiet?
+
+    deadline = Time.now + opts[:timeout]
+    attempt = 0
+    payload = { devicetype: opts[:devicetype] }.to_json
+
+    while Time.now < deadline
+      attempt += 1
+      resp = http_post("http://#{ip}/api", payload, timeout: 5)
+      if resp
+        parsed = (JSON.parse(resp) rescue nil)
+        if parsed.is_a?(Array) && parsed.first.is_a?(Hash)
+          if parsed.first['success'] && parsed.first['success']['username']
+            username = parsed.first['success']['username']
+            puts "Got token on attempt #{attempt}.".green
+            return username
+          elsif debug?
+            puts "[#{attempt}] #{parsed.first['error'] && parsed.first['error']['description']}"
+          else
+            print '.'
+            $stdout.flush unless quiet?
+          end
+        end
+      end
+      sleep REGISTER_POLL_INTERVAL
+    end
+    puts
+    nil
+  end
+
+  def write_conf(ip, token)
+    contents = "export HUE_IP=#{ip}\nexport HUE=#{token}\n"
+    if pretend?
+      puts "(pretend) would write #{HUE_CONF_PATH}:".cyan
+      puts contents
+      return
+    end
+    File.write(HUE_CONF_PATH, contents)
+    File.chmod(0o600, HUE_CONF_PATH)
+    puts "Wrote #{HUE_CONF_PATH} (mode 600).".green
+    puts "Run #{'source ~/.hue.conf'.cyan} in your shell, or open a new shell, to pick up the new vars."
+  end
+
+  def verify_token(ip, token)
+    body = http_get("http://#{ip}/api/#{token}/lights", timeout: 5)
+    return unless body
+    lights = JSON.parse(body) rescue nil
+    return unless lights.is_a?(Hash)
+    if lights.values.first.is_a?(Hash) && lights.values.first['error']
+      puts "Token rejected: #{lights.values.first['error']}".red
+      return
+    end
+    puts "Bridge knows about #{lights.size} light(s): #{lights.keys.join(', ')}".green
+  rescue StandardError => e
+    puts "Verification call failed: #{e.message}".yellow if debug?
+  end
+
+  def http_get(url, timeout:)
+    uri = URI.parse(url)
+    Net::HTTP.start(uri.host, uri.port,
+                    use_ssl: uri.scheme == 'https',
+                    open_timeout: timeout, read_timeout: timeout) do |http|
+      resp = http.get(uri.request_uri)
+      return resp.body if resp.is_a?(Net::HTTPSuccess)
+    end
+    nil
+  rescue StandardError => e
+    puts "GET #{url} failed: #{e.message}".yellow if debug?
+    nil
+  end
+
+  def http_post(url, body, timeout:)
+    uri = URI.parse(url)
+    Net::HTTP.start(uri.host, uri.port,
+                    open_timeout: timeout, read_timeout: timeout) do |http|
+      req = Net::HTTP::Post.new(uri.request_uri, 'Content-Type' => 'application/json')
+      req.body = body
+      resp = http.request(req)
+      return resp.body
+    end
+  rescue StandardError => e
+    puts "POST #{url} failed: #{e.message}".yellow if debug?
+    nil
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME

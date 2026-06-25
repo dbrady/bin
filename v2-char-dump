@@ -67,10 +67,10 @@ BANNER
     text_value = extract_text_chunk(ARGV[0])
     spec = decode_character_spec(text_value)
 
-    if description?
-      outfile.puts spec["description"].gsub("\\r\\n", "\n")
-    elsif first?
-      outfile.puts spec["first_mes"].gsub("\\r\\n", "\n")
+    if description? || first?
+      outfile.puts spec["description"].gsub("\\r\\n", "\n") if description?
+      outfile.puts "\n---\n\n" if description? && first?
+      outfile.puts spec["first_mes"].gsub("\\r\\n", "\n") if first?
     else
       outfile.puts JSON.pretty_generate(spec)
     end
