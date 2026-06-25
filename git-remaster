@@ -8,7 +8,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :flowchart, :merge, :recurse, :stash
+  opt_flag :flowchart, :merge, :push, :recurse, :stash
 
   def bundle?
     opts[:bundle] || opts[:full]
@@ -28,6 +28,7 @@ class Application
       opt :merge,     "Merge parent branch in instead of rebasing",  default: false
       opt :migrate,   "Run any new database migrations",             default: false
       opt :pretend,   "Print commands but do not run them",          default: false
+      opt :push,      "Push branch up (if remaster successful)",     default: false, short: :P
       opt :quiet,     "Run with minimal output",                     default: false
       opt :recurse,   "Recurse all the way to master",               default: false
       opt :stash,     "Stash and reapply changes around rebase",     default: false
@@ -138,7 +139,7 @@ class Application
       run_command "git #{rebase_or_merge_command} #{parent_branch}"
     end
 
-    if git_is_merge_conflict || !git_isclean
+    if !merged_clean?
       puts "BRANCH IS IN A MERGE CONFLICT, ABORTING".white.bold.on_red
       exit 1
     end
@@ -146,8 +147,26 @@ class Application
     run_command "bundle" if bundle?
     run_command "remigrate -f" if migrate?
 
+    if push?
+      puts "pushisg..."
+      if merged_clean?
+        if merge?
+          run_command "git push"
+        else
+          run_command "git yolo"
+        end
+      else
+        puts "Branch did not merge clean; not pushing."
+        puts ""
+      end
+    end
+
     run_command "git stash apply" if stashed
     debug "<<<< EXITING REMASTER OF #{current_branch}"
+  end
+
+  def merged_clean?
+    !git_is_merge_conflict && git_isclean
   end
 
   def debug(message)
