@@ -60,7 +60,9 @@ class Application
   def run!
     title = ARGV.shift
     body = resolve_body(ARGV.join(' '))
-    write(build_entry(title, body))
+    entry = build_entry(title, body)
+    puts entry unless quiet?
+    write(entry)
   end
 
   private
