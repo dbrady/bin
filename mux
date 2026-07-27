@@ -1,6 +1,35 @@
 #!/bin/bash
+# mux - shim for tmuxinator, shows you a list of sessions to start by default
+#
+# mux start <session-name> - launch session-name (see ~/.tmuxinator/*.yml)
+# mux [args]               - exec tmuxinator "$@"
+# mux                      - list known sessions, let you pick one, start it
+# mux start [no session]   - list known sessions, let you pick one, start it
+
 # Shim so `mux` works in scripts and subshells, not just interactive shells.
 # An alias in ~/.aliases only helps the human at a prompt — aliases aren't
 # inherited by child processes and bash disables alias expansion in
 # non-interactive shells anyway. A real executable on PATH avoids both.
+# `mux` or `mux start` with no session name: pick one interactively. Globbing
+# and basename beat `ls | sed` because they survive odd filenames and don't
+# parse ls output. selecta exits nonzero (or empty) on ctrl-c, in which case
+# we bail rather than handing tmuxinator an empty session name.
+if [ $# -eq 0 ] || { [ $# -eq 1 ] && [ "$1" = "start" ]; }; then
+    sessions=()
+    for f in ~/.tmuxinator/*.yml; do
+        [ -e "$f" ] || continue
+        sessions+=("$(basename "$f" .yml)")
+    done
+
+    if [ ${#sessions[@]} -eq 0 ]; then
+        echo "No tmuxinator configs found in ~/.tmuxinator" >&2
+        exit 1
+    fi
+
+    session=$(printf '%s\n' "${sessions[@]}" | selecta) || exit $?
+    [ -n "$session" ] || exit 1
+
+    exec tmuxinator start "$session"
+fi
+
 exec tmuxinator "$@"
