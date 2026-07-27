@@ -36,12 +36,14 @@ class Application
           vlog "title" "body text"   # body from args
           pbpaste | vlog "title"     # body from stdin
           vlog "title"               # title-only entry
+          vlog -i                    # prompt for title then body/URL
 
         Body comes from the args after the title, OR from piped stdin -- not
         both (passing both is an error). To read the log: ssh #{HOST} cat vlog/vlog.md
 
         Options:
       BANNER
+      opt :interactive, 'Prompt for title and body/URL instead of reading args', short: :i, default: false
       opt :debug, 'Print extra debug info', short: :d, default: false
       opt :pretend, 'Print commands but do not run them', short: :p, default: false
       opt :quiet, 'Run with minimal output', short: :q, default: false
@@ -49,7 +51,8 @@ class Application
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
     dump_opts if debug?
-    Optimist.educate if ARGV.empty?
+    # -i supplies title/body via prompts, so an empty ARGV is expected there.
+    Optimist.educate if ARGV.empty? && !opts[:interactive]
   end
 
   def run
@@ -58,14 +61,24 @@ class Application
   end
 
   def run!
-    title = ARGV.shift
-    body = resolve_body(ARGV.join(' '))
+    title, body = opts[:interactive] ? prompt_entry : [ARGV.shift, resolve_body(ARGV.join(' '))]
     entry = build_entry(title, body)
     puts entry unless quiet?
     write(entry)
   end
 
   private
+
+  # -i mode: one line each for title and body/URL. gets reads a single line
+  # (the only thing ENTER produces in a terminal), so multiline is out by
+  # design -- this is for "here's a link, look at it later" captures.
+  def prompt_entry
+    print 'Title: '.cyan
+    title = $stdin.gets or abort "\nvlog: no title".red
+    print 'Body/URL (one line): '.cyan
+    body = $stdin.gets || ''
+    [title.chomp, body.chomp]
+  end
 
   # Body source is the trailing args OR piped stdin, never both. Empty/whitespace
   # stdin counts as absent -- a tty pipes nothing, and so does a non-tty with no
