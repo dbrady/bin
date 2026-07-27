@@ -11,24 +11,31 @@ String.disable_colorization unless $stdout.tty?
 _height,width = $stdout.tty? ? $stdout.winsize : [24, 100]
 
 opts = Optimist.options do
-  opt :debug, "Print extra debugging info", default: false
-  opt :foreground, "Foreground color, e.g. red, light_black", default: "white"
   opt :background, "Background color, e.g. blue, light_green", default: "magenta"
-  opt :left, "Align text to the left"
-  opt :right, "Align text to the right"
-  opt :center, "Align text to the center (default: true unless -l or -r specified)"
-  opt :padding, "Number of spaces to pad text", type: :int, default: 1
-  opt :vpadding, "Number of lines to vertically pad banner", type: :int, default: 1
   opt :bold, "Use bold text", short: :B, default: true
+  opt :center, "Align text to the center (default: true unless -l or -r specified)"
+  opt :debug, "Print extra debugging info", default: false
+  opt :dim, "Use dim text", short: :D, default: false
+  opt :foreground, "Foreground color, e.g. red, light_black", default: "white"
+  opt :left, "Align text to the left"
+  opt :padding, "Number of spaces to pad text", type: :int, default: 1
+  opt :right, "Align text to the right"
+  opt :vpadding, "Number of lines to vertically pad banner", type: :int, default: 1
 end
 puts opts.inspect if opts[:debug]
+
+# bold is default on; if not given and dim IS given, turn off bold
+if opts[:dim] && !opts[:bold_given]
+  opts[:bold] = false
+end
+Optimist.die("Cannot specify both bold and dim") if opts[:bold] && opts[:dim]
 
 messages = ARGV.dup
 
 colorization = {
   color: opts[:foreground].to_sym,
   background: opts[:background].to_sym,
-  mode: opts[:bold] ? :bold : :normal
+  mode: opts[:bold] ? :bold : (opts[:dim] ? :dim : :normal)
 }
 puts colorization.inspect if opts[:debug]
 
