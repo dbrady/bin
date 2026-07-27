@@ -13,9 +13,10 @@ end
 puts opts.inspect if opts[:debug]
 
 WIKI_FOLDER = File.expand_path("~/acima/devel/merchant_portal.wiki")
-arg = ARGv.first
+arg = ARGV.first
 
 # strip file extension
+arg.sub! /\.md$/
 
 # does this file exist in the wiki folder? as wiki/arg or wiki/arg.md?
 # -> proceed
