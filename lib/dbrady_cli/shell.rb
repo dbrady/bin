@@ -26,11 +26,13 @@ module DbradyCli
     command_text = command_pieces.compact * ' '
     puts command_text.cyan unless (quiet || quiet?)
 
-    if force
+    success = if force
       system env, command
     else
       pretend? || system(env, command)
     end
+    puts "run_command failed running #{command.inspect}".yellow if debug? && !success
+    success
   end
 
   def get_command_output_lines(command, quiet: false)
