@@ -1,23 +1,11 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
+# Run rails migrations on dev and test, but only if they're necessary
 require "colorize"
 require "optimist"
 $:.unshift(File.expand_path("~/bin/lib"))
 require "dbrady_cli"
 String.disable_colorization unless $stdout.tty?
-
-# - [X] TODO: If I have just a seed migration or just a data migration, don't
-#   waste my time running the other one. I could run the are-migrations-current
-#   script twice; that would make this script take an extra 850ms on every no-op
-#   in order to save 7-9sec once a year or so. Yeah, I'm being stupid here.
-#
-#   Okay, it could be a win if are-rails-migrations-current could exit with a
-#   status code, like 0 for success, 1 for schema migrations needed, 2 for seed
-#   migrations, 3 for both, etc. Then it would only need to run once and would
-#   save me that 7 seconds once a year. Given that dicking with my ops scripts
-#   is fun enough to make me completely discount the hours and hours of
-#   development cost, this is almost certainly going to be another one of my
-#   "terrible ideas, enthusiastically pursued".
 
 class Application
   include DbradyCli
@@ -52,12 +40,20 @@ BANNER
 
   def run!
     if force? || !system("are-rails-migrations-current")
+      # MP has custom migrations
+      run_command "bin/rails db:reset" if merchant_portal?
+
       # run_command "diespringdie --db"
-      run_command "bin/rails db:migrate"
+      run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "development"}
       run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "test"}
     else
       log "Your schema migrations appear to be up to date."
     end
+  end
+
+  # Merchant Portal has a really tricksome migration
+  def merchant_portal?
+    Dir.pwd =~ %r|acima/devel/.*merchant_portal.*|
   end
 
 end
