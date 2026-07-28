@@ -2,7 +2,8 @@
 # selecta - read in a list of lines from stdin, let user select one (interactive TUI) and echo the selected item to stdout
 # /HT Gary Bernhardt, I LOVE THIS SCRIPT.
 #
-# echo The text file you chose was $(ls *.txt | selecta)
+# list all text files and pick one:
+# `echo The text file you chose was $(ls *.txt | selecta)``
 
 # This file executes as a bash script, which turns around and executes Ruby via
 # the line below. The -x argument to Ruby makes it discard everything before
