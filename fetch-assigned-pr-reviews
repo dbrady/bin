@@ -1,0 +1,153 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# fetch-assigned-pr-reviews
+#
+# Fetches PRs assigned to the current user for review and outputs structured
+# JSON for each. Checks for existing review files using the naming convention:
+#
+#   <TICKET>-<PR>-<INCREMENT>-<COMMIT>-<AUTHOR>-<DESCRIPTION>.md
+#
+# Usage:
+#   fetch-assigned-pr-reviews            # only unreviewed PRs
+#   fetch-assigned-pr-reviews -a         # all PRs, including already-reviewed
+#   fetch-assigned-pr-reviews 17211 ...  # fetch specific PRs by number
+#
+# Output: JSON array to stdout. Each element:
+#   { number, ticket, title, author, commit, branch, filename, reviewed }
+#
+# Exit codes:
+#   0 - success (results on stdout, may be empty array)
+#   1 - error (message on stderr)
+
+require "json"
+require "optparse"
+require "open3"
+
+show_all = false
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [-a]"
+  opts.on("-a", "--all", "Include already-reviewed PRs") { show_all = true }
+end.parse!
+
+def run(cmd)
+  stdout, stderr, status = Open3.capture3(cmd)
+  unless status.success?
+    $stderr.puts "Command failed: #{cmd}"
+    $stderr.puts stderr unless stderr.empty?
+    return nil
+  end
+  stdout.strip
+end
+
+def sanitize_description(title)
+  title.downcase.gsub(/\W/, "-").gsub(/-+/, "-").gsub(/^-|-$/, "")
+end
+
+def parse_branch(branch)
+  match = branch.match(/^([^\/]+)\/([A-Za-z]+-\d+)[\/-](.+)$/)
+
+  # username, ticket, description = match.captures
+
+  match&.captures || []
+end
+
+def extract_ticket(branch)
+  # Branch format: <user>/<TICKET>/<description>
+  # Unless you're a monster, like Ramses: <user>/<TICKET>-<description>  ;-)
+  parse_branch(branch)[1]&.upcase
+end
+
+pr_numbers = ARGV.select { |arg| arg.match?(/\A\d+\z/) }
+
+if pr_numbers.any?
+  prs = pr_numbers.map do |num|
+    json = run("gh pr view #{num} --json number,title,headRefName,author")
+    unless json
+      $stderr.puts "Failed to fetch PR ##{num} from GitHub"
+      exit 1
+    end
+    JSON.parse(json)
+  end
+else
+  pr_json = run('gh pr list --search "review-requested:@me" --json number,title,headRefName,author')
+  unless pr_json
+    $stderr.puts "Failed to fetch PR list from GitHub"
+    exit 1
+  end
+  prs = JSON.parse(pr_json)
+end
+
+if prs.empty?
+  $stderr.puts "No PRs are waiting for your review."
+  puts "[]"
+  exit 0
+end
+
+# Fetch all remote refs
+run("git fetch origin 2>/dev/null")
+
+results = []
+
+prs.each do |pr|
+  number = pr["number"]
+  title  = pr["title"]
+  branch = pr["headRefName"]
+  author = pr.dig("author", "login") || "unknown"
+
+  ticket = extract_ticket(branch)
+  unless ticket
+    $stderr.puts "Warning: could not extract ticket from branch '#{branch}', skipping"
+    next
+  end
+
+  # Get latest commit hash (short form)
+  commit = run("git rev-parse --short origin/#{branch} 2>/dev/null")
+  unless commit
+    $stderr.puts "Warning: could not resolve commit for origin/#{branch}, skipping"
+    next
+  end
+
+  description = sanitize_description(title)
+
+  # Check for existing review at this exact commit
+  # Glob: <TICKET>-<PR>-?-<COMMIT>*
+  existing_at_commit = Dir.glob("#{ticket}-#{number}-?-#{commit}*")
+  reviewed = !existing_at_commit.empty?
+
+  # Calculate next increment by finding all reviews for this TICKET-PR
+  prefix = "#{ticket}-#{number}-"
+  all_for_pr = Dir.glob("#{prefix}*-review.md")
+
+  if all_for_pr.empty?
+    next_increment = 1
+  else
+    increments = all_for_pr.filter_map do |f|
+      rest = f.delete_prefix(prefix)
+      num = rest.split("-").first
+      num.match?(/\A\d+\z/) ? num.to_i : nil
+    end
+    next_increment = increments.empty? ? 1 : increments.max + 1
+  end
+
+  filename = "#{ticket}-#{number}-#{next_increment}-#{commit}-#{author}-#{description}-review.md"
+
+  next if reviewed && !show_all
+
+  results << {
+    number:   number,
+    ticket:   ticket,
+    title:    title,
+    author:   author,
+    commit:   commit,
+    branch:   branch,
+    filename: filename,
+    reviewed: reviewed,
+  }
+end
+
+if results.empty? && !show_all && pr_numbers.empty?
+  $stderr.puts "All assigned PRs have already been reviewed. You're clear!"
+end
+
+puts JSON.pretty_generate(results)

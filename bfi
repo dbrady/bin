@@ -1,0 +1,9 @@
+#!/bin/bash
+rub1nner --foreground=red --background=red -D "YOU HAVE TO RUN"
+rubanner --font=ansi-shadow --bold --fg=white --bg=red "BUNDLE"
+rub1nner --foreground=red --background=red -D "FUCKING"
+rubanner --font=ansi-shadow --bold --fg=white --bg=red "INSTALL"
+rub1nner --foreground=red --background=red -D "NOW"
+
+echo -e '\033[36mbundle install\033[0m'
+bundle install
