@@ -3,7 +3,7 @@
 
 # start - exec a bash command recorded for the current folder or repo.
 # Config lives in ~/.config/start/start.yml; `start --help` shows the format
-# and worked examples.
+# and examples.
 
 require 'colorize'
 require 'fileutils'
@@ -23,7 +23,7 @@ class Application
 
   # 'default' lives in the same hash as the command names, so an entry called
   # "default" would be unreachable and would break bare `start` for its block.
-  # 'new' and 'edit' are eaten by subcommand dispatch before they can resolve.
+  # 'new' and 'edit' would be parsed as subcommands, never looked up.
   RESERVED = %w[default new edit].freeze
 
   def parse_options
@@ -31,15 +31,16 @@ class Application
       banner <<~BANNER
         start - exec a bash command recorded for the current folder or repo
 
-        start                     - run this location's default command
+        start                     - run the default command recorded here
         start <name> [args...]    - run the command recorded as <name>
-        start -i                  - choose one of this location's commands from a list
+        start -i                  - pick from the commands recorded here
         start new <name> '<cmd>'  - record a command here without opening the config
         start edit                - open the config in $EDITOR
 
-        Commands live in ~/.config/start/start.yml. A top-level key names a
-        location: a folder path, or a git remote so every clone of that repo
-        finds the same entries. Names under it map to bash commands:
+        Commands live in ~/.config/start/start.yml. A top-level key is a folder
+        path or a repo's remote URL. Folder entries match when start runs in
+        that exact folder; remote entries match from anywhere inside any clone
+        of that repo. Under each key, names map to bash commands:
 
           github.com/acima-credit/kipper:
             default: server
@@ -50,8 +51,9 @@ class Application
             hugo: hugo serve
 
         Bare `start` runs the entry named by `default:`. With no default and
-        exactly one entry, it runs that; with several, it opens the picker.
-        When a folder and its repo both record the same name, the folder wins.
+        exactly one entry, it runs that; with several, it shows the list to
+        pick from. If a folder entry and a repo entry share a name, the
+        folder's wins.
 
         Anything after the name is handed to the command as $1..$n. Put "$@"
         in the recorded command where you want those args to appear:
@@ -67,8 +69,9 @@ class Application
       opt :quiet, 'Run with minimal output', short: :q, default: false
       opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
 
-      # stop_on_unknown, not stop_on SUBCOMMANDS: stop_on would let
-      # `start server --binding=x` feed --binding to this parser and abort.
+      # stop_on_unknown, not stop_on SUBCOMMANDS: stop_on only stops at listed
+      # words, so parsing `start server --binding=x` would die on the unknown
+      # flag --binding. stop_on_unknown stops at `server`.
       stop_on_unknown
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
@@ -91,8 +94,8 @@ class Application
     @folder_key ||= Dir.pwd
   end
 
-  # git already walks up to the repo, so `remote get-url` is the whole lookup.
-  # Normalizing every URL spelling onto one key lets all checkouts share an entry.
+  # git finds the enclosing repo on its own, so `remote get-url` works from any
+  # subdirectory. Normalizing makes ssh and https remotes produce the same key.
   def repo_key
     return @repo_key if defined?(@repo_key)
 
@@ -112,25 +115,25 @@ class Application
 
     YAML.safe_load(File.read(CONFIG)) || {}
   rescue Psych::SyntaxError => e
-    abort "start: #{CONFIG} is not valid YAML (line #{e.line}): #{e.problem}\n" \
+    abort "start: #{CONFIG} is not valid YAML at line #{e.line}: #{e.problem}\n" \
           '       fix it with: start edit'
   end
 
   # Folder beats repo, key by key -- including 'default', so a folder can
   # change which command is the default while inheriting the command itself.
-  def services
-    @services ||= (config_data[repo_key] || {}).merge(config_data[folder_key] || {})
+  def entries
+    @entries ||= (config_data[repo_key] || {}).merge(config_data[folder_key] || {})
   end
 
   def commands
-    services.reject { |name, _| name == 'default' }
+    entries.reject { |name, _| name == 'default' }
   end
 
   def run_start(name)
-    abort no_services_message if commands.empty?
+    abort no_commands_message if commands.empty?
 
     name ||= pick if opts[:interactive]
-    name ||= services['default'] || (commands.keys.first if commands.size == 1) || pick
+    name ||= entries['default'] || (commands.keys.first if commands.size == 1) || pick
     abort 'start: nothing selected' if name.nil?
 
     command = commands[name]
@@ -140,10 +143,10 @@ class Application
     launch(command, *ARGV)
   end
 
-  # bash -c, not exec(command, *args): Ruby only uses a shell when exec gets
-  # exactly one argument, so passing args would make the ; and && in a command
-  # literal argv. bash -c CMD NAME ARGS puts ARGS in $1..$n, which is why args
-  # only land where the command says "$@".
+  # bash -c, not exec(command, *args): given more than one argument Ruby execs
+  # directly instead of through a shell, turning any ; or && in the command
+  # into literal arguments. bash -c CMD NAME ARGS sets $1..$n to ARGS, and
+  # "$@" in the recorded command expands to them.
   def launch(command, *args)
     puts command.cyan if pretend? || !quiet?
     exec('bash', '-c', command, 'start', *args) unless pretend?
@@ -156,17 +159,17 @@ class Application
     warn %(start: #{name.inspect} does not use "$@"; ignoring extra args: #{ARGV.join(' ')})
   end
 
-  def no_services_message
+  def no_commands_message
     <<~MSG.rstrip
-      start: no commands recorded for this location. Looked under:
+      start: no commands recorded here. Looked under:
         folder: #{folder_key}
         repo:   #{repo_key || 'no git remote'}
       Record one with: start new <name> '<command>'
     MSG
   end
 
-  # selecta does its UI on /dev/tty, so both pipe ends are free for the list
-  # and the answer.
+  # selecta draws on /dev/tty, leaving stdin to carry the list in and stdout
+  # the choice out.
   def pick
     width = commands.keys.map(&:length).max
     by_line = commands.to_h { |name, command| [format("%-#{width}s  %s", name, command), name] }
@@ -197,20 +200,21 @@ class Application
         Quote the command as one argument. Write "$@" in it wherever args from
         `start <name> ...` should go.
 
-        Run at a repo root, this records under the repo; run anywhere else, it
-        records under the current folder. --repo and --folder override that.
+        At a repo root the entry is recorded under the repo's remote URL;
+        anywhere else, under the current folder. --repo and --folder force
+        one or the other.
 
         Options:
       BANNER
-      opt :repo, 'Record under this repo, shared by every clone', default: false
+      opt :repo, "Record under the repo's remote URL, shared by every clone", default: false
       opt :folder, 'Record under the current folder path', default: false
-      opt :default, 'Also make this the default command here', default: false
+      opt :default, 'Also record it as the default: entry', default: false
       conflicts :repo, :folder
     end
 
     name, *rest = ARGV
-    Optimist.die 'give a service name and a command' if name.nil? || rest.empty?
-    Optimist.die "quote the command as one argument (got #{rest.length})" if rest.length > 1
+    Optimist.die 'give a name and a command' if name.nil? || rest.empty?
+    Optimist.die "quote the command as one argument -- got #{rest.length}" if rest.length > 1
     Optimist.die "#{name.inspect} is reserved" if RESERVED.include?(name)
 
     write_entry(new_scope(sub), name, rest.first, sub[:default])
@@ -218,7 +222,7 @@ class Application
 
   def new_scope(sub)
     return folder_key if sub[:folder]
-    return repo_key || abort('start: --repo needs a git repo with a usable remote here') if sub[:repo]
+    return repo_key || abort('start: --repo found no origin remote here') if sub[:repo]
 
     Dir.exist?('.git') ? (repo_key || folder_key) : folder_key
   end
@@ -252,13 +256,13 @@ class Application
     end
   end
 
-  # True while line i is still inside the block that starts at header.
+  # True if lines[index] is still inside the block that starts at lines[header].
   def block?(lines, header, index)
     ((header + 1)..index).all? { |i| lines[i].strip.empty? || lines[i].start_with?(' ', "\t") }
   end
 
   # Always double-quote: commands routinely contain #, :, and single quotes,
-  # all of which are hostile to bare YAML scalars.
+  # which all break unquoted YAML values.
   def entry(name, command)
     %(  #{name}: "#{command.gsub(/[\\"]/) { |c| "\\#{c}" }}"\n)
   end
