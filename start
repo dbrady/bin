@@ -278,61 +278,55 @@ class Application
     Dir.exist?('.git') ? (repo_key || folder_key) : folder_key
   end
 
-  # Insert lines; never YAML.load/dump round-trip -- Psych would delete the
-  # user's comments.
   def write_entry(scope, name, command, make_default)
-    lines = config_lines
-    header = header_index(lines, scope)
-
-    if header
-      drop_defaults(lines, header) if make_default
-      lines[header] = "#{lines[header].chomp}\n"
-      lines.insert(header + 1, entry(name, command))
-      lines.insert(header + 1, "  default: #{name}\n") if make_default
-    else
-      lines << "\n" unless lines.empty? || lines.last.end_with?("\n")
-      lines << "#{scope}:\n"
-      lines << "  default: #{name}\n" if make_default
-      lines << entry(name, command)
-    end
-
-    save(lines, "recorded #{name} under #{scope}")
+    added = [entry(name, command)]
+    added.unshift(default_line(name)) if make_default
+    save(insert(scope, added, drop_default: make_default), "recorded #{name} under #{scope}")
   end
 
   def write_default(scope, name)
+    if name
+      return save(insert(scope, [default_line(name)], drop_default: true),
+                  "recorded #{name} as the default under #{scope}")
+    end
+
     lines = config_lines
     header = header_index(lines, scope)
-    dropped = header ? drop_defaults(lines, header) : 0
+    abort nothing_to_clear_message(scope) if header.nil? || drop_defaults(lines, header).zero?
 
-    if name.nil?
-      abort nothing_to_clear_message(scope) if dropped.zero?
+    save(lines, "cleared the default under #{scope}")
+  end
 
-      return save(lines, "cleared the default under #{scope}")
-    end
+  # Insert at the top of scope's block, appending a whole block if there is
+  # none. Edits lines rather than YAML.load/dump round-tripping, which would
+  # have Psych delete the user's comments.
+  def insert(scope, added, drop_default: false)
+    lines = config_lines
+    header = header_index(lines, scope)
+    drop_defaults(lines, header) if drop_default && header
 
     if header
       lines[header] = "#{lines[header].chomp}\n"
-      lines.insert(header + 1, "  default: #{name}\n")
+      lines.insert(header + 1, *added)
     else
       lines << "\n" unless lines.empty? || lines.last.end_with?("\n")
-      lines << "#{scope}:\n"
-      lines << "  default: #{name}\n"
+      lines.push("#{scope}:\n", *added)
     end
-
-    save(lines, "recorded #{name} as the default under #{scope}")
+    lines
   end
 
-  # The scope written to is not always the scope the default came from: in a
-  # repo subfolder the write goes to the folder while the default is the repo's.
+  def default_line(name)
+    "  default: #{name}\n"
+  end
+
+  # In a repo subfolder the write goes to the folder while the default on show
+  # is the repo's, so say which scope holds it rather than just denying it.
   def nothing_to_clear_message(scope)
     holder = [folder_key, repo_key].compact.find { |key| key != scope && config_data[key]&.key?('default') }
     return "start: no default recorded under #{scope}\n       see what is recorded with: start list" if holder.nil?
 
-    <<~MSG.rstrip
-      start: no default recorded under #{scope}
-             the default here comes from #{holder}
-             clear that one with: start default #{holder == repo_key ? '--repo' : '--folder'}
-    MSG
+    "start: the default here comes from #{holder}, not #{scope}\n" \
+      "       clear that one with: start default #{holder == repo_key ? '--repo' : '--folder'}"
   end
 
   def config_lines
