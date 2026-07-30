@@ -214,6 +214,7 @@ class TestStartLaunching < StartIntegrationTest
     write_config("github.com/acima-credit/kipper:\n  server: \"unterminated\n   : :\n")
     _out, err, status = start(dir: repo)
     refute status.success?
+    assert_includes err, '(line 2)'
     assert_includes err, 'start edit'
   end
 

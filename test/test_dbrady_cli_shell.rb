@@ -36,7 +36,11 @@ end
 
 class TestExecCommand < Minitest::Test
   def test_pretend_returns_without_execing
-    assert_nil ShellHost.new(pretend: true).exec_command!('exit 1')
+    # capture_io, not a bare call: exec_command! still puts the command
+    # (that's the whole point of --pretend), and without capturing it that
+    # cyan "exit 1" line leaks into the test runner's own output.
+    out, _err = capture_io { assert_nil ShellHost.new(pretend: true).exec_command!('exit 1') }
+    assert_includes out, 'exit 1'
   end
 
   def test_pretend_prints_the_command_even_when_quiet
