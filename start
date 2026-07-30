@@ -281,6 +281,13 @@ class Application
     @config_path ||= ENV.fetch('START_CONFIG', DEFAULT_CONFIG)
   end
 
+  # Same seam shape as config_path/START_CONFIG: an env var rather than a
+  # CLI flag, so the picker can be stubbed out in tests without adding a
+  # user-facing option that would need documenting and maintaining.
+  def selecta_path
+    @selecta_path ||= ENV.fetch('START_SELECTA', SELECTA)
+  end
+
   def load_data
     return {} unless File.exist?(config_path)
 
@@ -297,6 +304,7 @@ class Application
     abort 'start: nothing selected' if resolved.nil?
 
     warn_about_dropped_args(resolved)
+    chdir_to_location(location)
     exec_command!(resolved.command, *ARGV, argv0: 'start')
   rescue ServiceConfig::NoServices
     abort no_services_message(location)
@@ -305,9 +313,30 @@ class Application
   end
 
   def choose(config, location, name)
-    return pick(config.commands_for(location)) if opts[:interactive] && name.nil?
+    if opts[:interactive] && name.nil?
+      # Bypassing resolve entirely (rather than just picking a different
+      # branch of it) skipped its NoServices check too, so `start -i` in an
+      # unconfigured location fell through to a bare "nothing selected"
+      # instead of the message naming the folder/repo keys it searched --
+      # the exact message a brand-new location needs to be discoverable.
+      commands = config.commands_for(location)
+      raise ServiceConfig::NoServices if commands.empty?
+
+      return pick(commands)
+    end
 
     config.resolve(location, name) || pick(config.commands_for(location))
+  end
+
+  # Kernel.exec inherits the launching process's cwd, so a relative command
+  # like "bin/rails s" or "./gradlew" only works when run from the checkout
+  # root (folder_key), not wherever `start` happened to be invoked -- e.g.
+  # merchant_portal/app/models. Chdir is non-destructive, so it happens even
+  # under --pretend; the note printed there is what lets `start -p` from a
+  # subdirectory tell you the command will run from the root, not your cwd.
+  def chdir_to_location(location)
+    puts "start: running from #{location.folder_key}".cyan if pretend?
+    Dir.chdir(location.folder_key)
   end
 
   # Args reach the program only via "$@", so silently dropping them would be a
@@ -334,22 +363,36 @@ class Application
     return nil if commands.empty?
 
     width = commands.keys.map(&:length).max
-    lines = commands.map { |name, command| format("%-#{width}s  %s", name, command) }
-    choice = IO.popen(SELECTA, 'r+') do |io|
-      io.puts lines
+    # Map each formatted line back to its name directly, rather than
+    # splitting the selected line on whitespace, so a service name that
+    # itself contains whitespace round-trips correctly. Splitting silently
+    # truncated such a name to its first word and then looked it up in
+    # `commands`, missed, and returned a Resolved with a nil command.
+    by_line = commands.each_with_object({}) do |(name, command), h|
+      h[format("%-#{width}s  %s", name, command)] = name
+    end
+    choice = IO.popen(selecta_path, 'r+') do |io|
+      io.puts by_line.keys
       io.close_write
       io.read
     end
     return nil unless $CHILD_STATUS&.success?
     return nil if choice.to_s.strip.empty?
 
-    name = choice.strip.split(/\s+/).first
+    name = by_line[choice.chomp]
+    return nil if name.nil?
+
     Resolved.new(name, commands[name])
   end
 
   def run_edit
-    FileUtils.mkdir_p(File.dirname(config_path))
-    File.write(config_path, '') unless File.exist?(config_path)
+    # The write must stay behind the same --pretend guard exec_command! uses
+    # internally, or `start -p edit` creates ~/.config/start/start.yml (and
+    # its parent dir) on disk while its own output claims nothing happened.
+    unless pretend?
+      FileUtils.mkdir_p(File.dirname(config_path))
+      File.write(config_path, '') unless File.exist?(config_path)
+    end
     editor = ENV['EDITOR'].to_s.empty? ? 'vi' : ENV['EDITOR']
     exec_command!("#{editor} #{config_path.shellescape}", argv0: 'start')
   end
@@ -388,8 +431,8 @@ class Application
     else
       FileUtils.mkdir_p(File.dirname(config_path))
       File.write(config_path, updated)
+      puts "recorded #{name} under #{scope}".green unless quiet?
     end
-    puts "recorded #{name} under #{scope}".green unless quiet?
   rescue ArgumentError => e
     abort "start: #{e.message}"
   end
