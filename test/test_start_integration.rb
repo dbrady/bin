@@ -357,6 +357,16 @@ class TestStartNew < StartIntegrationTest
     assert_includes err, '--folder'
   end
 
+  def test_new_rejects_reserved_service_names
+    repo = make_repo('merchant_portal')
+    %w[default new edit].each do |reserved|
+      _out, err, status = start('new', reserved, 'echo x', dir: repo)
+      refute status.success?, "expected `start new #{reserved} ...` to fail"
+      assert_match(/reserved/i, err)
+    end
+    refute File.exist?(@config)
+  end
+
   def test_new_pretend_does_not_write
     repo = make_repo('kipper')
     _out, _err, status = start('-p', 'new', 'q', 'bundle exec sidekiq', dir: repo)
