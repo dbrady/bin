@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'minitest/autorun'
+require 'tempfile'
 
 # `start` has no .rb extension, so it is loaded rather than required. The
 # `Application.new.run if __FILE__ == $PROGRAM_NAME` guard at the bottom keeps
@@ -276,5 +277,101 @@ class TestYamlWriter < Minitest::Test
   def test_bad_service_names_are_rejected
     assert_raises(ArgumentError) { write('', scope: '/x', name: 'has space', command: 'echo') }
     assert_raises(ArgumentError) { write('', scope: '/x', name: '', command: 'echo') }
+  end
+
+  def test_reserved_names_are_rejected
+    # 'default' is a real key in the same hash as service names, so a
+    # service named "default" would be unreachable and would brick bare
+    # `start` for the whole scope. 'new' and 'edit' are reserved by the
+    # CLI's own subcommand dispatch, so a service by either name would be
+    # equally unreachable via `start <name>`.
+    %w[default new edit].each do |reserved|
+      error = assert_raises(ArgumentError) { write('', scope: '/x', name: reserved, command: 'echo') }
+      assert_match(/reserved/i, error.message)
+    end
+  end
+end
+
+# `pick` is the only headline CLI path (the interactive picker) with no
+# automated coverage. It shells out to selecta via IO.popen, so it is
+# stubbed through the START_SELECTA env seam -- the same shape as
+# START_CONFIG -- rather than adding a user-facing --selecta flag nobody
+# asked for.
+class TestPick < Minitest::Test
+  # Generic stub: reads (and discards) the list selecta would show, then
+  # either exits 1 (Ctrl-C / nothing picked) or prints whatever line the
+  # test wants back -- passed via env var rather than interpolated into the
+  # script text, so no shell-quoting of arbitrary test data is needed.
+  STUB = <<~BASH
+    #!/usr/bin/env bash
+    cat > /dev/null
+    if [ -n "$STUB_SELECTA_FAIL" ]; then
+      exit 1
+    fi
+    printf '%s\\n' "$STUB_SELECTA_OUTPUT"
+  BASH
+
+  def with_stub_selecta(output: nil, fail: false)
+    file = Tempfile.new('stub-selecta')
+    file.write(STUB)
+    file.close
+    FileUtils.chmod('+x', file.path)
+
+    original_selecta = ENV['START_SELECTA']
+    original_output = ENV['STUB_SELECTA_OUTPUT']
+    original_fail = ENV['STUB_SELECTA_FAIL']
+    ENV['START_SELECTA'] = file.path
+    ENV['STUB_SELECTA_OUTPUT'] = output
+    ENV['STUB_SELECTA_FAIL'] = fail ? '1' : nil
+    yield
+  ensure
+    ENV['START_SELECTA'] = original_selecta
+    ENV['STUB_SELECTA_OUTPUT'] = original_output
+    ENV['STUB_SELECTA_FAIL'] = original_fail
+    file.unlink
+  end
+
+  def app
+    Application.new
+  end
+
+  def formatted_line(commands, name)
+    width = commands.keys.map(&:length).max
+    format("%-#{width}s  %s", name, commands[name])
+  end
+
+  def test_normal_selection_resolves_the_chosen_name
+    commands = { 'a' => 'echo a', 'b' => 'echo b' }
+    with_stub_selecta(output: formatted_line(commands, 'b')) do
+      resolved = app.send(:pick, commands)
+      assert_equal 'b', resolved.name
+      assert_equal 'echo b', resolved.command
+    end
+  end
+
+  def test_a_name_containing_whitespace_still_resolves_correctly
+    # Regression: pick used to recover the name by splitting the selected
+    # line on whitespace, which truncated "two words" to "two" -- a lookup
+    # miss that returned a Resolved with a nil command, which then blew up
+    # downstream in exec_command! with NoMethodError on nil.cyan.
+    commands = { 'two words' => 'echo TW', 'b' => 'echo b' }
+    with_stub_selecta(output: formatted_line(commands, 'two words')) do
+      resolved = app.send(:pick, commands)
+      assert_equal 'two words', resolved.name
+      assert_equal 'echo TW', resolved.command
+    end
+  end
+
+  def test_ctrl_c_or_empty_selection_returns_nil
+    commands = { 'a' => 'echo a' }
+    with_stub_selecta(fail: true) do
+      assert_nil app.send(:pick, commands)
+    end
+  end
+
+  def test_empty_commands_never_shells_out_to_selecta
+    with_stub_selecta(fail: true) do
+      assert_nil app.send(:pick, {})
+    end
   end
 end
