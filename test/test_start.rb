@@ -244,6 +244,35 @@ class TestYamlWriter < Minitest::Test
     assert_equal({ '/a' => { 'x' => 'echo a' } , '/b' => { 'y' => 'echo b' } }, YAML.safe_load(result))
   end
 
+  # Regression: inserting into the LAST block of a file with no trailing
+  # newline used to glue the new entry onto the prior line with no
+  # separator, since only append_block (new-scope case) normalized the
+  # missing newline -- upsert_entry (existing-scope case) did not.
+  def test_inserting_into_the_last_block_of_a_file_without_a_trailing_newline
+    result = write("/a:\n  x: \"1\"\n/b:\n  y: \"2\"", scope: '/b', name: 'z', command: '3')
+    assert_equal({ '/a' => { 'x' => '1' }, '/b' => { 'y' => '2', 'z' => '3' } },
+                 YAML.safe_load(result))
+  end
+
+  # Same gap, but through the default-insertion path: `add` upserts the
+  # entry first (which now fixes the missing newline) and only then inserts
+  # `default:`, so this must stay safe even though set_default's own insert
+  # runs second.
+  def test_setting_default_on_the_last_block_of_a_file_without_a_trailing_newline
+    result = write("/a:\n  x: \"1\"\n/b:\n  y: \"2\"", scope: '/b', name: 'z', command: '3', default: true)
+    assert_equal({ '/a' => { 'x' => '1' }, '/b' => { 'default' => 'z', 'y' => '2', 'z' => '3' } },
+                 YAML.safe_load(result))
+  end
+
+  # Rewriting (not inserting) an entry that IS the unterminated last line:
+  # the replacement line always carries its own trailing newline, so this
+  # path was never actually at risk -- covered here to prove it, not because
+  # it was broken.
+  def test_rewriting_the_unterminated_last_line_of_a_file
+    result = write("/a:\n  x: \"1\"", scope: '/a', name: 'x', command: '9')
+    assert_equal({ '/a' => { 'x' => '9' } }, YAML.safe_load(result))
+  end
+
   def test_bad_service_names_are_rejected
     assert_raises(ArgumentError) { write('', scope: '/x', name: 'has space', command: 'echo') }
     assert_raises(ArgumentError) { write('', scope: '/x', name: '', command: 'echo') }

@@ -167,7 +167,15 @@ class YamlWriter
     range = block_range(index)
     entry = "  #{name}: #{quote(command)}\n"
     existing = find_key(range, name)
-    existing ? @lines[existing] = entry : @lines.insert(range.end + 1, entry)
+    if existing
+      @lines[existing] = entry
+    else
+      # range.end is the block's last existing line (or the scope header
+      # itself, for an empty block) -- if it's also the file's last line, it
+      # may lack a trailing newline, which would glue the new entry onto it.
+      @lines[range.end] = "#{@lines[range.end]}\n" unless @lines[range.end].end_with?("\n")
+      @lines.insert(range.end + 1, entry)
+    end
   end
 
   def set_default(index, name)
