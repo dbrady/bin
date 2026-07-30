@@ -53,10 +53,11 @@ class Application
         exactly one entry, it runs that; with several, it opens the picker.
         When a folder and its repo both record the same name, the folder wins.
 
-        Extra args land where the command writes "$@":
+        Anything after the name is handed to the command as $1..$n. Put "$@"
+        in the recorded command where you want those args to appear:
 
           server: bin/rails s -p 3002 "$@"
-          $ start server --binding=0.0.0.0
+          $ start server --binding=0.0.0.0   # bin/rails s -p 3002 --binding=0.0.0.0
 
         Options, before the command name:
       BANNER
