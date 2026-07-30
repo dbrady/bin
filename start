@@ -64,4 +64,50 @@ module Scope
   end
 end
 
+# Merge and lookup over the parsed config. Pure -- no I/O, no git.
+class ServiceConfig
+  class NoServices < StandardError; end
+
+  class UnknownService < StandardError
+    attr_reader :name, :available
+
+    def initialize(name, available)
+      @name = name
+      @available = available
+      super("unknown service #{name.inspect}")
+    end
+  end
+
+  def initialize(data)
+    @data = data || {}
+  end
+
+  # Folder beats repo, key by key. Because 'default' is just another key, a
+  # folder can override the default while pointing at a repo-level service --
+  # which is also why 'default' cannot name a service.
+  def services_for(location)
+    repo = @data[location.repo_key] || {}
+    folder = @data[location.folder_key] || {}
+    repo.merge(folder)
+  end
+
+  def commands_for(location)
+    services_for(location).reject { |key, _| key == 'default' }
+  end
+
+  # Returns nil when the choice is ambiguous, meaning the caller should run
+  # the picker.
+  def resolve(location, name = nil)
+    services = services_for(location)
+    commands = services.reject { |key, _| key == 'default' }
+    raise NoServices if commands.empty?
+
+    chosen = name || services['default'] || (commands.size == 1 ? commands.keys.first : nil)
+    return nil if chosen.nil?
+    raise UnknownService.new(chosen, commands.keys) unless commands.key?(chosen)
+
+    Resolved.new(chosen, commands[chosen])
+  end
+end
+
 # APPLICATION CLASS ADDED IN TASK 5
