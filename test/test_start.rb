@@ -136,3 +136,116 @@ class TestServiceConfig < Minitest::Test
     end
   end
 end
+
+class TestYamlWriter < Minitest::Test
+  FIXTURE = <<~YAML
+    # Gradle forks bootRun from the long-lived daemon's environment and does
+    # NOT forward client-side env vars, so a SERVER_PORT= prefix is silently
+    # dropped. --server.port is forwarded explicitly and wins.
+    github.com/acima-credit/aperture:
+      default: server
+      server: "./gradlew :aperture-gateway:bootRun --args='--server.port=7777' \\"$@\\""
+
+    github.com/acima-credit/kipper:
+      server: "bin/rails s -p 3002"
+  YAML
+
+  def write(text, **kwargs)
+    YamlWriter.new(text).add(**kwargs)
+  end
+
+  def test_appends_a_new_scope_block_at_eof
+    result = write(FIXTURE, scope: 'github.com/acima-credit/global_customer',
+                            name: 'server', command: 'bin/rails s -p 3008')
+    assert_includes result, "github.com/acima-credit/global_customer:\n"
+    assert_includes result, %(  server: "bin/rails s -p 3008"\n)
+  end
+
+  def test_comments_survive_a_write
+    result = write(FIXTURE, scope: 'github.com/acima-credit/kipper',
+                            name: 'anycable', command: 'anycable-go --port=3334')
+    assert_includes result, '# Gradle forks bootRun'
+    assert_includes result, '# dropped. --server.port is forwarded explicitly and wins.'
+  end
+
+  def test_inserts_into_an_existing_block_without_disturbing_neighbors
+    result = write(FIXTURE, scope: 'github.com/acima-credit/aperture',
+                            name: 'server2', command: './gradlew --args=7778')
+    assert_includes result, %(  server2: "./gradlew --args=7778"\n)
+    # The kipper block must still be intact and still separated by a blank line.
+    assert_includes result, "\ngithub.com/acima-credit/kipper:\n  server:"
+  end
+
+  def test_insertion_lands_inside_the_target_block
+    result = write(FIXTURE, scope: 'github.com/acima-credit/aperture',
+                            name: 'server2', command: 'echo two')
+    lines = result.lines.map(&:chomp)
+    aperture = lines.index('github.com/acima-credit/aperture:')
+    kipper = lines.index('github.com/acima-credit/kipper:')
+    added = lines.index('  server2: "echo two"')
+    assert aperture < added, 'new entry must come after its scope key'
+    assert added < kipper, 'new entry must come before the next scope key'
+    # Ordering alone doesn't prove the insertion landed INSIDE the block
+    # rather than in the gap before the next scope key -- both positions
+    # satisfy aperture < added < kipper. The blank separator must trail the
+    # new entry, not lead it, or the insertion silently jumped the gap.
+    assert_includes result, %(  server2: "echo two"\n\ngithub.com/acima-credit/kipper:)
+  end
+
+  def test_rewriting_an_existing_service_replaces_it_in_place
+    result = write(FIXTURE, scope: 'github.com/acima-credit/kipper',
+                            name: 'server', command: 'bin/rails s -p 4002')
+    assert_includes result, %(  server: "bin/rails s -p 4002"\n)
+    refute_includes result, 'bin/rails s -p 3002'
+    # FIXTURE's aperture block also has a `server:` key, so scope the
+    # uniqueness check to the kipper block or this would count 2 by design.
+    kipper_block = result.split(/\A.*kipper:\n/m).last
+    assert_equal 1, kipper_block.scan(/^  server:/).length
+  end
+
+  def test_default_replaces_an_existing_default_line
+    result = write(FIXTURE, scope: 'github.com/acima-credit/aperture',
+                            name: 'server2', command: 'echo two', default: true)
+    assert_includes result, "  default: server2\n"
+    refute_includes result, "  default: server\n"
+    assert_equal 1, result.scan(/^  default:/).length
+  end
+
+  def test_default_is_inserted_first_when_the_block_has_none
+    result = write(FIXTURE, scope: 'github.com/acima-credit/kipper',
+                            name: 'q', command: 'bundle exec sidekiq', default: true)
+    lines = result.lines.map(&:chomp)
+    kipper = lines.index('github.com/acima-credit/kipper:')
+    assert_equal '  default: q', lines[kipper + 1]
+  end
+
+  def test_double_quotes_and_backslashes_are_escaped
+    result = write('', scope: '/x', name: 'srv', command: 'bin/rails s "$@" \\ok')
+    assert_includes result, %(  srv: "bin/rails s \\"$@\\" \\\\ok"\n)
+    assert_equal 'bin/rails s "$@" \\ok', YAML.safe_load(result).dig('/x', 'srv')
+  end
+
+  def test_output_is_always_parseable_yaml
+    result = write(FIXTURE, scope: 'github.com/acima-credit/kipper',
+                            name: 'db', command: 'psql kipper_dev # not a comment: really')
+    parsed = YAML.safe_load(result)
+    assert_equal 'psql kipper_dev # not a comment: really',
+                 parsed.dig('github.com/acima-credit/kipper', 'db')
+    assert_equal 'server', parsed.dig('github.com/acima-credit/aperture', 'default')
+  end
+
+  def test_writing_to_an_empty_file
+    result = write('', scope: '/x', name: 'srv', command: 'echo hi', default: true)
+    assert_equal({ '/x' => { 'default' => 'srv', 'srv' => 'echo hi' } }, YAML.safe_load(result))
+  end
+
+  def test_a_file_without_a_trailing_newline_is_handled
+    result = write("/a:\n  x: \"echo a\"", scope: '/b', name: 'y', command: 'echo b')
+    assert_equal({ '/a' => { 'x' => 'echo a' } , '/b' => { 'y' => 'echo b' } }, YAML.safe_load(result))
+  end
+
+  def test_bad_service_names_are_rejected
+    assert_raises(ArgumentError) { write('', scope: '/x', name: 'has space', command: 'echo') }
+    assert_raises(ArgumentError) { write('', scope: '/x', name: '', command: 'echo') }
+  end
+end

@@ -110,4 +110,87 @@ class ServiceConfig
   end
 end
 
+# Rewrites the config by line surgery rather than a YAML.load/YAML.dump
+# round-trip. Psych drops every comment on a round-trip, so a round-trip
+# writer would make `start new` delete the rationale that `start edit` exists
+# to let you write.
+class YamlWriter
+  NAME = /\A[\w.\-]+\z/
+
+  def initialize(text)
+    @lines = text.to_s.lines
+  end
+
+  def add(scope:, name:, command:, default: false)
+    raise ArgumentError, "invalid service name #{name.inspect}" unless NAME.match?(name.to_s)
+
+    index = scope_index(scope)
+    if index
+      upsert_entry(index, name, command)
+      set_default(scope_index(scope), name) if default
+    else
+      append_block(scope, name, command, default)
+    end
+    to_s
+  end
+
+  def to_s
+    @lines.join
+  end
+
+  private
+
+  def scope_index(scope)
+    pattern = /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/
+    @lines.index { |line| pattern.match?(line.chomp) }
+  end
+
+  # Indices of the block's entries. Trailing blank lines are excluded so that
+  # insertions land inside the block rather than in the gap before the next one.
+  def block_range(index)
+    last = index
+    ((index + 1)...@lines.length).each do |i|
+      line = @lines[i]
+      break unless line.strip.empty? || line.start_with?(' ', "\t")
+
+      last = i unless line.strip.empty?
+    end
+    (index + 1)..last
+  end
+
+  def find_key(range, key)
+    pattern = /\A\s+#{Regexp.escape(key)}:/
+    range.find { |i| pattern.match?(@lines[i]) }
+  end
+
+  def upsert_entry(index, name, command)
+    range = block_range(index)
+    entry = "  #{name}: #{quote(command)}\n"
+    existing = find_key(range, name)
+    existing ? @lines[existing] = entry : @lines.insert(range.end + 1, entry)
+  end
+
+  def set_default(index, name)
+    line = "  default: #{name}\n"
+    existing = find_key(block_range(index), 'default')
+    existing ? @lines[existing] = line : @lines.insert(index + 1, line)
+  end
+
+  def append_block(scope, name, command, default)
+    unless @lines.empty?
+      @lines[-1] = "#{@lines[-1]}\n" unless @lines[-1].end_with?("\n")
+      @lines << "\n" unless @lines[-1].strip.empty?
+    end
+    @lines << "#{scope}:\n"
+    @lines << "  default: #{name}\n" if default
+    @lines << "  #{name}: #{quote(command)}\n"
+  end
+
+  # Always double-quote: commands routinely contain #, :, and single quotes,
+  # all of which are hostile to bare YAML scalars.
+  def quote(value)
+    %("#{value.to_s.gsub(/[\\"]/) { |char| "\\#{char}" }}")
+  end
+end
+
 # APPLICATION CLASS ADDED IN TASK 5
