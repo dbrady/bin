@@ -11,7 +11,6 @@
 # inherit the rest.
 
 require 'colorize'
-require 'English'
 require 'fileutils'
 require 'optimist'
 require 'shellwords'
@@ -376,7 +375,7 @@ class Application
       io.close_write
       io.read
     end
-    return nil unless $CHILD_STATUS&.success?
+    return nil unless $?&.success?
     return nil if choice.to_s.strip.empty?
 
     name = by_line[choice.chomp]
