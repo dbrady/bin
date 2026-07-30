@@ -93,18 +93,24 @@ class ServiceConfig
     repo.merge(folder)
   end
 
+  # Only 'default' is an actual hash key that needs filtering out of a
+  # config block -- 'new' and 'edit' (see YamlWriter::RESERVED) are reserved
+  # for naming a service but were never valid config keys to begin with, so
+  # they do not belong in this set.
+  DEFAULT_KEY = 'default'
+
   def commands_for(location)
-    services_for(location).reject { |key, _| key == 'default' }
+    services_for(location).reject { |key, _| key == DEFAULT_KEY }
   end
 
   # Returns nil when the choice is ambiguous, meaning the caller should run
   # the picker.
   def resolve(location, name = nil)
     services = services_for(location)
-    commands = services.reject { |key, _| key == 'default' }
+    commands = commands_for(location)
     raise NoServices if commands.empty?
 
-    chosen = name || services['default'] || (commands.size == 1 ? commands.keys.first : nil)
+    chosen = name || services[DEFAULT_KEY] || (commands.size == 1 ? commands.keys.first : nil)
     return nil if chosen.nil?
     raise UnknownService.new(chosen, commands.keys) unless commands.key?(chosen)
 
@@ -119,12 +125,21 @@ end
 class YamlWriter
   NAME = /\A[\w.\-]+\z/
 
+  # 'default' is a key in the same hash as service names (see
+  # ServiceConfig#services_for), so a service named "default" would be
+  # unreachable by name and would brick bare `start` for the whole scope.
+  # 'new' and 'edit' are reserved by the CLI's own subcommand dispatch
+  # rather than by the data model, but the failure mode is the same --
+  # recorded, then unreachable -- so they are guarded here too.
+  RESERVED = %w[default new edit].freeze
+
   def initialize(text)
     @lines = text.to_s.lines
   end
 
   def add(scope:, name:, command:, default: false)
     raise ArgumentError, "invalid service name #{name.inspect}" unless NAME.match?(name.to_s)
+    raise ArgumentError, "#{name.inspect} is reserved and cannot name a service" if RESERVED.include?(name.to_s)
 
     index = scope_index(scope)
     if index
