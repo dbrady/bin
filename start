@@ -1,0 +1,67 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# start - launch this project's dev server, or any other recorded service.
+#
+# Replaces the pile of hand-rolled ./start scripts that accumulate as untracked
+# files in every checkout. Services live in ~/.config/start/start.yml, keyed
+# either by normalized git remote (shared by every checkout of a repo) or by
+# absolute folder path (this checkout only). Folder entries override repo
+# entries key by key, so a review checkout can redefine one service and
+# inherit the rest.
+
+require 'colorize'
+require 'optimist'
+require 'shellwords'
+require 'yaml'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+Location = Struct.new(:folder_key, :repo_key)
+Resolved = Struct.new(:name, :command)
+
+# Works out which config keys apply to the current directory.
+module Scope
+  module_function
+
+  # Collapse every spelling of a remote URL onto one key, so the four
+  # application-management-client checkouts share a single config entry.
+  def normalize_remote(url)
+    str = url.to_s.strip
+    return nil if str.empty?
+
+    str = str.sub(%r{\A[a-z][a-z0-9+.\-]*://}i, '')  # scheme
+    str = str.sub(/\A[^\/@]+@/, '')                  # user@
+    str = str.sub(/:\d+(?=\/)/, '')                  # :port
+    str = str.sub(/:(?=[^\/])/, '/')                 # scp-style host:path
+    str = str.sub(/\.git\z/, '').sub(/\/+\z/, '')
+    return nil if str.empty?
+
+    # Downcasing assumes a hosted remote; a case-sensitive local-path remote
+    # would be mangled, which does not occur in practice here.
+    str.downcase
+  end
+
+  # The git toplevel rather than the literal cwd, so `start` works from
+  # merchant_portal/app/models -- which is where you usually are.
+  def folder_key(cwd = Dir.pwd)
+    toplevel = `git -C #{cwd.shellescape} rev-parse --show-toplevel 2>/dev/null`.strip
+    toplevel.empty? ? File.expand_path(cwd) : toplevel
+  end
+
+  def repo_key(cwd = Dir.pwd)
+    url = `git -C #{cwd.shellescape} remote get-url origin 2>/dev/null`.strip
+    if url.empty?
+      remotes = `git -C #{cwd.shellescape} remote 2>/dev/null`.split
+      url = `git -C #{cwd.shellescape} remote get-url #{remotes.first.shellescape} 2>/dev/null`.strip if remotes.size == 1
+    end
+    normalize_remote(url)
+  end
+
+  def detect(cwd = Dir.pwd)
+    Location.new(folder_key(cwd), repo_key(cwd))
+  end
+end
+
+# APPLICATION CLASS ADDED IN TASK 5
