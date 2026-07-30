@@ -19,8 +19,8 @@ class Application
 
   # 'default' lives in the same hash as the command names, so an entry called
   # "default" would be unreachable and would break bare `start` for its block.
-  # 'new' and 'edit' would be parsed as subcommands, never looked up.
-  RESERVED = %w[default new edit].freeze
+  # 'new', 'edit' and 'list' would be parsed as subcommands, never looked up.
+  RESERVED = %w[default new edit list].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -30,7 +30,10 @@ class Application
         start                     - run the default command recorded here
         start <name> [args...]    - run the command recorded as <name>
         start -i                  - pick from the commands recorded here
+        start list                - show the commands recorded here
         start new <name> '<cmd>'  - record a command here without opening the config
+        start default <name>      - make <name> the one bare `start` runs
+        start default             - clear the default
         start edit                - open the config in $EDITOR
 
         Commands live in ~/.config/start/start.yml. A top-level key is a folder
@@ -78,8 +81,10 @@ class Application
   def run
     parse_options
     case @command
-    when 'new'  then run_new
-    when 'edit' then run_edit
+    when 'new'     then run_new
+    when 'edit'    then run_edit
+    when 'list'    then run_list
+    when 'default' then run_default
     else run_start(@command)
     end
   end
@@ -177,6 +182,56 @@ class Application
     $?&.success? ? by_line[choice.to_s.chomp] : nil
   end
 
+  # Alphabetical: the config's own order is whatever `start new` happened to
+  # leave behind.
+  def run_list
+    Optimist.die "start list takes no arguments -- got #{ARGV.join(' ')}" unless ARGV.empty?
+    abort no_commands_message if commands.empty?
+
+    default = entries['default']
+    if default && !commands.key?(default)
+      warn "start: the default here is #{default.inspect}, which is not recorded. Repoint it with: start default <name>"
+      default = nil
+    end
+
+    width = commands.keys.map(&:length).max
+    commands.keys.sort.each do |name|
+      puts format("%s %-#{width}s  %s", name == default ? '*' : ' ', name, commands[name])
+    end
+  end
+
+  def run_default
+    sub = Optimist.options do
+      banner <<~BANNER
+        start default - name the command that bare `start` runs
+
+        start default [--repo|--folder] <name>  - make <name> the default
+        start default [--repo|--folder]         - clear the default
+
+        At a repo root the default is recorded under the repo's remote URL;
+        anywhere else, under the current folder. --repo and --folder force
+        one or the other. A folder's default beats the repo's, so one clone
+        can bare-start something different from every other clone.
+
+        See what is recorded with: start list
+
+        Options:
+      BANNER
+      opt :repo, "Record under the repo's remote URL, shared by every clone", default: false
+      opt :folder, 'Record under the current folder path', default: false
+      conflicts :repo, :folder
+    end
+
+    name, *rest = ARGV
+    Optimist.die "give one name, or none to clear -- got #{rest.length + 1}" unless rest.empty?
+    if name && !commands.key?(name)
+      abort no_commands_message if commands.empty?
+      abort "start: no command #{name.inspect} here. Known: #{commands.keys.sort.join(', ')}"
+    end
+
+    write_default(new_scope(sub), name)
+  end
+
   def run_edit
     unless pretend?
       FileUtils.mkdir_p(File.dirname(CONFIG))
@@ -226,13 +281,11 @@ class Application
   # Insert lines; never YAML.load/dump round-trip -- Psych would delete the
   # user's comments.
   def write_entry(scope, name, command, make_default)
-    lines = File.exist?(CONFIG) ? File.readlines(CONFIG) : []
-    header = lines.index { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
+    lines = config_lines
+    header = header_index(lines, scope)
 
     if header
-      # A later duplicate key would win over the one we insert, so drop any
-      # existing default: line in this block first.
-      lines.reject!.with_index { |line, i| i > header && block?(lines, header, i) && line =~ /\A\s+default:/ } if make_default
+      drop_defaults(lines, header) if make_default
       lines[header] = "#{lines[header].chomp}\n"
       lines.insert(header + 1, entry(name, command))
       lines.insert(header + 1, "  default: #{name}\n") if make_default
@@ -243,18 +296,88 @@ class Application
       lines << entry(name, command)
     end
 
-    if pretend?
-      puts lines.join
-    else
-      FileUtils.mkdir_p(File.dirname(CONFIG))
-      File.write(CONFIG, lines.join)
-      puts "recorded #{name} under #{scope}".green unless quiet?
+    save(lines, "recorded #{name} under #{scope}")
+  end
+
+  def write_default(scope, name)
+    lines = config_lines
+    header = header_index(lines, scope)
+    dropped = header ? drop_defaults(lines, header) : 0
+
+    if name.nil?
+      abort nothing_to_clear_message(scope) if dropped.zero?
+
+      return save(lines, "cleared the default under #{scope}")
     end
+
+    if header
+      lines[header] = "#{lines[header].chomp}\n"
+      lines.insert(header + 1, "  default: #{name}\n")
+    else
+      lines << "\n" unless lines.empty? || lines.last.end_with?("\n")
+      lines << "#{scope}:\n"
+      lines << "  default: #{name}\n"
+    end
+
+    save(lines, "recorded #{name} as the default under #{scope}")
+  end
+
+  # The scope written to is not always the scope the default came from: in a
+  # repo subfolder the write goes to the folder while the default is the repo's.
+  def nothing_to_clear_message(scope)
+    holder = [folder_key, repo_key].compact.find { |key| key != scope && config_data[key]&.key?('default') }
+    return "start: no default recorded under #{scope}\n       see what is recorded with: start list" if holder.nil?
+
+    <<~MSG.rstrip
+      start: no default recorded under #{scope}
+             the default here comes from #{holder}
+             clear that one with: start default #{holder == repo_key ? '--repo' : '--folder'}
+    MSG
+  end
+
+  def config_lines
+    File.exist?(CONFIG) ? File.readlines(CONFIG) : []
+  end
+
+  # rindex, not index: YAML gives a later duplicate key the win, so the last
+  # block is the one being read back.
+  def header_index(lines, scope)
+    lines.rindex { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
+  end
+
+  # YAML gives a later duplicate key the win, so an existing default: left in
+  # place would outrank the one being inserted above it.
+  def drop_defaults(lines, header)
+    indent = block_indent(lines, header)
+    return 0 if indent.nil?
+
+    hits = ((header + 1)...lines.length).select do |i|
+      block?(lines, header, i) && lines[i].start_with?("#{indent}default:")
+    end
+    hits.reverse_each { |i| lines.delete_at(i) }
+    hits.length
+  end
+
+  # Anchoring to the indentation the block's keys share keeps drop_defaults out
+  # of block scalars, whose text is indented deeper and may say anything.
+  def block_indent(lines, header)
+    found = ((header + 1)...lines.length).find { |i| block?(lines, header, i) && !lines[i].strip.empty? }
+    found && lines[found][/\A[ \t]+/]
   end
 
   # True if lines[index] is still inside the block that starts at lines[header].
   def block?(lines, header, index)
     ((header + 1)..index).all? { |i| lines[i].strip.empty? || lines[i].start_with?(' ', "\t") }
+  end
+
+  def save(lines, message)
+    if pretend?
+      puts lines.join
+    else
+      FileUtils.mkdir_p(File.dirname(CONFIG))
+      File.write(CONFIG, lines.join)
+      puts message.green unless quiet?
+    end
   end
 
   # Always double-quote: commands routinely contain #, :, and single quotes,
