@@ -152,7 +152,7 @@ class Application
   def warn_about_dropped_args(name, command)
     return if ARGV.empty? || command.match?(/\$[@*1-9]/)
 
-    warn %(start: #{name.inspect} does not use "$@"; ignoring extra args: #{ARGV.join(' ')})
+    warn %(start: ignoring #{ARGV.join(' ')} -- add "$@" to the #{name.inspect} command to accept args)
   end
 
   def no_commands_message
@@ -218,7 +218,7 @@ class Application
 
   def new_scope(sub)
     return folder_key if sub[:folder]
-    return repo_key || abort('start: --repo found no origin remote here') if sub[:repo]
+    return repo_key || abort('start: --repo needs a git remote here; use --folder or add a remote') if sub[:repo]
 
     Dir.exist?('.git') ? (repo_key || folder_key) : folder_key
   end
