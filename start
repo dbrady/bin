@@ -3,12 +3,11 @@
 
 # start - launch this project's dev server, or any other recorded service.
 #
-# Replaces the pile of hand-rolled ./start scripts that accumulate as untracked
-# files in every checkout. Services live in ~/.config/start/start.yml, keyed
-# either by normalized git remote (shared by every checkout of a repo) or by
-# absolute folder path (this checkout only). Folder entries override repo
-# entries key by key, so a review checkout can redefine one service and
-# inherit the rest.
+# Replaces the hand-rolled ./start scripts that accumulate as untracked files
+# in every checkout. Services live in ~/.config/start/start.yml, keyed either
+# by normalized git remote (shared by every checkout of a repo) or by absolute
+# folder path (this checkout only). Folder entries override repo entries key by
+# key, so a review checkout can redefine one service and inherit the rest.
 
 require 'colorize'
 require 'fileutils'
@@ -19,204 +18,6 @@ $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
 require 'dbrady_cli'
 String.disable_colorization unless $stdout.tty?
 
-Location = Struct.new(:folder_key, :repo_key)
-Resolved = Struct.new(:name, :command)
-
-# Works out which config keys apply to the current directory.
-module Scope
-  module_function
-
-  # Collapse every spelling of a remote URL onto one key, so the four
-  # application-management-client checkouts share a single config entry.
-  def normalize_remote(url)
-    str = url.to_s.strip
-    return nil if str.empty?
-
-    str = str.sub(%r{\A[a-z][a-z0-9+.\-]*://}i, '')  # scheme
-    str = str.sub(/\A[^\/@]+@/, '')                  # user@
-    str = str.sub(/:\d+(?=\/)/, '')                  # :port
-    str = str.sub(/:(?=[^\/])/, '/')                 # scp-style host:path
-    str = str.sub(/\.git\z/, '').sub(/\/+\z/, '')
-    return nil if str.empty?
-
-    # Downcasing assumes a hosted remote; a case-sensitive local-path remote
-    # would be mangled, which does not occur in practice here.
-    str.downcase
-  end
-
-  # The git toplevel rather than the literal cwd, so `start` works from
-  # merchant_portal/app/models -- which is where you usually are.
-  def folder_key(cwd = Dir.pwd)
-    toplevel = `git -C #{cwd.shellescape} rev-parse --show-toplevel 2>/dev/null`.strip
-    toplevel.empty? ? File.expand_path(cwd) : toplevel
-  end
-
-  def repo_key(cwd = Dir.pwd)
-    url = `git -C #{cwd.shellescape} remote get-url origin 2>/dev/null`.strip
-    if url.empty?
-      remotes = `git -C #{cwd.shellescape} remote 2>/dev/null`.split
-      url = `git -C #{cwd.shellescape} remote get-url #{remotes.first.shellescape} 2>/dev/null`.strip if remotes.size == 1
-    end
-    normalize_remote(url)
-  end
-
-  def detect(cwd = Dir.pwd)
-    Location.new(folder_key(cwd), repo_key(cwd))
-  end
-end
-
-# Merge and lookup over the parsed config. Pure -- no I/O, no git.
-class ServiceConfig
-  class NoServices < StandardError; end
-
-  class UnknownService < StandardError
-    attr_reader :name, :available
-
-    def initialize(name, available)
-      @name = name
-      @available = available
-      super("unknown service #{name.inspect}")
-    end
-  end
-
-  def initialize(data)
-    @data = data || {}
-  end
-
-  # Folder beats repo, key by key. Because 'default' is just another key, a
-  # folder can override the default while pointing at a repo-level service --
-  # which is also why 'default' cannot name a service.
-  def services_for(location)
-    repo = @data[location.repo_key] || {}
-    folder = @data[location.folder_key] || {}
-    repo.merge(folder)
-  end
-
-  # Only 'default' is an actual hash key that needs filtering out of a
-  # config block -- 'new' and 'edit' (see YamlWriter::RESERVED) are reserved
-  # for naming a service but were never valid config keys to begin with, so
-  # they do not belong in this set.
-  DEFAULT_KEY = 'default'
-
-  def commands_for(location)
-    services_for(location).reject { |key, _| key == DEFAULT_KEY }
-  end
-
-  # Returns nil when the choice is ambiguous, meaning the caller should run
-  # the picker.
-  def resolve(location, name = nil)
-    services = services_for(location)
-    commands = commands_for(location)
-    raise NoServices if commands.empty?
-
-    chosen = name || services[DEFAULT_KEY] || (commands.size == 1 ? commands.keys.first : nil)
-    return nil if chosen.nil?
-    raise UnknownService.new(chosen, commands.keys) unless commands.key?(chosen)
-
-    Resolved.new(chosen, commands[chosen])
-  end
-end
-
-# Rewrites the config by line surgery rather than a YAML.load/YAML.dump
-# round-trip. Psych drops every comment on a round-trip, so a round-trip
-# writer would make `start new` delete the rationale that `start edit` exists
-# to let you write.
-class YamlWriter
-  NAME = /\A[\w.\-]+\z/
-
-  # 'default' is a key in the same hash as service names (see
-  # ServiceConfig#services_for), so a service named "default" would be
-  # unreachable by name and would brick bare `start` for the whole scope.
-  # 'new' and 'edit' are reserved by the CLI's own subcommand dispatch
-  # rather than by the data model, but the failure mode is the same --
-  # recorded, then unreachable -- so they are guarded here too.
-  RESERVED = %w[default new edit].freeze
-
-  def initialize(text)
-    @lines = text.to_s.lines
-  end
-
-  def add(scope:, name:, command:, default: false)
-    raise ArgumentError, "invalid service name #{name.inspect}" unless NAME.match?(name.to_s)
-    raise ArgumentError, "#{name.inspect} is reserved and cannot name a service" if RESERVED.include?(name.to_s)
-
-    index = scope_index(scope)
-    if index
-      upsert_entry(index, name, command)
-      set_default(scope_index(scope), name) if default
-    else
-      append_block(scope, name, command, default)
-    end
-    to_s
-  end
-
-  def to_s
-    @lines.join
-  end
-
-  private
-
-  def scope_index(scope)
-    pattern = /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/
-    @lines.index { |line| pattern.match?(line.chomp) }
-  end
-
-  # Indices of the block's entries. Trailing blank lines are excluded so that
-  # insertions land inside the block rather than in the gap before the next one.
-  def block_range(index)
-    last = index
-    ((index + 1)...@lines.length).each do |i|
-      line = @lines[i]
-      break unless line.strip.empty? || line.start_with?(' ', "\t")
-
-      last = i unless line.strip.empty?
-    end
-    (index + 1)..last
-  end
-
-  def find_key(range, key)
-    pattern = /\A\s+#{Regexp.escape(key)}:/
-    range.find { |i| pattern.match?(@lines[i]) }
-  end
-
-  def upsert_entry(index, name, command)
-    range = block_range(index)
-    entry = "  #{name}: #{quote(command)}\n"
-    existing = find_key(range, name)
-    if existing
-      @lines[existing] = entry
-    else
-      # range.end is the block's last existing line (or the scope header
-      # itself, for an empty block) -- if it's also the file's last line, it
-      # may lack a trailing newline, which would glue the new entry onto it.
-      @lines[range.end] = "#{@lines[range.end]}\n" unless @lines[range.end].end_with?("\n")
-      @lines.insert(range.end + 1, entry)
-    end
-  end
-
-  def set_default(index, name)
-    line = "  default: #{name}\n"
-    existing = find_key(block_range(index), 'default')
-    existing ? @lines[existing] = line : @lines.insert(index + 1, line)
-  end
-
-  def append_block(scope, name, command, default)
-    unless @lines.empty?
-      @lines[-1] = "#{@lines[-1]}\n" unless @lines[-1].end_with?("\n")
-      @lines << "\n" unless @lines[-1].strip.empty?
-    end
-    @lines << "#{scope}:\n"
-    @lines << "  default: #{name}\n" if default
-    @lines << "  #{name}: #{quote(command)}\n"
-  end
-
-  # Always double-quote: commands routinely contain #, :, and single quotes,
-  # all of which are hostile to bare YAML scalars.
-  def quote(value)
-    %("#{value.to_s.gsub(/[\\"]/) { |char| "\\#{char}" }}")
-  end
-end
-
 # CLI Application
 class Application
   include DbradyCli
@@ -224,7 +25,11 @@ class Application
   SELECTA = File.expand_path('~/bin/selecta')
   DEFAULT_CONFIG = File.expand_path('~/.config/start/start.yml')
 
-  # rubocop:disable Metrics/MethodLength
+  # 'default' lives in the same hash as the service names, so a service called
+  # "default" would be unreachable and would break bare `start` for the scope.
+  # 'new' and 'edit' are eaten by subcommand dispatch before they can resolve.
+  RESERVED = %w[default new edit].freeze
+
   def parse_options
     @opts = Optimist.options do
       banner <<~BANNER
@@ -235,15 +40,11 @@ class Application
           start [options] new [--repo|--folder] [--default] <service> '<command>'
           start [options] edit
 
-        Services live in ~/.config/start/start.yml, keyed by git remote (shared
-        by every checkout of a repo) or by absolute folder path (this checkout
-        only). Folder entries override repo entries key by key.
-
         Extra args reach the program only where the command says "$@":
           server: bin/rails server -p 3000 "$@"
 
-        With no service named: runs the recorded default, or the only service if
-        there is just one, otherwise opens the picker.
+        With no service named: runs the default, or the only service if there is
+        just one, otherwise opens the picker.
 
         Options (must come BEFORE the service name):
       BANNER
@@ -263,7 +64,6 @@ class Application
     dump_opts if debug?
     @command = ARGV.shift
   end
-  # rubocop:enable Metrics/MethodLength
 
   def run
     parse_options
@@ -280,14 +80,32 @@ class Application
     @config_path ||= ENV.fetch('START_CONFIG', DEFAULT_CONFIG)
   end
 
-  # Same seam shape as config_path/START_CONFIG: an env var rather than a
-  # CLI flag, so the picker can be stubbed out in tests without adding a
-  # user-facing option that would need documenting and maintaining.
-  def selecta_path
-    @selecta_path ||= ENV.fetch('START_SELECTA', SELECTA)
+  # The git toplevel rather than the literal cwd, so `start` works from
+  # merchant_portal/app/models -- which is where you usually are.
+  def folder_key
+    @folder_key ||= begin
+      top = `git rev-parse --show-toplevel 2>/dev/null`.strip
+      top.empty? ? Dir.pwd : top
+    end
   end
 
-  def load_data
+  # Collapse every spelling of a remote onto one key, so the four
+  # application-management-client checkouts share a single config entry.
+  def repo_key
+    return @repo_key if defined?(@repo_key)
+
+    url = `git remote get-url origin 2>/dev/null`.strip
+    @repo_key =
+      if url.empty?
+        nil
+      else
+        url.sub(%r{\A\w+://}, '').sub(/\A[^\/@]+@/, '')
+           .sub(%r{:\d+(?=/)}, '').sub(%r{:(?=[^/])}, '/')
+           .sub(/\.git\z/, '').downcase
+      end
+  end
+
+  def config_data
     return {} unless File.exist?(config_path)
 
     YAML.safe_load(File.read(config_path)) || {}
@@ -296,98 +114,65 @@ class Application
           '       fix it with: start edit'
   end
 
+  # Folder beats repo, key by key -- including 'default', so a folder can
+  # change which service is the default while inheriting the service itself.
+  def services
+    @services ||= (config_data[repo_key] || {}).merge(config_data[folder_key] || {})
+  end
+
+  def commands
+    services.reject { |name, _| name == 'default' }
+  end
+
   def run_start(name)
-    location = Scope.detect
-    config = ServiceConfig.new(load_data)
-    resolved = choose(config, location, name)
-    abort 'start: nothing selected' if resolved.nil?
+    abort no_services_message if commands.empty?
 
-    warn_about_dropped_args(resolved)
-    chdir_to_location(location)
-    exec_command!(resolved.command, *ARGV, argv0: 'start')
-  rescue ServiceConfig::NoServices
-    abort no_services_message(location)
-  rescue ServiceConfig::UnknownService => e
-    abort "start: no service #{e.name.inspect} here. Available: #{e.available.join(', ')}"
-  end
+    name ||= pick if opts[:interactive]
+    name ||= services['default'] || (commands.keys.first if commands.size == 1) || pick
+    abort 'start: nothing selected' if name.nil?
 
-  def choose(config, location, name)
-    if opts[:interactive] && name.nil?
-      # Bypassing resolve entirely (rather than just picking a different
-      # branch of it) skipped its NoServices check too, so `start -i` in an
-      # unconfigured location fell through to a bare "nothing selected"
-      # instead of the message naming the folder/repo keys it searched --
-      # the exact message a brand-new location needs to be discoverable.
-      commands = config.commands_for(location)
-      raise ServiceConfig::NoServices if commands.empty?
+    command = commands[name]
+    abort "start: no service #{name.inspect} here. Available: #{commands.keys.join(', ')}" if command.nil?
 
-      return pick(commands)
-    end
-
-    config.resolve(location, name) || pick(config.commands_for(location))
-  end
-
-  # Kernel.exec inherits the launching process's cwd, so a relative command
-  # like "bin/rails s" or "./gradlew" only works when run from the checkout
-  # root (folder_key), not wherever `start` happened to be invoked -- e.g.
-  # merchant_portal/app/models. Chdir is non-destructive, so it happens even
-  # under --pretend; the note printed there is what lets `start -p` from a
-  # subdirectory tell you the command will run from the root, not your cwd.
-  def chdir_to_location(location)
-    puts "start: running from #{location.folder_key}".cyan if pretend?
-    Dir.chdir(location.folder_key)
+    warn_about_dropped_args(name, command)
+    # Kernel.exec inherits our cwd, so a relative command like "bin/rails s"
+    # only works from the checkout root, not wherever start was invoked.
+    puts "start: running from #{folder_key}".cyan if pretend?
+    Dir.chdir(folder_key)
+    exec_command!(command, *ARGV, argv0: 'start')
   end
 
   # Args reach the program only via "$@", so silently dropping them would be a
-  # confusing no-op. Warn, but still launch: the service itself is what was asked for.
-  def warn_about_dropped_args(resolved)
-    return if ARGV.empty?
-    return if resolved.command.match?(/\$[@*1-9]/)
+  # confusing no-op. Warn, but still launch -- the service is what was asked for.
+  def warn_about_dropped_args(name, command)
+    return if ARGV.empty? || command.match?(/\$[@*1-9]/)
 
-    warn %(start: #{resolved.name.inspect} does not use "$@"; ignoring extra args: #{ARGV.join(' ')})
+    warn %(start: #{name.inspect} does not use "$@"; ignoring extra args: #{ARGV.join(' ')})
   end
 
-  def no_services_message(location)
+  def no_services_message
     <<~MSG.rstrip
       start: no services recorded for this location. Looked under:
-        folder: #{location.folder_key}
-        repo:   #{location.repo_key || '(no git remote)'}
+        folder: #{folder_key}
+        repo:   #{repo_key || '(no git remote)'}
       Record one with: start new <service> '<command>'
     MSG
   end
 
-  # selecta takes its list on stdin and does all its UI on /dev/tty, so a pipe
-  # for the list and a pipe for the answer leaves the terminal to selecta.
-  def pick(commands)
-    return nil if commands.empty?
-
+  # selecta takes its list on stdin and does its UI on /dev/tty, so piping the
+  # list in and the answer out leaves the terminal to selecta.
+  def pick
     width = commands.keys.map(&:length).max
-    # Map each formatted line back to its name directly, rather than
-    # splitting the selected line on whitespace, so a service name that
-    # itself contains whitespace round-trips correctly. Splitting silently
-    # truncated such a name to its first word and then looked it up in
-    # `commands`, missed, and returned a Resolved with a nil command.
-    by_line = commands.each_with_object({}) do |(name, command), h|
-      h[format("%-#{width}s  %s", name, command)] = name
-    end
-    choice = IO.popen(selecta_path, 'r+') do |io|
+    by_line = commands.to_h { |name, command| [format("%-#{width}s  %s", name, command), name] }
+    choice = IO.popen(SELECTA, 'r+') do |io|
       io.puts by_line.keys
       io.close_write
       io.read
     end
-    return nil unless $?&.success?
-    return nil if choice.to_s.strip.empty?
-
-    name = by_line[choice.chomp]
-    return nil if name.nil?
-
-    Resolved.new(name, commands[name])
+    $?&.success? ? by_line[choice.to_s.chomp] : nil
   end
 
   def run_edit
-    # The write must stay behind the same --pretend guard exec_command! uses
-    # internally, or `start -p edit` creates ~/.config/start/start.yml (and
-    # its parent dir) on disk while its own output claims nothing happened.
     unless pretend?
       FileUtils.mkdir_p(File.dirname(config_path))
       File.write(config_path, '') unless File.exist?(config_path)
@@ -396,7 +181,6 @@ class Application
     exec_command!("#{editor} #{config_path.shellescape}", argv0: 'start')
   end
 
-  # rubocop:disable Metrics/AbcSize
   def run_new
     sub = Optimist.options do
       banner <<~BANNER
@@ -405,8 +189,8 @@ class Application
         Usage:
           start new [--repo|--folder] [--default] <service> '<command>'
 
-        Write "$@" in the command wherever extra args from `start <service> ...`
-        should land. Quote the whole command as one argument.
+        Write "$@" in the command wherever args from `start <service> ...` go.
+        Quote the whole command as one argument.
 
         Options:
       BANNER
@@ -419,37 +203,61 @@ class Application
     name, *rest = ARGV
     Optimist.die 'give a service name and a command' if name.nil? || rest.empty?
     Optimist.die "quote the command as one argument (got #{rest.length})" if rest.length > 1
+    Optimist.die "#{name.inspect} is reserved" if RESERVED.include?(name)
 
-    scope = new_scope(sub)
-    text = File.exist?(config_path) ? File.read(config_path) : ''
-    updated = YamlWriter.new(text).add(scope: scope, name: name, command: rest.first,
-                                       default: sub[:default])
+    write_entry(new_scope(sub), name, rest.first, sub[:default])
+  end
+
+  # Standing at the repo root says "this is a property of the app"; standing in
+  # a subdirectory or a plain folder says "this is a property of this checkout".
+  # Worktrees and submodules have .git as a FILE, so they fall to --folder,
+  # which is the wanted answer for a review checkout.
+  def new_scope(sub)
+    return folder_key if sub[:folder]
+    return repo_key || abort('start: --repo needs a git repo with a usable remote here') if sub[:repo]
+
+    Dir.exist?('.git') ? (repo_key || folder_key) : folder_key
+  end
+
+  # Inserts lines; never re-emits the file. A YAML.load/YAML.dump round-trip
+  # would delete every comment, which is the whole reason `start edit` exists.
+  def write_entry(scope, name, command, make_default)
+    lines = File.exist?(config_path) ? File.readlines(config_path) : []
+    header = lines.index { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
+
+    if header
+      # A later duplicate key would win over the one we insert, so drop any
+      # existing default: line in this block first.
+      lines.reject!.with_index { |line, i| i > header && block?(lines, header, i) && line =~ /\A\s+default:/ } if make_default
+      header = lines.index { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
+      lines[header] = "#{lines[header].chomp}\n"
+      lines.insert(header + 1, entry(name, command))
+      lines.insert(header + 1, "  default: #{name}\n") if make_default
+    else
+      lines << "\n" unless lines.empty? || lines.last.end_with?("\n")
+      lines << "#{scope}:\n"
+      lines << "  default: #{name}\n" if make_default
+      lines << entry(name, command)
+    end
 
     if pretend?
-      puts updated
+      puts lines.join
     else
       FileUtils.mkdir_p(File.dirname(config_path))
-      File.write(config_path, updated)
+      File.write(config_path, lines.join)
       puts "recorded #{name} under #{scope}".green unless quiet?
     end
-  rescue ArgumentError => e
-    abort "start: #{e.message}"
-  end
-  # rubocop:enable Metrics/AbcSize
-
-  # Standing at the repo root signals "this is a property of the app"; standing
-  # in a subdirectory or a plain folder signals "this is a property of this
-  # checkout". Note that worktrees and submodules have .git as a FILE, so they
-  # fall to --folder, which is the wanted answer for review checkouts.
-  def new_scope(sub)
-    return require_repo_key if sub[:repo]
-    return Scope.folder_key if sub[:folder]
-
-    Dir.exist?('.git') ? require_repo_key : Scope.folder_key
   end
 
-  def require_repo_key
-    Scope.repo_key || abort('start: --repo needs a git repo with a usable remote here')
+  # True while line i is still inside the block that starts at header.
+  def block?(lines, header, index)
+    ((header + 1)..index).all? { |i| lines[i].strip.empty? || lines[i].start_with?(' ', "\t") }
+  end
+
+  # Always double-quote: commands routinely contain #, :, and single quotes,
+  # all of which are hostile to bare YAML scalars.
+  def entry(name, command)
+    %(  #{name}: "#{command.gsub(/[\\"]/) { |c| "\\#{c}" }}"\n)
   end
 end
 
