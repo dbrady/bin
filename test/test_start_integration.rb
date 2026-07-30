@@ -5,6 +5,8 @@ require 'open3'
 require 'tmpdir'
 require 'fileutils'
 require 'yaml'
+require 'pty'
+require 'English'
 
 # End-to-end: real subprocess, real git repos, throwaway config. --pretend
 # means no service is ever actually launched.
@@ -38,6 +40,25 @@ class StartIntegrationTest < Minitest::Test
 
   def write_config(data)
     File.write(@config, data)
+  end
+
+  # quiet? is `opts[:quiet] || headless?`, and headless? is "stdout is not a
+  # TTY" -- true for every subprocess captured via Open3, which is why the
+  # `unless quiet?` guard around "recorded ..." never fires under `start`
+  # (above) regardless of --pretend. A real pty is required to observe that
+  # guard behaving differently, which is the only way to catch a pretend
+  # path that prints a confirmation despite writing nothing.
+  def start_via_pty(*args, dir:)
+    output = +''
+    PTY.spawn({ 'START_CONFIG' => @config }, BIN, *args, chdir: dir) do |r, _w, pid|
+      begin
+        loop { output << r.readpartial(1024) }
+      rescue Errno::EIO, EOFError
+        nil
+      end
+      Process.wait(pid)
+    end
+    [output, $CHILD_STATUS]
   end
 end
 
@@ -79,6 +100,22 @@ class TestStartLaunching < StartIntegrationTest
     out, _err, status = start('-p', dir: sub)
     assert status.success?, out
     assert_includes out, 'bin/rails server -p 3000'
+  end
+
+  def test_a_relative_command_actually_runs_from_the_checkout_root_not_the_subdirectory
+    repo = make_repo('merchant_portal')
+    sub = File.join(repo, 'app', 'models')
+    FileUtils.mkdir_p(sub)
+    write_config(<<~YAML)
+      github.com/acima-credit/merchant_portal:
+        server: "pwd"
+    YAML
+    # No -p: this must actually execute "pwd" for the chdir bug to be
+    # observable. The -p-based subdirectory test never execs, so it cannot
+    # tell "resolved the right command" apart from "ran in the right place".
+    out, err, status = start('server', dir: sub)
+    assert status.success?, err
+    assert_equal repo, out.strip
   end
 
   def test_a_second_checkout_of_the_same_repo_shares_the_entry
@@ -155,6 +192,16 @@ class TestStartLaunching < StartIntegrationTest
     assert_includes err, 'start new'
   end
 
+  def test_interactive_with_no_services_names_both_keys_it_searched
+    repo = make_repo('unconfigured')
+    write_config("/somewhere/else:\n  x: \"echo x\"\n")
+    _out, err, status = start('-i', dir: repo)
+    refute status.success?
+    assert_includes err, repo
+    assert_includes err, 'github.com/acima-credit/unconfigured'
+    assert_includes err, 'start new'
+  end
+
   def test_missing_config_file_is_reported_not_crashed
     repo = make_repo('kipper')
     _out, err, status = start(dir: repo)
@@ -177,6 +224,49 @@ class TestStartLaunching < StartIntegrationTest
     out, _err, status = start('-p', dir: plain)
     assert status.success?, out
     assert_includes out, 'echo PLAIN'
+  end
+end
+
+class TestStartEdit < StartIntegrationTest
+  def start_with_editor(*args, editor:, dir:)
+    Open3.capture3({ 'START_CONFIG' => @config, 'EDITOR' => editor }, BIN, 'edit', *args, chdir: dir)
+  end
+
+  def test_edit_creates_the_config_file_and_invokes_editor
+    repo = make_repo('kipper')
+    out, err, status = start_with_editor(editor: 'echo', dir: repo)
+    assert status.success?, err
+    assert File.exist?(@config)
+    assert_includes out, @config
+  end
+
+  def test_edit_creates_the_parent_directory_too
+    repo = make_repo('kipper')
+    @config = File.join(@tmp, 'nested', 'dir', 'start.yml')
+    _out, err, status = start_with_editor(editor: 'echo', dir: repo)
+    assert status.success?, err
+    assert File.exist?(@config)
+  end
+
+  def test_edit_falls_back_to_vi_when_editor_is_unset
+    repo = make_repo('kipper')
+    # -p, not a real invocation: actually exec'ing vi would hang the test
+    # waiting on a terminal. --pretend prints the resolved command and
+    # returns instead of exec'ing, which is exactly what's needed to prove
+    # the fallback without a live editor.
+    out, _err, status = Open3.capture3({ 'START_CONFIG' => @config, 'EDITOR' => '' },
+                                        BIN, '-p', 'edit', chdir: repo)
+    assert status.success?, out
+    assert_includes out, "vi #{@config}"
+  end
+
+  def test_edit_pretend_does_not_create_the_config_file
+    repo = make_repo('kipper')
+    out, _err, status = Open3.capture3({ 'START_CONFIG' => @config, 'EDITOR' => 'echo' },
+                                        BIN, '-p', 'edit', chdir: repo)
+    assert status.success?, out
+    assert_includes out, "echo #{@config}"
+    refute File.exist?(@config)
   end
 end
 
@@ -272,5 +362,24 @@ class TestStartNew < StartIntegrationTest
     _out, _err, status = start('-p', 'new', 'q', 'bundle exec sidekiq', dir: repo)
     assert status.success?
     refute File.exist?(@config)
+  end
+
+  def test_new_pretend_does_not_claim_it_recorded_anything
+    # Nothing was written under --pretend (see test_new_pretend_does_not_write
+    # above), so a "recorded ..." confirmation line would be a lie about what
+    # just happened. Needs a real pty: quiet? is true for any non-tty
+    # stdout, which already suppresses "recorded ..." under plain Open3
+    # capture regardless of this bug -- see start_via_pty's comment.
+    repo = make_repo('kipper')
+    out, status = start_via_pty('-p', 'new', 'q', 'bundle exec sidekiq', dir: repo)
+    assert status.success?, out
+    refute_match(/recorded/i, out)
+  end
+
+  def test_new_confirms_what_it_recorded_when_not_pretending
+    repo = make_repo('kipper')
+    out, status = start_via_pty('new', 'q', 'bundle exec sidekiq', dir: repo)
+    assert status.success?, out
+    assert_match(/recorded/i, out)
   end
 end
