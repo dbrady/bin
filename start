@@ -1,13 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# start - launch this project's dev server, or any other recorded service.
-#
-# Replaces the hand-rolled ./start scripts that accumulate as untracked files
-# in every checkout. Services live in ~/.config/start/start.yml, keyed either
-# by normalized git remote (shared by every checkout of a repo) or by absolute
-# folder path (this checkout only). Folder entries override repo entries key by
-# key, so a review checkout can redefine one service and inherit the rest.
+# start - launch a recorded service (usually the dev server) for this project.
+# Services live in ~/.config/start/start.yml (override: START_CONFIG), keyed by
+# normalized git remote (all checkouts of a repo) or by absolute folder path
+# (this folder only). Folder entries override repo entries key by key.
 
 require 'colorize'
 require 'fileutils'
@@ -54,10 +51,8 @@ class Application
       opt :quiet, 'Run with minimal output', short: :q, default: false
       opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
 
-      # stop_on_unknown, not stop_on SUBCOMMANDS: stop_on only halts at listed
-      # words, so `start server --binding=0.0.0.0` would hand --binding to this
-      # parser and abort. Halting at the first non-flag token leaves the service
-      # name and its args alone.
+      # stop_on_unknown, not stop_on SUBCOMMANDS: stop_on would let
+      # `start server --binding=x` feed --binding to this parser and abort.
       stop_on_unknown
     end
     opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
@@ -84,10 +79,8 @@ class Application
     @folder_key ||= Dir.pwd
   end
 
-  # git walks up to the repo itself, so this is the whole of "find the repo":
-  # ask for the remote, get a URL or nothing. Collapsing every spelling of it
-  # onto one key is what lets the four application-management-client checkouts
-  # share a single config entry.
+  # git already walks up to the repo, so `remote get-url` is the whole lookup.
+  # Normalizing every URL spelling onto one key lets all checkouts share an entry.
   def repo_key
     return @repo_key if defined?(@repo_key)
 
@@ -144,8 +137,7 @@ class Application
     exec('bash', '-c', command, 'start', *args) unless pretend?
   end
 
-  # Args reach the program only via "$@", so silently dropping them would be a
-  # confusing no-op. Warn, but still launch -- the service is what was asked for.
+  # Warn but still launch -- the service is what was asked for.
   def warn_about_dropped_args(name, command)
     return if ARGV.empty? || command.match?(/\$[@*1-9]/)
 
@@ -161,8 +153,8 @@ class Application
     MSG
   end
 
-  # selecta takes its list on stdin and does its UI on /dev/tty, so piping the
-  # list in and the answer out leaves the terminal to selecta.
+  # selecta does its UI on /dev/tty, so both pipe ends are free for the list
+  # and the answer.
   def pick
     width = commands.keys.map(&:length).max
     by_line = commands.to_h { |name, command| [format("%-#{width}s  %s", name, command), name] }
@@ -219,8 +211,8 @@ class Application
     Dir.exist?('.git') ? (repo_key || folder_key) : folder_key
   end
 
-  # Inserts lines; never re-emits the file. A YAML.load/YAML.dump round-trip
-  # would delete every comment, which is the whole reason `start edit` exists.
+  # Insert lines; never YAML.load/dump round-trip -- Psych would delete the
+  # user's comments.
   def write_entry(scope, name, command, make_default)
     lines = File.exist?(config_path) ? File.readlines(config_path) : []
     header = lines.index { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
@@ -229,7 +221,6 @@ class Application
       # A later duplicate key would win over the one we insert, so drop any
       # existing default: line in this block first.
       lines.reject!.with_index { |line, i| i > header && block?(lines, header, i) && line =~ /\A\s+default:/ } if make_default
-      header = lines.index { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
       lines[header] = "#{lines[header].chomp}\n"
       lines.insert(header + 1, entry(name, command))
       lines.insert(header + 1, "  default: #{name}\n") if make_default
