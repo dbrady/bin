@@ -46,6 +46,10 @@ When `pretend?` is true, `run_command`/`run_command!` print commands in cyan but
 - `git-rebasable` — SQLite-backed branch configuration flags
 - `git-get-pr`, `git-get-pr-id` — GitHub PR lookup via `gh` CLI
 
+## Other Key Scripts
+
+- `start` — launches a project's dev server (or any other recorded service) from a config at `~/.config/start/start.yml` (override with `START_CONFIG`), keyed by normalized git remote or by folder path. Replaces the per-checkout `./start` scripts that used to accumulate in Acima repos — before adding a new ad-hoc `start` script to a checkout, add a service entry here instead (`start new <service> '<command>'`, or `start edit`).
+
 ## Key Ruby Gems (installed globally, no Gemfile)
 
 - `colorize` — ANSI color output (`.cyan`, `.green`, `.red`, etc.)
