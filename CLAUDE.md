@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A personal collection of ~800 executable utility scripts (mostly Ruby and Bash) living in `~/bin`. There is no build system, no Gemfile, no package manager — scripts are standalone executables. Ruby version is managed via `.tool-versions` (ruby 3.3.0).
+A personal collection of ~800 executable utility scripts (mostly Ruby and Bash) living in `~/bin`. There is no build system, no Gemfile, no package manager (no bundler, no Rakefile, no task runner) — scripts are standalone executables. Ruby version is managed via `.tool-versions` (ruby 3.3.0).
 
 ## Repository Layout
 
@@ -14,6 +14,7 @@ A personal collection of ~800 executable utility scripts (mostly Ruby and Bash) 
 - **`lib/tiny_table.rb`**: Table formatting utility
 - **`db/`**: SQLite databases (e.g., `git-settings.db` for `git-rebasable`)
 - **`figlet-fonts/`**, **`tabs/`**, **`tmuxinatrix/`**: Data/config directories
+- **`test/`**: minitest suites (e.g. `test_start.rb`, `test_start_integration.rb`, `test_dbrady_cli_shell.rb`). There is no Rakefile or test-runner wrapper, so run a suite directly: `ruby test/test_start.rb`. Minitest is installed globally, same as `colorize` and `optimist`.
 
 ## Creating New Scripts
 
