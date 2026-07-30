@@ -11,6 +11,8 @@
 # inherit the rest.
 
 require 'colorize'
+require 'English'
+require 'fileutils'
 require 'optimist'
 require 'shellwords'
 require 'yaml'
@@ -201,4 +203,197 @@ class YamlWriter
   end
 end
 
-# APPLICATION CLASS ADDED IN TASK 5
+# CLI Application
+class Application
+  include DbradyCli
+
+  SELECTA = File.expand_path('~/bin/selecta')
+  DEFAULT_CONFIG = File.expand_path('~/.config/start/start.yml')
+
+  # rubocop:disable Metrics/MethodLength
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        start - launch a service for this project
+
+        Usage:
+          start [options] [<service>] [args...]
+          start [options] new [--repo|--folder] [--default] <service> '<command>'
+          start [options] edit
+
+        Services live in ~/.config/start/start.yml, keyed by git remote (shared
+        by every checkout of a repo) or by absolute folder path (this checkout
+        only). Folder entries override repo entries key by key.
+
+        Extra args reach the program only where the command says "$@":
+          server: bin/rails server -p 3000 "$@"
+
+        With no service named: runs the recorded default, or the only service if
+        there is just one, otherwise opens the picker.
+
+        Options (must come BEFORE the service name):
+      BANNER
+      opt :interactive, 'Pick the service interactively', short: :i, default: false
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+
+      # stop_on_unknown, not stop_on SUBCOMMANDS: stop_on only halts at listed
+      # words, so `start server --binding=0.0.0.0` would hand --binding to this
+      # parser and abort. Halting at the first non-flag token leaves the service
+      # name and its args alone.
+      stop_on_unknown
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    @command = ARGV.shift
+  end
+  # rubocop:enable Metrics/MethodLength
+
+  def run
+    parse_options
+    case @command
+    when 'new'  then run_new
+    when 'edit' then run_edit
+    else run_start(@command)
+    end
+  end
+
+  private
+
+  def config_path
+    @config_path ||= ENV.fetch('START_CONFIG', DEFAULT_CONFIG)
+  end
+
+  def load_data
+    return {} unless File.exist?(config_path)
+
+    YAML.safe_load(File.read(config_path)) || {}
+  rescue Psych::SyntaxError => e
+    abort "start: #{config_path} is not valid YAML (line #{e.line}): #{e.problem}\n" \
+          '       fix it with: start edit'
+  end
+
+  def run_start(name)
+    location = Scope.detect
+    config = ServiceConfig.new(load_data)
+    resolved = choose(config, location, name)
+    abort 'start: nothing selected' if resolved.nil?
+
+    warn_about_dropped_args(resolved)
+    exec_command!(resolved.command, *ARGV, argv0: 'start')
+  rescue ServiceConfig::NoServices
+    abort no_services_message(location)
+  rescue ServiceConfig::UnknownService => e
+    abort "start: no service #{e.name.inspect} here. Available: #{e.available.join(', ')}"
+  end
+
+  def choose(config, location, name)
+    return pick(config.commands_for(location)) if opts[:interactive] && name.nil?
+
+    config.resolve(location, name) || pick(config.commands_for(location))
+  end
+
+  # Args reach the program only via "$@", so silently dropping them would be a
+  # confusing no-op. Warn, but still launch: the service itself is what was asked for.
+  def warn_about_dropped_args(resolved)
+    return if ARGV.empty?
+    return if resolved.command.match?(/\$[@*1-9]/)
+
+    warn %(start: #{resolved.name.inspect} does not use "$@"; ignoring extra args: #{ARGV.join(' ')})
+  end
+
+  def no_services_message(location)
+    <<~MSG.rstrip
+      start: no services recorded for this location. Looked under:
+        folder: #{location.folder_key}
+        repo:   #{location.repo_key || '(no git remote)'}
+      Record one with: start new <service> '<command>'
+    MSG
+  end
+
+  # selecta takes its list on stdin and does all its UI on /dev/tty, so a pipe
+  # for the list and a pipe for the answer leaves the terminal to selecta.
+  def pick(commands)
+    return nil if commands.empty?
+
+    width = commands.keys.map(&:length).max
+    lines = commands.map { |name, command| format("%-#{width}s  %s", name, command) }
+    choice = IO.popen(SELECTA, 'r+') do |io|
+      io.puts lines
+      io.close_write
+      io.read
+    end
+    return nil unless $CHILD_STATUS&.success?
+    return nil if choice.to_s.strip.empty?
+
+    name = choice.strip.split(/\s+/).first
+    Resolved.new(name, commands[name])
+  end
+
+  def run_edit
+    FileUtils.mkdir_p(File.dirname(config_path))
+    File.write(config_path, '') unless File.exist?(config_path)
+    editor = ENV['EDITOR'].to_s.empty? ? 'vi' : ENV['EDITOR']
+    exec_command!("#{editor} #{config_path.shellescape}", argv0: 'start')
+  end
+
+  # rubocop:disable Metrics/AbcSize
+  def run_new
+    sub = Optimist.options do
+      banner <<~BANNER
+        start new - record a service for this location
+
+        Usage:
+          start new [--repo|--folder] [--default] <service> '<command>'
+
+        Write "$@" in the command wherever extra args from `start <service> ...`
+        should land. Quote the whole command as one argument.
+
+        Options:
+      BANNER
+      opt :repo, 'Attach to the git remote (every checkout of this repo)', default: false
+      opt :folder, 'Attach to this folder only', default: false
+      opt :default, 'Make this the default service for the location', default: false
+      conflicts :repo, :folder
+    end
+
+    name, *rest = ARGV
+    Optimist.die 'give a service name and a command' if name.nil? || rest.empty?
+    Optimist.die "quote the command as one argument (got #{rest.length})" if rest.length > 1
+
+    scope = new_scope(sub)
+    text = File.exist?(config_path) ? File.read(config_path) : ''
+    updated = YamlWriter.new(text).add(scope: scope, name: name, command: rest.first,
+                                       default: sub[:default])
+
+    if pretend?
+      puts updated
+    else
+      FileUtils.mkdir_p(File.dirname(config_path))
+      File.write(config_path, updated)
+    end
+    puts "recorded #{name} under #{scope}".green unless quiet?
+  rescue ArgumentError => e
+    abort "start: #{e.message}"
+  end
+  # rubocop:enable Metrics/AbcSize
+
+  # Standing at the repo root signals "this is a property of the app"; standing
+  # in a subdirectory or a plain folder signals "this is a property of this
+  # checkout". Note that worktrees and submodules have .git as a FILE, so they
+  # fall to --folder, which is the wanted answer for review checkouts.
+  def new_scope(sub)
+    return require_repo_key if sub[:repo]
+    return Scope.folder_key if sub[:folder]
+
+    Dir.exist?('.git') ? require_repo_key : Scope.folder_key
+  end
+
+  def require_repo_key
+    Scope.repo_key || abort('start: --repo needs a git repo with a usable remote here')
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
