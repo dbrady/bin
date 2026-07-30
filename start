@@ -1,6 +1,4 @@
 #!/usr/bin/env ruby
-# frozen_string_literal: true
-
 # start - exec a bash command recorded for the current folder or repo.
 # Config lives in ~/.config/start/start.yml; `start --help` shows the format
 # and examples.
