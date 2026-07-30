@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Repo Is
 
-A personal collection of ~800 executable utility scripts (mostly Ruby and Bash) living in `~/bin`. There is no build system, no Gemfile, no package manager (no bundler, no Rakefile, no task runner) — scripts are standalone executables. Ruby version is managed via `.tool-versions` (ruby 3.3.0).
+A personal collection of ~800 executable utility scripts (mostly Ruby and Bash) living in `~/bin`. There is no build system, no Gemfile, no package manager — scripts are standalone executables. Ruby version is managed via `.tool-versions` (ruby 3.3.0).
 
 ## Repository Layout
 
@@ -14,7 +14,6 @@ A personal collection of ~800 executable utility scripts (mostly Ruby and Bash) 
 - **`lib/tiny_table.rb`**: Table formatting utility
 - **`db/`**: SQLite databases (e.g., `git-settings.db` for `git-rebasable`)
 - **`figlet-fonts/`**, **`tabs/`**, **`tmuxinatrix/`**: Data/config directories
-- **`test/`**: minitest suites (e.g. `test_start.rb`, `test_start_integration.rb`, `test_dbrady_cli_shell.rb`). There is no Rakefile or test-runner wrapper, so run a suite directly: `ruby test/test_start.rb`. Minitest is installed globally, same as `colorize` and `optimist`.
 
 ## Creating New Scripts
 
@@ -46,10 +45,6 @@ When `pretend?` is true, `run_command`/`run_command!` print commands in cyan but
 - `git-files-changed` — list changed files vs parent branch
 - `git-rebasable` — SQLite-backed branch configuration flags
 - `git-get-pr`, `git-get-pr-id` — GitHub PR lookup via `gh` CLI
-
-## Other Key Scripts
-
-- `start` — launches a project's dev server (or any other recorded service) from a config at `~/.config/start/start.yml` (override with `START_CONFIG`), keyed by normalized git remote or by folder path. Replaces the per-checkout `./start` scripts that used to accumulate in Acima repos — before adding a new ad-hoc `start` script to a checkout, add a service entry here instead (`start new <service> '<command>'`, or `start edit`).
 
 ## Key Ruby Gems (installed globally, no Gemfile)
 

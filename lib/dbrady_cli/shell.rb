@@ -49,35 +49,6 @@ module DbradyCli
     end
   end
 
-  # Build the argv for launching a command string through bash.
-  #
-  # A shell is required because command strings may contain `;`, `&&`, or
-  # redirection, and Kernel.exec only routes through a shell when given
-  # exactly one argument -- passing extra args silently switches it to
-  # direct-exec mode, where the metacharacters become literal argv entries.
-  # `bash -c CMD NAME ARGS...` sets $0 to NAME and puts ARGS in $1..$n, so
-  # args reach the program only where the command string says "$@".
-  #
-  # Split out from exec_command! because Kernel.exec never returns and so
-  # cannot be asserted on.
-  def exec_argv(command, args = [], argv0: 'start')
-    ['bash', '-c', command, argv0, *args]
-  end
-
-  # Log a command in cyan, then REPLACE this process with it. Never returns,
-  # except under --pretend, where it prints and returns nil.
-  def exec_command!(command, *args, argv0: File.basename($PROGRAM_NAME))
-    argv = exec_argv(command, args, argv0: argv0)
-    puts "exec_command!: #{argv.inspect}" if debug?
-
-    # Print even when quiet? in pretend mode: quiet? is true for any non-TTY
-    # stdout, and in pretend mode this line IS the program's output.
-    puts command.cyan if pretend? || !quiet?
-    return nil if pretend?
-
-    Kernel.exec(*argv)
-  end
-
   def osx?
     `uname -s`.strip == 'Darwin'
   end

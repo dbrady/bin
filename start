@@ -80,17 +80,14 @@ class Application
     @config_path ||= ENV.fetch('START_CONFIG', DEFAULT_CONFIG)
   end
 
-  # The git toplevel rather than the literal cwd, so `start` works from
-  # merchant_portal/app/models -- which is where you usually are.
   def folder_key
-    @folder_key ||= begin
-      top = `git rev-parse --show-toplevel 2>/dev/null`.strip
-      top.empty? ? Dir.pwd : top
-    end
+    @folder_key ||= Dir.pwd
   end
 
-  # Collapse every spelling of a remote onto one key, so the four
-  # application-management-client checkouts share a single config entry.
+  # git walks up to the repo itself, so this is the whole of "find the repo":
+  # ask for the remote, get a URL or nothing. Collapsing every spelling of it
+  # onto one key is what lets the four application-management-client checkouts
+  # share a single config entry.
   def repo_key
     return @repo_key if defined?(@repo_key)
 
@@ -135,11 +132,16 @@ class Application
     abort "start: no service #{name.inspect} here. Available: #{commands.keys.join(', ')}" if command.nil?
 
     warn_about_dropped_args(name, command)
-    # Kernel.exec inherits our cwd, so a relative command like "bin/rails s"
-    # only works from the checkout root, not wherever start was invoked.
-    puts "start: running from #{folder_key}".cyan if pretend?
-    Dir.chdir(folder_key)
-    exec_command!(command, *ARGV, argv0: 'start')
+    launch(command, *ARGV)
+  end
+
+  # bash -c, not exec(command, *args): Ruby only uses a shell when exec gets
+  # exactly one argument, so passing args would make the ; and && in a command
+  # literal argv. bash -c CMD NAME ARGS puts ARGS in $1..$n, which is why args
+  # only land where the command says "$@".
+  def launch(command, *args)
+    puts command.cyan if pretend? || !quiet?
+    exec('bash', '-c', command, 'start', *args) unless pretend?
   end
 
   # Args reach the program only via "$@", so silently dropping them would be a
@@ -178,7 +180,7 @@ class Application
       File.write(config_path, '') unless File.exist?(config_path)
     end
     editor = ENV['EDITOR'].to_s.empty? ? 'vi' : ENV['EDITOR']
-    exec_command!("#{editor} #{config_path.shellescape}", argv0: 'start')
+    launch("#{editor} #{config_path.shellescape}")
   end
 
   def run_new
@@ -209,9 +211,7 @@ class Application
   end
 
   # Standing at the repo root says "this is a property of the app"; standing in
-  # a subdirectory or a plain folder says "this is a property of this checkout".
-  # Worktrees and submodules have .git as a FILE, so they fall to --folder,
-  # which is the wanted answer for a review checkout.
+  # a subdirectory or a plain folder says "this is a property of this folder".
   def new_scope(sub)
     return folder_key if sub[:folder]
     return repo_key || abort('start: --repo needs a git repo with a usable remote here') if sub[:repo]
