@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build `~/bin/start`, a central launcher that replaces the fourteen hand-rolled `./start` scripts scattered across `~/acima/devel`.
+**Goal:** Build `~/bin/start`, a central launcher that supersedes the fourteen hand-rolled `./start` scripts scattered across `~/acima/devel`. The existing scripts are left in place — they are the fallback, and Dave retires them himself.
 
 **Architecture:** One executable Ruby file, `~/bin/start`, containing four small classes with clean seams: `Scope` (locates the current repo/folder keys), `ServiceConfig` (pure merge and lookup over parsed YAML), `YamlWriter` (pure string→string line surgery), and `Application` (Optimist CLI glue). A new `exec_command!` helper lands in the shared `lib/dbrady_cli/shell.rb`. Everything except `Application` and `Scope.detect` is a pure function, unit-tested directly; the CLI is covered end-to-end through `--pretend` against throwaway git repos.
 
@@ -1304,16 +1304,16 @@ Add `require 'English'` and `require 'fileutils'` to the requires at the top of 
 Run: `cd ~/bin && ruby test/test_start.rb && ruby test/test_start_integration.rb && ruby test/test_dbrady_cli_shell.rb`
 Expected: PASS across all three files, 0 failures, 0 errors
 
-- [ ] **Step 5: Manually verify the picker, which cannot be tested headlessly**
+- [ ] **Step 5: Hand off the picker to Dave — it needs a TTY and cannot be tested headlessly**
 
-Run:
+Do not attempt to drive selecta from an agent; it reads keys from `/dev/tty`. Set up the fixture, then stop and ask Dave to run it:
+
 ```bash
-cd ~/bin
 export START_CONFIG=/tmp/start-manual.yml
 printf '%s\n' '/tmp:' '  a: "echo AAA"' '  b: "echo BBB"' > "$START_CONFIG"
 cd /tmp && ~/bin/start -p
 ```
-Expected: selecta's interactive list appears with `a` and `b`; picking `b` prints `echo BBB`; Ctrl-C prints `start: nothing selected` and exits nonzero. Then `rm /tmp/start-manual.yml; unset START_CONFIG`.
+Expected: selecta's list appears with `a` and `b`; picking `b` prints `echo BBB`; Ctrl-C prints `start: nothing selected` and exits nonzero. Cleanup afterward: `rm /tmp/start-manual.yml; unset START_CONFIG`.
 
 - [ ] **Step 6: Commit**
 
@@ -1340,14 +1340,29 @@ Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>"
 
 ---
 
-### Task 6: Migrate the fourteen existing scripts
+### Task 6: Populate the config from the fourteen existing scripts
+
+**This task creates files and never removes or renames one.** `./start`, `~/bin/start`, and a bare `start` resolved through `PATH` coexist fine; the existing scripts stay exactly where they are, under their current names, and are the fallback if anything here is wrong. Dave retires them on his own schedule.
 
 **Files:**
 - Create: `~/.config/start/start.yml`
-- Create: `~/acima/devel/application-management-client/private-bin/start-amc` (and the equivalent in the other AMC checkouts, if wanted)
-- Delete: the fourteen `start*` scripts, only after verification
+- Create: `~/acima/devel/application-management-client/private-bin/start-amc` (a copy — the original `./start` stays)
 
-The `application-management-client` script is the one case the spec explicitly pushes out of scope: redis flush + two `.env.development` existence checks + `pnpm start:dev` is a script, not a command. It moves to a private bin directory and the config entry invokes that path.
+The `application-management-client` script is the one case the spec explicitly pushes out of scope: redis flush + two `.env.development` existence checks + `pnpm start:dev` is a script, not a command. A copy goes in a private bin directory and the config entry invokes that path.
+
+**Service naming is one-to-one with the existing files — no drops, no renames.** All three aperture starters get an entry, including the plain `./start` whose `preferIPv4Stack` arg differs from the numbered pair:
+
+| Existing file | Service |
+|---|---|
+| `aperture/start` | `server` |
+| `aperture/start1` | `server1` |
+| `aperture/start2` | `server2` |
+| `merchant_portal/start-q` | `q` |
+| `merchant_portal/start-anycable` | `anycable` |
+| `kipper/start` | `server` |
+| `kipper/start-anycable` | `anycable` |
+
+`aperture/start2.badmaybe` gets no entry: it is byte-identical to `start2` apart from the commentary, so an entry would be a duplicate. The file stays on disk regardless.
 
 - [ ] **Step 1: Write the config file**
 
@@ -1359,9 +1374,14 @@ Create `~/.config/start/start.yml`:
 # silently dropped whenever an idle daemon with a different SERVER_PORT is
 # reused, and the app binds the wrong port. A --server.port program arg is
 # forwarded explicitly by Gradle and outranks any env var in Spring's property
-# precedence, so it always wins. Two servers because you always run a pair.
+# precedence, so it always wins. server1/server2 because you always run a pair.
+#
+# server is the original ./start: it passes preferIPv4Stack instead of a port
+# and lands on 7777 by way of the default, which is why server1 looks
+# redundant with it and is not.
 github.com/acima-credit/aperture:
   default: server1
+  server: "./gradlew :aperture-gateway:bootRun --args='java.net.preferIPv4Stack=true' \"$@\""
   server1: "./gradlew :aperture-gateway:bootRun --args='--server.port=7777' \"$@\""
   server2: "./gradlew :aperture-gateway:bootRun --args='--server.port=7778' \"$@\""
 
@@ -1402,7 +1422,9 @@ done
 
 Fix any key in the YAML that does not match `Scope.normalize_remote` of the real URL. Note that `20250916.application_management_system` and the three extra `application-management-client` checkouts need no entries of their own — sharing the repo key is the point.
 
-- [ ] **Step 2: Move the AMC startup script**
+- [ ] **Step 2: Copy the AMC startup script into a private bin**
+
+`cp`, not `mv` — the original `./start` stays where it is.
 
 ```bash
 cd ~/acima/devel/application-management-client
@@ -1417,7 +1439,7 @@ Use `.git/info/exclude` rather than `.gitignore`: this is a personal directory i
 - [ ] **Step 3: Verify every migrated service resolves to the original command**
 
 ```bash
-cd ~/acima/devel/aperture                       && ~/bin/start -p && ~/bin/start -p server2
+cd ~/acima/devel/aperture                       && ~/bin/start -p && ~/bin/start -p server && ~/bin/start -p server2
 cd ~/acima/devel/merchant_portal                && ~/bin/start -p && ~/bin/start -p q && ~/bin/start -p anycable
 cd ~/acima/devel/kipper                         && ~/bin/start -p && ~/bin/start -p anycable
 cd ~/acima/devel/application_management_system  && ~/bin/start -p
@@ -1438,28 +1460,18 @@ cd ~/acima/devel/merchant_portal && ~/bin/start -p q --nope       # warns about 
 cd /tmp && ~/bin/start                                            # names both keys, suggests start new
 ```
 
-- [ ] **Step 5: Remove the old scripts**
+- [ ] **Step 5: Diff each new service against the script it came from, and report**
 
-Only after Steps 3 and 4 are clean. These are untracked files, so deletion is unrecoverable — list before removing:
+Nothing is deleted. Produce a table for Dave showing, per existing file, the command it runs and the command `start -p` resolves to, flagging any that differ. Anything flagged is a transcription bug in Step 1, not a reason to touch the file.
 
 ```bash
-ls -l ~/acima/devel/application-management-client.old/start \
-      ~/acima/devel/20250916.application_management_system/start \
-      ~/acima/devel/application_management_system/start \
-      ~/acima/devel/global_customer/start \
-      ~/acima/devel/application-management-client.newer-but-still-awful/start \
-      ~/acima/devel/merchant_portal/start-anycable \
-      ~/acima/devel/merchant_portal/start-q \
-      ~/acima/devel/aperture/start1 \
-      ~/acima/devel/aperture/start \
-      ~/acima/devel/aperture/start2 \
-      ~/acima/devel/aperture/start2.badmaybe \
-      ~/acima/devel/application-management-client/start \
-      ~/acima/devel/kipper/start \
-      ~/acima/devel/kipper/start-anycable
+for f in ~/acima/devel/*/start ~/acima/devel/*/start[0-9] ~/acima/devel/*/start-*; do
+  printf '\n=== %s\n' "$f"
+  grep -vE '^\s*(#|$)' "$f" | grep -v '^#!' 
+done
 ```
 
-Then `rm` that list. The AMC copy in `private-bin/start-amc` is the survivor.
+The existing scripts stay on disk under their current names. `./start` in a checkout, `~/bin/start`, and a bare `start` on `PATH` are not mutually exclusive, and keeping the originals is what makes this migration reversible.
 
 - [ ] **Step 6: Document the script and commit**
 
