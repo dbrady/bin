@@ -1,10 +1,9 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# start - launch a recorded service (usually the dev server) for this project.
-# Services live in ~/.config/start/start.yml (override: START_CONFIG), keyed by
-# normalized git remote (all checkouts of a repo) or by absolute folder path
-# (this folder only). Folder entries override repo entries key by key.
+# start - exec a bash command recorded for the current folder or repo.
+# Config lives in ~/.config/start/start.yml; `start --help` shows the format
+# and worked examples.
 
 require 'colorize'
 require 'fileutils'
@@ -20,32 +19,48 @@ class Application
   include DbradyCli
 
   SELECTA = File.expand_path('~/bin/selecta')
-  DEFAULT_CONFIG = File.expand_path('~/.config/start/start.yml')
+  CONFIG = File.expand_path('~/.config/start/start.yml')
 
-  # 'default' lives in the same hash as the service names, so a service called
-  # "default" would be unreachable and would break bare `start` for the scope.
+  # 'default' lives in the same hash as the command names, so an entry called
+  # "default" would be unreachable and would break bare `start` for its block.
   # 'new' and 'edit' are eaten by subcommand dispatch before they can resolve.
   RESERVED = %w[default new edit].freeze
 
   def parse_options
     @opts = Optimist.options do
       banner <<~BANNER
-        start - launch a service for this project
+        start - exec a bash command recorded for the current folder or repo
 
-        Usage:
-          start [options] [<service>] [args...]
-          start [options] new [--repo|--folder] [--default] <service> '<command>'
-          start [options] edit
+        start                     - run this location's default command
+        start <name> [args...]    - run the command recorded as <name>
+        start -i                  - choose one of this location's commands from a list
+        start new <name> '<cmd>'  - record a command here without opening the config
+        start edit                - open the config in $EDITOR
 
-        Extra args reach the program only where the command says "$@":
-          server: bin/rails server -p 3000 "$@"
+        Commands live in ~/.config/start/start.yml. A top-level key names a
+        location: a folder path, or a git remote so every clone of that repo
+        finds the same entries. Names under it map to bash commands:
 
-        With no service named: runs the default, or the only service if there is
-        just one, otherwise opens the picker.
+          github.com/acima-credit/kipper:
+            default: server
+            server: bin/rails s -p 3002
+            anycable: anycable-go --port=3334
 
-        Options (must come BEFORE the service name):
+          /Users/dbrady/scratch/blog:
+            hugo: hugo serve
+
+        Bare `start` runs the entry named by `default:`. With no default and
+        exactly one entry, it runs that; with several, it opens the picker.
+        When a folder and its repo both record the same name, the folder wins.
+
+        Extra args land where the command writes "$@":
+
+          server: bin/rails s -p 3002 "$@"
+          $ start server --binding=0.0.0.0
+
+        Options, before the command name:
       BANNER
-      opt :interactive, 'Pick the service interactively', short: :i, default: false
+      opt :interactive, 'Choose the command from a list', short: :i, default: false
       opt :debug, 'Print extra debug info', short: :d, default: false
       opt :pretend, 'Print commands but do not run them', short: :p, default: false
       opt :quiet, 'Run with minimal output', short: :q, default: false
@@ -71,10 +86,6 @@ class Application
 
   private
 
-  def config_path
-    @config_path ||= ENV.fetch('START_CONFIG', DEFAULT_CONFIG)
-  end
-
   def folder_key
     @folder_key ||= Dir.pwd
   end
@@ -96,16 +107,16 @@ class Application
   end
 
   def config_data
-    return {} unless File.exist?(config_path)
+    return {} unless File.exist?(CONFIG)
 
-    YAML.safe_load(File.read(config_path)) || {}
+    YAML.safe_load(File.read(CONFIG)) || {}
   rescue Psych::SyntaxError => e
-    abort "start: #{config_path} is not valid YAML (line #{e.line}): #{e.problem}\n" \
+    abort "start: #{CONFIG} is not valid YAML (line #{e.line}): #{e.problem}\n" \
           '       fix it with: start edit'
   end
 
   # Folder beats repo, key by key -- including 'default', so a folder can
-  # change which service is the default while inheriting the service itself.
+  # change which command is the default while inheriting the command itself.
   def services
     @services ||= (config_data[repo_key] || {}).merge(config_data[folder_key] || {})
   end
@@ -122,7 +133,7 @@ class Application
     abort 'start: nothing selected' if name.nil?
 
     command = commands[name]
-    abort "start: no service #{name.inspect} here. Available: #{commands.keys.join(', ')}" if command.nil?
+    abort "start: no command #{name.inspect} here. Known: #{commands.keys.join(', ')}" if command.nil?
 
     warn_about_dropped_args(name, command)
     launch(command, *ARGV)
@@ -137,7 +148,7 @@ class Application
     exec('bash', '-c', command, 'start', *args) unless pretend?
   end
 
-  # Warn but still launch -- the service is what was asked for.
+  # Warn rather than abort -- dropped args should be visible, not fatal.
   def warn_about_dropped_args(name, command)
     return if ARGV.empty? || command.match?(/\$[@*1-9]/)
 
@@ -146,10 +157,10 @@ class Application
 
   def no_services_message
     <<~MSG.rstrip
-      start: no services recorded for this location. Looked under:
+      start: no commands recorded for this location. Looked under:
         folder: #{folder_key}
-        repo:   #{repo_key || '(no git remote)'}
-      Record one with: start new <service> '<command>'
+        repo:   #{repo_key || 'no git remote'}
+      Record one with: start new <name> '<command>'
     MSG
   end
 
@@ -168,29 +179,31 @@ class Application
 
   def run_edit
     unless pretend?
-      FileUtils.mkdir_p(File.dirname(config_path))
-      File.write(config_path, '') unless File.exist?(config_path)
+      FileUtils.mkdir_p(File.dirname(CONFIG))
+      File.write(CONFIG, '') unless File.exist?(CONFIG)
     end
     editor = ENV['EDITOR'].to_s.empty? ? 'vi' : ENV['EDITOR']
-    launch("#{editor} #{config_path.shellescape}")
+    launch("#{editor} #{CONFIG.shellescape}")
   end
 
   def run_new
     sub = Optimist.options do
       banner <<~BANNER
-        start new - record a service for this location
+        start new - record a command in the config
 
-        Usage:
-          start new [--repo|--folder] [--default] <service> '<command>'
+        start new [--repo|--folder] [--default] <name> '<command>'
 
-        Write "$@" in the command wherever args from `start <service> ...` go.
-        Quote the whole command as one argument.
+        Quote the command as one argument. Write "$@" in it wherever args from
+        `start <name> ...` should go.
+
+        Run at a repo root, this records under the repo; run anywhere else, it
+        records under the current folder. --repo and --folder override that.
 
         Options:
       BANNER
-      opt :repo, 'Attach to the git remote (every checkout of this repo)', default: false
-      opt :folder, 'Attach to this folder only', default: false
-      opt :default, 'Make this the default service for the location', default: false
+      opt :repo, 'Record under this repo, shared by every clone', default: false
+      opt :folder, 'Record under the current folder path', default: false
+      opt :default, 'Also make this the default command here', default: false
       conflicts :repo, :folder
     end
 
@@ -202,8 +215,6 @@ class Application
     write_entry(new_scope(sub), name, rest.first, sub[:default])
   end
 
-  # Standing at the repo root says "this is a property of the app"; standing in
-  # a subdirectory or a plain folder says "this is a property of this folder".
   def new_scope(sub)
     return folder_key if sub[:folder]
     return repo_key || abort('start: --repo needs a git repo with a usable remote here') if sub[:repo]
@@ -214,7 +225,7 @@ class Application
   # Insert lines; never YAML.load/dump round-trip -- Psych would delete the
   # user's comments.
   def write_entry(scope, name, command, make_default)
-    lines = File.exist?(config_path) ? File.readlines(config_path) : []
+    lines = File.exist?(CONFIG) ? File.readlines(CONFIG) : []
     header = lines.index { |line| line.chomp =~ /\A#{Regexp.escape(scope)}:\s*(#.*)?\z/ }
 
     if header
@@ -234,8 +245,8 @@ class Application
     if pretend?
       puts lines.join
     else
-      FileUtils.mkdir_p(File.dirname(config_path))
-      File.write(config_path, lines.join)
+      FileUtils.mkdir_p(File.dirname(CONFIG))
+      File.write(CONFIG, lines.join)
       puts "recorded #{name} under #{scope}".green unless quiet?
     end
   end
