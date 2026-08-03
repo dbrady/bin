@@ -5,7 +5,7 @@ module DbradyCli
   # for commands that are not dangerous, like git isclean)
   def run_command!(command, force: false, env: {})
     puts "run_command!: #{command.inspect}" if debug?
-    puts command.cyan unless quiet?
+    puts colorize_command_text(command_text) unless (quiet || quiet?)
 
     success = if force
                 system env, command
