@@ -21,23 +21,24 @@ class Application
   def run
     original_args = ARGV.dup
     @opts = Optimist.options do
-      opt :bundle,    "Run bundle install",                          default: false
-      opt :debug,     "Print extra debug info",                      default: false
-      opt :flowchart, "Show mermaid flowchart and exit",             default: false
-      opt :full,      "Run all the things (bundle, remigrate)",      default: false
-      opt :merge,     "Merge parent branch in instead of rebasing",  default: false
-      opt :migrate,   "Run any new database migrations",             default: false
-      opt :pretend,   "Print commands but do not run them",          default: false
-      opt :push,      "Push branch up (if remaster successful)",     default: false, short: :P
-      opt :quiet,     "Run with minimal output",                     default: false
-      opt :recurse,   "Recurse all the way to master",               default: false
-      opt :stash,     "Stash and reapply changes around rebase",     default: false
-      opt :verbose,   "Run with verbose output (overrides --quiet)", default: false
+      opt :bundle,    "Run bundle install",                          short: :b,  default: false
+      opt :debug,     "Print extra debug info",                                 default: false
+      opt :flowchart, "(Help docs) Show mermaid flowchart and exit", short: :c, default: false
+      opt :full,      "Run all the things (bundle, remigrate)",      short: :f, default: false
+      opt :merge,     "Merge parent branch in instead of rebasing",  short: :m, default: false
+      opt :migrate,   "Run any new database migrations",             short: :D, default: false
+      opt :pretend,   "Print commands but do not run them",                     default: false
+      opt :push,      "Push branch up (if remaster successful)",     short: :P, default: false
+      opt :quiet,     "Run with minimal output",                                default: false
+      opt :recurse,   "Recurse all the way to master",               short: :r, default: false
+      opt :stash,     "Stash and reapply changes around rebase",     short: :s, default: false
+      opt :verbose,   "Run with verbose output",                                default: false
 
-      conflicts :full, :bundle
-      conflicts :full, :migrate
+      conflicts :full,  :bundle
+      conflicts :full,  :migrate
+      conflicts :quiet, :verbose
     end
-    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    # opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
 
     if opts[:flowchart]
       puts flowchart

@@ -24,7 +24,8 @@ module DbradyCli
     puts "run_command: #{command.inspect} (force: #{force.inspect}, pretend: #{pretend?.inspect})" if debug?
     command_pieces = env.map {|pair| pair.join('=')} + [command]
     command_text = command_pieces.compact * ' '
-    puts command_text.cyan unless (quiet || quiet?)
+    color = pretend? ? {color: :cyan, background: :light_black} : {color: :cyan}
+    puts command_text.colorize(color) unless (quiet || quiet?)
 
     success = if force
       system env, command
