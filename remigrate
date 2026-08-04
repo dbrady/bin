@@ -10,7 +10,7 @@ String.disable_colorization unless $stdout.tty?
 class Application
   include DbradyCli
 
-  opt_flag :force
+  opt_flag :force, :reset
 
   def run
     @opts = Optimist.options do
@@ -29,6 +29,7 @@ BANNER
       opt :debug, "Print extra debug info", short: :d, default: false
       opt :force, "Force migrations to run anyway", short: :f, default: false
       opt :pretend, "Print commands but do not run them", short: :p, default: false
+      opt :reset, "Reset and reseed the database, and migrate from scratch", short: :r, default: false
       opt :quiet, "Run with minimal output", short: :q, default: false
       opt :verbose, "Run with verbose output (overrides --quiet)", short: :v, default: false
     end
@@ -39,9 +40,16 @@ BANNER
   end
 
   def run!
-    if force? || !system("are-rails-migrations-current")
+    if force? || reset? || migrations_out_of_date?
+      if verbose? || debug?
+        puts "Running migrations because:"
+        puts "  force?: #{force?.inspect}"
+        puts "  reset?: #{reset?.inspect}"
+        puts "  migrations_out_of_date? #{migrations_out_of_date?.inspect}"
+      end
+
       # MP has custom migrations
-      run_command "bin/rails db:reset" if merchant_portal?
+      run_command "bin/rails db:reset" if reset?
 
       # run_command "diespringdie --db"
       run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "development"}
@@ -51,11 +59,13 @@ BANNER
     end
   end
 
-  # Merchant Portal has a really tricksome migration
-  def merchant_portal?
-    Dir.pwd =~ %r|acima/devel/.*merchant_portal.*|
+  def migrations_current?
+    system("are-rails-migrations-current")
   end
 
+  def migrations_out_of_date?
+    !migrations_current?
+  end
 end
 
 
