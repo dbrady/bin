@@ -31,12 +31,14 @@ OptionParser.new do |opts|
 end.parse!
 
 def run(cmd)
+  $stderr.puts cmd.cyan
   stdout, stderr, status = Open3.capture3(cmd)
   unless status.success?
     $stderr.puts "Command failed: #{cmd}"
     $stderr.puts stderr unless stderr.empty?
     return nil
   end
+  $stderr.puts stdout.yellow
   stdout.strip
 end
 
