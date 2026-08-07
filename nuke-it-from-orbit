@@ -10,14 +10,17 @@ echo -e '\033[1;37;41mStop your merchant portal server and merchant portal sidek
 echo -e 'Press ENTER to continue'
 read
 
-echo -e '\033[36mbin/rails db:drop db:create db:migrate seeder:required_data:run\033[0m'
-bin/rails db:drop db:create db:migrate seeder:required_data:run
+echo -e '\033[36mbin/rails db:drop db:create db:migrate\033[0m'
+bin/rails db:drop db:create db:migrate
+
+echo -e '\033[2;32m# seeder:required_data:run\033[0m'
 echo -e '\033[1;33;40mGo start merchant_portal and I will reseed your data.\033[0m'
 echo -e 'Press ENTER to continue'
 read
-echo -e '\033[36mseeder:sample_data:run\033[0m'
-bin/rails seeder:sample_data:run
 
+echo -e '\033[2;32m# bin/rails seeder:sample_data:run\033[0m'
+echo -e '\033[36mbin/rails runner "::Scripts::Db::Seeder.sample_data"\033[0m'
+bin/rails runner "::Scripts::Db::Seeder.sample_data"
 
 echo -e '\033[36mRAILS_ENV=test bin/rails db:drop db:create db:migrate\033[0m'
 RAILS_ENV=test bin/rails db:drop db:create db:migrate
