@@ -66,7 +66,8 @@ class Application
   include DbradyCli
   DEFAULT_REPO = 'merchant_portal'.freeze
 
-  opt_flag :color,
+  opt_flag :as_branches,
+           :color,
            :created_at,
            :force,
            :fresh,
@@ -86,6 +87,7 @@ class Application
     'announce'  => 'Display merge announcement',
     'block'     => 'Mark ticket as blocked',
     'branch'    => 'Set branch',
+    'as_branches' => 'List tickets as branches List ticket',
     'c'         => 'Open database console',
     'console'   => 'Open database console',
     'clean'     => 'Soft-delete all deployed tickets (use after reporting them as deployed)',
@@ -278,6 +280,7 @@ Options:
 BANNER
 
       # TODO: drop --board=COR, --ticket=3566 in favor of --ticket=COR-3566
+      opt :as_branches,  'list-tickets: list branches instead of JIRA tickets', default: false
       opt :board,        'Jira board', type: :string
       opt :branch,       'Branch name', type: :string
       opt :color,        'Colorize output by status', default: true
@@ -316,6 +319,9 @@ BANNER
     command = argv.shift&.downcase
     board, ticket = argv.shift&.split('-')
     Optimist::die "Command #{command.inspect} must be one of: #{COMMANDS.keys.inspect}" unless command.nil? || COMMANDS.keys.include?(command)
+
+    # TODO: clean me up - manual validation of list-tickets -> as-branches because I can't remember alla Optimist syntax
+    Optimist::die "--as-branches only works with --list-tickets, sorry" if as_branches? && command != 'list-tickets'
 
     if command == 'create'
       ensure_table_exists!
@@ -956,8 +962,16 @@ SQL
       next if excluded_keys.include?(slork.ticket_key.upcase)
       next if excluded_numbers.include?(slork.ticket.to_s)
 
-      ticket = slork.ticket_key
-      ticket = [ticket, slork.pr].join(':') if with_prs?
+      ticket = if as_branches?
+        slork.branch
+      else
+        t = slork.ticket_key
+        if with_prs?
+          [t, slork.pr].join(':')
+        else
+          t
+        end
+      end
 
       puts ticket
     end
