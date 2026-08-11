@@ -1,6 +1,13 @@
 #!/bin/bash
 echo "It's the only way to be sure."
 
+# try to kill rails server
+if [ -e /Users/davidbrady/acima/devel/merchant_portal/tmp/pids/server.pid ]; then
+    echo -e '\033[36mkill $(cat /Users/davidbrady/acima/devel/merchant_portal/tmp/pids/server.pid)\033[0m'
+    kill $(cat /Users/davidbrady/acima/devel/merchant_portal/tmp/pids/server.pid)
+fi
+
+
 echo -e '\033[1;37;104m                                                                                 \033[0m'
 echo -e '\033[1;37;104m  TODO: Make this check for the processes, tmux-send-keys to kill them itself,   \033[0m'
 echo -e '\033[1;37;104m  then nuke the db, then restart the two services itself. I have the technology  \033[0m'
