@@ -1,13 +1,23 @@
 #!/bin/bash
-# Yes this is as awful as it looks #lolbash
+# sum-values - pipe numbers in and add them up
 #
 # Usage:
-# echo "1
-# 2
-# 3" | sum-values
-# => 6
 #
-# ag -c TODO | cut -d : -f 2 | sum-values
-# => 31
+# Assuming you have numbers, one per line
+# $ echo -e "5.1\n6.3\n3.5" > floats.txt
+# $ echo -e "5\n6\n3" > ints.txt
+#
+# $ cat floats.txt | sum-values
+# 14.9
+#
+# $ cat ints.txt | sum-values
+# 14
 
-while read n; do seq $n; done | wc -l
+paste -sd+ - | bc
+
+# My original script worked but was awful and it served me well for a decade. NO REGERTS
+#
+# Claude: ""That script is a war crime and I love it.""
+#
+# He's not wrong:
+# while read n; do seq $n; done | wc -l
