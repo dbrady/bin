@@ -1,12 +1,10 @@
 #!/bin/sh
-# git current-branch - display current branch name
+# git current-branch [-p] - display current branch name
+#
+# -p - copy to pasteboard/clipboard instead of display
 
-# 2023-05-01: TODO: deal with detached head. Right now this captures "(HEAD
-# detached from /branch)" as "(HEAD". Mostly a problem when you have submodules.
-
-# git branch | grep '*' | cut -d ' ' -f2-
-# git status | head -n 1 | awk '{ print $3 }'
-
-# Always check back, kids. That utility script you wrote 4 years ago might
-# finally be part of the base tool
-git branch --show-current
+if [ "$1" == "-p" ]; then
+    git branch --show-current | pbcopy
+else
+    git branch --show-current
+fi
