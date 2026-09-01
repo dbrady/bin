@@ -62,6 +62,10 @@ class Application
 
   def run!
     title, body = opts[:interactive] ? prompt_entry : [ARGV.shift, resolve_body(ARGV.join(' '))]
+    if title =~ %r[(http|ftp|https)://]
+      puts "title starts with http://, swapping. Favor vlog <title> <url>".cyan
+      body, title = title, body
+    end
     entry = build_entry(title, body)
     puts entry unless quiet?
     write(entry)
