@@ -53,7 +53,7 @@ BANNER
 
       # run_command "diespringdie --db"
       run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "development"}
-      run_command "bin/rails db:migrate", env: {"RAILS_ENV" => "test"}
+      run_command "bin/rails db:drop db:create db:migrate", env: {"RAILS_ENV" => "test"}
     else
       log "Your schema migrations appear to be up to date."
     end
