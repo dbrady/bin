@@ -1,0 +1,4 @@
+#!/bin/bash
+# make-open-api-readable # - I speak Swagger/Redoc. Translate for me please
+echo -e '\033[36mnpx @redocly/cli build-docs rewards-api.yml -o rewards-api.html \033[0m'
+npx @redocly/cli build-docs rewards-api.yml -o rewards-api.html
