@@ -1,0 +1,105 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# treeify - draw a tree diagram from a list of delimited strings on stdin
+require 'colorize'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  opt_flag :sort
+
+  TEE = '├── '
+  ELBOW = '└── '
+  PIPE = '│   '
+  GAP = '    '
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        treeify - draw a tree diagram from a list of delimited strings on stdin
+
+        Like tree, but it reads paths instead of walking the filesystem. Each
+        line of stdin is one path; splitting it on the delimiter gives the
+        branch names. A root node is printed only when the input has a single
+        top-level name. --verbose adds a count of branches and leaves.
+
+            $ git files-changed | treeify
+            $ cat file_list.txt | treeify
+            $ printf 'a,b,e\\na,b,f\\na,c,g\\n' | treeify -l ,
+
+            a
+            ├── b
+            │   ├── e
+            │   └── f
+            └── c
+                └── g
+
+        Options:
+      BANNER
+      opt :sort, 'Sort the lines before building the tree', short: :s, default: false
+      opt :delimeter, 'Split each line on this string', short: :l, default: '/'
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    lines = $stdin.readlines
+    lines = lines.sort if sort?
+    tree = build_tree(lines)
+    rooted = tree.size == 1
+    if rooted
+      name, children = tree.first
+      puts name
+      render(children)
+    else
+      render(tree)
+    end
+
+    if verbose?
+      puts
+      # the unprinted root is still a branch of the tree
+      branches = count(tree, :branches) + (rooted ? 0 : 1)
+      puts "#{branches} branches, #{count(tree, :leaves)} leaves"
+    end
+  end
+
+  def build_tree(lines)
+    lines.each_with_object({}) do |line, tree|
+      parts = line.strip.split(opts[:delimeter]).reject(&:empty?)
+      parts.inject(tree) { |node, part| node[part] ||= {} }
+    end
+  end
+
+  def render(node, prefix = '')
+    node.each_with_index do |(name, children), i|
+      last = i == node.size - 1
+      puts "#{prefix}#{last ? ELBOW : TEE}#{name}"
+      render(children, prefix + (last ? GAP : PIPE))
+    end
+  end
+
+  def count(node, kind)
+    node.sum do |_name, children|
+      leaf = children.empty?
+      ((kind == :leaves) == leaf ? 1 : 0) + count(children, kind)
+    end
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
