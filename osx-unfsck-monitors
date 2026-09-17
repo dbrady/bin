@@ -1,0 +1,27 @@
+#!/bin/bash
+
+
+echo -e '\033[1;37;41m                             *** DANGER ***                             \033[0m'
+echo -e '\033[1;37;41m                   This script deletes monitor plists                   \033[0m'
+echo -e '\033[1;37;41m                                                                        \033[0m'
+echo -e '\033[1;37;41m                   ONLY RUN THIS IF/WHEN YOUR LAPTOP                    \033[0m'
+echo -e '\033[1;37;41m                  HAS STOPPED DETECTING YOUR MONITORS                   \033[0m'
+echo -e '\033[1;37;41m                                                                        \033[0m'
+echo -e '\033[1;37;41m                YOU WILL NEED TO SHUTDOWN (NOT RESTART)                 \033[0m'
+echo -e '\033[1;37;41m                                                                        \033[0m'
+echo -e '\033[1;37;41m                   HIT CTRL-C TO ABORT, OTHERWISE...                    \033[0m'
+echo
+echo -n 'Press ENTER to continue '
+read
+
+echo 'Clearing User-specific display config...'
+echo -e '\033[36mrm ~/Library/Preferences/ByHost/com.apple.windowserver.*.plist \033[0m'
+rm ~/Library/Preferences/ByHost/com.apple.windowserver.*.plist
+
+
+echo 'System-wide display config (needs sudo)...'
+echo -e '\033[36msudo rm /Library/Preferences/com.apple.windowserver.plist \033[0m'
+sudo rm /Library/Preferences/com.apple.windowserver.plist
+
+
+echo 'You need to shutdown (not restart) your laptop for changes to take effect'
