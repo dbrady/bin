@@ -1,4 +1,4 @@
 #!/bin/bash
 # git emc - emacs-open conflict - open first git conflict in emacs (em/tmux)
 echo -e '\033[36m(git status | grep "both modified") && (git status | grep "both modified" | cut -f 2 -d : | head -n 1 | xargs em) || (echo No git conflicts detected) \033[0m'
-(git status | grep "both modified") && (git status | grep "both modified" | cut -f 2 -d : | head -n 1 | xargs em) || (echo No git conflicts detected)
+(git status | grep "both modified") && (git status | grep "both modified" | cut -f 2 -d : | head -n 1 | while read conflicted_file; do em "$conflicted_file"; done) || (echo No git conflicts detected)
