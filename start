@@ -149,8 +149,15 @@ class Application
   # into literal arguments. bash -c CMD NAME ARGS sets $1..$n to ARGS, and
   # "$@" in the recorded command expands to them.
   def launch(command, *args)
-    puts command.cyan if pretend? || !quiet?
+    puts expand_command(command, *args).cyan if pretend? || !quiet?
     exec('bash', '-c', command, 'start', *args) unless pretend?
+  end
+
+  # Returns command plus args
+  # expand_command("irb", "-rcsv", "-r./bob.rb")
+  # "irb -rcsv -r./bob.rb"
+  def expand_command(command, *args)
+    [command.sub(/\s*"\$@"/,''), args.join(' ')].join(' ')
   end
 
   # Warn rather than abort -- dropped args should be visible, not fatal.
