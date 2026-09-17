@@ -1,9 +1,27 @@
 #!/bin/bash
-# gfm <file.md> - style document with github-flavored markdown and open it in browser
+# gfm [-w|--wide] <file.md> - style document with github-flavored markdown and open it in browser
+#
+#   -w, --wide   drop the 46rem column and use a flat 100px gutter instead
+
+WIDE=
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -w|--wide) WIDE=1; shift ;;
+    -h|--help) sed -n '2,4p' "$0" | cut -c3-; exit 0 ;;
+    *) break ;;
+  esac
+done
+
+if [ -z "$1" ]; then
+  sed -n '2,4p' "$0" | cut -c3-
+  exit 1
+fi
+
 HTML_PATH=/tmp/$(basename $1 .md).html
 
-echo "kramdown --input GFM --template \$HOME/bin/lib/gfm-template.html $1 > $HTML_PATH"
-kramdown --input GFM --template "$HOME/bin/lib/gfm-template.html" $1 > $HTML_PATH
+echo "GFM_WIDE=$WIDE kramdown --input GFM --template \$HOME/bin/lib/gfm-template.html $1 > $HTML_PATH"
+GFM_WIDE=$WIDE kramdown --input GFM --template "$HOME/bin/lib/gfm-template.html" $1 > $HTML_PATH
 
 echo open $HTML_PATH
 open $HTML_PATH

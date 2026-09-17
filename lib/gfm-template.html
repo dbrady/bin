@@ -39,6 +39,12 @@ blockquote { margin-left: 0; padding-left: 1rem;
 table { border-collapse: collapse; margin: 1rem 0; display: block; overflow-x: auto; }
 th, td { border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
          padding: .4rem .7rem; text-align: left; }
+<% if ENV['GFM_WIDE'] && !ENV['GFM_WIDE'].empty? %>
+/* --wide: the 46rem column keeps prose readable, but wide tables and long code
+   lines get columnized into a straw. Fixed px gutter, not % or em, so the text
+   does not re-narrow as the window or font size grows. */
+body { max-width: none; padding: 0 100px; }
+<% end %>
 </style>
 </head>
 <body>
