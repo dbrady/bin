@@ -76,7 +76,7 @@ class Application
     patterns_to_exclude = opts[:exclude_pattern].map {|pattern| Regexp.new(pattern) }
 
     patterns_to_exclude << %r{^spec/} unless opts[:rspec]
-    patterns_to_exclude << %r{\.(slim|haml|yml)$}
+    patterns_to_exclude << %r{\.(slim|haml|yml|js)$}
 
     patterns_to_exclude += rubocop_ignore_patterns
 
