@@ -1,27 +1,30 @@
 #!/bin/bash
-# gfm [-w|--wide] <file.md> - style document with github-flavored markdown and open it in browser
+# gfm [-t|--toc] [-w|--wide] <file.md> - style document with github-flavored markdown and open it in browser
 #
+#   -t, --toc    add a table of contents built from the document's headers
 #   -w, --wide   drop the 46rem column and use a flat 100px gutter instead
 
+TOC=
 WIDE=
 
 while [ $# -gt 0 ]; do
   case "$1" in
+    -t|--toc)  TOC=1; shift ;;
     -w|--wide) WIDE=1; shift ;;
-    -h|--help) sed -n '2,4p' "$0" | cut -c3-; exit 0 ;;
+    -h|--help) sed -n '2,5p' "$0" | cut -c3-; exit 0 ;;
     *) break ;;
   esac
 done
 
 if [ -z "$1" ]; then
-  sed -n '2,4p' "$0" | cut -c3-
+  sed -n '2,5p' "$0" | cut -c3-
   exit 1
 fi
 
 HTML_PATH=/tmp/$(basename $1 .md).html
 
-echo "GFM_WIDE=$WIDE kramdown --input GFM --template \$HOME/bin/lib/gfm-template.html $1 > $HTML_PATH"
-GFM_WIDE=$WIDE kramdown --input GFM --template "$HOME/bin/lib/gfm-template.html" $1 > $HTML_PATH
+echo "GFM_TOC=$TOC GFM_WIDE=$WIDE kramdown --input GFM --template \$HOME/bin/lib/gfm-template.html $1 > $HTML_PATH"
+GFM_TOC=$TOC GFM_WIDE=$WIDE kramdown --input GFM --template "$HOME/bin/lib/gfm-template.html" $1 > $HTML_PATH
 
 echo open $HTML_PATH
 open $HTML_PATH

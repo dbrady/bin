@@ -39,6 +39,30 @@ blockquote { margin-left: 0; padding-left: 1rem;
 table { border-collapse: collapse; margin: 1rem 0; display: block; overflow-x: auto; }
 th, td { border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
          padding: .4rem .7rem; text-align: left; }
+<% if ENV['GFM_TOC'] && !ENV['GFM_TOC'].empty? %>
+/* The TOC rides in the left margin only when the viewport is wide enough to
+   hold it beside the text column; below that it falls back to normal flow at
+   the top of the page, so it can never overlap the prose. */
+nav.toc { margin: 0 0 2rem; font-size: .875rem; line-height: 1.5; }
+nav.toc ul { list-style: none; margin: 0; padding: 0; }
+nav.toc a { text-decoration: none; color: inherit;
+            border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent); }
+nav.toc .h2 { padding-left: 1rem; }
+nav.toc .h3 { padding-left: 2rem; }
+nav.toc .h4, nav.toc .h5, nav.toc .h6 { padding-left: 3rem; }
+@media (min-width: 78rem) {
+  nav.toc { position: fixed; top: 2.5rem; left: 1.5rem; width: 14rem;
+            max-height: calc(100vh - 5rem); overflow-y: auto; margin: 0; opacity: .8; }
+  /* Once the nav is out of flow it no longer reserves space, so the text has to
+     be pushed clear of it by hand or it renders underneath. */
+  body { margin-left: 16rem; margin-right: 2rem; }
+<% if ENV['GFM_WIDE'] && !ENV['GFM_WIDE'].empty? %>
+  /* --wide already spends 100px on the left gutter; the nav is occupying that
+     space now, so drop the padding rather than stacking the two. */
+  body { padding-left: 0; }
+<% end %>
+}
+<% end %>
 <% if ENV['GFM_WIDE'] && !ENV['GFM_WIDE'].empty? %>
 /* --wide: the 46rem column keeps prose readable, but wide tables and long code
    lines get columnized into a straw. Fixed px gutter, not % or em, so the text
@@ -48,6 +72,19 @@ body { max-width: none; padding: 0 100px; }
 </style>
 </head>
 <body>
+<%
+headers = (ENV['GFM_TOC'] && !ENV['GFM_TOC'].empty?) ?
+  @converter.root.children.select {|c| c.type == :header && c.attr['id'] } : []
+%>
+<% unless headers.empty? %>
+<nav class="toc">
+<ul>
+<% headers.each do |h| %>
+<li class="h<%= h.options[:level] %>"><a href="#<%= h.attr['id'] %>"><%= h.children.map {|c| @converter.convert(c) }.join %></a></li>
+<% end %>
+</ul>
+</nav>
+<% end %>
 <%= @body %>
 </body>
 </html>
