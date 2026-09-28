@@ -2,8 +2,28 @@
 # rvm-install-with-openssl-3 <version> - install ruby with openssl 3.x. Apple
 # Silicon needs this for rubies that need openssl 1 and can't link against
 # openssl 2. As of 2025-07-23, that's ruby 3 up through 3.3.6 at least.
+#
+# Also pins SDKROOT to the SDK matching the running macOS when the default SDK
+# is newer (e.g. Command Line Tools 27 on Tahoe/26). Ruby's configure trusts
+# any function that links, so it enables functions that only exist on the
+# newer OS (pipe2 in the 27 SDK). They weak-link to NULL on the older OS and
+# miniruby segfaults at startup. Set SDKROOT yourself to override.
 VERSION=$1
 OPENSSL_DIR=$(brew --prefix openssl@3)
 
-echo -e "\033[36mrvm install $VERSION --with-openssl-dir=$OPENSSL_DIR $@\033[0m"
-rvm install $VERSION --with-openssl-dir=$OPENSSL_DIR $@
+if [ -z "$SDKROOT" ]; then
+  OS_MAJOR=$(sw_vers -productVersion | cut -d. -f1)
+  SDK_MAJOR=$(xcrun --show-sdk-version | cut -d. -f1)
+  if [ "$SDK_MAJOR" -gt "$OS_MAJOR" ]; then
+    MATCHING_SDK="$(dirname "$(xcrun --show-sdk-path)")/MacOSX${OS_MAJOR}.sdk"
+    if [ -d "$MATCHING_SDK" ]; then
+      export SDKROOT=$MATCHING_SDK
+      echo -e "\033[36mSDK $SDK_MAJOR is newer than macOS $OS_MAJOR; export SDKROOT=$SDKROOT\033[0m"
+    else
+      echo -e "\033[33mWARNING: SDK $SDK_MAJOR is newer than macOS $OS_MAJOR and no MacOSX${OS_MAJOR}.sdk found; build may segfault\033[0m"
+    fi
+  fi
+fi
+
+echo -e "\033[36mrvm install $VERSION --with-openssl-dir=$OPENSSL_DIR ${*:2}\033[0m"
+rvm install $VERSION --with-openssl-dir=$OPENSSL_DIR "${@:2}"
