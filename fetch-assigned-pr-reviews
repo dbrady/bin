@@ -24,6 +24,10 @@ require "json"
 require "optparse"
 require "open3"
 
+# here's the colorize gem in 1LOC because lol why not
+# colorize("hello", :cyan, :on_light_yellow, :bold) => "\e[36;103;1mhello\e[0m"
+def colorize(string, *colors) = "\e[#{colors.map { [['light_', 60], ['on_', 10]].inject(%w[black red green yellow blue magenta cyan white].zip(30..)) { |acc, (prefix, offset)| acc + acc.map { |name, code| [%Q(#{prefix}#{name}), code + offset] } }.to_h.merge('bold'=>1,'dim'=>2)[it.to_s] }.join(';')}m#{string}\e[0m"
+
 show_all = false
 OptionParser.new do |opts|
   opts.banner = "Usage: #{File.basename($0)} [-a]"
@@ -31,14 +35,14 @@ OptionParser.new do |opts|
 end.parse!
 
 def run(cmd)
-  $stderr.puts cmd.cyan
+  $stderr.puts colorize(cmd, :cyan)
   stdout, stderr, status = Open3.capture3(cmd)
   unless status.success?
     $stderr.puts "Command failed: #{cmd}"
     $stderr.puts stderr unless stderr.empty?
     return nil
   end
-  $stderr.puts stdout.yellow
+  $stderr.puts colorize(stdout, :yellow)
   stdout.strip
 end
 
