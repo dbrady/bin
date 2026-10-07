@@ -1,0 +1,5 @@
+#!/bin/bash
+# rrg - run rg with a colored banner to make finding it in the scrollback easier
+# rg with rub1nner
+rub1nner -- "rg $*"
+rg "$@"
