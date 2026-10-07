@@ -165,6 +165,7 @@ BANNER
           if silent
             puts "NOT PRINTING BECAUSE QUIET"
           else
+            # Match found - print it
             puts_locale_path(path_to_locale_file) if files?
             if !files? || (files? && hits?)
               puts "#{key}: #{value}"
@@ -175,8 +176,7 @@ BANNER
       end
     end
 
-    # We only get here if value is a hash AND none of its subhashes have the
-    # item.  I.e. this entire hash was a dry hole.
+    # return breaadcrumb for recursion
     return breadcrumb
   end
 
