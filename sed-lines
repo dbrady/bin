@@ -25,7 +25,7 @@
 def usage
   puts <<USAGE
   Usage:
-      sed-lines [-v] [-n] <start> <stop> <file>
+      sed-lines [-v] [-n] <start> [<stop>] <file>
       -n - show line numbers
       -v, --verbose - show the native sed command
 USAGE
@@ -47,7 +47,8 @@ show_line_numbers = argv.delete("-n")
 
 start, stop, file = *argv
 
-# file ||= `get-ds-script`.strip
+# inject stop if if only start, file given
+stop, file = start, stop if argv.size == 2 && stop.to_i.to_s != stop
 
 command = if show_line_numbers
             "cat -n #{file} | sed -ne '#{start},#{stop}p'"
