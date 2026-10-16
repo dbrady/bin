@@ -5,6 +5,12 @@
 #   sha <file> [<file>]
 #   echo "foo" | sha
 
+
+### DO WARNING MESSAGE - WE AIN'T USE THIS NO MORE!
+warning = "SHA1 is known to be broken. Use SHA256 or higher."
+warning = "\e[1;37;41m#{warning}\e[0m"if $stdout.tty?
+$stderr.puts warning
+
 require 'digest/md5'
 
 digest = Digest::SHA1.new
