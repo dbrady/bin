@@ -1,0 +1,9 @@
+#!/bin/bash
+# neck - like head, but show everything from the neck down
+#
+# On Linux, you can say `head -n -3` and get lines 3..EOF
+#
+# Here we just use sed -ne "${START},${STOP}p" (the same way sed-lines does)
+#
+# See also ankle, which works like tail -n -<n>
+sed -ne "$1,9999p"
