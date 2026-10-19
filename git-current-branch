@@ -3,7 +3,7 @@
 #
 # -p - copy to pasteboard/clipboard instead of display
 
-if [ "$1" == "-p" ]; then
+if [ "$1" = "-p" ]; then
     git branch --show-current | pbcopy
 else
     git branch --show-current
