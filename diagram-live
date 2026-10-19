@@ -1,0 +1,102 @@
+#!/bin/bash
+# diagram-live [-f dot|mmd] [-p PORT] FILE
+#
+# Live-preview a graphviz (.dot, .gv) or mermaid (.mmd) file in the browser.
+# Re-renders within a second of every save, no F5 needed. Installed as
+# dot-live and mmd-live too; all three are the same script.
+#
+# Format comes from the file extension. -f overrides it for oddly named files.
+#
+# Why a local HTTP server: browsers refuse fetch() against file:// URLs, so
+# the page can't poll the source file without one. python3 is already here.
+set -euo pipefail
+
+usage() { echo "usage: $(basename "$0") [-f dot|mmd] [-p PORT] FILE" >&2; exit 1; }
+
+FORMAT=""
+PORT=8765
+while getopts "f:p:h" opt; do
+  case $opt in
+    f) FORMAT="$OPTARG" ;;
+    p) PORT="$OPTARG" ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
+[ $# -eq 1 ] || usage
+
+SRC="$1"
+[ -f "$SRC" ] || { echo "no such file: $SRC" >&2; exit 1; }
+
+if [ -z "$FORMAT" ]; then
+  case "$SRC" in
+    *.dot|*.gv)  FORMAT=dot ;;
+    *.mmd)       FORMAT=mmd ;;
+    *) echo "can't tell format from '$SRC'; pass -f dot or -f mmd" >&2; exit 1 ;;
+  esac
+fi
+
+case "$FORMAT" in
+  dot)
+    IMPORT='import { Graphviz } from "https://cdn.jsdelivr.net/npm/@hpcc-js/wasm@2.22.4/dist/graphviz.js";
+  const gv = await Graphviz.load();'
+    RENDER='const svg = gv.layout(src, "svg", "dot");'
+    ;;
+  mmd)
+    IMPORT='import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs";
+  mermaid.initialize({ startOnLoad: false });'
+    RENDER='const { svg } = await mermaid.render("g" + Date.now(), src);'
+    ;;
+  *) echo "unknown format '$FORMAT'; expected dot or mmd" >&2; exit 1 ;;
+esac
+
+DIR="$(cd "$(dirname "$SRC")" && pwd)"
+BASE="$(basename "$SRC")"
+HTML="$DIR/.diagram-live.html"
+
+cat > "$HTML" <<HTML
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>$BASE</title>
+<style>
+  body { margin: 0; padding: 16px; font-family: Helvetica, sans-serif; background: #fff; }
+  #status { position: fixed; top: 8px; right: 12px; font-size: 12px; color: #888; }
+  #err { color: #b00; white-space: pre-wrap; font-family: monospace; }
+</style>
+<script type="module">
+  $IMPORT
+
+  let last = null;
+  async function tick() {
+    try {
+      const res = await fetch("$BASE?t=" + Date.now(), { cache: "no-store" });
+      const src = await res.text();
+      if (src !== last) {
+        last = src;
+        $RENDER
+        document.getElementById("out").innerHTML = svg;
+        document.getElementById("err").textContent = "";
+        document.getElementById("status").textContent = "rendered " + new Date().toLocaleTimeString();
+      }
+    } catch (e) {
+      document.getElementById("err").textContent = String(e);
+      last = null;   // retry on next tick so a fixed file re-renders
+    }
+  }
+  setInterval(tick, 1000);
+  tick();
+</script>
+</head>
+<body>
+<div id="status"></div>
+<div id="out"></div>
+<div id="err"></div>
+</body>
+</html>
+HTML
+
+echo "$FORMAT: serving $DIR on http://localhost:$PORT/.diagram-live.html"
+( sleep 1; open "http://localhost:$PORT/.diagram-live.html" ) &
+cd "$DIR" && exec python3 -m http.server "$PORT" --bind 127.0.0.1
