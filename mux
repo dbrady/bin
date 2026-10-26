@@ -1,35 +1,148 @@
-#!/bin/bash
-# mux - shim for tmuxinator, shows you a list of sessions to start by default
-#
-# mux start <session-name> - launch session-name (see ~/.tmuxinator/*.yml)
-# mux [args]               - exec tmuxinator "$@"
-# mux                      - list known sessions, let you pick one, start it
-# mux start [no session]   - list known sessions, let you pick one, start it
+#!/usr/bin/env ruby
+# frozen_string_literal: true
 
+# mux - front door to tmuxinator: pick, list, show, and edit projects in
+# ~/.tmuxinator/*.yml, and pass anything else straight through to tmuxinator.
+#
 # Shim so `mux` works in scripts and subshells, not just interactive shells.
 # An alias in ~/.aliases only helps the human at a prompt — aliases aren't
 # inherited by child processes and bash disables alias expansion in
 # non-interactive shells anyway. A real executable on PATH avoids both.
-# `mux` or `mux start` with no session name: pick one interactively. Globbing
-# and basename beat `ls | sed` because they survive odd filenames and don't
-# parse ls output. selecta exits nonzero (or empty) on ctrl-c, in which case
-# we bail rather than handing tmuxinator an empty session name.
-if [ $# -eq 0 ] || { [ $# -eq 1 ] && [ "$1" = "start" ]; }; then
-    sessions=()
-    for f in ~/.tmuxinator/*.yml; do
-        [ -e "$f" ] || continue
-        sessions+=("$(basename "$f" .yml)")
-    done
+require 'English'
+require 'colorize'
+require 'optimist'
+require 'shellwords'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
 
-    if [ ${#sessions[@]} -eq 0 ]; then
-        echo "No tmuxinator configs found in ~/.tmuxinator" >&2
-        exit 1
-    fi
+# CLI Application
+class Application
+  include DbradyCli
 
-    session=$(printf '%s\n' "${sessions[@]}" | selecta) || exit $?
-    [ -n "$session" ] || exit 1
+  TMUXINATOR_DIR = File.expand_path('~/.tmuxinator')
 
-    exec tmuxinator start "$session"
-fi
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        mux - front door to tmuxinator
 
-exec tmuxinator "$@"
+        Usage:
+          mux [global options] [subcommand] [args]
+
+        Subcommands:
+          start [project]  Start a project; with no project, pick one with selecta
+          list             List projects in ~/.tmuxinator, one per line
+          show <project>   Show a project's config with bat
+          edit <project>   Open a project's config in $EDITOR
+          <anything else>  Passed straight through to tmuxinator
+
+        With no subcommand, mux picks a project with selecta and starts it.
+
+        Global options (must come BEFORE the subcommand):
+      BANNER
+      opt :debug,   'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet,   'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+      # stop_on_unknown, not stop_on SUBCOMMANDS, plus ignore_invalid_options:
+      # passthrough like `mux stop work -x` or `mux --version` must reach
+      # tmuxinator with its flags unparsed.
+      stop_on_unknown
+      @ignore_invalid_options = true
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    @subcommand = ARGV.shift
+  end
+  # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/AbcSize
+
+  def run
+    parse_options
+    case @subcommand
+    when nil     then start_picked_project
+    when 'start' then run_start
+    when 'list'  then run_list
+    when 'show'  then run_show
+    when 'edit'  then run_edit
+    else
+      exec_command 'tmuxinator', @subcommand, *ARGV
+    end
+  end
+
+  def run_start
+    return start_picked_project if ARGV.empty?
+
+    exec_command 'tmuxinator', 'start', *ARGV
+  end
+
+  def run_list
+    puts project_names
+  end
+
+  def run_show
+    path = existing_project_config(ARGV.shift, usage: 'mux show <project>')
+    exit run_command("bat #{path.shellescape}", quiet: !show_commands?) ? 0 : 1
+  end
+
+  def run_edit
+    path = existing_project_config(ARGV.shift, usage: 'mux edit <project>')
+    editor = ENV.fetch('EDITOR', '')
+    abort 'mux: EDITOR is not set' if editor.strip.empty?
+
+    exit run_command("#{editor} #{path.shellescape}", quiet: !show_commands?) ? 0 : 1
+  end
+
+  def project_names
+    Dir.glob(File.join(TMUXINATOR_DIR, '*.yml')).map { |path| File.basename(path, '.yml') }.sort
+  end
+
+  def start_picked_project
+    names = project_names
+    abort "mux: no tmuxinator configs found in #{TMUXINATOR_DIR}" if names.empty?
+
+    project = pick_with_selecta(names)
+    exit 1 if project.nil?
+
+    exec_command 'tmuxinator', 'start', project
+  end
+
+  # selecta draws its menu on /dev/tty, so piping names through stdin and
+  # reading the choice from stdout leaves the terminal interaction intact.
+  def pick_with_selecta(names)
+    choice = IO.popen(['selecta'], 'r+') do |selecta|
+      selecta.puts names
+      selecta.close_write
+      selecta.read.strip
+    end
+    return nil unless $CHILD_STATUS.success? && !choice.empty?
+
+    choice
+  end
+
+  def existing_project_config(project, usage:)
+    abort "Usage: #{usage}" if project.nil?
+
+    path = File.join(TMUXINATOR_DIR, "#{project}.yml")
+    abort "mux: no such project '#{project}' (#{path} does not exist)" unless File.exist?(path)
+
+    path
+  end
+
+  def show_commands?
+    pretend? || verbose?
+  end
+
+  def exec_command(*command)
+    puts colorize_command_text(command.shelljoin) if show_commands?
+    exit 0 if pretend?
+
+    exec(*command)
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
