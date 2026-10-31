@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# qrutf - print a QR code to the terminal using Unicode half-blocks.
+#
+# Usage: qrutf "some text"      or      echo -n "some text" | qrutf
+#
+# Uses -t utf8 rather than ansiutf8 so the output is plain text: it survives
+# copy/paste and screenshots, which ANSI-colored codes sometimes don't.
+# Solid blocks are the light modules, so this scans correctly on a dark
+# terminal; on a light theme pass -t utf8i (later -t wins).
+
+if ! command -v qrencode >/dev/null 2>&1; then
+  echo "qrutf: qrencode not found. Install it with:" >&2
+  case "$(uname -s)" in
+    Linux)  echo "  sudo apt-get install qrencode" >&2 ;;
+    Darwin) echo "  brew install qrencode" >&2 ;;
+    *)      echo "  your package manager's 'qrencode' package (https://fukuchi.org/works/qrencode/)" >&2 ;;
+  esac
+  exit 1
+fi
+
+exec qrencode -t utf8 "$@"
