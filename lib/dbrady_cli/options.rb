@@ -84,7 +84,10 @@ module DbradyCli
   end
 
   def dump_opts
-    puts opts.sort.to_h.inspect
+    longest_opt = opts.keys.map(&:size).max
+    opts.sort.each do |key, value|
+      puts key.to_s.ljust(longest_opt) + ": " + value.inspect
+    end
     puts "opt_flags: (#{opt_flags.size})"
     opt_flags.each do |flag|
       flag_method = "#{flag}?"
