@@ -1,0 +1,115 @@
+#!/usr/bin/env ruby
+# git-touch-whitespace - commit a whitespace-only change to force a new sha for GitHub, Jenkins, and CI
+# frozen_string_literal: true
+
+require 'colorize'
+require 'optimist'
+require 'shellwords'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  DEFAULT_FILE = 'tools/team/dbrady/notes.md'
+  COMMIT_MESSAGE = 'Touch whitespace to force git update'
+
+  # A suggested file is rejected if any of these match its path. A Regexp
+  # matches by pattern; a String matches if it appears anywhere in the path.
+  EXCLUDES = [
+    %r{(^|/)\.bundle/},
+    %r{(^|/)vendor/},
+    %r{(^|/)node_modules/},
+    %r{(^|/)tmp/}
+  ].freeze
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        git-touch-whitespace - commit a whitespace-only change to force a new sha for GitHub, Jenkins, and CI
+
+        Usage:
+          git touch-whitespace [path/to/file] [--push]
+
+        The change toggles the blank lines at the end of the file: two or more
+        trailing newlines collapse to one, and exactly one becomes two. Run it
+        twice and the file is back where it started.
+
+        The working tree must be clean. The file must be tracked by git.
+
+        With no path, the file is #{DEFAULT_FILE}.
+
+        Examples:
+          git touch-whitespace                   # touch #{DEFAULT_FILE}
+          git touch-whitespace README.md --push  # touch README.md, commit, and push
+          git touch-whitespace -p                # name the file that would change
+
+        Options:
+      BANNER
+      opt :push, 'Push the commit after making it', default: false
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Name the file that would change, but change nothing', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+  end
+
+  def run
+    parse_options
+    run!
+  end
+
+  def run!
+    abort 'Working tree is not clean. Commit or stash your changes first.'.red unless git_isclean
+
+    path = ARGV.first || DEFAULT_FILE
+    unless File.file?(path) && git_is_tracked(path)
+      abort "#{path} is not a tracked file. Try: git touch-whitespace #{suggested_file}".red
+    end
+
+    if pretend?
+      puts "Would touch whitespace in #{path}"
+      return
+    end
+
+    touch_whitespace(path)
+    run_command! "git add #{path.shellescape}"
+    run_command! "git commit -m '#{COMMIT_MESSAGE}' -- #{path.shellescape}"
+    run_command! 'git push' if opts[:push]
+  end
+
+  def touch_whitespace(path)
+    content = File.read(path)
+    content = if content.end_with?("\n\n")
+                content.sub(/\n+\z/, "\n")
+              else
+                content.sub(/\n?\z/, "\n\n")
+              end
+    File.write(path, content)
+  end
+
+  # Submodules and ignored files do not count as tracked.
+  def git_is_tracked(path)
+    entry = `git ls-files --stage -- #{path.shellescape} 2>/dev/null`.strip
+    return false if entry.empty?
+    return false if entry.start_with?('160000') # gitlink mode marks a submodule
+
+    !system("git check-ignore -q --no-index -- #{path.shellescape}")
+  end
+
+  def excluded?(path)
+    EXCLUDES.any? { |exclude| path.match?(exclude.is_a?(Regexp) ? exclude : Regexp.escape(exclude)) }
+  end
+
+  def suggested_file
+    Dir.glob('**/README.md')
+       .reject { excluded?(it) }
+       .detect { git_is_tracked(it) } || 'Could not find a good candidate'
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
