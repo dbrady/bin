@@ -1,0 +1,308 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# bigboard - A billboard of huge text on a grid, meant to run full-screen on a
+# spare monitor. The board lives in one JSON file on vapor
+# (~/.bigboard/board.json); every command reads it over ssh, edits it, and
+# writes it back. There is one writer on one machine, so there is no locking.
+#
+#   bigboard add "Finish RAMRR-444" --fg=white --bg=red --at=0,0
+#   bigboard remove --at 0,0
+#   bigboard remove "Finish RAMRR-444"
+#   bigboard serve                 # then open http://localhost:4567
+#
+# The JSON travels over ssh's stdin/stdout rather than the remote command line,
+# so item text needs no shell escaping.
+require 'colorize'
+require 'json'
+require 'optimist'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# Reads and writes the board file on vapor.
+class RemoteBoard
+  HOST = 'vapor'
+  REMOTE_DIR = '~/.bigboard'
+  REMOTE_FILE = "#{REMOTE_DIR}/board.json".freeze
+  EMPTY_BOARD = { 'rows' => 4, 'cols' => 2, 'items' => [] }.freeze
+
+  def self.fetch
+    json = IO.popen(['ssh', HOST, "test -f #{REMOTE_FILE} && cat #{REMOTE_FILE}; true"], &:read)
+    raise "could not read #{HOST}:#{REMOTE_FILE} (#{describe_exit($?)})" unless $?.success?
+
+    json.strip.empty? ? JSON.parse(JSON.generate(EMPTY_BOARD)) : JSON.parse(json)
+  end
+
+  def self.store(board)
+    IO.popen(['ssh', HOST, "mkdir -p #{REMOTE_DIR} && cat > #{REMOTE_FILE}"], 'w') do |io|
+      io.write(JSON.pretty_generate(board))
+    end
+    raise "could not write #{HOST}:#{REMOTE_FILE} (#{describe_exit($?)})" unless $?.success?
+  end
+
+  def self.describe_exit(status)
+    status.exitstatus == 255 ? "could not connect to #{HOST}" : "exit #{status.exitstatus}"
+  end
+end
+
+# Serves the board page and a cached copy of the board JSON. The cache keeps
+# an open browser tab from running ssh on every poll; with no tab open, the
+# server makes no ssh calls at all.
+class BoardServer
+  CACHE_SECONDS = 10
+
+  def initialize(port)
+    @port = port
+    @lock = Mutex.new
+    @board = nil
+    @fetched_at = Time.at(0)
+    @error = nil
+  end
+
+  def start
+    require 'webrick'
+    server = WEBrick::HTTPServer.new(Port: @port, BindAddress: '127.0.0.1', AccessLog: [])
+    server.mount_proc('/board.json') { |_req, res| respond_json(res) }
+    server.mount_proc('/') { |_req, res| respond_page(res) }
+    trap('INT') { server.shutdown }
+    puts "bigboard: serving http://localhost:#{@port}".cyan
+    server.start
+  end
+
+  private
+
+  def respond_json(res)
+    res['Content-Type'] = 'application/json'
+    res.body = JSON.generate(current_board)
+  end
+
+  def respond_page(res)
+    res['Content-Type'] = 'text/html; charset=utf-8'
+    res.body = PAGE
+  end
+
+  # On a failed fetch, keep serving the last good board and report the error
+  # alongside it, so a vapor hiccup doesn't blank the monitor.
+  def current_board
+    @lock.synchronize do
+      if Time.now - @fetched_at > CACHE_SECONDS
+        begin
+          @board = RemoteBoard.fetch
+          @error = nil
+        rescue StandardError => e
+          @error = e.message
+        end
+        @fetched_at = Time.now
+      end
+      (@board || RemoteBoard::EMPTY_BOARD).merge('error' => @error)
+    end
+  end
+
+  PAGE = <<~HTML
+    <!doctype html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>bigboard</title>
+      <style>
+        html, body { margin: 0; height: 100%; background: #111; color: #eee;
+                     font-family: -apple-system, Helvetica, Arial, sans-serif; }
+        #board { display: grid; gap: 8px; padding: 8px; height: 100vh; box-sizing: border-box; }
+        .cell { position: relative; display: flex; align-items: center; justify-content: center;
+                text-align: center; border-radius: 12px; background: #1b1b1b; overflow: hidden;
+                font-weight: 800; line-height: 1.05; padding: 0 2vw;
+                font-size: min(5.5vw, 9vh); overflow-wrap: anywhere; }
+        .at { position: absolute; top: 6px; left: 10px; font-size: 14px; font-weight: 400; opacity: 0.35; }
+        #error { position: fixed; bottom: 6px; right: 10px; font-size: 14px; color: #f66; }
+      </style>
+    </head>
+    <body>
+      <div id="board"></div>
+      <div id="error"></div>
+      <script>
+        async function refresh() {
+          let board;
+          try {
+            board = await (await fetch('/board.json')).json();
+          } catch (e) {
+            document.getElementById('error').textContent = 'bigboard server unreachable';
+            return;
+          }
+          document.getElementById('error').textContent = board.error || '';
+          const grid = document.getElementById('board');
+          grid.style.gridTemplateColumns = `repeat(${board.cols}, 1fr)`;
+          grid.style.gridTemplateRows = `repeat(${board.rows}, 1fr)`;
+          grid.replaceChildren();
+          for (let row = 0; row < board.rows; row++) {
+            for (let col = 0; col < board.cols; col++) {
+              const item = board.items.find(i => i.row === row && i.col === col);
+              const cell = document.createElement('div');
+              cell.className = 'cell';
+              const label = document.createElement('span');
+              label.className = 'at';
+              label.textContent = `${row},${col}`;
+              cell.append(label);
+              if (item) {
+                cell.append(document.createTextNode(item.text));
+                if (item.fg) cell.style.color = item.fg;
+                if (item.bg) cell.style.background = item.bg;
+              }
+              grid.append(cell);
+            }
+          }
+        }
+        refresh();
+        setInterval(refresh, 10000);
+      </script>
+    </body>
+    </html>
+  HTML
+end
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  SUBCOMMANDS = %w[add remove rm serve].freeze
+
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        bigboard - Huge text on a grid, stored in #{RemoteBoard::HOST}:#{RemoteBoard::REMOTE_FILE}
+
+        Usage:
+          bigboard [global options] <subcommand> [subcommand options]
+
+        Subcommands:
+          add      Put text on the board (first open slot, or --at row,col)
+          remove   Take text off the board, by its text or by --at row,col (alias: rm)
+          serve    Serve the board at http://localhost:4567
+
+        Global options (must come BEFORE the subcommand):
+      BANNER
+      opt :debug,   'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print the new board but do not write it', short: :p, default: false
+      opt :quiet,   'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+      stop_on SUBCOMMANDS
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+
+    @subcommand = ARGV.shift
+    Optimist.educate if @subcommand.nil?
+  end
+
+  def run
+    parse_options
+    case @subcommand
+    when 'add'          then run_add
+    when 'remove', 'rm' then run_remove
+    when 'serve'        then run_serve
+    else
+      abort "bigboard: unknown subcommand '#{@subcommand}'. Run 'bigboard --help' for usage.".red
+    end
+  rescue RuntimeError => e
+    abort "bigboard: #{e.message}".red
+  end
+
+  def run_add
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard add "text" [--fg COLOR] [--bg COLOR] [--at ROW,COL]
+
+        Without --at, the text goes in the first open slot, filling each row
+        left to right. With --at, it replaces whatever is in that slot.
+        Colors are any CSS color: red, #ff0, rgb(0 0 0).
+
+        Options:
+      BANNER
+      opt :fg,    'Text (foreground) color', type: :string, alt: :color
+      opt :bg,    'Background color', type: :string
+      opt :at,    'Slot as ROW,COL, zero-based (0,0 is top left)', type: :string
+    end
+    text = ARGV.join(' ')
+    abort 'bigboard: add needs some text'.red if text.strip.empty?
+
+    board = RemoteBoard.fetch
+    row, col = subopts[:at] ? parse_at(subopts[:at], board) : first_open_slot(board)
+    board['items'].reject! { |item| item['row'] == row && item['col'] == col }
+    board['items'] << { 'row' => row, 'col' => col, 'text' => text,
+                        'fg' => subopts[:fg], 'bg' => subopts[:bg] }.compact
+    save(board, "added at #{row},#{col}: #{text}")
+  end
+
+  def run_remove
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard remove "text"
+               bigboard remove --at ROW,COL
+
+        Removing by text takes off every item whose text matches exactly.
+
+        Options:
+      BANNER
+      opt :at, 'Slot as ROW,COL, zero-based (0,0 is top left)', type: :string
+    end
+    text = ARGV.join(' ')
+    abort 'bigboard: remove needs some text or --at ROW,COL'.red if text.strip.empty? && !subopts[:at]
+
+    board = RemoteBoard.fetch
+    if subopts[:at]
+      row, col = parse_at(subopts[:at], board)
+      removed = board['items'].reject! { |item| item['row'] == row && item['col'] == col }
+      abort "bigboard: nothing at #{row},#{col}".red unless removed
+      save(board, "removed #{row},#{col}")
+    else
+      removed = board['items'].reject! { |item| item['text'] == text }
+      abort "bigboard: no item reads exactly \"#{text}\"".red unless removed
+      save(board, "removed: #{text}")
+    end
+  end
+
+  def run_serve
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard serve [--port PORT]
+
+        Serves the board page on localhost. The page refreshes itself every
+        10 seconds. The server reads from vapor at most once every
+        #{BoardServer::CACHE_SECONDS} seconds, and only while a page is open.
+
+        Options:
+      BANNER
+      opt :port, 'Port to listen on', default: 4567
+    end
+    BoardServer.new(subopts[:port]).start
+  end
+
+  private
+
+  def parse_at(at, board)
+    row, col = at.split(',', 2).map { |n| Integer(n, exception: false) }
+    abort "bigboard: --at wants ROW,COL like 0,1 (got #{at.inspect})".red if row.nil? || col.nil?
+    unless row.between?(0, board['rows'] - 1) && col.between?(0, board['cols'] - 1)
+      abort "bigboard: #{at} is off the board (rows 0-#{board['rows'] - 1}, cols 0-#{board['cols'] - 1})".red
+    end
+    [row, col]
+  end
+
+  def first_open_slot(board)
+    taken = board['items'].map { |item| [item['row'], item['col']] }
+    slot = (0...board['rows']).to_a.product((0...board['cols']).to_a).find { |pair| !taken.include?(pair) }
+    abort 'bigboard: the board is full. Remove something or use --at to replace it.'.red unless slot
+    slot
+  end
+
+  def save(board, message)
+    if pretend?
+      puts JSON.pretty_generate(board)
+      return
+    end
+    RemoteBoard.store(board)
+    puts message.green unless quiet?
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
