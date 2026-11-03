@@ -9,6 +9,10 @@
 #   bigboard add "Finish RAMRR-444" --fg=white --bg=red --at=0,0
 #   bigboard remove --at 0,0
 #   bigboard remove "Finish RAMRR-444"
+#   bigboard move "Finish RAMRR-444" --to=3,1
+#   bigboard rename "Finish RAMRR-444" "Finished RAMRR-444"
+#   bigboard swap "Finish RAMRR-444" "Review Party"
+#   bigboard edit "Finish RAMRR-444" --bg=green
 #   bigboard serve                 # then open http://localhost:4567
 #
 # The JSON travels over ssh's stdin/stdout rather than the remote command line,
@@ -164,7 +168,7 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[add remove rm serve].freeze
+  SUBCOMMANDS = %w[add remove rm move rename swap edit serve].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -177,6 +181,10 @@ class Application
         Subcommands:
           add      Put text on the board (first open slot, or --at row,col)
           remove   Take text off the board, by its text or by --at row,col (alias: rm)
+          move     Move an item to an empty slot, by its text or by --from row,col
+          rename   Change an item's text, keeping its slot and colors
+          swap     Exchange the slots of two items, each by text or by row,col
+          edit     Change any of an item's text, slot, fg, bg; the rest stays as it was
           serve    Serve the board at http://localhost:4567
 
         Global options (must come BEFORE the subcommand):
@@ -199,6 +207,10 @@ class Application
     case @subcommand
     when 'add'          then run_add
     when 'remove', 'rm' then run_remove
+    when 'move'         then run_move
+    when 'rename'       then run_rename
+    when 'swap'         then run_swap
+    when 'edit'         then run_edit
     when 'serve'        then run_serve
     else
       abort "bigboard: unknown subcommand '#{@subcommand}'. Run 'bigboard --help' for usage.".red
@@ -261,6 +273,140 @@ class Application
     end
   end
 
+  def run_move
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard move "text" --to ROW,COL
+               bigboard move --from ROW,COL --to ROW,COL
+
+        Moves one item to an empty slot. Its colors go with it. To move an
+        item onto another item, use swap.
+
+        Options:
+      BANNER
+      opt :from, 'Slot of the item to move, as ROW,COL', type: :string
+      opt :to,   'Slot to move it to, as ROW,COL', type: :string, required: true
+    end
+    text = ARGV.join(' ')
+    abort 'bigboard: move needs some text or --from ROW,COL'.red if text.strip.empty? && !subopts[:from]
+
+    board = RemoteBoard.fetch
+    item = find_item(board, text, subopts[:from])
+    row, col = parse_at(subopts[:to], board)
+    place(board, item, row, col)
+    save(board, "moved to #{row},#{col}: #{item['text']}")
+  end
+
+  def run_rename
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard rename "old text" "new text"
+               bigboard rename --at ROW,COL "new text"
+
+        Changes an item's text. Its slot and colors stay as they were.
+
+        Options:
+      BANNER
+      opt :at, 'Slot of the item to rename, as ROW,COL', type: :string
+    end
+    new_text = ARGV.pop.to_s
+    old_text = ARGV.join(' ')
+    abort 'bigboard: rename needs the new text'.red if new_text.strip.empty?
+    abort 'bigboard: rename needs the old text or --at ROW,COL'.red if old_text.strip.empty? && !subopts[:at]
+
+    board = RemoteBoard.fetch
+    item = find_item(board, old_text, subopts[:at])
+    item['text'] = new_text
+    save(board, "renamed #{item['row']},#{item['col']}: #{new_text}")
+  end
+
+  def run_swap
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard swap "text" "other text"
+               bigboard swap "text" --to ROW,COL
+               bigboard swap --from ROW,COL --to ROW,COL
+               bigboard swap --from ROW,COL "text"
+
+        Exchanges the slots of two items. Each side is a text or a slot, in any
+        order. Colors go with their items. If one slot is empty, the other
+        item just moves there.
+
+        Options:
+      BANNER
+      opt :from, 'Slot of one item, as ROW,COL', type: :string
+      opt :to,   'Slot of the other item, as ROW,COL', type: :string
+    end
+    slots = [subopts[:from], subopts[:to]].compact
+    unless ARGV.size + slots.size == 2
+      abort 'bigboard: swap needs exactly two sides, each a "text" or a --from/--to ROW,COL'.red
+    end
+
+    board = RemoteBoard.fetch
+    sides = ARGV.map { |text| find_item(board, text, nil) }
+    sides += slots.map { |at| item_or_empty_slot(board, at) }
+    one, other = sides
+    one['row'], one['col'], other['row'], other['col'] = other['row'], other['col'], one['row'], one['col']
+    moved = sides.select { |side| side['text'] }
+    if moved.size == 1
+      save(board, "moved to #{moved[0]['row']},#{moved[0]['col']}: #{moved[0]['text']}")
+    else
+      save(board, "swapped: #{one['text']} is now at #{one['row']},#{one['col']}, " \
+                  "#{other['text']} at #{other['row']},#{other['col']}")
+    end
+  end
+
+  def run_edit
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard edit "text" [changes]
+               bigboard edit --at ROW,COL [changes]
+               where changes are any of: "new text" --to ROW,COL --fg COLOR --bg COLOR
+
+        Changes any mix of an item's text, slot, and colors in one go. Anything
+        not mentioned stays as it was. The first text picks the item when some
+        item reads exactly that; otherwise --at picks the item and the text is
+        its new text. When the item is picked by its text, --at and --to both
+        mean the new slot. A color of none clears that color so the page shows
+        its default.
+
+          bigboard edit "Review Party" --at 3,1
+          bigboard edit --at=0,0 --to=3,1
+          bigboard edit "Review Party" "Reviewed It"
+          bigboard edit --at=0,0 "Reviewed It"
+          bigboard edit "Review Party" --bg=cyan
+
+        Options:
+      BANNER
+      opt :at, 'Slot of the item to edit, as ROW,COL; with a text, the new slot', type: :string
+      opt :to, 'New slot, as ROW,COL', type: :string
+      opt :fg, 'New text (foreground) color, or none', type: :string, alt: :color
+      opt :bg, 'New background color, or none', type: :string
+    end
+    abort 'bigboard: edit needs some text or --at ROW,COL'.red if ARGV.empty? && !subopts[:at]
+
+    board = RemoteBoard.fetch
+    if ARGV.any? && (subopts[:at].nil? || board['items'].any? { |item| item['text'] == ARGV[0] })
+      item = find_item(board, ARGV.shift, nil)
+      new_slot = subopts[:to] || subopts[:at]
+    else
+      item = find_item(board, nil, subopts[:at])
+      new_slot = subopts[:to]
+    end
+    new_text = ARGV.join(' ')
+    changes = [new_text.strip.empty? ? nil : new_text, new_slot, subopts[:fg], subopts[:bg]].compact
+    abort 'bigboard: edit needs something to change'.red if changes.empty?
+
+    item['text'] = new_text unless new_text.strip.empty?
+    place(board, item, *parse_at(new_slot, board)) if new_slot
+    %w[fg bg].each do |color|
+      next unless subopts[color.to_sym]
+
+      subopts[color.to_sym] == 'none' ? item.delete(color) : item[color] = subopts[color.to_sym]
+    end
+    save(board, "edited #{item['row']},#{item['col']}: #{item['text']}")
+  end
+
   def run_serve
     subopts = Optimist.options do
       banner <<~BANNER
@@ -281,7 +427,7 @@ class Application
 
   def parse_at(at, board)
     row, col = at.split(',', 2).map { |n| Integer(n, exception: false) }
-    abort "bigboard: --at wants ROW,COL like 0,1 (got #{at.inspect})".red if row.nil? || col.nil?
+    abort "bigboard: a slot is ROW,COL like 0,1 (got #{at.inspect})".red if row.nil? || col.nil?
     unless row.between?(0, board['rows'] - 1) && col.between?(0, board['cols'] - 1)
       abort "bigboard: #{at} is off the board (rows 0-#{board['rows'] - 1}, cols 0-#{board['cols'] - 1})".red
     end
@@ -293,6 +439,42 @@ class Application
     slot = (0...board['rows']).to_a.product((0...board['cols']).to_a).find { |pair| !taken.include?(pair) }
     abort 'bigboard: the board is full. Remove something or use --at to replace it.'.red unless slot
     slot
+  end
+
+  def item_at(board, row, col)
+    board['items'].find { |item| item['row'] == row && item['col'] == col }
+  end
+
+  # A slot given as ROW,COL wins over text, so a blank text with --at works.
+  def find_item(board, text, at)
+    if at
+      row, col = parse_at(at, board)
+      item = item_at(board, row, col)
+      abort "bigboard: nothing at #{row},#{col}".red unless item
+      return item
+    end
+
+    matches = board['items'].select { |item| item['text'] == text }
+    abort "bigboard: no item reads exactly \"#{text}\"".red if matches.empty?
+    if matches.size > 1
+      slots = matches.map { |item| "#{item['row']},#{item['col']}" }.join(' and ')
+      abort "bigboard: #{matches.size} items read \"#{text}\", at #{slots}. Pick one by its slot instead.".red
+    end
+    matches[0]
+  end
+
+  def item_or_empty_slot(board, at)
+    row, col = parse_at(at, board)
+    item_at(board, row, col) || { 'row' => row, 'col' => col }
+  end
+
+  def place(board, item, row, col)
+    occupant = item_at(board, row, col)
+    if occupant && !occupant.equal?(item)
+      abort "bigboard: #{row},#{col} already has \"#{occupant['text']}\". Use swap to exchange them.".red
+    end
+    item['row'] = row
+    item['col'] = col
   end
 
   def save(board, message)
