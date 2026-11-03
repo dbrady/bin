@@ -1,0 +1,3 @@
+#!/bin/bash
+printf '\033[36m%s\033[0m\n' "$(sed -n 3p "$0")" >&2 # print the line below to the console because wow
+awk -v s="$1" 'FNR==1{p=f=0} /^(```|~~~)/{f=!f} !f&&match($0,/^#+[ \t]/){l=RLENGTH-1; if(p&&l<=n){p=0;nextfile} if(!p&&index(substr($0,l+2),s)){p=1;n=l}} p' "${@:2}"
