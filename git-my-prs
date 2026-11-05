@@ -1,0 +1,3 @@
+#!/bin/bash
+echo -e '\033[36m'"$(git home-url)/pulls/@me"'\033[0m'
+open "$(git home-url)/pulls/@me"
