@@ -32,6 +32,7 @@ class Application
         start -i                  - pick from the commands recorded here
         start list                - show the commands recorded here
         start new <name> '<cmd>'  - record a command here without opening the config
+        start add <name> '<cmd>'  - same as new
         start default <name>      - make <name> the one bare `start` runs
         start default             - clear the default
         start edit                - open the config in $EDITOR
@@ -81,10 +82,10 @@ class Application
   def run
     parse_options
     case @command
-    when 'new'     then run_new
-    when 'edit'    then run_edit
-    when 'list'    then run_list
-    when 'default' then run_default
+    when 'new', 'add' then run_new
+    when 'edit'       then run_edit
+    when 'list'       then run_list
+    when 'default'    then run_default
     else run_start(@command)
     end
   end
