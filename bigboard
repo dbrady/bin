@@ -13,6 +13,8 @@
 #   bigboard rename "Finish RAMRR-444" "Finished RAMRR-444"
 #   bigboard swap "Finish RAMRR-444" "Review Party"
 #   bigboard edit "Finish RAMRR-444" --bg=green
+#   bigboard task:add "Finish RAMRR-444"
+#   bigboard task:done "Finish RAMRR-444"
 #   bigboard serve                 # then open http://localhost:4567
 #
 # The JSON travels over ssh's stdin/stdout rather than the remote command line,
@@ -168,7 +170,7 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[add remove rm move rename swap edit serve].freeze
+  SUBCOMMANDS = %w[add remove rm move rename swap edit serve task:add task:done task:cancel].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -179,13 +181,16 @@ class Application
           bigboard [global options] <subcommand> [subcommand options]
 
         Subcommands:
-          add      Put text on the board (first open slot, or --at col,row)
-          remove   Take text off the board, by its text or by --at col,row (alias: rm)
-          move     Move an item to an empty slot, by its text or by --from col,row
-          rename   Change an item's text, keeping its slot and colors
-          swap     Exchange the slots of two items, each by text or by col,row
-          edit     Change any of an item's text, slot, fg, bg; the rest stays as it was
-          serve    Serve the board at http://localhost:4567
+          add          Put text on the board (first open slot, --last, or --at col,row)
+          remove       Take text off the board, by its text or by --at col,row (alias: rm)
+          move         Move an item to an empty slot, by its text or by --from col,row
+          rename       Change an item's text, keeping its slot and colors
+          swap         Exchange the slots of two items, each by text or by col,row
+          edit         Change any of an item's text, slot, fg, bg; the rest stays as it was
+          serve        Serve the board at http://localhost:4567
+          task:add     Add, with --bg=red unless given
+          task:done    Edit, with --fg=gray --bg=darkgreen --last unless given
+          task:cancel  Edit, with --fg=gray --bg=dimgray --last unless given
 
         Global options (must come BEFORE the subcommand):
       BANNER
@@ -212,6 +217,9 @@ class Application
     when 'swap'         then run_swap
     when 'edit'         then run_edit
     when 'serve'        then run_serve
+    when 'task:add'     then run_add(bg: 'red')
+    when 'task:done'    then run_edit(fg: 'gray', bg: 'darkgreen', last: true)
+    when 'task:cancel'  then run_edit(fg: 'gray', bg: 'dimgray', last: true)
     else
       abort "bigboard: unknown subcommand '#{@subcommand}'. Run 'bigboard --help' for usage.".red
     end
@@ -219,13 +227,14 @@ class Application
     abort "bigboard: #{e.message}".red
   end
 
-  def run_add
+  def run_add(defaults = {})
     subopts = Optimist.options do
       banner <<~BANNER
-        Usage: bigboard add "text" [--fg COLOR] [--bg COLOR] [--at COL,ROW]
+        Usage: bigboard add "text" [--fg COLOR] [--bg COLOR] [--at COL,ROW | --last]
 
         Without --at, the text goes in the first open slot, filling each row
-        left to right. With --at, it replaces whatever is in that slot.
+        left to right. With --last, it goes in the last open slot, filling from
+        the bottom right. With --at, it replaces whatever is in that slot.
         Colors are any CSS color: red, #ff0, rgb(0 0 0).
 
         Options:
@@ -233,12 +242,17 @@ class Application
       opt :fg,    'Text (foreground) color', type: :string, alt: :color
       opt :bg,    'Background color', type: :string
       opt :at,    'Slot as COL,ROW, zero-based (0,0 is top left)', type: :string
+      opt :last,  'Use the last open slot instead of the first', default: false
     end
+    apply_defaults(subopts, defaults)
     text = ARGV.join(' ')
     abort 'bigboard: add needs some text'.red if text.strip.empty?
 
     board = RemoteBoard.fetch
-    row, col = subopts[:at] ? parse_at(subopts[:at], board) : first_open_slot(board)
+    row, col = if subopts[:at] then parse_at(subopts[:at], board)
+               elsif subopts[:last] then last_open_slot(board)
+               else first_open_slot(board)
+               end
     board['items'].reject! { |item| item['row'] == row && item['col'] == col }
     board['items'] << { 'row' => row, 'col' => col, 'text' => text,
                         'fg' => subopts[:fg], 'bg' => subopts[:bg] }.compact
@@ -356,25 +370,27 @@ class Application
     end
   end
 
-  def run_edit
+  def run_edit(defaults = {})
     subopts = Optimist.options do
       banner <<~BANNER
         Usage: bigboard edit "text" [changes]
                bigboard edit --at COL,ROW [changes]
-               where changes are any of: "new text" --to COL,ROW --fg COLOR --bg COLOR
+               where changes are any of: "new text" --to COL,ROW --last --fg COLOR --bg COLOR
 
         Changes any mix of an item's text, slot, and colors in one go. Anything
         not mentioned stays as it was. The first text picks the item when some
         item reads exactly that; otherwise --at picks the item and the text is
         its new text. When the item is picked by its text, --at and --to both
-        mean the new slot. A color of none clears that color so the page shows
-        its default.
+        mean the new slot. --last moves the item to the last open slot, counting
+        its own slot as open; a new slot from --at or --to wins over --last. A
+        color of none clears that color so the page shows its default.
 
           bigboard edit "Review Party" --at 1,3
           bigboard edit --at=0,0 --to=1,3
           bigboard edit "Review Party" "Reviewed It"
           bigboard edit --at=0,0 "Reviewed It"
           bigboard edit "Review Party" --bg=cyan
+          bigboard edit "Review Party" --last
 
         Options:
       BANNER
@@ -382,7 +398,9 @@ class Application
       opt :to, 'New slot, as COL,ROW', type: :string
       opt :fg, 'New text (foreground) color, or none', type: :string, alt: :color
       opt :bg, 'New background color, or none', type: :string
+      opt :last, 'Move to the last open slot', default: false
     end
+    apply_defaults(subopts, defaults)
     abort 'bigboard: edit needs some text or --at COL,ROW'.red if ARGV.empty? && !subopts[:at]
 
     board = RemoteBoard.fetch
@@ -393,12 +411,14 @@ class Application
       item = find_item(board, nil, subopts[:at])
       new_slot = subopts[:to]
     end
+    new_slot = parse_at(new_slot, board) if new_slot
+    new_slot ||= last_open_slot(board, except: item) if subopts[:last]
     new_text = ARGV.join(' ')
     changes = [new_text.strip.empty? ? nil : new_text, new_slot, subopts[:fg], subopts[:bg]].compact
     abort 'bigboard: edit needs something to change'.red if changes.empty?
 
     item['text'] = new_text unless new_text.strip.empty?
-    place(board, item, *parse_at(new_slot, board)) if new_slot
+    place(board, item, *new_slot) if new_slot
     %w[fg bg].each do |color|
       next unless subopts[color.to_sym]
 
@@ -434,11 +454,24 @@ class Application
     [row, col]
   end
 
+  # Options the user typed win over the defaults a task: subcommand supplies.
+  def apply_defaults(subopts, defaults)
+    defaults.each { |key, value| subopts[key] = value unless subopts[:"#{key}_given"] }
+  end
+
   def first_open_slot(board)
-    taken = board['items'].map { |item| [item['row'], item['col']] }
-    slot = (0...board['rows']).to_a.product((0...board['cols']).to_a).find { |pair| !taken.include?(pair) }
-    abort 'bigboard: the board is full. Remove something or use --at to replace it.'.red unless slot
-    slot
+    open_slots(board).first || abort('bigboard: the board is full. Remove something or use --at to replace it.'.red)
+  end
+
+  def last_open_slot(board, except: nil)
+    open_slots(board, except: except).last ||
+      abort('bigboard: the board is full. Remove something or use --at to replace it.'.red)
+  end
+
+  # Slots as [row, col], in reading order. The except item's slot counts as open.
+  def open_slots(board, except: nil)
+    taken = board['items'].reject { |item| item.equal?(except) }.map { |item| [item['row'], item['col']] }
+    (0...board['rows']).to_a.product((0...board['cols']).to_a).reject { |pair| taken.include?(pair) }
   end
 
   def item_at(board, row, col)
