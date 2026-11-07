@@ -1,0 +1,350 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# inlay-svg - quantize an image to a small filament palette and trace it to SVG
+#
+# First half of the image -> 3D-printed-inlay pipeline (see inlay-stl for the
+# second half). Reduces an image to N colors chosen from your filament
+# inventory, pools the colors into contiguous blobs (no speckle), and traces
+# each color into an SVG <g> group, ready for inlay-stl.
+require 'colorize'
+require 'optimist'
+require 'open3'
+require 'tmpdir'
+require 'fileutils'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# A named color. rgb is [r,g,b] in 0..255.
+Swatch = Struct.new(:name, :rgb) do
+  def hex
+    format('#%02x%02x%02x', *rgb)
+  end
+
+  def lab
+    @lab ||= ColorMath.rgb_to_lab(rgb)
+  end
+
+  def label
+    name == hex ? hex : "#{name} (#{hex})"
+  end
+end
+
+# sRGB -> CIE L*a*b* (D65) and distance, so "closest" means perceptually closest.
+module ColorMath
+  module_function
+
+  def rgb_to_lab(rgb)
+    r, g, b = rgb.map do |c|
+      c /= 255.0
+      c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055)**2.4
+    end
+    x = (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047
+    y = (r * 0.2126 + g * 0.7152 + b * 0.0722)
+    z = (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883
+    fx, fy, fz = [x, y, z].map { |t| t > 0.008856 ? t**(1.0 / 3) : (7.787 * t) + (16.0 / 116) }
+    [(116 * fy) - 16, 500 * (fx - fy), 200 * (fy - fz)]
+  end
+
+  def dist(lab1, lab2)
+    Math.sqrt(lab1.zip(lab2).sum { |a, b| (a - b)**2 })
+  end
+end
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  DEFAULT_FILAMENTS = File.expand_path('~/.config/inlay/filaments')
+  MAX_COMBOS = 200_000
+
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        inlay-svg - quantize an image to a small filament palette and trace it to SVG
+
+        Usage:
+          inlay-svg [options] IMAGE
+
+        Writes IMAGE.svg (one <g> per color, background color first) and
+        IMAGE-preview.png (the cleaned-up quantized bitmap).
+
+        Colors: --color may be given many times. Accepts anything ImageMagick
+        understands (red, '#ff3330', ff3330, 'rgb(0,0,128)') or a filament name
+        from the inventory file. If -n is larger than the number of --colors,
+        the remaining colors are picked from the inventory to best fit the image.
+
+        Inventory file (default #{DEFAULT_FILAMENTS}), one per line:
+          Jade White: #f0f0e8
+          Bambu Red: ff3330
+          # comment lines start with '#' and a space
+
+        Options:
+      BANNER
+      opt :color, 'Fixed palette color (repeatable)', type: :string, multi: true
+      opt :num_colors, 'Total number of colors, including background', short: :n, type: :integer
+      opt :background, 'Background (baseplate) color; default: color with most area', short: :b, type: :string
+      opt :filaments, 'Filament inventory file', short: :f, type: :string, default: DEFAULT_FILAMENTS
+      opt :output, 'Output SVG path (default: IMAGE with .svg extension)', short: :o, type: :string
+      opt :width, 'Art width in mm (sets the mm scale for cleanup and SVG size)', short: :w, type: :float, default: 100.0
+      opt :px_per_mm, 'Working resolution', type: :float, default: 10.0
+      opt :smooth, 'Median smoothing radius in mm (0 to disable)', short: :s, type: :float, default: 0.4
+      opt :min_area, 'Merge color islands smaller than this many mm^2 into neighbors', short: :m, type: :float, default: 2.0
+      opt :keep, 'Keep intermediate files (prints the work dir)', short: :k, default: false
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty?
+    Optimist.die 'give exactly one IMAGE' unless ARGV.size == 1
+    Optimist.die "no such file: #{ARGV.first}" unless File.exist?(ARGV.first)
+    Optimist.die :width, 'must be positive' unless opts[:width].positive?
+  end
+  # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/AbcSize
+
+  def run
+    parse_options
+    run!
+  rescue RuntimeError => e
+    warn "inlay-svg: #{e.message}".red
+    exit 1
+  end
+
+  def run!
+    @input = ARGV.first
+    @output = opts[:output] || @input.sub(/\.[^.\/]+\z/, '') + '.svg'
+    @preview = @output.sub(/\.svg\z/i, '') + '-preview.png'
+    @work = Dir.mktmpdir('inlay-svg-')
+    begin
+      pipeline
+    ensure
+      if opts[:keep]
+        info "work dir: #{@work}"
+      else
+        FileUtils.rm_rf(@work)
+      end
+    end
+  end
+
+  private
+
+  def pipeline
+    prepare_image
+    palette = choose_palette
+    quantize(palette)
+    regions = trace(palette)
+    write_svg(regions)
+    report(regions)
+  end
+
+  # --- step 1: flatten, resize to working resolution, median smooth -------
+
+  def px_per_mm = opts[:px_per_mm]
+
+  def prepare_image
+    width_px = (opts[:width] * px_per_mm).round
+    flatten = opts[:background] ? parse_color(opts[:background]).hex : 'white'
+    radius = (opts[:smooth] * px_per_mm).round
+    smooth = radius.positive? ? "-statistic Median #{(2 * radius) + 1}x#{(2 * radius) + 1}" : ''
+    sh "convert #{q @input}[0] -background #{q flatten} -alpha remove -alpha off " \
+       "-colorspace sRGB -resize #{width_px}x #{smooth} -depth 8 #{q work('smooth.png')}"
+    @size_px = capture("identify -format '%w %h' #{q work('smooth.png')}").split.map(&:to_i)
+  end
+
+  # --- step 2: palette = fixed colors + best picks from inventory ----------
+
+  def choose_palette
+    fixed = (opts[:color] || []).map { |c| parse_color(c) }
+    fixed << parse_color(opts[:background]) if opts[:background]
+    fixed.uniq!(&:hex)
+    n = opts[:num_colors] || fixed.size
+    raise 'no colors: give --color and/or --num-colors' if n.zero?
+    raise "--num-colors #{n} is less than the #{fixed.size} fixed colors given" if n < fixed.size
+
+    free = n - fixed.size
+    return fixed if free.zero?
+
+    pool = inventory.reject { |s| fixed.any? { |f| f.hex == s.hex } }
+    raise "need #{free} more color(s) but inventory #{opts[:filaments]} has #{pool.size} unused" if pool.size < free
+
+    fixed + best_picks(fixed, pool, free)
+  end
+
+  # Weighted histogram of the image, reduced to 64 representative colors.
+  def histogram
+    @histogram ||= capture("convert #{q work('smooth.png')} -dither None -colors 64 -format %c histogram:info:-")
+                   .each_line.filter_map do |line|
+      next unless line =~ /\A\s*(\d+):\s*\(\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/
+
+      [ColorMath.rgb_to_lab([$2, $3, $4].map { |v| v.to_f.round }), $1.to_i]
+    end
+  end
+
+  def palette_cost(palette)
+    histogram.sum { |lab, count| count * palette.map { |s| ColorMath.dist(lab, s.lab) }.min }
+  end
+
+  # Exhaustive search when it's cheap, else greedy one-at-a-time.
+  def best_picks(fixed, pool, free)
+    combos = (1..free).reduce(1) { |acc, i| acc * (pool.size - free + i) / i }
+    debug "choosing #{free} of #{pool.size} filaments (#{combos} combinations)"
+    if combos <= MAX_COMBOS
+      pool.combination(free).min_by { |picks| palette_cost(fixed + picks) }
+    else
+      picks = []
+      free.times { picks << (pool - picks).min_by { |s| palette_cost(fixed + picks + [s]) } }
+      picks
+    end
+  end
+
+  def inventory
+    path = opts[:filaments]
+    raise "inventory file #{path} not found (needed to pick free colors)" unless File.exist?(path)
+
+    @inventory ||= File.readlines(path).filter_map do |line|
+      next if line =~ /\A\s*(#\s|#\z|\z)/ || line.strip.empty?
+
+      name, color = line.split(':', 2).map(&:strip)
+      raise "bad inventory line (want 'Name: color'): #{line.strip}" unless color && !color.empty?
+
+      Swatch.new(name, parse_color(color, lookup: false).rgb)
+    end
+  end
+
+  # --- step 3: remap to palette, merge small islands, remap again ----------
+
+  def quantize(palette)
+    @palette = palette
+    swatches = palette.map { |s| "xc:#{q s.hex}" }.join(' ')
+    sh "convert #{swatches} +append #{q work('palette.png')}"
+    min_px = (opts[:min_area] * px_per_mm * px_per_mm).round
+    # Remap; then absorb islands below min_px into their surroundings; then
+    # remap again in case merging produced any off-palette pixels.
+    sh "convert #{q work('smooth.png')} -dither None -remap #{q work('palette.png')} " \
+       "-define connected-components:area-threshold=#{min_px} " \
+       "-define connected-components:mean-color=true -connected-components 8 " \
+       "-dither None -remap #{q work('palette.png')} -depth 8 #{q work('quant.png')}"
+    FileUtils.cp(work('quant.png'), @preview) unless pretend?
+  end
+
+  # --- step 4: one bitmap mask per color -> potrace -> SVG paths -----------
+
+  # Returns [{swatch:, pixels:, paths: "<path .../>..."}], background first,
+  # then remaining colors by descending area (later groups draw on top).
+  def trace(palette)
+    counts = pixel_counts
+    bg = opts[:background] ? parse_color(opts[:background]) : palette.max_by { |s| counts[s.hex].to_i }
+    ordered = [palette.find { |s| s.hex == bg.hex }] +
+              palette.reject { |s| s.hex == bg.hex }.sort_by { |s| -counts[s.hex].to_i }
+    turd = (opts[:min_area] * px_per_mm * px_per_mm).round
+    ordered.each_with_index.map do |swatch, i|
+      mask = work("mask#{i}.pbm")
+      traced = work("mask#{i}.svg")
+      # difference against a solid fill of this color: exact matches -> 0 (black)
+      sh "convert #{q work('quant.png')} \\( +clone -fill #{q swatch.hex} -colorize 100 \\) " \
+         "-compose difference -composite -separate -evaluate-sequence max -threshold 0 #{q mask}"
+      sh "potrace -b svg -t #{turd} -a 1.0 -O 0.4 -r #{(px_per_mm * 25.4).round(4)} -o #{q traced} #{q mask}"
+      { swatch:, pixels: counts[swatch.hex].to_i, role: i.zero? ? 'background' : 'inlay',
+        group: pretend? ? '' : File.read(traced)[%r{<g .*</g>}m] }
+    end
+  end
+
+  def pixel_counts
+    capture("convert #{q work('quant.png')} -format %c histogram:info:-").each_line.to_h do |line|
+      line =~ /\A\s*(\d+):.*(#\h{6})/
+      [$2.downcase, $1.to_i]
+    end
+  end
+
+  # --- step 5: assemble one SVG with a group per color ---------------------
+
+  def write_svg(regions)
+    w_mm, h_mm = @size_px.map { |px| px / px_per_mm }
+    w_pt, h_pt = [w_mm, h_mm].map { |mm| (mm / 25.4 * 72).round(6) }
+    groups = regions.each_with_index.map do |r, i|
+      s = r[:swatch]
+      inner = r[:group].sub(/\A<g /, '<g ').sub(/fill="#000000"/, %(fill="#{s.hex}"))
+      %(<g id="color#{i}" inkscape:label="#{esc s.name}" data-color="#{s.hex}" data-name="#{esc s.name}" ) +
+        %(data-role="#{r[:role]}">\n#{inner}\n</g>)
+    end
+    svg = <<~SVG
+      <?xml version="1.0" standalone="no"?>
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+           version="1.1" width="#{w_mm.round(3)}mm" height="#{h_mm.round(3)}mm" viewBox="0 0 #{w_pt} #{h_pt}">
+      <!-- generated by inlay-svg from #{esc File.basename(@input)} -->
+      #{groups.join("\n")}
+      </svg>
+    SVG
+    return if pretend?
+
+    File.write(@output, svg)
+  end
+
+  def report(regions)
+    return if quiet?
+
+    total = regions.sum { |r| r[:pixels] }.nonzero? || 1
+    puts "Palette:".green
+    regions.each do |r|
+      pct = format('%5.1f%%', 100.0 * r[:pixels] / total)
+      tag = r[:role] == 'background' ? ' (background)'.light_black : ''
+      puts "  #{pct}  #{r[:swatch].label}#{tag}"
+    end
+    puts "Wrote #{@output}".green
+    puts "Wrote #{@preview}".green
+  end
+
+  # --- helpers --------------------------------------------------------------
+
+  # Accepts an inventory name, bare hex (ff3330 / f30), or any ImageMagick color.
+  def parse_color(spec, lookup: true)
+    spec = spec.strip
+    if lookup && File.exist?(opts[:filaments])
+      named = inventory.find { |s| s.name.casecmp?(spec) }
+      return named if named
+    end
+    im_spec = spec.match?(/\A(\h{3}|\h{6})\z/) ? "##{spec}" : spec
+    out, ok = capture2("convert xc:#{q im_spec} -depth 8 -format '%[fx:int(255*r+.5)] %[fx:int(255*g+.5)] %[fx:int(255*b+.5)]' info:")
+    raise "can't understand color #{spec.inspect}" unless ok && out =~ /\A\d+ \d+ \d+\z/
+
+    rgb = out.split.map(&:to_i)
+    name = spec.start_with?('#') || spec.match?(/\A\h{6}\z/) ? format('#%02x%02x%02x', *rgb) : spec
+    Swatch.new(name, rgb)
+  end
+
+  def work(name) = File.join(@work, name)
+
+  def q(str) = "'#{str.to_s.gsub("'", %q('\\''))}'"
+
+  def esc(str) = str.to_s.gsub('&', '&amp;').gsub('"', '&quot;').gsub('<', '&lt;')
+
+  def sh(cmd)
+    run_command!(cmd, quiet: !verbose?)
+  end
+
+  def capture2(cmd)
+    puts cmd.cyan if verbose?
+    out, status = Open3.capture2e(cmd)
+    [out.strip, status.success?]
+  end
+
+  def capture(cmd)
+    out, ok = capture2(cmd)
+    raise "command failed: #{cmd}\n#{out}" unless ok
+
+    out
+  end
+
+  def debug(msg) = (warn msg.light_black if debug?)
+
+  def info(msg) = (puts msg unless quiet?)
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME

@@ -1,0 +1,144 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# inlay-stl - turn an inlay-svg SVG into a baseplate STL plus one flush inlay STL per color
+#
+# Second half of the image -> 3D-printed-inlay pipeline (see inlay-svg). The
+# geometry is done by lib/inlay_geom.py (manifold3d), run through `uv` so it
+# gets its own Python and packages without touching the system.
+require 'colorize'
+require 'optimist'
+require 'json'
+require 'open3'
+$LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
+require 'dbrady_cli'
+String.disable_colorization unless $stdout.tty?
+
+# CLI Application
+class Application
+  include DbradyCli
+
+  GEOM = File.expand_path('~/bin/lib/inlay_geom.py')
+
+  # rubocop:disable Metrics/AbcSize
+  # rubocop:disable Metrics/MethodLength
+  def parse_options
+    @opts = Optimist.options do
+      banner <<~BANNER
+        inlay-stl - turn an inlay-svg SVG into a baseplate STL plus one flush inlay STL per color
+
+        Usage:
+          inlay-stl [options] FILE.svg
+
+        Writes FILE-01-<background>.stl (the plate, with pockets) and
+        FILE-02-<color>.stl ... (inlays), all in one coordinate system.
+        In Bambu Studio / Orca / Prusa: select all the STLs and import them
+        together, answer "yes" to loading as a single object with multiple
+        parts, then assign a filament to each part.
+
+        The art is scaled to fit inside the plate (minus --margin) and centered,
+        unless --no-scale is given.
+
+        Examples:
+          inlay-stl -s 120x240x3 -r 8 sign.svg
+          inlay-stl -s 100x100 --depth 0.8 --margin 0 logo.svg
+
+        Options:
+      BANNER
+      opt :size, 'Plate size WxH or WxHxT in mm (default: art size + 2*margin)', short: :s, type: :string
+      opt :thickness, 'Plate thickness in mm (if not given in --size)', short: :t, type: :float, default: 3.0
+      opt :fillet, 'Corner radius in mm', short: :r, type: :float, default: 0.0
+      opt :depth, 'Inlay depth in mm', short: :e, type: :float, default: 0.6
+      opt :margin, 'Border between art and plate edge in mm', short: :m, type: :float, default: 5.0
+      opt :no_scale, 'Use the SVG at its own mm size instead of fitting it', short: :n, default: false
+      opt :min_width, 'Drop inlay slivers thinner than this (mm, 0 to disable)', short: :w, type: :float, default: 0.2
+      opt :tolerance, 'Curve flattening step in mm', type: :float, default: 0.1
+      opt :output, 'Output prefix (default: SVG path without .svg)', short: :o, type: :string
+      opt :debug, 'Print extra debug info', short: :d, default: false
+      opt :pretend, 'Print commands but do not run them', short: :p, default: false
+      opt :quiet, 'Run with minimal output', short: :q, default: false
+      opt :verbose, 'Run with verbose output (overrides --quiet)', short: :v, default: false
+    end
+    opts[:quiet] = !opts[:verbose] if opts[:verbose_given]
+    dump_opts if debug?
+    Optimist.educate if ARGV.empty?
+    Optimist.die 'give exactly one SVG file' unless ARGV.size == 1
+    Optimist.die "no such file: #{ARGV.first}" unless File.exist?(ARGV.first)
+    Optimist.die :size, 'must look like 120x240 or 120x240x3' if opts[:size] && opts[:size] !~ size_re
+  end
+  # rubocop:enable Metrics/MethodLength
+  # rubocop:enable Metrics/AbcSize
+
+  def run
+    parse_options
+    run!
+  rescue RuntimeError => e
+    warn "inlay-stl: #{e.message}".red
+    exit 1
+  end
+
+  def run!
+    svg = ARGV.first
+    raise 'uv not found; install it from https://docs.astral.sh/uv/' unless system('command -v uv >/dev/null')
+
+    job = { svg: File.expand_path(svg),
+            prefix: File.expand_path(opts[:output] || svg.sub(/\.svg\z/i, '')),
+            depth: opts[:depth], fillet: opts[:fillet], margin: opts[:margin],
+            no_scale: opts[:no_scale], min_width: opts[:min_width], tolerance: opts[:tolerance] }
+    job.merge!(plate_size(svg))
+
+    cmd = "uv run --quiet --script #{GEOM}"
+    puts "#{cmd} <<< #{job.to_json}".cyan if verbose? || pretend?
+    return if pretend?
+
+    out, err, status = Open3.capture3(cmd, stdin_data: job.to_json)
+    result = begin
+      JSON.parse(out.lines.last || '{}')
+    rescue JSON::ParserError
+      {}
+    end
+    raise result['error'] if result['error']
+    raise "geometry helper failed:\n#{err}#{out}" unless status.success?
+
+    report(job, result)
+  end
+
+  private
+
+  def size_re = /\A(\d+(?:\.\d+)?)x(\d+(?:\.\d+)?)(?:x(\d+(?:\.\d+)?))?\z/
+
+  def plate_size(svg)
+    if opts[:size]
+      w, h, t = opts[:size].match(size_re).captures
+      return { width: w.to_f, height: h.to_f, thickness: (t || opts[:thickness]).to_f }
+    end
+
+    art_w, art_h = svg_mm_size(svg)
+    { width: art_w + (2 * opts[:margin]), height: art_h + (2 * opts[:margin]), thickness: opts[:thickness] }
+  end
+
+  def svg_mm_size(svg)
+    head = File.read(svg, 4096)
+    dims = %w[width height].map { |a| head[/<svg[^>]*\s#{a}="([\d.]+)mm"/m, 1] }
+    raise "#{svg} has no width/height in mm; give --size" if dims.any?(&:nil?)
+
+    dims.map(&:to_f)
+  end
+
+  def report(job, result)
+    return if quiet?
+
+    w, h = result['art_mm']
+    puts "Plate #{job[:width]}x#{job[:height]}x#{job[:thickness]}mm, art #{w}x#{h}mm " \
+         "(scale #{result['scale'].round(3)}), inlay depth #{job[:depth]}mm".green
+    result['parts'].each do |p|
+      if p['skipped']
+        puts "  skipped #{p['name']} (#{p['color']}): #{p['skipped']}".yellow
+      else
+        puts format('  %-40s %-14s %9.1f mm³', File.basename(p['path']), p['color'], p['volume_mm3'])
+      end
+    end
+  end
+end
+
+Application.new.run if __FILE__ == $PROGRAM_NAME
