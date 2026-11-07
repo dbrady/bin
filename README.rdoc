@@ -10,3 +10,26 @@ of these files would lead you to believe....
 
 
 
+
+== inlay-svg / inlay-stl
+
+Turn an image into a multi-color 3D-printed inlay sign: quantize to a few
+filament colors, trace to SVG, then build a baseplate STL plus one flush
+inlay STL per color (load them together in the slicer as one object).
+
+  inlay-svg -n 6 -b black --color gold sign.png   # -> sign.svg, sign-preview.png
+  inlay-stl -s 120x240x3 -r 8 sign.svg            # -> sign-01-black.stl, ...
+
+Requirements:
+
+* Ruby 3.1+ with the +colorize+ and +optimist+ gems
+* ImageMagick 6.9+ or 7 (<tt>apt install imagemagick</tt> / <tt>brew install imagemagick</tt>)
+* potrace (<tt>apt install potrace</tt> / <tt>brew install potrace</tt>)
+* uv (<tt>curl -LsSf https://astral.sh/uv/install.sh | sh</tt> / <tt>brew install uv</tt>);
+  inlay-stl uses it to run <tt>lib/inlay_geom.py</tt> with its own Python and
+  manifold3d, downloaded into uv's cache on first run
+
+Filament colors come from <tt>~/.config/inlay/filaments</tt> (<tt>Name: #hex</tt>
+per line). Without that file, the CSS named colors in
+<tt>lib/inlay-filaments-css.txt</tt> are used. Run either script with no
+arguments for full options.

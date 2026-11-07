@@ -57,6 +57,7 @@ class Application
   include DbradyCli
 
   DEFAULT_FILAMENTS = File.expand_path('~/.config/inlay/filaments')
+  BUNDLED_FILAMENTS = File.expand_path('lib/inlay-filaments-css.txt', __dir__)
   MAX_COMBOS = 200_000
 
   # rubocop:disable Metrics/AbcSize
@@ -77,10 +78,16 @@ class Application
         from the inventory file. If -n is larger than the number of --colors,
         the remaining colors are picked from the inventory to best fit the image.
 
-        Inventory file (default #{DEFAULT_FILAMENTS}), one per line:
+        Inventory file (default #{DEFAULT_FILAMENTS}; if that doesn't exist,
+        the CSS named colors in ~/bin/lib/inlay-filaments-css.txt), one per line:
           Jade White: #f0f0e8
           Bambu Red: ff3330
           # comment lines start with '#' and a space
+
+        Requirements:
+          ImageMagick 6.9+ or 7   apt install imagemagick / brew install imagemagick
+          potrace                 apt install potrace     / brew install potrace
+          Ruby 3.1+ with the colorize and optimist gems
 
         Options:
       BANNER
@@ -118,6 +125,7 @@ class Application
   end
 
   def run!
+    check_requirements!
     @input = ARGV.first
     @output = opts[:output] || @input.sub(/\.[^.\/]+\z/, '') + '.svg'
     @preview = @output.sub(/\.svg\z/i, '') + '-preview.png'
@@ -153,9 +161,9 @@ class Application
     flatten = opts[:background] ? parse_color(opts[:background]).hex : 'white'
     radius = (opts[:smooth] * px_per_mm).round
     smooth = radius.positive? ? "-statistic Median #{(2 * radius) + 1}x#{(2 * radius) + 1}" : ''
-    sh "convert #{q @input}[0] -background #{q flatten} -alpha remove -alpha off " \
+    sh "#{im} #{q @input}[0] -background #{q flatten} -alpha remove -alpha off " \
        "-colorspace sRGB -resize #{width_px}x #{smooth} -depth 8 #{q work('smooth.png')}"
-    @size_px = capture("identify -format '%w %h' #{q work('smooth.png')}").split.map(&:to_i)
+    @size_px = capture("#{im_identify} -format '%w %h' #{q work('smooth.png')}").split.map(&:to_i)
   end
 
   # --- step 2: palette = fixed colors + best picks from inventory ----------
@@ -172,14 +180,14 @@ class Application
     return fixed if free.zero?
 
     pool = inventory.reject { |s| fixed.any? { |f| f.hex == s.hex } }
-    raise "need #{free} more color(s) but inventory #{opts[:filaments]} has #{pool.size} unused" if pool.size < free
+    raise "need #{free} more color(s) but inventory #{filaments_path} has #{pool.size} unused" if pool.size < free
 
     fixed + best_picks(fixed, pool, free)
   end
 
   # Weighted histogram of the image, reduced to 64 representative colors.
   def histogram
-    @histogram ||= capture("convert #{q work('smooth.png')} -dither None -colors 64 -format %c histogram:info:-")
+    @histogram ||= capture("#{im} #{q work('smooth.png')} -dither None -colors 64 -format %c histogram:info:-")
                    .each_line.filter_map do |line|
       next unless line =~ /\A\s*(\d+):\s*\(\s*([\d.]+),\s*([\d.]+),\s*([\d.]+)/
 
@@ -205,7 +213,7 @@ class Application
   end
 
   def inventory
-    path = opts[:filaments]
+    path = filaments_path
     raise "inventory file #{path} not found (needed to pick free colors)" unless File.exist?(path)
 
     @inventory ||= File.readlines(path).filter_map do |line|
@@ -223,11 +231,11 @@ class Application
   def quantize(palette)
     @palette = palette
     swatches = palette.map { |s| "xc:#{q s.hex}" }.join(' ')
-    sh "convert #{swatches} +append #{q work('palette.png')}"
+    sh "#{im} #{swatches} +append #{q work('palette.png')}"
     min_px = (opts[:min_area] * px_per_mm * px_per_mm).round
     # Remap; then absorb islands below min_px into their surroundings; then
     # remap again in case merging produced any off-palette pixels.
-    sh "convert #{q work('smooth.png')} -dither None -remap #{q work('palette.png')} " \
+    sh "#{im} #{q work('smooth.png')} -dither None -remap #{q work('palette.png')} " \
        "-define connected-components:area-threshold=#{min_px} " \
        "-define connected-components:mean-color=true -connected-components 8 " \
        "-dither None -remap #{q work('palette.png')} -depth 8 #{q work('quant.png')}"
@@ -248,7 +256,7 @@ class Application
       mask = work("mask#{i}.pbm")
       traced = work("mask#{i}.svg")
       # difference against a solid fill of this color: exact matches -> 0 (black)
-      sh "convert #{q work('quant.png')} \\( +clone -fill #{q swatch.hex} -colorize 100 \\) " \
+      sh "#{im} #{q work('quant.png')} \\( +clone -fill #{q swatch.hex} -colorize 100 \\) " \
          "-compose difference -composite -separate -evaluate-sequence max -threshold 0 #{q mask}"
       sh "potrace -b svg -t #{turd} -a 1.0 -O 0.4 -r #{(px_per_mm * 25.4).round(4)} -o #{q traced} #{q mask}"
       { swatch:, pixels: counts[swatch.hex].to_i, role: i.zero? ? 'background' : 'inlay',
@@ -257,7 +265,7 @@ class Application
   end
 
   def pixel_counts
-    capture("convert #{q work('quant.png')} -format %c histogram:info:-").each_line.to_h do |line|
+    capture("#{im} #{q work('quant.png')} -format %c histogram:info:-").each_line.to_h do |line|
       line =~ /\A\s*(\d+):.*(#\h{6})/
       [$2.downcase, $1.to_i]
     end
@@ -306,17 +314,39 @@ class Application
   # Accepts an inventory name, bare hex (ff3330 / f30), or any ImageMagick color.
   def parse_color(spec, lookup: true)
     spec = spec.strip
-    if lookup && File.exist?(opts[:filaments])
+    if lookup && File.exist?(filaments_path)
       named = inventory.find { |s| s.name.casecmp?(spec) }
       return named if named
     end
     im_spec = spec.match?(/\A(\h{3}|\h{6})\z/) ? "##{spec}" : spec
-    out, ok = capture2("convert xc:#{q im_spec} -depth 8 -format '%[fx:int(255*r+.5)] %[fx:int(255*g+.5)] %[fx:int(255*b+.5)]' info:")
-    raise "can't understand color #{spec.inspect}" unless ok && out =~ /\A\d+ \d+ \d+\z/
+    if im_spec.match?(/\A#(\h{3}|\h{6})\z/)
+      rgb = hex_rgb(im_spec)
+      return Swatch.new(format('#%02x%02x%02x', *rgb), rgb)
+    end
+
+    out, ok, err = capture3("#{im} xc:#{q im_spec} -depth 8 " \
+                            "-format '%[fx:int(255*r+.5)] %[fx:int(255*g+.5)] %[fx:int(255*b+.5)]' info:")
+    unless ok && out =~ /\A\d+ \d+ \d+\z/
+      raise "can't understand color #{spec.inspect}" + (err.empty? ? '' : "\nImageMagick said: #{err}")
+    end
 
     rgb = out.split.map(&:to_i)
     name = spec.start_with?('#') || spec.match?(/\A\h{6}\z/) ? format('#%02x%02x%02x', *rgb) : spec
     Swatch.new(name, rgb)
+  end
+
+  # "#f30" / "#ff3300" -> [255, 51, 0] without shelling out
+  def hex_rgb(hex)
+    h = hex.delete('#')
+    h = h.chars.map { |c| c * 2 }.join if h.size == 3
+    h.scan(/../).map(&:hex)
+  end
+
+  # --filaments if given, else ~/.config/inlay/filaments, else the bundled CSS colors
+  def filaments_path
+    return opts[:filaments] if opts[:filaments_given] || File.exist?(opts[:filaments])
+
+    BUNDLED_FILAMENTS
   end
 
   def work(name) = File.join(@work, name)
@@ -329,17 +359,34 @@ class Application
     run_command!(cmd, quiet: !verbose?)
   end
 
-  def capture2(cmd)
+  # stdout only is returned for parsing; stderr (e.g. IMv7's "convert is
+  # deprecated" warning) is kept separate so it can't corrupt the output.
+  def capture3(cmd)
     puts cmd.cyan if verbose?
-    out, status = Open3.capture2e(cmd)
-    [out.strip, status.success?]
+    out, err, status = Open3.capture3(cmd)
+    [out.strip, status.success?, err.strip]
   end
 
   def capture(cmd)
-    out, ok = capture2(cmd)
-    raise "command failed: #{cmd}\n#{out}" unless ok
+    out, ok, err = capture3(cmd)
+    raise "command failed: #{cmd}\n#{err}" unless ok
 
     out
+  end
+
+  # ImageMagick 7 is `magick`; 6 is `convert`/`identify`.
+  def im = (@im ||= command?('magick') ? 'magick' : 'convert')
+
+  def im_identify = (im == 'magick' ? 'magick identify' : 'identify')
+
+  def command?(name) = system("command -v #{name} >/dev/null 2>&1")
+
+  def check_requirements!
+    missing = []
+    missing << 'ImageMagick 6.9+ or 7 (apt install imagemagick / brew install imagemagick)' unless
+      command?('magick') || command?('convert')
+    missing << 'potrace (apt install potrace / brew install potrace)' unless command?('potrace')
+    raise "missing requirements:\n  #{missing.join("\n  ")}" unless missing.empty?
   end
 
   def debug(msg) = (warn msg.light_black if debug?)

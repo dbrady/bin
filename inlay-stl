@@ -43,6 +43,12 @@ class Application
           inlay-stl -s 120x240x3 -r 8 sign.svg
           inlay-stl -s 100x100 --depth 0.8 --margin 0 logo.svg
 
+        Requirements:
+          uv        curl -LsSf https://astral.sh/uv/install.sh | sh  (or brew install uv)
+                    The first run downloads Python 3.12 + manifold3d/svgelements/numpy
+                    into uv's cache; nothing is installed system-wide.
+          Ruby 3.1+ with the colorize and optimist gems
+
         Options:
       BANNER
       opt :size, 'Plate size WxH or WxHxT in mm (default: art size + 2*margin)', short: :s, type: :string
@@ -79,7 +85,8 @@ class Application
 
   def run!
     svg = ARGV.first
-    raise 'uv not found; install it from https://docs.astral.sh/uv/' unless system('command -v uv >/dev/null')
+    raise "missing requirement: uv (curl -LsSf https://astral.sh/uv/install.sh | sh, or brew install uv)" unless
+      system('command -v uv >/dev/null 2>&1')
 
     job = { svg: File.expand_path(svg),
             prefix: File.expand_path(opts[:output] || svg.sub(/\.svg\z/i, '')),
