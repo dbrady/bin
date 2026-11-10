@@ -14,7 +14,9 @@
 #   bigboard swap "Finish RAMRR-444" "Review Party"
 #   bigboard edit "Finish RAMRR-444" --bg=green
 #   bigboard task:add "Finish RAMRR-444"
+#   bigboard task:dev "Finish RAMRR-444"
 #   bigboard task:done "Finish RAMRR-444"
+#   bigboard task:cancel "Finish RAMRR-444"
 #   bigboard serve                 # then open http://localhost:4567
 #
 # The JSON travels over ssh's stdin/stdout rather than the remote command line,
@@ -31,7 +33,7 @@ class RemoteBoard
   HOST = 'vapor'
   REMOTE_DIR = '~/.bigboard'
   REMOTE_FILE = "#{REMOTE_DIR}/board.json".freeze
-  EMPTY_BOARD = { 'rows' => 4, 'cols' => 2, 'items' => [] }.freeze
+  EMPTY_BOARD = { 'rows' => 6, 'cols' => 3, 'items' => [] }.freeze
 
   def self.fetch
     json = IO.popen(['ssh', HOST, "test -f #{REMOTE_FILE} && cat #{REMOTE_FILE}; true"], &:read)
@@ -118,8 +120,10 @@ class BoardServer
         .cell { position: relative; display: flex; align-items: center; justify-content: center;
                 text-align: center; border-radius: 12px; background: #1b1b1b; overflow: hidden;
                 font-weight: 800; line-height: 1.05; padding: 0 2vw;
-                font-size: min(5.5vw, 9vh); overflow-wrap: anywhere; }
-        .at { position: absolute; top: 6px; left: 10px; font-size: 14px; font-weight: 400; opacity: 0.35; }
+                container-type: size; isolation: isolate; }
+        .at { position: absolute; inset: 0; z-index: -1; display: flex; align-items: center;
+              justify-content: center; font-size: min(70cqh, 35cqw); opacity: 0.08;
+              pointer-events: none; }
         #error { position: fixed; bottom: 6px; right: 10px; font-size: 14px; color: #f66; }
       </style>
     </head>
@@ -127,6 +131,24 @@ class BoardServer
       <div id="board"></div>
       <div id="error"></div>
       <script>
+        // Binary-searches for the largest font size at which the cell's text
+        // neither overflows its height nor has to break inside a word.
+        function fitText(cell) {
+          let lo = 8, hi = cell.clientHeight;
+          while (hi - lo > 1) {
+            const mid = (lo + hi) >> 1;
+            cell.style.fontSize = mid + 'px';
+            const fits = cell.scrollHeight <= cell.clientHeight &&
+                         cell.scrollWidth <= cell.clientWidth;
+            if (fits) lo = mid; else hi = mid;
+          }
+          cell.style.fontSize = lo + 'px';
+        }
+
+        function fitAllText() {
+          document.querySelectorAll('.cell.filled').forEach(fitText);
+        }
+
         async function refresh() {
           let board;
           try {
@@ -150,6 +172,7 @@ class BoardServer
               label.textContent = `${col},${row}`;
               cell.append(label);
               if (item) {
+                cell.classList.add('filled');
                 cell.append(document.createTextNode(item.text));
                 if (item.fg) cell.style.color = item.fg;
                 if (item.bg) cell.style.background = item.bg;
@@ -157,9 +180,11 @@ class BoardServer
               grid.append(cell);
             }
           }
+          fitAllText();
         }
         refresh();
         setInterval(refresh, 10000);
+        window.addEventListener('resize', fitAllText);
       </script>
     </body>
     </html>
@@ -170,7 +195,7 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[add remove rm move rename swap edit serve task:add task:done task:cancel].freeze
+  SUBCOMMANDS = %w[add remove rm move rename swap edit serve task:add task:dev task:done task:cancel].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -188,7 +213,8 @@ class Application
           swap         Exchange the slots of two items, each by text or by col,row
           edit         Change any of an item's text, slot, fg, bg; the rest stays as it was
           serve        Serve the board at http://localhost:4567
-          task:add     Add, with --bg=red unless given
+          task:add     Add, with --bg=darkred unless given
+          task:dev     Edit, with --bg=darkblue unless given
           task:done    Edit, with --fg=gray --bg=darkgreen --last unless given
           task:cancel  Edit, with --fg=gray --bg=dimgray --last unless given
 
@@ -217,7 +243,8 @@ class Application
     when 'swap'         then run_swap
     when 'edit'         then run_edit
     when 'serve'        then run_serve
-    when 'task:add'     then run_add(bg: 'red')
+    when 'task:add'     then run_add(bg: 'darkred')
+    when 'task:dev'     then run_edit(bg: 'darkblue')
     when 'task:done'    then run_edit(fg: 'gray', bg: 'darkgreen', last: true)
     when 'task:cancel'  then run_edit(fg: 'gray', bg: 'dimgray', last: true)
     else
