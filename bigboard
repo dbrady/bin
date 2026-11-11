@@ -18,6 +18,8 @@
 #   bigboard task:done "Finish RAMRR-444"
 #   bigboard task:cancel "Finish RAMRR-444"
 #   bigboard serve                 # then open http://localhost:4567
+#   bigboard serve --size=2,4      # reflow onto 2 columns by 4 rows, then serve
+#   bigboard resize 2,4            # reflow while serve keeps running
 #
 # The JSON travels over ssh's stdin/stdout rather than the remote command line,
 # so item text needs no shell escaping.
@@ -195,7 +197,7 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[add remove rm move rename swap edit serve task:add task:dev task:done task:cancel].freeze
+  SUBCOMMANDS = %w[add remove rm move rename swap edit resize serve task:add task:dev task:done task:cancel].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -212,6 +214,7 @@ class Application
           rename       Change an item's text, keeping its slot and colors
           swap         Exchange the slots of two items, each by text or by col,row
           edit         Change any of an item's text, slot, fg, bg; the rest stays as it was
+          resize       Reflow the board onto a new grid of COLS,ROWS
           serve        Serve the board at http://localhost:4567
           task:add     Add, with --bg=darkred unless given
           task:dev     Edit, with --bg=darkblue unless given
@@ -242,6 +245,7 @@ class Application
     when 'rename'       then run_rename
     when 'swap'         then run_swap
     when 'edit'         then run_edit
+    when 'resize'       then run_resize
     when 'serve'        then run_serve
     when 'task:add'     then run_add(bg: 'darkred')
     when 'task:dev'     then run_edit(bg: 'darkblue')
@@ -454,23 +458,111 @@ class Application
     save(board, "edited #{item['col']},#{item['row']}: #{item['text']}")
   end
 
+  def run_resize
+    Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard resize COLS,ROWS
+
+        Reflows the board onto a new grid. A running serve, on this machine or
+        any other, shows the new grid within about 20 seconds without a
+        restart. Items packed against the start of the board, in reading
+        order, stay at the start. Items packed against the end stay at the
+        end. Items in the middle join the start group. Each group keeps its
+        order. If the items will not fit on the new grid, the board is left
+        alone.
+
+          bigboard resize 2,4
+
+        Options:
+      BANNER
+    end
+    abort 'bigboard: resize needs a size as COLS,ROWS, like 2,4'.red unless ARGV.size == 1
+
+    resized = resize_board(ARGV[0], when_refused: ['the board stays at its old size, unchanged.',
+                                                   'remove some items, then resize again.'])
+    exit 1 unless resized
+  end
+
   def run_serve
     subopts = Optimist.options do
       banner <<~BANNER
-        Usage: bigboard serve [--port PORT]
+        Usage: bigboard serve [--port PORT] [--size COLS,ROWS]
 
         Serves the board page on localhost. The page refreshes itself every
         10 seconds. The server reads from vapor at most once every
         #{BoardServer::CACHE_SECONDS} seconds, and only while a page is open.
 
+        With --size, the board is reflowed onto the new grid before serving.
+        Items packed against the start of the board, in reading order, stay at
+        the start. Items packed against the end stay at the end. Items in the
+        middle join the start group. Each group keeps its order. If the items
+        will not fit on the new grid, the board is left alone and served at its
+        old size so it can be cleaned up by hand.
+
+          bigboard serve --size=2,4
+
         Options:
       BANNER
       opt :port, 'Port to listen on', default: 4567
+      opt :size, 'Reflow the board to COLS,ROWS before serving', type: :string
+    end
+    if subopts[:size]
+      resize_board(subopts[:size], when_refused: ['serving the board at its old size, unchanged.',
+                                                  'remove some items, then serve again with --size.'])
     end
     BoardServer.new(subopts[:port]).start
   end
 
   private
+
+  # Returns false when the items will not fit, after printing when_refused
+  # under a loud warning.
+  def resize_board(size, when_refused:)
+    cols, rows = size.split(',', 2).map { |n| Integer(n, exception: false) }
+    abort "bigboard: a size is COLS,ROWS like 2,4 (got #{size.inspect})".red unless cols&.positive? && rows&.positive?
+
+    board = RemoteBoard.fetch
+    return true if board['cols'] == cols && board['rows'] == rows
+
+    if board['items'].size > cols * rows
+      warn_resize_refused(board, cols, rows, when_refused)
+      return false
+    end
+
+    start_items, end_items = start_and_end_groups(board)
+    start_items.each_with_index { |item, index| put_at_index(item, index, cols) }
+    end_items.each_with_index { |item, index| put_at_index(item, cols * rows - end_items.size + index, cols) }
+    old_size = "#{board['cols']}x#{board['rows']}"
+    board['cols'] = cols
+    board['rows'] = rows
+    save(board, "resized from #{old_size} to #{cols}x#{rows}")
+    true
+  end
+
+  # The end group is every item after the last open slot. Everything else is
+  # the start group. A full board has no open slot, so all of it is the start.
+  def start_and_end_groups(board)
+    index_of = ->(item) { item['row'] * board['cols'] + item['col'] }
+    items = board['items'].sort_by(&index_of)
+    taken = items.map(&index_of)
+    last_open = (0...board['rows'] * board['cols']).reject { |index| taken.include?(index) }.max
+    return [items, []] if last_open.nil?
+
+    items.partition { |item| index_of.call(item) < last_open }
+  end
+
+  def put_at_index(item, index, cols)
+    item['row'] = index / cols
+    item['col'] = index % cols
+  end
+
+  def warn_resize_refused(board, cols, rows, when_refused)
+    alarm = '!' * 72
+    lines = ["CANNOT RESIZE #{board['cols']}x#{board['rows']} TO #{cols}x#{rows}",
+             "the board has #{board['items'].size} items and #{cols}x#{rows} has only #{cols * rows} slots.",
+             *when_refused]
+    warn [alarm, *lines.map { |line| "bigboard: #{line}" }, alarm].join("\n").red.bold
+  end
 
   def parse_at(at, board)
     col, row = at.split(',', 2).map { |n| Integer(n, exception: false) }
