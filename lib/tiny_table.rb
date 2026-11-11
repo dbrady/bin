@@ -42,7 +42,7 @@ class TinyTable
 
         "| " + row.zip(column_widths).map do |cell, width|
           cell = cell.to_s
-          nudge_for_ansi = cell.length - cell.uncolorize.length
+          nudge_for_ansi = cell.length - visible_length(cell)
           # TODO: dynamic ljust/center/rjust based on column's content
           cell.ljust(width + nudge_for_ansi)
         end.join(" | ") + " |"
@@ -61,10 +61,15 @@ class TinyTable
     column_widths = (head ? head : rows.first).map(&:length)
     rows.each do |row|
       row.each_with_index do |cell, i|
-        column_widths[i] = [column_widths[i], cell.to_s.gsub(/\033.*?m/,'').length].max
+        column_widths[i] = [column_widths[i], visible_length(cell.to_s)].max
       end
     end
     column_widths
+  end
+
+  # Strips SGR color codes and OSC-8 hyperlink wrappers, which take no screen columns.
+  def visible_length(cell)
+    cell.gsub(/\e\[[0-9;]*m/, '').gsub(/\e\]8;[^\e\a]*(?:\e\\|\a)/, '').length
   end
 
   def column_widths
