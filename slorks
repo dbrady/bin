@@ -546,9 +546,9 @@ BANNER
     here = File.dirname(File.expand_path(__FILE__))
     db_file = Time.now.strftime("git-settings.%F.db")
     backup_filename = File.join(here, "db", "backups", db_file)
-    src_filename = DATABASE_PATH
 
-    FileUtils.cp(src_filename, backup_filename)
+    # .backup, not a file copy: in WAL mode, recent writes can live only in the -wal file.
+    run_command "sqlite3 '#{DATABASE_PATH}' \".backup '#{backup_filename}'\"", quiet: !verbose?
   end
 
   def backup_schema
