@@ -28,7 +28,7 @@ class Application
 
   attr_reader :db
 
-  opt_flag :console, :go, :journal, :line_number, :log, :sort, :today, :unique, :utc, :yesterday
+  opt_flag :console, :go, :journal, :line_number, :log, :name_only, :sort, :today, :unique, :utc, :yesterday
 
 
   # this would be unnecessary if the tzinfo gem wasn't currently incompatible with my current ruby setup
@@ -82,6 +82,7 @@ USAGE
       opt :journal, "Show all branches with switch times", default: false
       opt :line_number, "Show line numbers (for subsequent --index calls)", short: :n, default: true
       opt :log, "Show journal/log of branch changes", default: false
+      opt :name_only, "Show branch name only (e.g. for piping/selecting)", short: :o, default: false
       opt :path, "Path to specific repo (defaults to current folder)", type: :string
       opt :pretend, "Print queries but do not run them", default: false
       opt :quiet, "Run with minimal output (no line numbers or additional suggestions, overridden by -d/-v)", short: :q, default: false
@@ -207,14 +208,18 @@ QUERY
         repos.each_pair do |repo, rows|
           puts repo.cyan
           rows.each.with_index do |row, index|
-            created_at_utc = DateTime.strptime(row[:created_at], "%F %T")
-            created_at = if utc?
-                           created_at_utc.strftime("%F %T %a UTC")
-                         else
-                           convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
-                         end
-            line_num = (line_number? && !quiet?) ? "%2d " % index : ""
-            puts "#{line_num}#{created_at}: #{row[:branch]}"
+            if name_only?
+              puts row[:branch]
+            else
+              created_at_utc = DateTime.strptime(row[:created_at], "%F %T")
+              created_at = if utc?
+                created_at_utc.strftime("%F %T %a UTC")
+              else
+                convert_to_localtime(created_at_utc).strftime("%F %T %a #{local_tz_abbrev}")
+              end
+              line_num = (line_number? && !quiet?) ? "%2d " % index : ""
+              puts "#{line_num}#{created_at}: #{row[:branch]}"
+            end
           end
         end
       end
