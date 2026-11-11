@@ -66,7 +66,7 @@ BANNER
     #   puts "WARNING: --dig with --exclude or --only will likely have weird interactions".yellow
     # end
 
-    repo = git_repo_for(Dir.pwd)
+    working_tree = git_working_tree_for(Dir.pwd)
 
     opts[:only] << 'spec/*_spec.rb'
 
@@ -128,7 +128,7 @@ BANNER
       $stderr.puts '--'
     end
 
-    files = files.reject {|filename| !File.exist?(File.join(repo, filename)) } if existing?
+    files = files.reject {|filename| !File.exist?(File.join(working_tree, filename)) } if existing?
 
     diggable_files = if dig?
                        (all_files - files)
