@@ -5,6 +5,8 @@ vpnwatch_logs/*
 __pycache__/*
 testit
 db/*.db
+db/*.db-shm
+db/*.db-wal
 db/logs/*
 db/backups/*
 .claude

@@ -547,8 +547,14 @@ BANNER
     db_file = Time.now.strftime("git-settings.%F.db")
     backup_filename = File.join(here, "db", "backups", db_file)
 
-    # .backup, not a file copy: in WAL mode, recent writes can live only in the -wal file.
-    run_command "sqlite3 '#{DATABASE_PATH}' \".backup '#{backup_filename}'\"", quiet: !verbose?
+    # VACUUM INTO, not a file copy: in WAL mode, recent writes can live only in
+    # the -wal file. Unlike .backup, it writes a rollback-journal file, so
+    # macOS sqlite does not leave -wal and -shm files beside each backup.
+    # VACUUM INTO refuses to overwrite, so write a temp file and rename it.
+    temp_filename = "#{backup_filename}.tmp"
+    FileUtils.rm_f(temp_filename)
+    run_command "sqlite3 '#{DATABASE_PATH}' \"VACUUM INTO '#{temp_filename}'\"", quiet: !verbose?
+    FileUtils.mv(temp_filename, backup_filename) if File.exist?(temp_filename)
   end
 
   def backup_schema
