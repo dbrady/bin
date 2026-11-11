@@ -28,7 +28,7 @@ require 'json'
 require 'optimist'
 $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
 require 'dbrady_cli'
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 # Reads and writes the board file on vapor.
 class RemoteBoard

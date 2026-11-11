@@ -20,7 +20,7 @@ rescue LoadError
 end
 
 require_relative "lib/dbrady_cli"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class Application
   include DbradyCli

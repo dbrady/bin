@@ -2,7 +2,7 @@
 # ds-patch-etl-nightly [patch|unpatch] - apply or reset my local patch to etl_nightly.py
 require "colorize"
 require "optimist"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 opts = Optimist.options do
   banner <<USAGE

@@ -14,7 +14,7 @@ require 'tmpdir'
 require 'fileutils'
 $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
 require 'dbrady_cli'
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 # A named color. rgb is [r,g,b] in 0..255.
 Swatch = Struct.new(:name, :rgb) do

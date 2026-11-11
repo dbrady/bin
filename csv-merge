@@ -4,7 +4,7 @@ require "colorize"
 require "csv"
 require "optimist"
 
-String.disable_colorization unless $stdout.tty? && $stderr.tty?
+String.disable_colorization = true unless $stdout.tty? && $stderr.tty?
 
 opts = Optimist.options do
   opt :downcase, "Force headers to be downcased (Calm down, Snowflake!)", default: false

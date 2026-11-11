@@ -4,7 +4,7 @@
 require "colorize"
 require "optimist"
 require_relative "lib/dbrady_cli"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 # TODO: some kind of aggressive, "dig in" mode where we also look at
 # changes to the app and lib folders and try to match them to their

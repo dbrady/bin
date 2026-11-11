@@ -5,7 +5,7 @@
 require "colorize"
 require "optimist"
 require "json"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 opts = Optimist.options do
   banner <<HALP

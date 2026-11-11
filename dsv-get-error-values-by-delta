@@ -2,7 +2,7 @@
 # ds-get-error-values-by-delta <table> <field_name> <precision> <scale>
 require 'colorize'
 require 'optimist'
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 opts = Optimist.options do
   banner <<USAGE

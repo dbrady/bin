@@ -23,7 +23,7 @@
 # turned out to be a perfect copy once I'd done all this mess.
 
 require "colorize"
-String.disable_colorization if $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 table = ARGV.first
 

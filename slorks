@@ -60,7 +60,7 @@ require 'optimist'
 require 'sequel'
 require_relative 'lib/dbrady_cli'
 require_relative 'lib/tiny_table'
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class Application
   include DbradyCli

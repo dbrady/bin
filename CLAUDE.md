@@ -55,5 +55,5 @@ When `pretend?` is true, `run_command`/`run_command!` print commands in cyan but
 ## Conventions
 
 - Use `colorize` for user-facing output (cyan for commands, green for success, red for errors)
-- Scripts that pipe output should detect `headless?` (non-TTY) and suppress color/decoration — `new-ruby` already handles this with `String.disable_colorization unless $stdout.tty?`
+- Scripts that pipe output should detect `headless?` (non-TTY) and suppress color/decoration — `new-ruby` already handles this with `String.disable_colorization = true unless $stdout.tty?`
 - The `quiet?` method returns true if `--quiet` is passed OR if stdout is not a TTY

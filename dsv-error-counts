@@ -3,7 +3,7 @@
 # tl;dr It's "this field is bad, here's the count" for all bad fields
 require "optimist"
 require "colorize"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 opts = Optimist.options do
   opt :csv, "Get query results as CSV", default: false
