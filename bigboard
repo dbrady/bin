@@ -6,6 +6,7 @@
 # (~/.bigboard/board.json); every command reads it over ssh, edits it, and
 # writes it back. There is one writer on one machine, so there is no locking.
 #
+#   bigboard list
 #   bigboard add "Finish RAMRR-444" --fg=white --bg=red --at=0,0
 #   bigboard remove --at 0,0
 #   bigboard remove "Finish RAMRR-444"
@@ -13,6 +14,7 @@
 #   bigboard rename "Finish RAMRR-444" "Finished RAMRR-444"
 #   bigboard swap "Finish RAMRR-444" "Review Party"
 #   bigboard edit "Finish RAMRR-444" --bg=green
+#   bigboard edit /444/ --bg=green    # /regex/ picks the one item it matches
 #   bigboard task:add "Finish RAMRR-444"
 #   bigboard task:dev "Finish RAMRR-444"
 #   bigboard task:done "Finish RAMRR-444"
@@ -28,6 +30,7 @@ require 'json'
 require 'optimist'
 $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
 require 'dbrady_cli'
+require 'tiny_table'
 String.disable_colorization = true unless $stdout.tty?
 
 # Reads and writes the board file on vapor.
@@ -197,7 +200,7 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[add remove rm move rename swap edit resize serve task:add task:dev task:done task:cancel].freeze
+  SUBCOMMANDS = %w[list add remove rm move rename swap edit resize serve task:add task:dev task:done task:cancel].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -208,6 +211,7 @@ class Application
           bigboard [global options] <subcommand> [subcommand options]
 
         Subcommands:
+          list         Show every item in a text table, in reading order
           add          Put text on the board (first open slot, --last, or --at col,row)
           remove       Take text off the board, by its text or by --at col,row (alias: rm)
           move         Move an item to an empty slot, by its text or by --from col,row
@@ -220,6 +224,12 @@ class Application
           task:dev     Edit, with --bg=darkblue unless given
           task:done    Edit, with --fg=gray --bg=darkgreen --last unless given
           task:cancel  Edit, with --fg=gray --bg=dimgray --last unless given
+
+        Anywhere a command takes an item's text, /regex/ instead picks the one
+        item whose text matches it. If no item or more than one item matches,
+        nothing changes.
+
+          bigboard edit /474/ --bg=red
 
         Global options (must come BEFORE the subcommand):
       BANNER
@@ -239,6 +249,7 @@ class Application
   def run
     parse_options
     case @subcommand
+    when 'list'         then run_list
     when 'add'          then run_add
     when 'remove', 'rm' then run_remove
     when 'move'         then run_move
@@ -256,6 +267,24 @@ class Application
     end
   rescue RuntimeError => e
     abort "bigboard: #{e.message}".red
+  end
+
+  def run_list
+    Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard list
+
+        Prints every item on the board in a table, in reading order, with its
+        slot as COL,ROW and its colors.
+
+        Options:
+      BANNER
+    end
+
+    board = RemoteBoard.fetch
+    items = board['items'].sort_by { |item| [item['row'], item['col']] }
+    rows = items.map { |item| ["#{item['col']},#{item['row']}", item['text'], item['fg'], item['bg']] }
+    puts TinyTable.new(head: %w[Slot Text FG BG], rows: rows).to_s
   end
 
   def run_add(defaults = {})
@@ -297,6 +326,7 @@ class Application
                bigboard remove --at COL,ROW
 
         Removing by text takes off every item whose text matches exactly.
+        Removing by /regex/ takes off the one item whose text matches it.
 
         Options:
       BANNER
@@ -311,6 +341,10 @@ class Application
       removed = board['items'].reject! { |item| item['row'] == row && item['col'] == col }
       abort "bigboard: nothing at #{col},#{row}".red unless removed
       save(board, "removed #{col},#{row}")
+    elsif regex_selector?(text)
+      item = find_item(board, text, nil)
+      board['items'].delete(item)
+      save(board, "removed: #{item['text']}")
     else
       removed = board['items'].reject! { |item| item['text'] == text }
       abort "bigboard: no item reads exactly \"#{text}\"".red unless removed
@@ -422,6 +456,7 @@ class Application
           bigboard edit --at=0,0 "Reviewed It"
           bigboard edit "Review Party" --bg=cyan
           bigboard edit "Review Party" --last
+          bigboard edit /Party/ --bg=cyan
 
         Options:
       BANNER
@@ -435,7 +470,8 @@ class Application
     abort 'bigboard: edit needs some text or --at COL,ROW'.red if ARGV.empty? && !subopts[:at]
 
     board = RemoteBoard.fetch
-    if ARGV.any? && (subopts[:at].nil? || board['items'].any? { |item| item['text'] == ARGV[0] })
+    if ARGV.any? && (subopts[:at].nil? || regex_selector?(ARGV[0]) ||
+                     board['items'].any? { |item| item['text'] == ARGV[0] })
       item = find_item(board, ARGV.shift, nil)
       new_slot = subopts[:to] || subopts[:at]
     else
@@ -606,11 +642,32 @@ class Application
       return item
     end
 
+    return find_item_by_regex(board, text) if regex_selector?(text)
+
     matches = board['items'].select { |item| item['text'] == text }
     abort "bigboard: no item reads exactly \"#{text}\"".red if matches.empty?
     if matches.size > 1
       slots = matches.map { |item| "#{item['col']},#{item['row']}" }.join(' and ')
       abort "bigboard: #{matches.size} items read \"#{text}\", at #{slots}. Pick one by its slot instead.".red
+    end
+    matches[0]
+  end
+
+  def regex_selector?(text)
+    text.to_s.length > 2 && text.start_with?('/') && text.end_with?('/')
+  end
+
+  def find_item_by_regex(board, selector)
+    begin
+      regex = Regexp.new(selector[1..-2])
+    rescue RegexpError => e
+      abort "bigboard: #{selector} is not a valid regex: #{e.message}".red
+    end
+    matches = board['items'].select { |item| item['text'].match?(regex) }.sort_by { |item| [item['row'], item['col']] }
+    abort "bigboard: no item matches #{selector}".red if matches.empty?
+    if matches.size > 1
+      found = matches.map { |item| "  #{item['col']},#{item['row']}: #{item['text']}" }.join("\n")
+      abort "bigboard: #{matches.size} items match #{selector}. Narrow it down:\n#{found}".red
     end
     matches[0]
   end
