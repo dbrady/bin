@@ -19,6 +19,8 @@
 #   bigboard task:dev "Finish RAMRR-444"
 #   bigboard task:done "Finish RAMRR-444"
 #   bigboard task:cancel "Finish RAMRR-444"
+#   bigboard task:clear            # clear every done task
+#   bigboard clear --bg=darkgreen -y
 #   bigboard serve                 # then open http://localhost:4567
 #   bigboard serve --size=2,4      # reflow onto 2 columns by 4 rows, then serve
 #   bigboard resize 2,4            # reflow while serve keeps running
@@ -200,7 +202,8 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[list add remove rm move rename swap edit resize serve task:add task:dev task:done task:cancel].freeze
+  SUBCOMMANDS = %w[list add remove rm move rename swap edit clear resize serve task:add task:dev task:done task:cancel
+                   task:clear].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -218,12 +221,14 @@ class Application
           rename       Change an item's text, keeping its slot and colors
           swap         Exchange the slots of two items, each by text or by col,row
           edit         Change any of an item's text, slot, fg, bg; the rest stays as it was
+          clear        Erase every item, or only items with a given --fg or --bg
           resize       Reflow the board onto a new grid of COLS,ROWS
           serve        Serve the board at http://localhost:4567
           task:add     Add, with --bg=darkred unless given
           task:dev     Edit, with --bg=darkblue unless given
           task:done    Edit, with --fg=gray --bg=darkgreen --last unless given
           task:cancel  Edit, with --fg=gray --bg=dimgray --last unless given
+          task:clear   Clear, with --bg=darkgreen unless given, erasing done tasks
 
         Anywhere a command takes an item's text, /regex/ instead picks the one
         item whose text matches it. If no item or more than one item matches,
@@ -256,12 +261,14 @@ class Application
     when 'rename'       then run_rename
     when 'swap'         then run_swap
     when 'edit'         then run_edit
+    when 'clear'        then run_clear
     when 'resize'       then run_resize
     when 'serve'        then run_serve
     when 'task:add'     then run_add(bg: 'darkred')
     when 'task:dev'     then run_edit(bg: 'darkblue')
     when 'task:done'    then run_edit(fg: 'gray', bg: 'darkgreen', last: true)
     when 'task:cancel'  then run_edit(fg: 'gray', bg: 'dimgray', last: true)
+    when 'task:clear'   then run_clear(bg: 'darkgreen')
     else
       abort "bigboard: unknown subcommand '#{@subcommand}'. Run 'bigboard --help' for usage.".red
     end
@@ -494,6 +501,40 @@ class Application
     save(board, "edited #{item['col']},#{item['row']}: #{item['text']}")
   end
 
+  def run_clear(defaults = {})
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard clear [--fg COLOR] [--bg COLOR] [-y]
+
+        Erases every item on the board. With --fg or --bg, erases only the
+        items with that color; with both, only items with both. Asks before
+        erasing unless -y is given.
+
+          bigboard clear
+          bigboard clear --bg=darkgreen -y
+
+        Options:
+      BANNER
+      opt :fg,  'Only erase items with this text (foreground) color', type: :string, alt: :color
+      opt :bg,  'Only erase items with this background color', type: :string
+      opt :yes, 'Erase without asking', short: :y, default: false
+    end
+    apply_defaults(subopts, defaults)
+
+    board = RemoteBoard.fetch
+    doomed = board['items'].select do |item|
+      %w[fg bg].all? { |color| subopts[color.to_sym].nil? || item[color] == subopts[color.to_sym] }
+    end
+    if doomed.empty?
+      puts 'bigboard: nothing to clear' unless quiet?
+      return
+    end
+
+    abort 'bigboard: not cleared'.red unless subopts[:yes] || confirm_clear(doomed)
+    board['items'] -= doomed
+    save(board, "cleared #{doomed.size} item#{'s' unless doomed.size == 1}")
+  end
+
   def run_resize
     Optimist.options do
       banner <<~BANNER
@@ -550,6 +591,17 @@ class Application
   end
 
   private
+
+  # Answering with just Enter counts as yes.
+  def confirm_clear(doomed)
+    abort 'bigboard: clear needs -y when not run from a terminal'.red unless $stdin.tty?
+
+    doomed.sort_by { |item| [item['row'], item['col']] }
+          .each { |item| puts "  #{item['col']},#{item['row']}: #{item['text']}" }
+    print "Clear #{doomed.size} item#{'s' unless doomed.size == 1}. Are you sure [Y/n] "
+    answer = $stdin.gets.to_s.strip.downcase
+    answer.empty? || answer.start_with?('y')
+  end
 
   # Returns false when the items will not fit, after printing when_refused
   # under a loud warning.
