@@ -20,7 +20,7 @@ require "optimist"
 $:.unshift(File.expand_path("~/bin/lib"))
 require "dbrady_cli"
 require "tiny_table"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class Application
   include DbradyCli

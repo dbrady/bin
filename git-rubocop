@@ -5,7 +5,7 @@ require "colorize"
 require "optimist"
 require "yaml"
 require_relative "lib/dbrady_cli"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 # TODO: If files-changed returns a file that should be excluded by .rubocop.yml,
 # it won't be because we pass an explicit list of files, which tells rubocop to

@@ -14,7 +14,7 @@ require 'socket'
 require 'timeout'
 $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
 require 'dbrady_cli'
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 HUE_CONF_PATH = File.expand_path('~/.hue.conf')
 DISCOVERY_URL = 'https://discovery.meethue.com/'

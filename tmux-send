@@ -2,7 +2,7 @@
 # tmux-send - send command(s) to a tmux window
 require "colorize"
 require "optimist"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class TmuxSendApplication
   attr_accessor :debug, :quiet

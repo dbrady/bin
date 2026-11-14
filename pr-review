@@ -2,7 +2,7 @@
 # pr-review <branch> - Jump to a teammate's branch to review it. (pull and checkout, with optional stash)
 require "colorize"
 require "optimist"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 branch, pr = *ARGV
 

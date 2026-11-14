@@ -3,7 +3,7 @@
 # See Also: git-files-changed for files changed in recent commits
 require "colorize"
 require "optimist"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 opts = Optimist.options do
   banner <<~BANNER

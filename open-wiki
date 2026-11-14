@@ -3,7 +3,7 @@
 require "colorize"
 require "optimist"
 require "cgi"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 opts = Optimist.options do
   opt :debug, "Print extra debug info", default: false

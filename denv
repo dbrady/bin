@@ -4,7 +4,7 @@ require "colorize"
 require "optimist"
 require_relative "tiny_table"
 require_relative "lib/dbrady_cli"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 
 puts "THIS IS A WORK IN PROGRESS, OR MORE ACCURATELY A DOESN'T WORK IN PROGRESS".bold.white.on_red

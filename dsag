@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 # dsag - run ag on $(get-ds-script)
 require "colorize"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 command = "ag #{ARGV.join(' ')} #{`get-ds-script -f`.strip}"
 puts command.cyan

@@ -60,7 +60,7 @@ require 'optimist'
 require 'sequel'
 require_relative 'lib/dbrady_cli'
 require_relative 'lib/tiny_table'
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class Application
   include DbradyCli
@@ -74,9 +74,7 @@ class Application
            :humanize,
            :markdown,
            :hide_branch,
-           :hide_jira,
            :hide_notes,
-           :hide_pr,
            :hide_repo,
            :project_code,
            :updated_at,
@@ -289,9 +287,7 @@ BANNER
       opt :force,        'Force creation of a duplicate ticket if ticket already exists', short: :f, default: false
       opt :fresh,        'List freshest slorks first', short: :F, default: false
       opt :hide_branch,  'Do not display branch', short: :B, default: false
-      opt :hide_jira,    'Do not display jira column', short: :J, default: false
       opt :hide_notes,   'Do not display notes column', short: :N, default: false
-      opt :hide_pr,      'Do not display pr column', short: :P, default: false
       opt :hide_repo,    'Do not display repo column', short: :R, default: true
       opt :humanize,     'Humanize timestamps', default: false
       opt :markdown,     'Display output as markdown for Slack', default: false
@@ -396,8 +392,8 @@ BANNER
     head = %i(ticket repo pr title status)
     head.delete(:repo) unless for_log || !hide_repo?
     head << :notes if for_log || !hide_notes?
-    head << :pr_link if for_log || !hide_pr?
-    head << :jira_link if for_log || !hide_jira?
+    head << :pr_link if for_log
+    head << :jira_link if for_log
     head << :branch if for_log || !hide_branch?
     head << :created_at if for_log || created_at?
     head << :updated_at if for_log || updated_at?
@@ -410,12 +406,12 @@ BANNER
 
     order = order_clause
     Slork.where(deleted_at: nil).order(*order).all.each do |slork|
-      row = [slork.ticket_key]
+      row = [for_log ? slork.ticket_key : hyperlink(slork.ticket_key, slork.jira_link)]
       row << slork.repo if for_log || !hide_repo?
-      row += [slork.pr, slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
+      row += [for_log ? slork.pr : hyperlink(slork.pr, slork.pr_link), slork.title, (for_log || force_nocolor) ? slork.status_text : colorize_status(slork)]
       row << slork.notes if for_log || !hide_notes?
-      row << slork.pr_link if for_log || !hide_pr?
-      row << slork.jira_link if for_log || !hide_jira?
+      row << slork.pr_link if for_log
+      row << slork.jira_link if for_log
       row << slork.branch if for_log || !hide_branch?
       row << slork.project_code if for_log || project_code?
       row << display_time(slork.created_at, for_log:) if for_log || created_at?
@@ -440,6 +436,13 @@ BANNER
     puts "Announcing merge for #{ticket.ticket_key_and_pr}"
 
     run_command "mp-make-merge-announcement #{ticket.ticket_key_and_pr}"
+  end
+
+  # OSC-8 terminal hyperlink. Plain text when piped so scripts never see escape codes.
+  def hyperlink(text, url)
+    return text unless url && $stdout.tty?
+
+    "\e]8;;#{url}\e\\#{text}\e]8;;\e\\"
   end
 
   def display_time(time, for_log: false)
@@ -543,9 +546,15 @@ BANNER
     here = File.dirname(File.expand_path(__FILE__))
     db_file = Time.now.strftime("git-settings.%F.db")
     backup_filename = File.join(here, "db", "backups", db_file)
-    src_filename = DATABASE_PATH
 
-    FileUtils.cp(src_filename, backup_filename)
+    # VACUUM INTO, not a file copy: in WAL mode, recent writes can live only in
+    # the -wal file. Unlike .backup, it writes a rollback-journal file, so
+    # macOS sqlite does not leave -wal and -shm files beside each backup.
+    # VACUUM INTO refuses to overwrite, so write a temp file and rename it.
+    temp_filename = "#{backup_filename}.tmp"
+    FileUtils.rm_f(temp_filename)
+    run_command "sqlite3 '#{DATABASE_PATH}' \"VACUUM INTO '#{temp_filename}'\"", quiet: !verbose?
+    FileUtils.mv(temp_filename, backup_filename) if File.exist?(temp_filename)
   end
 
   def backup_schema
@@ -573,8 +582,8 @@ BANNER
     slorks.each.with_index(1) do |slork, index|
       template_lines = []
       template_lines << "*Title:* <%= slork.title %>"
-      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link && !hide_jira?
-      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link && !hide_pr?
+      template_lines << "*Ticket:* <%= slork.jira_link %>" if slork.jira_link
+      template_lines << "*PR:* <%= slork.pr_link %>" if slork.pr_link
       template_lines << "*Status:* <%= slork.status_text %>"
       template_lines << "*Notes:* <%= slork.notes %>" if slork.notes && slork.notes != "" && !hide_notes?
 

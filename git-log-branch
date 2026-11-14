@@ -15,6 +15,7 @@
 require 'colorize'
 require 'optimist'
 require 'extralite'
+require_relative "lib/dbrady_cli"
 
 SHARE_FOLDER = File.expand_path('~/bin/db')
 DATABASE_PATH = File.join(SHARE_FOLDER, 'git-settings.db')
@@ -26,6 +27,8 @@ LOG_COLOR_PRINT=:normal
 # File.open(File.expand_path("~/git-log-branch.log"), "w") { |fp| fp.puts Time.now.strftime("%F-%T") }
 
 class GitBranchLogger
+  include DbradyCli
+
   def initialize(opts)
     @opts = opts
 
@@ -101,35 +104,20 @@ class GitBranchLogger
     SQL
   end
 
-  # Return true if path contains a .git/ folder or a .git file (specific instance of a submodule)
-  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-  def is_git_repo?(path)
-    File.exist?(File.join(path, '.git'))
-  end
-
-  # Walk up file tree looking for a .git folder
-  # Duplicate code in git-branch-history and git-log-branch. Is it make-a-git-tools-gem o'clock yet?
-  def git_repo_for(path)
-    attempts_remaining = 10
-    while !path.empty?
-      attempts_remaining -= 1
-      raise "CANNOT FIGURE OUT PATH FOR #{path.inspect}" unless attempts_remaining > 0
-      return path if is_git_repo?(path)
-      path = File.split(path).first
-    end
-  end
-
   def run
-    path = git_repo_for(File.expand_path(ARGV.last || Dir.pwd))
-    if !is_git_repo?(path)
-      print "No git repo detected in #{path} or ancestors. Not logging."
+    requested_path = File.expand_path(ARGV.last || Dir.pwd)
+    begin
+      path = git_repo_for(requested_path)
+      working_tree = git_working_tree_for(requested_path)
+    rescue RuntimeError
+      print "No git repo detected in #{requested_path} or ancestors. Not logging."
       exit 0
     end
 
     drop_table if drop?
     ensure_table_exists
 
-    current_branch = `(cd #{path} && git current-branch)`.strip
+    current_branch = `(cd #{working_tree} && git current-branch)`.strip
     last_branch = load_most_recent_branch_for(path)
 
     if last_branch != current_branch

@@ -25,7 +25,7 @@ require "optimist"
 require "yaml"
 $:.unshift(File.expand_path("~/bin/lib"))
 require "dbrady_cli"
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class Application
   include DbradyCli
@@ -78,7 +78,7 @@ BANNER
       opts[:files_given] = opts[:keys_given] = opts[:search_given] = opts[:views_given] = true
     end
 
-    String.disable_colorization unless color?
+    String.disable_colorization = true unless color?
 
     run!
   end

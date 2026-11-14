@@ -6,6 +6,7 @@
 # (~/.bigboard/board.json); every command reads it over ssh, edits it, and
 # writes it back. There is one writer on one machine, so there is no locking.
 #
+#   bigboard list
 #   bigboard add "Finish RAMRR-444" --fg=white --bg=red --at=0,0
 #   bigboard remove --at 0,0
 #   bigboard remove "Finish RAMRR-444"
@@ -13,9 +14,16 @@
 #   bigboard rename "Finish RAMRR-444" "Finished RAMRR-444"
 #   bigboard swap "Finish RAMRR-444" "Review Party"
 #   bigboard edit "Finish RAMRR-444" --bg=green
+#   bigboard edit /444/ --bg=green    # /regex/ picks the one item it matches
 #   bigboard task:add "Finish RAMRR-444"
+#   bigboard task:dev "Finish RAMRR-444"
 #   bigboard task:done "Finish RAMRR-444"
+#   bigboard task:cancel "Finish RAMRR-444"
+#   bigboard task:clear            # clear every done task
+#   bigboard clear --bg=darkgreen -y
 #   bigboard serve                 # then open http://localhost:4567
+#   bigboard serve --size=2,4      # reflow onto 2 columns by 4 rows, then serve
+#   bigboard resize 2,4            # reflow while serve keeps running
 #
 # The JSON travels over ssh's stdin/stdout rather than the remote command line,
 # so item text needs no shell escaping.
@@ -24,14 +32,15 @@ require 'json'
 require 'optimist'
 $LOAD_PATH.unshift(File.expand_path('~/bin/lib'))
 require 'dbrady_cli'
-String.disable_colorization unless $stdout.tty?
+require 'tiny_table'
+String.disable_colorization = true unless $stdout.tty?
 
 # Reads and writes the board file on vapor.
 class RemoteBoard
   HOST = 'vapor'
   REMOTE_DIR = '~/.bigboard'
   REMOTE_FILE = "#{REMOTE_DIR}/board.json".freeze
-  EMPTY_BOARD = { 'rows' => 4, 'cols' => 2, 'items' => [] }.freeze
+  EMPTY_BOARD = { 'rows' => 6, 'cols' => 3, 'items' => [] }.freeze
 
   def self.fetch
     json = IO.popen(['ssh', HOST, "test -f #{REMOTE_FILE} && cat #{REMOTE_FILE}; true"], &:read)
@@ -118,8 +127,10 @@ class BoardServer
         .cell { position: relative; display: flex; align-items: center; justify-content: center;
                 text-align: center; border-radius: 12px; background: #1b1b1b; overflow: hidden;
                 font-weight: 800; line-height: 1.05; padding: 0 2vw;
-                font-size: min(5.5vw, 9vh); overflow-wrap: anywhere; }
-        .at { position: absolute; top: 6px; left: 10px; font-size: 14px; font-weight: 400; opacity: 0.35; }
+                container-type: size; isolation: isolate; }
+        .at { position: absolute; inset: 0; z-index: -1; display: flex; align-items: center;
+              justify-content: center; font-size: min(70cqh, 35cqw); opacity: 0.08;
+              pointer-events: none; }
         #error { position: fixed; bottom: 6px; right: 10px; font-size: 14px; color: #f66; }
       </style>
     </head>
@@ -127,6 +138,24 @@ class BoardServer
       <div id="board"></div>
       <div id="error"></div>
       <script>
+        // Binary-searches for the largest font size at which the cell's text
+        // neither overflows its height nor has to break inside a word.
+        function fitText(cell) {
+          let lo = 8, hi = cell.clientHeight;
+          while (hi - lo > 1) {
+            const mid = (lo + hi) >> 1;
+            cell.style.fontSize = mid + 'px';
+            const fits = cell.scrollHeight <= cell.clientHeight &&
+                         cell.scrollWidth <= cell.clientWidth;
+            if (fits) lo = mid; else hi = mid;
+          }
+          cell.style.fontSize = lo + 'px';
+        }
+
+        function fitAllText() {
+          document.querySelectorAll('.cell.filled').forEach(fitText);
+        }
+
         async function refresh() {
           let board;
           try {
@@ -150,6 +179,7 @@ class BoardServer
               label.textContent = `${col},${row}`;
               cell.append(label);
               if (item) {
+                cell.classList.add('filled');
                 cell.append(document.createTextNode(item.text));
                 if (item.fg) cell.style.color = item.fg;
                 if (item.bg) cell.style.background = item.bg;
@@ -157,9 +187,11 @@ class BoardServer
               grid.append(cell);
             }
           }
+          fitAllText();
         }
         refresh();
         setInterval(refresh, 10000);
+        window.addEventListener('resize', fitAllText);
       </script>
     </body>
     </html>
@@ -170,7 +202,8 @@ end
 class Application
   include DbradyCli
 
-  SUBCOMMANDS = %w[add remove rm move rename swap edit serve task:add task:done task:cancel].freeze
+  SUBCOMMANDS = %w[list add remove rm move rename swap edit clear resize serve task:add task:dev task:done task:cancel
+                   task:clear].freeze
 
   def parse_options
     @opts = Optimist.options do
@@ -181,16 +214,27 @@ class Application
           bigboard [global options] <subcommand> [subcommand options]
 
         Subcommands:
+          list         Show every item in a text table, in reading order
           add          Put text on the board (first open slot, --last, or --at col,row)
           remove       Take text off the board, by its text or by --at col,row (alias: rm)
           move         Move an item to an empty slot, by its text or by --from col,row
           rename       Change an item's text, keeping its slot and colors
           swap         Exchange the slots of two items, each by text or by col,row
           edit         Change any of an item's text, slot, fg, bg; the rest stays as it was
+          clear        Erase every item, or only items with a given --fg or --bg
+          resize       Reflow the board onto a new grid of COLS,ROWS
           serve        Serve the board at http://localhost:4567
-          task:add     Add, with --bg=red unless given
+          task:add     Add, with --bg=darkred unless given
+          task:dev     Edit, with --bg=darkblue unless given
           task:done    Edit, with --fg=gray --bg=darkgreen --last unless given
           task:cancel  Edit, with --fg=gray --bg=dimgray --last unless given
+          task:clear   Clear, with --bg=darkgreen unless given, erasing done tasks
+
+        Anywhere a command takes an item's text, /regex/ instead picks the one
+        item whose text matches it. If no item or more than one item matches,
+        nothing changes.
+
+          bigboard edit /474/ --bg=red
 
         Global options (must come BEFORE the subcommand):
       BANNER
@@ -210,21 +254,44 @@ class Application
   def run
     parse_options
     case @subcommand
+    when 'list'         then run_list
     when 'add'          then run_add
     when 'remove', 'rm' then run_remove
     when 'move'         then run_move
     when 'rename'       then run_rename
     when 'swap'         then run_swap
     when 'edit'         then run_edit
+    when 'clear'        then run_clear
+    when 'resize'       then run_resize
     when 'serve'        then run_serve
-    when 'task:add'     then run_add(bg: 'red')
+    when 'task:add'     then run_add(bg: 'darkred')
+    when 'task:dev'     then run_edit(bg: 'darkblue')
     when 'task:done'    then run_edit(fg: 'gray', bg: 'darkgreen', last: true)
     when 'task:cancel'  then run_edit(fg: 'gray', bg: 'dimgray', last: true)
+    when 'task:clear'   then run_clear(bg: 'darkgreen')
     else
       abort "bigboard: unknown subcommand '#{@subcommand}'. Run 'bigboard --help' for usage.".red
     end
   rescue RuntimeError => e
     abort "bigboard: #{e.message}".red
+  end
+
+  def run_list
+    Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard list
+
+        Prints every item on the board in a table, in reading order, with its
+        slot as COL,ROW and its colors.
+
+        Options:
+      BANNER
+    end
+
+    board = RemoteBoard.fetch
+    items = board['items'].sort_by { |item| [item['row'], item['col']] }
+    rows = items.map { |item| ["#{item['col']},#{item['row']}", item['text'], item['fg'], item['bg']] }
+    puts TinyTable.new(head: %w[Slot Text FG BG], rows: rows).to_s
   end
 
   def run_add(defaults = {})
@@ -266,6 +333,7 @@ class Application
                bigboard remove --at COL,ROW
 
         Removing by text takes off every item whose text matches exactly.
+        Removing by /regex/ takes off the one item whose text matches it.
 
         Options:
       BANNER
@@ -280,6 +348,10 @@ class Application
       removed = board['items'].reject! { |item| item['row'] == row && item['col'] == col }
       abort "bigboard: nothing at #{col},#{row}".red unless removed
       save(board, "removed #{col},#{row}")
+    elsif regex_selector?(text)
+      item = find_item(board, text, nil)
+      board['items'].delete(item)
+      save(board, "removed: #{item['text']}")
     else
       removed = board['items'].reject! { |item| item['text'] == text }
       abort "bigboard: no item reads exactly \"#{text}\"".red unless removed
@@ -391,6 +463,7 @@ class Application
           bigboard edit --at=0,0 "Reviewed It"
           bigboard edit "Review Party" --bg=cyan
           bigboard edit "Review Party" --last
+          bigboard edit /Party/ --bg=cyan
 
         Options:
       BANNER
@@ -404,7 +477,8 @@ class Application
     abort 'bigboard: edit needs some text or --at COL,ROW'.red if ARGV.empty? && !subopts[:at]
 
     board = RemoteBoard.fetch
-    if ARGV.any? && (subopts[:at].nil? || board['items'].any? { |item| item['text'] == ARGV[0] })
+    if ARGV.any? && (subopts[:at].nil? || regex_selector?(ARGV[0]) ||
+                     board['items'].any? { |item| item['text'] == ARGV[0] })
       item = find_item(board, ARGV.shift, nil)
       new_slot = subopts[:to] || subopts[:at]
     else
@@ -427,23 +501,156 @@ class Application
     save(board, "edited #{item['col']},#{item['row']}: #{item['text']}")
   end
 
+  def run_clear(defaults = {})
+    subopts = Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard clear [--fg COLOR] [--bg COLOR] [-y]
+
+        Erases every item on the board. With --fg or --bg, erases only the
+        items with that color; with both, only items with both. Asks before
+        erasing unless -y is given.
+
+          bigboard clear
+          bigboard clear --bg=darkgreen -y
+
+        Options:
+      BANNER
+      opt :fg,  'Only erase items with this text (foreground) color', type: :string, alt: :color
+      opt :bg,  'Only erase items with this background color', type: :string
+      opt :yes, 'Erase without asking', short: :y, default: false
+    end
+    apply_defaults(subopts, defaults)
+
+    board = RemoteBoard.fetch
+    doomed = board['items'].select do |item|
+      %w[fg bg].all? { |color| subopts[color.to_sym].nil? || item[color] == subopts[color.to_sym] }
+    end
+    if doomed.empty?
+      puts 'bigboard: nothing to clear' unless quiet?
+      return
+    end
+
+    abort 'bigboard: not cleared'.red unless subopts[:yes] || confirm_clear(doomed)
+    board['items'] -= doomed
+    save(board, "cleared #{doomed.size} item#{'s' unless doomed.size == 1}")
+  end
+
+  def run_resize
+    Optimist.options do
+      banner <<~BANNER
+        Usage: bigboard resize COLS,ROWS
+
+        Reflows the board onto a new grid. A running serve, on this machine or
+        any other, shows the new grid within about 20 seconds without a
+        restart. Items packed against the start of the board, in reading
+        order, stay at the start. Items packed against the end stay at the
+        end. Items in the middle join the start group. Each group keeps its
+        order. If the items will not fit on the new grid, the board is left
+        alone.
+
+          bigboard resize 2,4
+
+        Options:
+      BANNER
+    end
+    abort 'bigboard: resize needs a size as COLS,ROWS, like 2,4'.red unless ARGV.size == 1
+
+    resized = resize_board(ARGV[0], when_refused: ['the board stays at its old size, unchanged.',
+                                                   'remove some items, then resize again.'])
+    exit 1 unless resized
+  end
+
   def run_serve
     subopts = Optimist.options do
       banner <<~BANNER
-        Usage: bigboard serve [--port PORT]
+        Usage: bigboard serve [--port PORT] [--size COLS,ROWS]
 
         Serves the board page on localhost. The page refreshes itself every
         10 seconds. The server reads from vapor at most once every
         #{BoardServer::CACHE_SECONDS} seconds, and only while a page is open.
 
+        With --size, the board is reflowed onto the new grid before serving.
+        Items packed against the start of the board, in reading order, stay at
+        the start. Items packed against the end stay at the end. Items in the
+        middle join the start group. Each group keeps its order. If the items
+        will not fit on the new grid, the board is left alone and served at its
+        old size so it can be cleaned up by hand.
+
+          bigboard serve --size=2,4
+
         Options:
       BANNER
       opt :port, 'Port to listen on', default: 4567
+      opt :size, 'Reflow the board to COLS,ROWS before serving', type: :string
+    end
+    if subopts[:size]
+      resize_board(subopts[:size], when_refused: ['serving the board at its old size, unchanged.',
+                                                  'remove some items, then serve again with --size.'])
     end
     BoardServer.new(subopts[:port]).start
   end
 
   private
+
+  # Answering with just Enter counts as yes.
+  def confirm_clear(doomed)
+    abort 'bigboard: clear needs -y when not run from a terminal'.red unless $stdin.tty?
+
+    doomed.sort_by { |item| [item['row'], item['col']] }
+          .each { |item| puts "  #{item['col']},#{item['row']}: #{item['text']}" }
+    print "Clear #{doomed.size} item#{'s' unless doomed.size == 1}. Are you sure [Y/n] "
+    answer = $stdin.gets.to_s.strip.downcase
+    answer.empty? || answer.start_with?('y')
+  end
+
+  # Returns false when the items will not fit, after printing when_refused
+  # under a loud warning.
+  def resize_board(size, when_refused:)
+    cols, rows = size.split(',', 2).map { |n| Integer(n, exception: false) }
+    abort "bigboard: a size is COLS,ROWS like 2,4 (got #{size.inspect})".red unless cols&.positive? && rows&.positive?
+
+    board = RemoteBoard.fetch
+    return true if board['cols'] == cols && board['rows'] == rows
+
+    if board['items'].size > cols * rows
+      warn_resize_refused(board, cols, rows, when_refused)
+      return false
+    end
+
+    start_items, end_items = start_and_end_groups(board)
+    start_items.each_with_index { |item, index| put_at_index(item, index, cols) }
+    end_items.each_with_index { |item, index| put_at_index(item, cols * rows - end_items.size + index, cols) }
+    old_size = "#{board['cols']}x#{board['rows']}"
+    board['cols'] = cols
+    board['rows'] = rows
+    save(board, "resized from #{old_size} to #{cols}x#{rows}")
+    true
+  end
+
+  # The end group is every item after the last open slot. Everything else is
+  # the start group. A full board has no open slot, so all of it is the start.
+  def start_and_end_groups(board)
+    index_of = ->(item) { item['row'] * board['cols'] + item['col'] }
+    items = board['items'].sort_by(&index_of)
+    taken = items.map(&index_of)
+    last_open = (0...board['rows'] * board['cols']).reject { |index| taken.include?(index) }.max
+    return [items, []] if last_open.nil?
+
+    items.partition { |item| index_of.call(item) < last_open }
+  end
+
+  def put_at_index(item, index, cols)
+    item['row'] = index / cols
+    item['col'] = index % cols
+  end
+
+  def warn_resize_refused(board, cols, rows, when_refused)
+    alarm = '!' * 72
+    lines = ["CANNOT RESIZE #{board['cols']}x#{board['rows']} TO #{cols}x#{rows}",
+             "the board has #{board['items'].size} items and #{cols}x#{rows} has only #{cols * rows} slots.",
+             *when_refused]
+    warn [alarm, *lines.map { |line| "bigboard: #{line}" }, alarm].join("\n").red.bold
+  end
 
   def parse_at(at, board)
     col, row = at.split(',', 2).map { |n| Integer(n, exception: false) }
@@ -487,11 +694,32 @@ class Application
       return item
     end
 
+    return find_item_by_regex(board, text) if regex_selector?(text)
+
     matches = board['items'].select { |item| item['text'] == text }
     abort "bigboard: no item reads exactly \"#{text}\"".red if matches.empty?
     if matches.size > 1
       slots = matches.map { |item| "#{item['col']},#{item['row']}" }.join(' and ')
       abort "bigboard: #{matches.size} items read \"#{text}\", at #{slots}. Pick one by its slot instead.".red
+    end
+    matches[0]
+  end
+
+  def regex_selector?(text)
+    text.to_s.length > 2 && text.start_with?('/') && text.end_with?('/')
+  end
+
+  def find_item_by_regex(board, selector)
+    begin
+      regex = Regexp.new(selector[1..-2])
+    rescue RegexpError => e
+      abort "bigboard: #{selector} is not a valid regex: #{e.message}".red
+    end
+    matches = board['items'].select { |item| item['text'].match?(regex) }.sort_by { |item| [item['row'], item['col']] }
+    abort "bigboard: no item matches #{selector}".red if matches.empty?
+    if matches.size > 1
+      found = matches.map { |item| "  #{item['col']},#{item['row']}: #{item['text']}" }.join("\n")
+      abort "bigboard: #{matches.size} items match #{selector}. Narrow it down:\n#{found}".red
     end
     matches[0]
   end

@@ -53,7 +53,7 @@ require 'io/console'
 require 'json'
 require 'optimist'
 
-String.disable_colorization unless $stdout.tty?
+String.disable_colorization = true unless $stdout.tty?
 
 class SnowflakeManglerApp
   attr_reader :opts
