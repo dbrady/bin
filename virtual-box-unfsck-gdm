@@ -1,0 +1,4 @@
+#!/bin/bash
+# restart gdm3 (Oracle VirtualBox VM Boot Issue)
+# At bootup: Ctrl+Alt+F3, text login, run this, Ctrl+Alt+F1, should let you login
+sudo systemctl restart gdm3
